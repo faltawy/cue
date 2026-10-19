@@ -14092,6 +14092,7 @@ dependencies = [
  "tauri-specta",
  "tempfile",
  "thiserror 2.0.18",
+ "tiptap",
  "tokio",
  "tracing",
  "url",

@@ -23,6 +23,12 @@ pub enum EditError {
     #[error("the notes changed after the coach's edit; undo it by hand")]
     ChangedSince,
     #[error("{0}")]
+    Kept(String),
+    #[error("there is no {0} with id {1}")]
+    Unknown(&'static str, String),
+    #[error("this note is locked in the app; the coach can't read or change it")]
+    Locked,
+    #[error("{0}")]
     Invalid(String),
     #[error(transparent)]
     Db(#[from] sqlx::Error),
@@ -30,7 +36,7 @@ pub enum EditError {
     Json(#[from] serde_json::Error),
 }
 
-type EditResult<T> = std::result::Result<T, EditError>;
+pub(crate) type EditResult<T> = std::result::Result<T, EditError>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -38,6 +44,16 @@ pub enum EditKind {
     Note,
     AddActionItem,
     CompleteActionItem,
+    CreateNote,
+    UpdateNote,
+    CreateFolder,
+    CreatePerson,
+    UpdatePerson,
+    CreateOrganization,
+    UpdateOrganization,
+    AddParticipant,
+    CreateTemplate,
+    UpdateTemplate,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -47,6 +63,7 @@ pub struct CoachEdit {
     pub kind: EditKind,
     pub summary: String,
     pub task_id: Option<String>,
+    pub target_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
@@ -75,8 +92,7 @@ struct ItemRow {
     deleted_at: Option<String>,
 }
 
-struct UndoEntry {
-    edit: CoachEdit,
+pub(crate) struct NoteUndo {
     note_before: Option<NoteRow>,
     note_after: Value,
     item_id: Option<String>,
@@ -84,9 +100,19 @@ struct UndoEntry {
     item_status_after: Option<String>,
 }
 
+pub(crate) enum Change {
+    Note(NoteUndo),
+    Library(crate::library::Undo),
+}
+
+pub(crate) struct UndoEntry {
+    pub(crate) edit: CoachEdit,
+    pub(crate) change: Change,
+}
+
 #[derive(Default)]
 pub struct Edits {
-    log: Mutex<Vec<UndoEntry>>,
+    pub(crate) log: Mutex<Vec<UndoEntry>>,
 }
 
 pub async fn current_meeting(pool: &SqlitePool) -> EditResult<Option<String>> {
@@ -98,7 +124,7 @@ pub async fn current_meeting(pool: &SqlitePool) -> EditResult<Option<String>> {
     .await?)
 }
 
-async fn ensure_current(pool: &SqlitePool, session_id: &str) -> EditResult<()> {
+pub(crate) async fn ensure_current(pool: &SqlitePool, session_id: &str) -> EditResult<()> {
     if current_meeting(pool).await?.as_deref() != Some(session_id) {
         return Err(EditError::NotCurrentMeeting);
     }
@@ -322,7 +348,7 @@ fn tag_note_metadata(metadata: &str, edit_id: &str) -> EditResult<String> {
     Ok(serde_json::to_string(&value)?)
 }
 
-async fn now(conn: &mut SqliteConnection) -> EditResult<String> {
+pub(crate) async fn now(conn: &mut SqliteConnection) -> EditResult<String> {
     Ok(sqlx::query_scalar(NOW_SQL).fetch_one(conn).await?)
 }
 
@@ -374,7 +400,7 @@ async fn write_note(
     Ok(())
 }
 
-fn new_edit(
+pub(crate) fn new_edit(
     session_id: &str,
     kind: EditKind,
     summary: String,
@@ -386,10 +412,11 @@ fn new_edit(
         kind,
         summary,
         task_id,
+        target_id: None,
     }
 }
 
-fn preview(text: &str) -> String {
+pub(crate) fn preview(text: &str) -> String {
     const MAX: usize = 80;
     let text = text.trim();
     if text.chars().count() <= MAX {
@@ -423,11 +450,13 @@ impl Edits {
         tx.commit().await?;
         log.push(UndoEntry {
             edit: edit.clone(),
-            note_before: before,
-            note_after: doc,
-            item_id: None,
-            item_before: None,
-            item_status_after: None,
+            change: Change::Note(NoteUndo {
+                note_before: before,
+                note_after: doc,
+                item_id: None,
+                item_before: None,
+                item_status_after: None,
+            }),
         });
         Ok(edit)
     }
@@ -489,11 +518,13 @@ impl Edits {
         tx.commit().await?;
         log.push(UndoEntry {
             edit: edit.clone(),
-            note_before: before,
-            note_after: doc,
-            item_id: Some(task_id),
-            item_before: None,
-            item_status_after: Some("todo".into()),
+            change: Change::Note(NoteUndo {
+                note_before: before,
+                note_after: doc,
+                item_id: Some(task_id),
+                item_before: None,
+                item_status_after: Some("todo".into()),
+            }),
         });
         Ok(edit)
     }
@@ -543,11 +574,13 @@ impl Edits {
         let tracked = item_before.is_some();
         log.push(UndoEntry {
             edit: edit.clone(),
-            note_before: before,
-            note_after: doc,
-            item_id: Some(task_id.to_string()),
-            item_before,
-            item_status_after: tracked.then(|| "done".into()),
+            change: Change::Note(NoteUndo {
+                note_before: before,
+                note_after: doc,
+                item_id: Some(task_id.to_string()),
+                item_before,
+                item_status_after: tracked.then(|| "done".into()),
+            }),
         });
         Ok(edit)
     }
@@ -569,82 +602,95 @@ impl Edits {
         }
         let entry = &log[index];
         let mut tx = pool.begin().await?;
-        let current = read_note(&mut tx, session_id).await?;
-        if parse_doc(current.as_ref()).ok().as_ref() != Some(&entry.note_after) {
-            return Err(EditError::ChangedSince);
-        }
-        if let Some(item_id) = &entry.item_id {
-            let item = read_item(&mut tx, session_id, item_id).await?;
-            let status = item
-                .as_ref()
-                .filter(|item| item.deleted_at.is_none())
-                .map(|item| item.status.clone());
-            if status != entry.item_status_after {
-                return Err(EditError::ChangedSince);
-            }
-        }
-
-        match &entry.note_before {
-            Some(note) => {
-                sqlx::query(
-                    "UPDATE session_documents
-                     SET body = ?, body_format = ?, generation_metadata_json = ?,
-                         updated_at = ?, updated_by = ?, deleted_at = ?
-                     WHERE id = ? AND kind = 'note'",
-                )
-                .bind(&note.body)
-                .bind(&note.body_format)
-                .bind(&note.generation_metadata_json)
-                .bind(&note.updated_at)
-                .bind(&note.updated_by)
-                .bind(&note.deleted_at)
-                .bind(session_id)
-                .execute(&mut *tx)
-                .await?;
-            }
-            None => {
-                sqlx::query("DELETE FROM session_documents WHERE id = ? AND kind = 'note'")
-                    .bind(session_id)
-                    .execute(&mut *tx)
-                    .await?;
-            }
-        }
-        if let Some(item_id) = &entry.item_id {
-            match (&entry.item_before, entry.edit.kind) {
-                (Some(item), _) => {
-                    sqlx::query(
-                        "UPDATE action_items
-                         SET status = ?, metadata_json = ?, updated_at = ?, updated_by = ?,
-                             deleted_at = ?
-                         WHERE id = ? AND source_type = ? AND source_id = ?",
-                    )
-                    .bind(&item.status)
-                    .bind(&item.metadata_json)
-                    .bind(&item.updated_at)
-                    .bind(&item.updated_by)
-                    .bind(&item.deleted_at)
-                    .bind(item_id)
-                    .bind(RAW_NOTE_SOURCE)
-                    .bind(session_id)
-                    .execute(&mut *tx)
-                    .await?;
-                }
-                (None, EditKind::AddActionItem) => {
-                    sqlx::query(
-                        "DELETE FROM action_items WHERE id = ? AND source_type = ? AND source_id = ?",
-                    )
-                    .bind(item_id)
-                    .bind(RAW_NOTE_SOURCE)
-                    .bind(session_id)
-                    .execute(&mut *tx)
-                    .await?;
-                }
-                (None, _) => {}
-            }
+        match &entry.change {
+            Change::Note(note) => undo_note(&mut tx, session_id, entry.edit.kind, note).await?,
+            Change::Library(change) => crate::library::undo(&mut tx, change).await?,
         }
         tx.commit().await?;
         Ok(log.remove(index).edit)
     }
+}
+
+async fn undo_note(
+    tx: &mut SqliteConnection,
+    session_id: &str,
+    kind: EditKind,
+    entry: &NoteUndo,
+) -> EditResult<()> {
+    let current = read_note(&mut *tx, session_id).await?;
+    if parse_doc(current.as_ref()).ok().as_ref() != Some(&entry.note_after) {
+        return Err(EditError::ChangedSince);
+    }
+    if let Some(item_id) = &entry.item_id {
+        let item = read_item(&mut *tx, session_id, item_id).await?;
+        let status = item
+            .as_ref()
+            .filter(|item| item.deleted_at.is_none())
+            .map(|item| item.status.clone());
+        if status != entry.item_status_after {
+            return Err(EditError::ChangedSince);
+        }
+    }
+
+    match &entry.note_before {
+        Some(note) => {
+            sqlx::query(
+                "UPDATE session_documents
+                     SET body = ?, body_format = ?, generation_metadata_json = ?,
+                         updated_at = ?, updated_by = ?, deleted_at = ?
+                     WHERE id = ? AND kind = 'note'",
+            )
+            .bind(&note.body)
+            .bind(&note.body_format)
+            .bind(&note.generation_metadata_json)
+            .bind(&note.updated_at)
+            .bind(&note.updated_by)
+            .bind(&note.deleted_at)
+            .bind(session_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+        None => {
+            sqlx::query("DELETE FROM session_documents WHERE id = ? AND kind = 'note'")
+                .bind(session_id)
+                .execute(&mut *tx)
+                .await?;
+        }
+    }
+    if let Some(item_id) = &entry.item_id {
+        match (&entry.item_before, kind) {
+            (Some(item), _) => {
+                sqlx::query(
+                    "UPDATE action_items
+                         SET status = ?, metadata_json = ?, updated_at = ?, updated_by = ?,
+                             deleted_at = ?
+                         WHERE id = ? AND source_type = ? AND source_id = ?",
+                )
+                .bind(&item.status)
+                .bind(&item.metadata_json)
+                .bind(&item.updated_at)
+                .bind(&item.updated_by)
+                .bind(&item.deleted_at)
+                .bind(item_id)
+                .bind(RAW_NOTE_SOURCE)
+                .bind(session_id)
+                .execute(&mut *tx)
+                .await?;
+            }
+            (None, EditKind::AddActionItem) => {
+                sqlx::query(
+                    "DELETE FROM action_items WHERE id = ? AND source_type = ? AND source_id = ?",
+                )
+                .bind(item_id)
+                .bind(RAW_NOTE_SOURCE)
+                .bind(session_id)
+                .execute(&mut *tx)
+                .await?;
+            }
+            (None, _) => {}
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

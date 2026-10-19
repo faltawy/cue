@@ -12,6 +12,9 @@ use axum::{Json, Router};
 use sqlx::SqlitePool;
 
 use crate::edits::{EditError, Edits, NoteStyle};
+use crate::library::{
+    LibraryChange, NewNote, NoteChanges, OrganizationFields, PersonFields, TemplateFields,
+};
 use crate::series::{self, MeetingProject};
 use crate::settings::{self, SeriesProject};
 use crate::{Error, Result};
@@ -87,6 +90,37 @@ fn router(token: &str, host: impl Host) -> Router {
             post(complete_action_item),
         )
         .route("/meeting/{session_id}/undo", post(undo))
+        .route("/meeting/{session_id}/library/notes", post(create_note))
+        .route(
+            "/meeting/{session_id}/library/notes/{note_id}",
+            post(update_note),
+        )
+        .route("/meeting/{session_id}/library/folders", post(create_folder))
+        .route("/meeting/{session_id}/library/people", post(create_person))
+        .route(
+            "/meeting/{session_id}/library/people/{person_id}",
+            post(update_person),
+        )
+        .route(
+            "/meeting/{session_id}/library/organizations",
+            post(create_organization),
+        )
+        .route(
+            "/meeting/{session_id}/library/organizations/{organization_id}",
+            post(update_organization),
+        )
+        .route(
+            "/meeting/{session_id}/library/participants",
+            post(add_participant),
+        )
+        .route(
+            "/meeting/{session_id}/library/templates",
+            post(create_template),
+        )
+        .route(
+            "/meeting/{session_id}/library/templates/{template_id}",
+            post(update_template),
+        )
         .layer(middleware::from_fn_with_state(state.clone(), authorize))
         .with_state(state)
 }
@@ -147,11 +181,16 @@ impl From<sqlx::Error> for BridgeError {
 impl IntoResponse for BridgeError {
     fn into_response(self) -> Response {
         let status = match &self {
-            Self::Edit(EditError::NotCurrentMeeting) => StatusCode::FORBIDDEN,
-            Self::Edit(EditError::NoMeeting | EditError::UnknownTask(_)) => StatusCode::NOT_FOUND,
+            Self::Edit(EditError::NotCurrentMeeting | EditError::Locked) => StatusCode::FORBIDDEN,
+            Self::Edit(
+                EditError::NoMeeting | EditError::UnknownTask(_) | EditError::Unknown(..),
+            ) => StatusCode::NOT_FOUND,
             Self::Edit(EditError::UnsupportedNote) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::Edit(
-                EditError::NothingToUndo | EditError::NotLatest | EditError::ChangedSince,
+                EditError::NothingToUndo
+                | EditError::NotLatest
+                | EditError::ChangedSince
+                | EditError::Kept(_),
             ) => StatusCode::CONFLICT,
             Self::Edit(EditError::Invalid(_)) => StatusCode::BAD_REQUEST,
             Self::Edit(EditError::Db(_) | EditError::Json(_)) | Self::Plugin(_) => {
@@ -303,6 +342,153 @@ async fn undo(
         state
             .edits
             .undo_last(&pool, &session_id, edit_id.as_deref())
+            .await?,
+    ))
+}
+
+type Changed = Reply<LibraryChange>;
+
+async fn create_note(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<NewNote>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state.edits.create_note(&pool, &session_id, body).await?,
+    ))
+}
+
+async fn update_note(
+    State(state): State<Arc<BridgeState>>,
+    Path((session_id, note_id)): Path<(String, String)>,
+    Json(body): Json<NoteChanges>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .update_note(&pool, &session_id, &note_id, body)
+            .await?,
+    ))
+}
+
+#[derive(serde::Deserialize)]
+struct FolderBody {
+    path: String,
+}
+
+async fn create_folder(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<FolderBody>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .create_folder(&pool, &session_id, &body.path)
+            .await?,
+    ))
+}
+
+async fn create_person(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<PersonFields>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state.edits.create_person(&pool, &session_id, body).await?,
+    ))
+}
+
+async fn update_person(
+    State(state): State<Arc<BridgeState>>,
+    Path((session_id, person_id)): Path<(String, String)>,
+    Json(body): Json<PersonFields>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .update_person(&pool, &session_id, &person_id, body)
+            .await?,
+    ))
+}
+
+async fn create_organization(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<OrganizationFields>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .create_organization(&pool, &session_id, body)
+            .await?,
+    ))
+}
+
+async fn update_organization(
+    State(state): State<Arc<BridgeState>>,
+    Path((session_id, organization_id)): Path<(String, String)>,
+    Json(body): Json<OrganizationFields>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .update_organization(&pool, &session_id, &organization_id, body)
+            .await?,
+    ))
+}
+
+#[derive(serde::Deserialize)]
+struct ParticipantBody {
+    note_id: Option<String>,
+    person_id: String,
+}
+
+async fn add_participant(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<ParticipantBody>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .add_participant(&pool, &session_id, body.note_id.as_deref(), &body.person_id)
+            .await?,
+    ))
+}
+
+async fn create_template(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<TemplateFields>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .create_template(&pool, &session_id, body)
+            .await?,
+    ))
+}
+
+async fn update_template(
+    State(state): State<Arc<BridgeState>>,
+    Path((session_id, template_id)): Path<(String, String)>,
+    Json(body): Json<TemplateFields>,
+) -> Changed {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .update_template(&pool, &session_id, &template_id, body)
             .await?,
     ))
 }
@@ -523,5 +709,54 @@ mod tests {
         let edit: serde_json::Value = current.json().await.unwrap();
         assert_eq!(edit["kind"], "note");
         assert_eq!(edit["session_id"], "thursday");
+    }
+
+    #[tokio::test]
+    async fn library_changes_answer_with_the_edit_and_map_refusals_to_statuses() {
+        let (url, host) = serve().await;
+        sqlx::query("UPDATE sessions SET locked = 1 WHERE id = 'adhoc'")
+            .execute(&host.pool)
+            .await
+            .unwrap();
+        let post = |path: &str, body: serde_json::Value| {
+            client()
+                .post(format!("{url}/meeting/thursday/library/{path}"))
+                .bearer_auth(TOKEN)
+                .json(&body)
+                .send()
+        };
+
+        let folder = post("folders", serde_json::json!({ "path": "Clients/Lumen" }))
+            .await
+            .unwrap();
+        let note = post(
+            "notes",
+            serde_json::json!({ "title": "Pricing", "folder": "Clients/Lumen" }),
+        )
+        .await
+        .unwrap();
+        let locked = post("notes/adhoc", serde_json::json!({ "title": "Peek" }))
+            .await
+            .unwrap();
+        let unknown = post("people/nobody", serde_json::json!({ "memo": "x" }))
+            .await
+            .unwrap();
+        let undo = client()
+            .post(format!("{url}/meeting/thursday/undo"))
+            .bearer_auth(TOKEN)
+            .json(&serde_json::json!({}))
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(folder.status(), StatusCode::OK);
+        let note: serde_json::Value = note.json().await.unwrap();
+        assert_eq!(note["edit"]["kind"], "create_note");
+        assert_eq!(note["edit"]["target_id"], note["id"]);
+        assert_eq!(note["message"], "Created note “Pricing” in Clients/Lumen");
+        assert_eq!(locked.status(), StatusCode::FORBIDDEN);
+        assert_eq!(unknown.status(), StatusCode::NOT_FOUND);
+        let undone: serde_json::Value = undo.json().await.unwrap();
+        assert_eq!(undone["kind"], "create_note");
     }
 }

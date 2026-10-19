@@ -4,6 +4,7 @@ mod bridge;
 mod commands;
 mod edits;
 mod error;
+mod library;
 mod mcp;
 mod probe;
 mod process;
