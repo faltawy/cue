@@ -95,6 +95,7 @@ export type CoachOptions = {
   instructions?: string;
   knowledge?: string[];
   webAccess?: boolean;
+  protectedDirs?: string[];
   allowWeb?: () => boolean;
   allowChanges?: string[];
   resume?: string;
@@ -161,6 +162,7 @@ export function readOnlyHook(
   allowChanges: readonly string[] = [],
   connectors: readonly string[] = [],
   web: () => boolean = () => false,
+  protectedRoots: readonly string[] = [],
 ): HookCallback {
   return async (input) => {
     if (input.hook_event_name !== "PreToolUse") return {};
@@ -169,7 +171,7 @@ export function readOnlyHook(
       input.tool_input && typeof input.tool_input === "object"
         ? Object.fromEntries(Object.entries(input.tool_input))
         : {};
-    const decision = decide(input.tool_name, toolInput, roots, allowChanges, connectors, web());
+    const decision = decide(input.tool_name, toolInput, roots, allowChanges, connectors, web(), protectedRoots);
     return {
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
@@ -190,6 +192,7 @@ export function coachQueryOptions(options: CoachOptions): Options {
   const allowChanges = options.allowChanges ?? [];
   const connectors = Object.keys(options.connectors ?? {});
   const webAccess = options.webAccess ?? false;
+  const protectedRoots = options.protectedDirs ?? [];
   const web = () => webAccess && (options.allowWeb?.() ?? true);
   return {
     cwd: options.project,
@@ -224,12 +227,12 @@ export function coachQueryOptions(options: CoachOptions): Options {
     disallowedTools: REMOVED_TOOLS,
     permissionMode: "default",
     hooks: {
-      PreToolUse: [{ hooks: [readOnlyHook(roots, allowChanges, connectors, web)] }],
+      PreToolUse: [{ hooks: [readOnlyHook(roots, allowChanges, connectors, web, protectedRoots)] }],
       ...(options.onToolResult ? { PostToolUse: [{ hooks: [toolResultHook(options.onToolResult)] }] } : {}),
     },
     canUseTool: async (toolName, input, { toolUseID, signal }) => {
       if (toolName === ASK_USER_TOOL) return askUserPermission(options.askUser, input, { toolUseID, signal });
-      const decision = decide(toolName, input, roots, allowChanges, connectors, web());
+      const decision = decide(toolName, input, roots, allowChanges, connectors, web(), protectedRoots);
       return decision.allow
         ? { behavior: "allow", updatedInput: input }
         : { behavior: "deny", message: decision.reason };

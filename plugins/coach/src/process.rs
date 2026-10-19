@@ -32,6 +32,7 @@ pub struct Launch {
     pub knowledge: Vec<PathBuf>,
     pub context_fingerprint: u64,
     pub web_access: bool,
+    pub protected: Vec<PathBuf>,
 }
 
 impl Launch {
@@ -123,6 +124,10 @@ pub fn server_args(launch: &Launch) -> Vec<OsString> {
     }
     if launch.web_access {
         args.push("--web".into());
+    }
+    for dir in &launch.protected {
+        args.push("--protect".into());
+        args.push(dir.clone().into());
     }
     args
 }
@@ -288,6 +293,7 @@ mod tests {
             knowledge: Vec::new(),
             context_fingerprint: 0,
             web_access: false,
+            protected: Vec::new(),
         };
         let args: Vec<String> = server_args(&launch)
             .into_iter()
@@ -389,7 +395,29 @@ mod tests {
             knowledge: Vec::new(),
             context_fingerprint: 0,
             web_access: false,
+            protected: Vec::new(),
         }
+    }
+
+    #[test]
+    fn each_protected_folder_is_passed_to_the_coach() {
+        let guarded = Launch {
+            protected: vec!["/data/app".into(), "/tmp/coach-mcp".into()],
+            ..launch("/p", "sonnet", true, 1)
+        };
+        let args: Vec<String> = server_args(&guarded)
+            .into_iter()
+            .map(|arg| arg.into_string().unwrap())
+            .collect();
+        assert!(
+            args.ends_with(&[
+                "--protect".into(),
+                "/data/app".into(),
+                "--protect".into(),
+                "/tmp/coach-mcp".into()
+            ]),
+            "{args:?}"
+        );
     }
 
     #[test]

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import os from "node:os";
 
 import { parseServerList } from "./args";
 import { sessionEnv } from "./env";
@@ -55,6 +56,58 @@ describe("decide", () => {
 
   test("unknown built-in tools are refused", () => {
     expect(decide("WebFetch", { url: "https://example.com" }, roots).allow).toBe(false);
+  });
+});
+
+describe("the app's own data and settings", () => {
+  const me = os.homedir();
+  const home = [me];
+  const appData = [`${me}/Library/Application Support/com.cue.app`, "/tmp/coach-mcp"];
+  const read = (tool: string, input: Record<string, unknown>) => decide(tool, input, home, [], [], false, appData);
+
+  test("files inside the app's data are refused even when a project folder contains them", () => {
+    expect(read("Read", { file_path: `${me}/Library/Application Support/com.cue.app/app.db` }).allow).toBe(false);
+    expect(read("Read", { file_path: "/tmp/coach-mcp/servers.json" }).allow).toBe(false);
+    expect(read("Grep", { pattern: "token", path: `${me}/Library/Application Support/com.cue.app` }).allow).toBe(false);
+    expect(read("Glob", { pattern: "**/*", path: `${me}/Library` }).allow).toBe(false);
+    expect(read("Read", { file_path: `${me}/notes/plan.md` })).toEqual({ allow: true });
+    expect(read("Grep", { pattern: "x", path: `${me}/notes` })).toEqual({ allow: true });
+  });
+
+  test("shell commands that name the app's data are refused; other reads still run", () => {
+    for (const command of [
+      `cat "${me}/Library/Application Support/com.cue.app/settings.json"`,
+      "ls ~/Library/Application\\ Support/com.cue.app",
+      "grep -r token /tmp/coach-mcp",
+    ]) {
+      expect(read("Bash", { command }).allow).toBe(false);
+    }
+    expect(read("Bash", { command: `cat ${me}/notes/plan.md` })).toEqual({ allow: true });
+  });
+
+  test("the meeting tools stay allowed", () => {
+    expect(read("mcp__meeting__get_meeting", { id: "x" })).toEqual({ allow: true });
+  });
+
+  test("the session applies the policy to both permission paths", async () => {
+    const options = coachQueryOptions({ project: "/work/project", db: new Database(":memory:"), protectedDirs: ["/work/project/.app"] });
+    const permission = { signal: new AbortController().signal, toolUseID: "t", requestId: "r" };
+
+    expect(await options.canUseTool?.("Read", { file_path: "/work/project/.app/app.db" }, permission)).toMatchObject({ behavior: "deny" });
+    expect(await options.canUseTool?.("Read", { file_path: "/work/project/a.ts" }, permission)).toMatchObject({ behavior: "allow" });
+    expect(await readOnlyHook(["/work/project"], [], [], () => false, ["/work/project/.app"])(
+      {
+        hook_event_name: "PreToolUse",
+        tool_name: "Bash",
+        tool_input: { command: "cat /work/project/.app/settings.json" },
+        tool_use_id: "t",
+        session_id: "s",
+        transcript_path: "/tmp/t.jsonl",
+        cwd: "/work/project",
+      },
+      "t",
+      { signal: new AbortController().signal },
+    )).toMatchObject({ hookSpecificOutput: { permissionDecision: "deny" } });
   });
 });
 

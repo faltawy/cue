@@ -338,7 +338,22 @@ fn coach_launch(
         knowledge: settings.knowledge.iter().map(PathBuf::from).collect(),
         context_fingerprint: mcp::context_fingerprint(&settings.instructions, &settings.knowledge),
         web_access: settings.web_access,
+        protected: Vec::new(),
     })
+}
+
+fn protected_dirs(app: &AppHandle) -> Vec<PathBuf> {
+    let paths = app.path();
+    [
+        paths.app_config_dir(),
+        paths.app_data_dir(),
+        paths.app_local_data_dir(),
+        paths.app_cache_dir(),
+    ]
+    .into_iter()
+    .filter_map(std::result::Result::ok)
+    .chain([mcp_config_dir()])
+    .collect()
 }
 
 fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -> Result<Endpoint> {
@@ -349,14 +364,10 @@ fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -
         let mcp_config =
             mcp::write_config(&mcp_config_dir(), &servers, &settings.claude_connectors)?;
         let instructions = mcp::write_instructions(&instructions_dir(), &settings.instructions)?;
-        let mut command = process::sidecar_command(process::server_args(&coach_launch(
-            state,
-            settings,
-            &servers,
-            port,
-            mcp_config,
-            instructions,
-        )?))?;
+        let mut command = process::sidecar_command(process::server_args(&process::Launch {
+            protected: protected_dirs(app),
+            ..coach_launch(state, settings, &servers, port, mcp_config, instructions)?
+        }))?;
         bridge.apply(&mut command);
         Ok(command)
     })

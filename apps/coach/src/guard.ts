@@ -71,6 +71,27 @@ function pathOf(input: Record<string, unknown>): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+const PROTECTED_REASON =
+  "The app's own data, settings, recordings and secrets are off-limits to the coach; use the meeting tools for notes and contacts.";
+
+function touchesProtected(target: string, protectedRoots: readonly string[], recursive: boolean): boolean {
+  return protectedRoots.some((root) => isInside(root, target) || (recursive && isInside(target, root)));
+}
+
+function homeForms(root: string): string[] {
+  const home = process.env.HOME;
+  const forms = [root, root.replaceAll(" ", "\\ ")];
+  if (home && isInside(home, root)) {
+    const relative = `~/${path.relative(home, root)}`;
+    forms.push(relative, relative.replaceAll(" ", "\\ "));
+  }
+  return forms;
+}
+
+function commandTouchesProtected(command: string, protectedRoots: readonly string[]): boolean {
+  return protectedRoots.some((root) => homeForms(path.resolve(root)).some((form) => command.includes(form)));
+}
+
 function connectorName(server: string): string {
   return server.slice(CONNECTOR_PREFIX.length).replaceAll("_", " ");
 }
@@ -91,6 +112,7 @@ export function decide(
   allowChanges: readonly string[] = [],
   connectors: readonly string[] = [],
   web = false,
+  protectedRoots: readonly string[] = [],
 ): GuardDecision {
   if (REMOVED_TOOLS.includes(toolName)) {
     return { allow: false, reason: "The coach cannot edit files." };
@@ -102,6 +124,9 @@ export function decide(
 
   if (READ_TOOLS.has(toolName)) {
     const target = pathOf(input);
+    if (target && touchesProtected(target, protectedRoots, toolName !== "Read")) {
+      return { allow: false, reason: PROTECTED_REASON };
+    }
     if (target && !roots.some((root) => isInside(root, target))) {
       return { allow: false, reason: `${target} is outside the meeting's project folders.` };
     }
@@ -110,6 +135,7 @@ export function decide(
 
   if (toolName === "Bash") {
     const command = typeof input.command === "string" ? input.command : "";
+    if (commandTouchesProtected(command, protectedRoots)) return { allow: false, reason: PROTECTED_REASON };
     return isReadOnlyCommand(command)
       ? { allow: true }
       : { allow: false, reason: "Only read-only shell commands are allowed during a meeting." };

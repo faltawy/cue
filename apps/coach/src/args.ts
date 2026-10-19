@@ -19,6 +19,7 @@ export const COACH_ARGS = {
   instructions: { type: "string" },
   knowledge: { type: "string", multiple: true },
   web: { type: "boolean", default: false },
+  protect: { type: "string", multiple: true },
 } as const;
 
 export type CoachArgValues = {
@@ -33,6 +34,7 @@ export type CoachArgValues = {
   instructions?: string;
   knowledge?: string[];
   web?: boolean;
+  protect?: string[];
 };
 
 export const COACH_USAGE =
@@ -59,5 +61,6 @@ export async function coachOptionsFromArgs(values: CoachArgValues): Promise<Coac
     instructions: values.instructions ? await Bun.file(values.instructions).text() : "",
     knowledge: (values.knowledge ?? []).map((entry) => path.resolve(entry)),
     webAccess: values.web ?? false,
+    protectedDirs: [path.dirname(path.resolve(values.db)), ...(values.protect ?? []).map((dir) => path.resolve(dir))],
   };
 }
