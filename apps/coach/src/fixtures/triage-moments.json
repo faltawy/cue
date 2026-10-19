@@ -15,7 +15,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Omar asks you directly whether to Bcc all replies or only new sessions.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Open question addressed to Ahmad about CRM Bcc scope; needs an answer now.\"}"
     },
     {
       "id": "agent-headcount",
@@ -27,7 +27,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Sara gave headcount figures (about 40 agents, 12 team leads) worth noting.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Flagged number is vague: Sara said 'around 40' agents and 'maybe 12' leads.\"}"
     },
     {
       "id": "rhetorical-you-know",
@@ -56,7 +56,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"You committed to sending the rollout plan to Sara by Friday.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"You committed to sending the rollout plan by Friday; log it.\"}"
     },
     {
       "id": "sso-okta",
@@ -68,7 +68,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Sara asks whether the product supports Okta SSO; open question for user.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Open question from Sara about Okta SSO, still unanswered.\"}"
     },
     {
       "id": "offsite-small-talk",
@@ -81,7 +81,7 @@
         ]
       ],
       "nudge": false,
-      "reply": "{\"nudge\": false, \"why\": \"Past attendance remark; no action or check needed from the user now.\"}"
+      "reply": "{\"nudge\": false, \"why\": \"Past attendance remark, not addressed to user or needing action now.\"}"
     },
     {
       "id": "price-40-seats",
@@ -93,7 +93,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Omar asks the user for a rough price for 40 seats.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Omar asked an open pricing question for 40 seats; user should answer.\"}"
     },
     {
       "id": "whatsapp-same-number",
@@ -105,7 +105,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Sara asks an open question about linking WhatsApp to the existing number.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Open question from Sara to the group about linking WhatsApp to existing number.\"}"
     },
     {
       "id": "users-own-question",
@@ -143,7 +143,7 @@
         ]
       ],
       "nudge": false,
-      "reply": "{\"nudge\": false, \"why\": \"Sara's question is vague and rhetorical; no clear open question aimed at user.\"}"
+      "reply": "{\"nudge\": false, \"why\": \"Sara's line is a tag question ('right?'), not an open request aimed at the user.\"}"
     },
     {
       "id": "ai-not-sure",
@@ -155,7 +155,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Omar asked the user an open question about AI uncertainty handling; needs an answer.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Open question directed at user from Omar; user should answer now.\"}"
     },
     {
       "id": "renewal-date",
@@ -167,7 +167,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Vendor renewal date March 3rd is a key date to note.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Renewal date March 3rd is a key date the user should note.\"}"
     },
     {
       "id": "sandbox-by-name",
@@ -179,7 +179,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Omar asks Falta directly whether the sandbox is still possible.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks you directly whether the sandbox you mentioned is still possible.\"}"
     },
     {
       "id": "questions-list-tomorrow",
@@ -191,7 +191,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Sara promised to send the team's question list tomorrow.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Sara promised team question list by tomorrow; note owner and date.\"}"
     },
     {
       "id": "summary-after-call",
@@ -203,7 +203,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Omar asks the user for a summary after the call; open request needing action.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Omar asked you for a summary after the call; still open, needs confirmation.\"}"
     },
     {
       "id": "blind-copy-crm",
@@ -223,7 +223,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Sara asked an open yes/no question directed at the user about email BCC capability.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Sara's open question to you about BCC-ing replies to CRM is unanswered.\"}"
     },
     {
       "id": "whatsapp-open-sessions",
@@ -235,7 +235,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Omar asks you directly whether the WhatsApp open-sessions issue is resolved.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks an open question about the WhatsApp session issue; user can answer now.\"}"
     },
     {
       "id": "greeting",
@@ -273,7 +273,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Open request asks you to send it to a new address; needs your answer.\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Open request to redirect the file to a new external address; user needs to respond.\"}"
     },
     {
       "id": "bcc-replies-or-tickets",
@@ -285,7 +285,7 @@
         ]
       ],
       "nudge": true,
-      "reply": "{\"nudge\": true, \"why\": \"Open question for the user: does the Bcc apply to all replies or just tickets?\"}"
+      "reply": "{\"nudge\": true, \"why\": \"Open question about Bcc scope is unanswered; user could respond now.\"}"
     },
     {
       "id": "pasted-link",
@@ -298,7 +298,7 @@
         ]
       ],
       "nudge": false,
-      "reply": "{\"nudge\": false, \"why\": \"Shared link only; no open question, claim, promise, or figure to act on.\"}"
+      "reply": "{\"nudge\": false, \"why\": \"Shared link only; no open question, promise, or number aimed at user.\"}"
     },
     {
       "id": "user-will-check",
@@ -311,7 +311,7 @@
         ]
       ],
       "nudge": false,
-      "reply": "{\"nudge\": false, \"why\": \"User's own line; no open question, claim, promise, or figure to act on.\"}"
+      "reply": "{\"nudge\": false, \"why\": \"User says they will check something during the call; no open request to act on.\"}"
     },
     {
       "id": "team-used-to-old-way",
@@ -363,7 +363,7 @@
         ]
       ],
       "nudge": false,
-      "reply": "{\"nudge\": false, \"why\": \"Small talk greeting question; not aimed at a fact or action the user needs to give.\"}"
+      "reply": "{\"nudge\": false, \"why\": \"Small talk greeting; no decision or action needed from the user.\"}"
     }
   ]
 }

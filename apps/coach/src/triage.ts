@@ -7,13 +7,15 @@ import { renderLines, type TranscriptLine } from "./transcript";
 
 export const TRIAGE_MODEL = "haiku";
 
-export const TRIAGE_SYSTEM = `You decide whether a live meeting coach should interrupt the user right now with a short note. "You" in the lines is the user.
+export const TRIAGE_SYSTEM = `You decide whether a live meeting coach should interrupt the user right now with a short note. "You" in the lines is the user. The coach helps the user handle the moment better, not only with facts.
 Say yes only when the user could act on it right now:
-- a question or request aimed at the user that is still open and needs an answer or a fact from them
-- a fact, number or claim that sounds wrong and the user may want to correct
-- a promise someone made, the user included (who, what, when), worth noting
-- a number, date or price the user should check or write down
-Say no to small talk, greetings, back-channel ("yeah", "right", "you know?"), rhetorical questions, anything already answered, questions the user asked, and anything the user could not act on now. When unsure, say no.
+- a question or request aimed at the user, or at the group the user is in, that is still open
+- pushback or hesitation (price, a competitor, "we tried this before"), a buying signal ("how soon could we start?") or a risk signal (a new decision maker, a budget review)
+- a promise someone made, the user included (who, what, when), worth noting even when it is clear; or another speaker's promise left vague, with no owner or date
+- the user promising a date, feature or discount, or giving ground without getting anything back
+- a decision made without an owner, or a fact, number or claim that sounds wrong
+- a number, date or price the user should check, write down or use
+Say no to small talk, greetings, back-channel ("yeah", "right", "you know?"), rhetorical and tag questions ("…, right?"), the user saying they will check something during the call, anything already answered, questions the user asked, and anything the user could not act on now. When unsure, say no.
 Reply with only this JSON: {"nudge": true or false, "why": "at most 12 words"}`;
 
 const verdictSchema = z.object({ nudge: z.boolean(), why: z.string() });
