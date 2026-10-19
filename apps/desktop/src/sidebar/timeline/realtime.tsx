@@ -42,7 +42,7 @@ export const CurrentTimeIndicator = forwardRef<
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
         <div
           data-sidebar-current-time-line
-          className="bg-border absolute start-0 end-0 top-1/2 h-px -translate-y-1/2"
+          className="bg-border absolute start-0 end-0 top-1/2 h-px -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:transition-none"
         />
         <div className="relative flex h-5 items-center justify-center">
           <div
