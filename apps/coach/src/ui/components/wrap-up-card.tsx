@@ -1,8 +1,9 @@
 import { Check, Copy, ListPlus, NotebookPen } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { WrapUpView } from "../../protocol";
-import { Button, cx } from "./primitives";
+import { LineQuote, MomentQuote, TalkMeter } from "./coaching";
+import { Button, cx, useFlag } from "./primitives";
 
 export type WrapUpActions = {
   copy(text: string): Promise<boolean>;
@@ -63,16 +64,6 @@ function WrapUpSkeleton() {
       <div className="coach-skeleton h-3 w-10/12" />
     </div>
   );
-}
-
-function useFlag(): [boolean, () => void] {
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    if (!on) return;
-    const timer = setTimeout(() => setOn(false), 1_500);
-    return () => clearTimeout(timer);
-  }, [on]);
-  return [on, () => setOn(true)];
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -155,13 +146,16 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
         )}
       </div>
       )}
+      {view.talk && <TalkMeter talk={view.talk} scope="meeting" />}
       {wrapUp.coaching.went_well.length > 0 && (
         <Section title="Went well">
-          <ul className="flex flex-col gap-1">
+          <ul aria-label="Went well" className="flex flex-col gap-1">
             {wrapUp.coaching.went_well.map((point, index) => (
-              <li key={index} dir="auto" className="flex gap-2 text-[13.5px] leading-[1.45]">
-                <span aria-hidden className="mt-[0.6em] size-1 shrink-0 rounded-full bg-muted-foreground" />
-                <span className="min-w-0">{point}</span>
+              <li key={index} className="flex gap-2 text-[13.5px] leading-[1.45]">
+                <Check aria-hidden data-testid="went-well-check" className="mt-[3px] size-3.5 shrink-0 text-success" />
+                <span dir="auto" className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                  {point}
+                </span>
               </li>
             ))}
           </ul>
@@ -171,13 +165,12 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
         <Section title="Next time">
           <ul aria-label="Next time" className="flex flex-col gap-2">
             {wrapUp.coaching.next_time.map((item, index) => (
-              <li key={index} className="flex flex-col gap-0.5">
-                <span dir="auto" className="text-[12px] text-muted-foreground">
-                  {item.moment}
-                </span>
-                <span dir="auto" className="text-[13.5px] leading-[1.45]">
-                  {item.instead}
-                </span>
+              <li key={index} className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2.5">
+                <MomentQuote moment={item.moment} />
+                <p dir="auto" className="text-[13.5px] leading-[1.4] font-semibold [overflow-wrap:anywhere]">
+                  {item.headline}
+                </p>
+                <LineQuote verb={item.verb} line={item.line} copy={actions.copy} />
               </li>
             ))}
           </ul>

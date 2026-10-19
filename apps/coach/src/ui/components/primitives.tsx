@@ -1,7 +1,17 @@
-import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
+import { type ButtonHTMLAttributes, forwardRef, type ReactNode, useEffect, useState } from "react";
 
 export function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
+}
+
+export function useFlag(): [boolean, () => void] {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (!on) return;
+    const timer = setTimeout(() => setOn(false), 1_500);
+    return () => clearTimeout(timer);
+  }, [on]);
+  return [on, () => setOn(true)];
 }
 
 const KEY_GLYPHS: Record<string, string> = {

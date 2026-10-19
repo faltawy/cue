@@ -7,6 +7,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import type { CoachError } from "../../errors";
 import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
 import { ActionsBlock, type BlockActions, ImageThumbs, Replies, SourceChips } from "./blocks";
+import { MoveCard, TalkMeter } from "./coaching";
 import { CoachMarkdown } from "./markdown";
 import { Button, cx, IconButton } from "./primitives";
 import { Steps } from "./steps";
@@ -233,7 +234,7 @@ function TurnView({
         ? steps.length > 1
           ? activeStep.activeLabel
           : null
-        : turn.text
+        : turn.text || turn.blocks.length > 0
           ? null
           : turn.ask !== "ask"
             ? "Catching up on the conversation"
@@ -253,16 +254,28 @@ function TurnView({
       {!running && !turn.text && turn.status === "stopped" && (
         <p className="text-[13px] text-muted-foreground">Stopped before answering.</p>
       )}
-      {turn.blocks.map((block) =>
-        block.kind === "actions" ? (
-          <ActionsBlock
-            key={block.id}
-            block={block}
-            canAdd={canAddToNotes}
-            latestUndoable={latestUndoable}
-            actions={actions}
-          />
-        ) : null,
+      {turn.blocks.map((block) => {
+        switch (block.kind) {
+          case "actions":
+            return (
+              <ActionsBlock
+                key={block.id}
+                block={block}
+                canAdd={canAddToNotes}
+                latestUndoable={latestUndoable}
+                actions={actions}
+              />
+            );
+          case "move":
+            return <MoveCard key={block.id} move={block} copy={actions.copy} />;
+          case "replies":
+            return null;
+        }
+      })}
+      {turn.talk && (
+        <div className={cx("coach-enter", (turn.text || turn.blocks.length > 0) && "mt-3")}>
+          <TalkMeter talk={turn.talk} scope="window" />
+        </div>
       )}
       {turn.sources.length > 0 && <SourceChips sources={turn.sources} onOpen={actions.open} />}
       {!running &&

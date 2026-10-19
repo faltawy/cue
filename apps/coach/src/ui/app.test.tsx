@@ -237,6 +237,7 @@ const readyWrapUp = (wrapUp: Omit<WrapUp, "coaching"> & { coaching?: WrapUp["coa
     actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: false, hint: null } },
     added: false,
     logged: false,
+    talk: null,
   },
 });
 
@@ -429,15 +430,22 @@ describe("second design review", () => {
   test("coaching shows what went well and, for next time, each moment with what to do instead", () => {
     const coaching = {
       went_well: ["[03:10] You asked Marco what was driving the budget gap."],
-      next_time: [{ moment: "[12:40] Marco pushed back on price", instead: 'Ask: "Price aside, is this the solution you want?"' }],
+      next_time: [
+        {
+          moment: { speaker: "Marco", at: "12:40", quote: "That's more than we budgeted" },
+          headline: "Ask what's behind it",
+          verb: "Ask" as const,
+          line: "Price aside, is this the solution you want?",
+        },
+      ],
     };
     setup(stateFrom([status({ meeting: false }), waitingAfter("Weekly"), readyWrapUp({ commitments: [], open_questions: [], follow_up_draft: "", coaching })]));
     const card = view.getByTestId("wrap-up");
     expect(within(card).getByRole("heading", { name: "Went well" })).toBeTruthy();
     expect(within(card).getByText("[03:10] You asked Marco what was driving the budget gap.")).toBeTruthy();
     const next = within(card).getByRole("list", { name: "Next time" });
-    expect(within(next).getByText("[12:40] Marco pushed back on price")).toBeTruthy();
-    expect(within(next).getByText('Ask: "Price aside, is this the solution you want?"').getAttribute("dir")).toBe("auto");
+    expect(within(next).getByText("That's more than we budgeted")).toBeTruthy();
+    expect(within(next).getByText("Price aside, is this the solution you want?").getAttribute("dir")).toBe("auto");
   });
 
   test("an empty wrap-up is one quiet line with no card and no wrap-up suggestions", () => {
@@ -497,6 +505,7 @@ describe("second design review", () => {
             actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: true, hint: null } },
             added: false,
             logged: true,
+            talk: null,
           },
         },
       ]),

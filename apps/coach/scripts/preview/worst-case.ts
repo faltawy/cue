@@ -1,4 +1,6 @@
+import type { Move } from "../../src/move";
 import type { CoachEvent, StatusEvent, WrapUpView } from "../../src/protocol";
+import type { TalkStats } from "../../src/talk-time";
 import { screenshotThumb } from "../../src/ui/fixtures";
 import { type CoachState, initialState, reduce } from "../../src/ui/state";
 
@@ -8,7 +10,7 @@ import { type CoachState, initialState, reduce } from "../../src/ui/state";
 // server.ts keeps the last 6 transcript lines). Meeting titles, speaker names, prompts, answers,
 // question text and wrap-up fields are unbounded.
 
-export type DataSet = "worst" | "empty" | "one" | "huge" | "rich";
+export type DataSet = "worst" | "empty" | "one" | "huge" | "rich" | "coaching";
 export type Phase = "live" | "ended";
 
 const LONG_PATH =
@@ -164,6 +166,59 @@ const usage = (contextTokens: number): CoachEvent => ({
   },
 });
 
+// Coaching moves: headline ≤ 100, line ≤ 400, watch_out ≤ 120, quote ≤ 300, speaker ≤ 80 (src/move.ts).
+// Talk time is computed from the transcript, so its speaker count and names are unbounded.
+const LONG_SPEAKER = "Christopher Alexander Montgomery III (Northwind Industries Holdings, Procurement EMEA)";
+const LONG_QUOTE =
+  "So just to be really clear about where we are, if the Bcc copy doesn't include the replies that come back through the ticketing integration then honestly we can't roll this out to the partner desk in Kraków at all, and I'd need to take that back to the steering group before the renewal call in two weeks";
+
+const WORST_MOVE: Move = {
+  tag: "decision_owner",
+  headline: "Name who confirms the integration replies and by when, before the renewal call, so it doesn't drift",
+  verb: "Say",
+  line: "قبل ما نكمل في الأسعار: أنا هأكدلكم يوم الخميس الساعة ١٢ إذا كانت الردود اللي بتيجي من خلال تكامل التذاكر بتتنسخ في الـ Bcc ولا لأ، وكريستوفر يبعتلنا رقمين الجلسات اللي فضلت مفتوحة من ١٤ سبتمبر عشان نراجعهم مع فريق الدعم قبل مكالمة التجديد مع المشتريات. ينفع كده؟",
+  watch_out: "Don't promise integration replies are copied; the docs say they aren't today, and procurement will hold you to it",
+  moment: { speaker: LONG_SPEAKER.slice(0, 80), quote: LONG_QUOTE.slice(0, 300), at: "125:07" },
+};
+
+const TWELVE_NAMES = [
+  "Aleksandra Wiśniewska-Kowalczyk",
+  "نور الهدى عبد الرحمن",
+  "Jo",
+  "Đặng Thị Ngọc Hân",
+  "Speaker 12",
+  "Christopher Alexander Montgomery III",
+  "Them",
+  "Speaker 3",
+  "Bartholomew Fitzgerald",
+  "Li",
+  "Speaker 7",
+];
+
+export function talkOf(speakers: TalkStats["speakers"], spanMs: number, youLongestMs: number, youQuestions: number): TalkStats {
+  return { spanMs, totalMs: speakers.reduce((sum, entry) => sum + entry.ms, 0), speakers, youLongestMs, youQuestions };
+}
+
+const TWELVE_SPEAKERS = talkOf(
+  [
+    { speaker: "You", ms: 2_000 },
+    ...TWELVE_NAMES.map((speaker, index) => ({ speaker, ms: [210_000, 150_000, 90_000][index] ?? 15_000 })),
+  ],
+  600_000,
+  2_000,
+  0,
+);
+
+const WHOLE_MEETING_TWELVE = talkOf(
+  [
+    { speaker: "You", ms: 3_212_000 },
+    ...TWELVE_NAMES.map((speaker, index) => ({ speaker, ms: [1_400_000, 900_000, 600_000][index] ?? 41_000 })),
+  ],
+  7_512_000,
+  1_507_000,
+  47,
+);
+
 const worstConversation: CoachEvent[] = [
   { type: "divider", text: "Picked up where you left off after the app restarted during Northwind Industries Holdings weekly sync" },
   { type: "user", kind: "ask", text: longPrompt },
@@ -172,11 +227,8 @@ const worstConversation: CoachEvent[] = [
   usage(191_000),
   { type: "done", seconds: 41.7, ok: true, silent: false, interrupted: false },
   { type: "user", kind: "nudge", text: "Question for you · 14:32" },
-  {
-    type: "text",
-    delta:
-      "- **Unanswered:** نور الهدى asked whether Bcc applies to every reply or only tickets.\n- **You promised** to send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps today.",
-  },
+  { type: "block", id: "worst-move", block: { kind: "move", ...WORST_MOVE } },
+  { type: "talk", talk: TWELVE_SPEAKERS },
   { type: "done", seconds: 4.1, ok: true, silent: false, interrupted: false },
   { type: "user", kind: "ask", text: "اكتب ملاحظة إن العميل محتاج الـ Bcc قبل التجديد" },
   {
@@ -318,11 +370,23 @@ Ahmad`,
       ],
       next_time: [
         {
-          moment: "[14:22] Christopher Alexander Montgomery III asked whether Bcc applies to replies a ticketing integration delivers, and the conversation moved on to pricing before anyone answered",
-          instead: 'Ask: "Before we move on, can I come back to you by Thursday on whether integration replies get the Bcc too?"',
+          moment: { speaker: LONG_SPEAKER, at: "14:22", quote: LONG_QUOTE },
+          headline: "Answer the integration question before moving on to pricing, or give a date for the answer",
+          verb: "Ask",
+          line: "Before we move on, can I come back to you by Thursday on whether integration replies get the Bcc too?",
         },
-        { moment: "[22:10] نور الهدى قالت \"الأسبوع الجاي\"", instead: 'اسأل: "تمام، ينفع نقول يوم الثلاثاء؟ ومين هيبعت القائمة؟"' },
-        { moment: "[27:45] You talked for four minutes straight", instead: "Stop after the first answer and ask what they think." },
+        {
+          moment: { speaker: "نور الهدى عبد الرحمن", at: null, quote: "الأسبوع الجاي" },
+          headline: "Pin the day",
+          verb: "Ask",
+          line: "تمام، ينفع نقول يوم الثلاثاء؟ ومين هيبعت القائمة؟",
+        },
+        {
+          moment: { speaker: "You", at: "27:45", quote: "And the other thing about the reporting layer is" },
+          headline: "Stop and hand the floor back",
+          verb: "Ask",
+          line: "What do you think?",
+        },
       ],
     },
   },
@@ -333,6 +397,7 @@ Ahmad`,
   },
   added: false,
   logged: false,
+  talk: WHOLE_MEETING_TWELVE,
 });
 
 const waiting = (lastTitle: string | null): CoachEvent => ({ type: "transcript", strip: { state: "waiting", lastTitle, endedAt: lastTitle ? Date.now() - 90_000 : null }, lines: [], pending: "" });
@@ -364,6 +429,7 @@ function empty(phase: Phase): CoachEvent[] {
           actions: { addActionItems: { enabled: false, hint: null }, logToClients: { enabled: false, hint: null } },
           added: false,
           logged: false,
+          talk: null,
         },
       },
     ];
@@ -395,11 +461,12 @@ function one(phase: Phase): CoachEvent[] {
         wrapUp: {
           state: "ready",
           title: "J",
-          wrapUp: { commitments: [{ who: "Jo", what: "call", when: null }], open_questions: ["Why?"], follow_up_draft: "Thanks.", coaching: { went_well: [], next_time: [{ moment: "[00:01] Jo", instead: "Ask." }] } },
+          wrapUp: { commitments: [{ who: "Jo", what: "call", when: null }], open_questions: ["Why?"], follow_up_draft: "Thanks.", coaching: { went_well: ["X"], next_time: [{ moment: { speaker: "Jo", at: "00:01", quote: "Ok." }, headline: "Ask", verb: "Ask", line: "?" }] } },
           commitments: [],
           actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: false, hint: null } },
           added: false,
           logged: false,
+          talk: talkOf([{ speaker: "You", ms: 60_000 }], 60_000, 60_000, 1),
         },
       },
     ];
@@ -566,7 +633,58 @@ function rich(phase: Phase): CoachEvent[] {
   ];
 }
 
-const BUILDERS: Record<DataSet, (phase: Phase) => CoachEvent[]> = { worst, empty, one, huge, rich };
+const MOVE_DONE: CoachEvent = { type: "done", seconds: 3.4, ok: true, silent: false, interrupted: false };
+
+const nudgeMove = (id: string, time: string, move: Move, talk?: TalkStats): CoachEvent[] => [
+  { type: "user", kind: "nudge", text: `Question for you · ${time}` },
+  { type: "block", id, block: { kind: "move", ...move } },
+  ...(talk ? [{ type: "talk", talk } satisfies CoachEvent] : []),
+  MOVE_DONE,
+];
+
+const SHORT_MOVES: Move[] = [
+  { tag: "buying_signal", headline: "Book it", verb: "Ask", line: "Tuesday?" },
+  { tag: "giving_ground", headline: "Trade, don't give", verb: "Say", line: "Happy to, if we can sign this month.", moment: { speaker: "Jo", quote: "Can you throw in onboarding?" } },
+  { tag: "over_promise", headline: "Walk back the date", verb: "Say", line: "Let me confirm the date with the team first.", watch_out: "X" },
+  { tag: "agenda", headline: "Park it", verb: "Say", line: "Let's park SSO and come back at 3.", moment: { speaker: "Them", quote: "Also SSO?", at: "00:07" } },
+  { tag: "risk", headline: "Get ahead of the new VP", verb: "Ask", line: "What will Dana want to see before she signs off?" },
+];
+
+function coaching(phase: Phase): CoachEvent[] {
+  if (phase === "ended") {
+    return [status({ busy: false, meeting: false }), waiting(ARABIC_TITLE), { type: "wrapup", wrapUp: worstWrapUp(ARABIC_TITLE) }];
+  }
+  return [
+    status({ busy: false }),
+    worstTranscript,
+    ...nudgeMove("c-worst", "14:32", WORST_MOVE, TWELVE_SPEAKERS),
+    ...nudgeMove("c-all-you", "14:40", { tag: "talk_time", headline: "Stop and hand the floor back", verb: "Ask", line: "Does that match what you're seeing?" }, talkOf([{ speaker: "You", ms: 600_000 }], 600_000, 600_000, 0)),
+    ...nudgeMove(
+      "c-tiny",
+      "14:48",
+      { tag: "talk_time", headline: "Let them talk", verb: "Ask", line: "What else should I know?" },
+      talkOf([{ speaker: "You", ms: 597_600 }, { speaker: "Aleksandra Wiśniewska-Kowalczyk", ms: 2_400 }], 600_000, 597_600, 1),
+    ),
+    ...SHORT_MOVES.flatMap((move, index) => nudgeMove(`c-short-${index}`, `15:0${index}`, move)),
+    { type: "user", kind: "catchup", text: "Catch me up · 15:12" },
+    { type: "tool", id: "cu1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: "since ms: 0" },
+    { type: "tool_result", id: "cu1", ok: true, output: "…", durationMs: 400 },
+    {
+      type: "text",
+      delta:
+        "- **Now:** Aleksandra is weighing whether the partner desk in Kraków can go live without integration replies in the Bcc.\n- **Open for you:** نور الهدى asked whether Bcc covers every reply or only tickets.\n- **Promised:** you send the setup steps today; Christopher shares the session IDs, no date yet.",
+    },
+    { type: "block", id: "c-catchup-move", block: { kind: "move", tag: "vague_promise", headline: "Pin Christopher's date", verb: "Ask", line: "Christopher, can you send the two session IDs by Thursday?", moment: { speaker: "Christopher Alexander Montgomery III", quote: "I'll dig those out.", at: "48:10" } } },
+    { type: "talk", talk: talkOf([{ speaker: "Aleksandra Wiśniewska-Kowalczyk", ms: 420_000 }, { speaker: "Jo", ms: 180_000 }], 600_000, 0, 0) },
+    MOVE_DONE,
+    { type: "user", kind: "ask", text: "What's our list price for 40 seats, and how do I answer?" },
+    { type: "text", delta: "**€38,400 a year** (40 × €80/month, `pricing/2026.md:12`)." },
+    { type: "block", id: "c-ask-move", block: { kind: "move", tag: "pushback", headline: "Anchor on value before price", verb: "Ask", line: "Before I share numbers, what would solving the CRM gap be worth to the team?" } },
+    MOVE_DONE,
+  ];
+}
+
+const BUILDERS: Record<DataSet, (phase: Phase) => CoachEvent[]> = { worst, empty, one, huge, rich, coaching };
 
 export function isDataSet(name: string | null): name is DataSet {
   return name !== null && name in BUILDERS;

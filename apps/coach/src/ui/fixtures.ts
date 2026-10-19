@@ -96,12 +96,17 @@ const conversation: CoachEvent[] = [
   usage,
   { type: "done", seconds: 6.4, ok: true, silent: false, interrupted: false },
   { type: "user", kind: "nudge", text: "Question for you · 14:32" },
-  { type: "tool", id: "c1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
-  { type: "tool_result", id: "c1", ok: true, output: "…", durationMs: 380 },
   {
-    type: "text",
-    delta:
-      "- **Unanswered:** Omar asked whether the WhatsApp sessions that stayed open are fixed.\n- **You promised** to send the Bcc setup steps today.",
+    type: "block",
+    id: "nudge-1",
+    block: {
+      kind: "move",
+      tag: "open_question",
+      headline: "Answer Omar, then give a date",
+      verb: "Say",
+      line: "لسه بنراجعها، وهبعتلك التحديث يوم الخميس.",
+      moment: { speaker: "Omar", quote: "هل تم حل مشكلة الجلسات المفتوحة على واتساب؟", at: "11:52" },
+    },
   },
   { type: "done", seconds: 4.1, ok: true, silent: false, interrupted: false },
   { type: "user", kind: "ask", text: "Add an action item to send Sara the Bcc steps" },
@@ -136,10 +141,17 @@ const readyWrapUp: CoachEvent = {
         went_well: ["[04:12] You asked Omar which sessions stayed open before proposing a fix."],
         next_time: [
           {
-            moment: "[18:30] Sara asked about internal notes and the topic moved on",
-            instead: 'Ask: "Should internal notes go to the CRM too? I can confirm by Thursday."',
+            moment: { speaker: "Sara", at: "18:30", quote: "Would internal notes go to the CRM too?" },
+            headline: "Answer it or give a date before moving on",
+            verb: "Ask",
+            line: "Should internal notes go to the CRM too? I can confirm by Thursday.",
           },
-          { moment: "[26:05] The call ended without a next meeting", instead: 'Say: "Can we book 20 minutes next Tuesday to check the Bcc setup?"' },
+          {
+            moment: { speaker: "You", at: "26:05", quote: "Great, talk soon then." },
+            headline: "End with the next meeting booked",
+            verb: "Say",
+            line: "Can we book 20 minutes next Tuesday to check the Bcc setup?",
+          },
         ],
       },
     },
@@ -150,8 +162,116 @@ const readyWrapUp: CoachEvent = {
     },
     added: false,
     logged: false,
+    talk: {
+      spanMs: 1_620_000,
+      totalMs: 1_500_000,
+      speakers: [
+        { speaker: "You", ms: 870_000 },
+        { speaker: "Sara", ms: 420_000 },
+        { speaker: "Omar", ms: 210_000 },
+      ],
+      youLongestMs: 194_000,
+      youQuestions: 6,
+    },
   },
 };
+
+const PRICE_PUSHBACK = "Honestly, that's more than we budgeted for this quarter. Can you do better?";
+
+const coaching: CoachEvent[] = [
+  { type: "user", kind: "nudge", text: "Question for you · 14:21" },
+  {
+    type: "block",
+    id: "co-1",
+    block: {
+      kind: "move",
+      tag: "pushback",
+      headline: "Ask what's behind the price concern",
+      verb: "Ask",
+      line: "Is it the total, or how it lands in this quarter's budget?",
+      watch_out: "Don't offer a discount yet",
+      moment: { speaker: "Sara", quote: PRICE_PUSHBACK, at: "09:41" },
+    },
+  },
+  { type: "done", seconds: 3.2, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "nudge", text: "Question for you · 14:26" },
+  {
+    type: "block",
+    id: "co-2",
+    block: {
+      kind: "move",
+      tag: "talk_time",
+      headline: "Answer in one line, then hand it back",
+      verb: "Ask",
+      line: "Yes, it copies every reply. Which team needs it first?",
+      moment: { speaker: "Omar", quote: "So does it copy every reply or not?", at: "13:58" },
+    },
+  },
+  {
+    type: "talk",
+    talk: {
+      spanMs: 600_000,
+      totalMs: 580_000,
+      speakers: [
+        { speaker: "You", ms: 412_000 },
+        { speaker: "Sara", ms: 110_000 },
+        { speaker: "Omar", ms: 58_000 },
+      ],
+      youLongestMs: 185_000,
+      youQuestions: 1,
+    },
+  },
+  { type: "done", seconds: 2.9, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "catchup", text: "Catch me up · 14:33" },
+  { type: "tool", id: "co-t", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: "since ms: 270000" },
+  { type: "tool_result", id: "co-t", ok: true, output: "…", durationMs: 360 },
+  {
+    type: "text",
+    delta:
+      "- **Now:** Sara is checking whether Bcc covers replies from their CRM integration.\n- **Open for you:** Omar's question about the WhatsApp sessions.\n- **Promised:** you send the Bcc steps today; Omar shares two session IDs, no date yet.",
+  },
+  {
+    type: "block",
+    id: "co-3",
+    block: {
+      kind: "move",
+      tag: "vague_promise",
+      headline: "Pin Omar's date",
+      verb: "Ask",
+      line: "Omar, can you send the two session IDs by Thursday?",
+      moment: { speaker: "Omar", quote: "I'll dig those out for you.", at: "12:10" },
+    },
+  },
+  {
+    type: "talk",
+    talk: {
+      spanMs: 600_000,
+      totalMs: 590_000,
+      speakers: [
+        { speaker: "You", ms: 236_000 },
+        { speaker: "Sara", ms: 230_000 },
+        { speaker: "Omar", ms: 124_000 },
+      ],
+      youLongestMs: 74_000,
+      youQuestions: 4,
+    },
+  },
+  { type: "done", seconds: 6.1, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "ask", text: "What's our price for 40 seats, and how do I say it?" },
+  { type: "text", delta: "**€38,400 a year**: 40 seats at €80 a month (`pricing/2026.md`)." },
+  {
+    type: "block",
+    id: "co-4",
+    block: {
+      kind: "move",
+      tag: "buying_signal",
+      headline: "Give the number, then the next step",
+      verb: "Say",
+      line: "It's €38,400 a year for 40 seats. Who else needs to see it before you decide?",
+    },
+  },
+  { type: "done", seconds: 5.4, ok: true, silent: false, interrupted: false },
+];
 
 export function screenshotThumb(width: number, height: number, label: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#f4f4f5"/><rect width="100%" height="${Math.max(1, Math.round(height * 0.14))}" fill="#27272a"/><rect x="8%" y="26%" width="52%" height="10%" rx="2" fill="#d4d4d8"/><rect x="8%" y="44%" width="84%" height="34%" rx="3" fill="#ffffff" stroke="#e4e4e7"/><text x="50%" y="66%" font-family="Inter, sans-serif" font-size="${Math.max(6, Math.round(Math.min(width, height) / 9))}" text-anchor="middle" fill="#dc2626">${label}</text></svg>`;
@@ -239,6 +359,7 @@ const scenarios = {
   ],
   conversation: [status(), liveTranscript, ...conversation],
   rich: [status(), liveTranscript, ...rich],
+  coaching: [status(), liveTranscript, ...coaching],
   question: [
     status({ busy: true }),
     liveTranscript,

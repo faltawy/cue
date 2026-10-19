@@ -2,9 +2,11 @@ import type { CoachEdit } from "../app-bridge";
 import type { ActionItem, Block } from "../blocks";
 import type { CoachError } from "../errors";
 import type { ImageThumb } from "../image-limits";
+import type { Move } from "../move";
 import type { CoachEvent, StatusEvent, TurnKind, WrapUpView } from "../protocol";
 import type { Question } from "../questions";
 import type { Source } from "../sources";
+import type { TalkStats } from "../talk-time";
 import type { TurnUsage } from "../usage";
 
 export type StepStatus = "running" | "ok" | "failed" | "stopped";
@@ -26,7 +28,8 @@ export type ActionItemView = ActionItem & { checked: boolean; edit: EditView | n
 
 export type BlockView =
   | { id: string; kind: "actions"; items: ActionItemView[] }
-  | { id: string; kind: "replies"; options: string[] };
+  | { id: string; kind: "replies"; options: string[] }
+  | ({ id: string; kind: "move" } & Move);
 
 export type TurnStatus = "sending" | "running" | "done" | "stopped" | "failed";
 
@@ -41,6 +44,7 @@ export type Turn = {
   edits: EditView[];
   blocks: BlockView[];
   sources: Source[];
+  talk: TalkStats | null;
   status: TurnStatus;
   seconds: number | null;
 };
@@ -155,9 +159,14 @@ function updateBlockItem(
 }
 
 function blockView(id: string, block: Block): BlockView {
-  return block.kind === "actions"
-    ? { id, kind: "actions", items: block.items.map((item) => ({ ...item, checked: false, edit: null })) }
-    : { id, kind: "replies", options: block.options };
+  switch (block.kind) {
+    case "actions":
+      return { id, kind: "actions", items: block.items.map((item) => ({ ...item, checked: false, edit: null })) };
+    case "replies":
+      return { id, kind: "replies", options: block.options };
+    case "move":
+      return { id, ...block };
+  }
 }
 
 function updateCurrentTurn(state: CoachState, update: (turn: Turn) => Turn): CoachState {
@@ -176,6 +185,7 @@ function newTurn(keyValue: string, ask: TurnKind, prompt: string, status: TurnSt
     edits: [],
     blocks: [],
     sources: [],
+    talk: null,
     status,
     seconds: null,
   };
@@ -212,6 +222,8 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
       return updateBlockItem(state, event.id, event.index, (item) => ({ ...item, checked: event.checked }));
     case "sources":
       return updateCurrentTurn(state, (turn) => ({ ...turn, sources: event.sources }));
+    case "talk":
+      return updateCurrentTurn(state, (turn) => ({ ...turn, talk: event.talk }));
     case "text":
       return updateTurn(state, (turn) => ({ ...turn, text: turn.text + event.delta }));
     case "tool":
