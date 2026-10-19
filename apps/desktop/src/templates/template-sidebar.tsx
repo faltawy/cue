@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
+import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { type WebTemplate } from "./codec";
@@ -388,7 +389,7 @@ export function TemplatesSidebarContent({
                 }
               }}
               placeholder={t`Search templates...`}
-              className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm placeholder:text-sm focus:outline-hidden"
+              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
             />
             {search && (
               <button
@@ -448,8 +449,8 @@ export function TemplatesSidebarContent({
                       onClick={() => setSelectedMineId(AUTO_TEMPLATE_ID)}
                       data-template-selected={item.selected}
                       className={cn([
-                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-                        item.selected ? "bg-accent" : "hover:bg-accent/50",
+                        "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+                        item.selected ? ROW_SELECTED : ROW_HOVER,
                       ])}
                     >
                       <div className="flex items-center gap-2">
@@ -459,7 +460,7 @@ export function TemplatesSidebarContent({
                             {item.title}
                           </div>
                           {item.customized ? (
-                            <div className="text-muted-foreground truncate text-xs">
+                            <div className="text-muted-foreground text-label truncate">
                               <Trans>Customized</Trans>
                             </div>
                           ) : null}
@@ -482,14 +483,14 @@ export function TemplatesSidebarContent({
                       onClick={() => setSelectedWebIndex(item.index)}
                       data-template-selected={item.selected}
                       className={cn([
-                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-                        item.selected ? "bg-accent" : "hover:bg-accent/50",
+                        "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+                        item.selected ? ROW_SELECTED : ROW_HOVER,
                       ])}
                     >
                       <div className="flex items-center gap-2">
                         <TemplateIconGlyph
                           icon={item.template.icon}
-                          className="size-4 text-sm"
+                          className="text-body size-4"
                         />
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium">
@@ -556,12 +557,12 @@ function TemplateListItem({
       }}
       data-template-selected={selected}
       className={cn([
-        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-        selected ? "bg-accent" : "hover:bg-accent/50",
+        "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+        selected ? ROW_SELECTED : ROW_HOVER,
       ])}
     >
       <div className="flex items-center gap-2">
-        <TemplateIconGlyph icon={template.icon} className="size-4 text-sm" />
+        <TemplateIconGlyph icon={template.icon} className="text-body size-4" />
         <div className="min-w-0 flex-1">
           <div className="truncate font-medium">
             {template.title?.trim() || "Untitled"}

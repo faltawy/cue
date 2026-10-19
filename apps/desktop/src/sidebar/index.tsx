@@ -51,7 +51,7 @@ export function LeftSidebar({
       className={cn([
         "flex h-full w-full shrink-0 flex-col gap-1 overflow-hidden",
         needsChromeRowGutter ? "pt-11" : "pt-0",
-        !isTimelineSidebarLayout && "pr-1",
+        !isTimelineSidebarLayout && "pe-1",
       ])}
     >
       <div className="flex flex-1 flex-col gap-1 overflow-hidden">

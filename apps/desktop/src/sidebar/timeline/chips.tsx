@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { ArrowDown, ArrowUp, Sun } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
+import { floatingChipClassName } from "@anlg/ui/components/ui/floating-content";
 import { cn } from "@anlg/utils";
 
 export function UpcomingMeetingChip({
@@ -18,10 +19,8 @@ export function UpcomingMeetingChip({
       aria-live="polite"
       ariaLabel={ariaLabel}
       data-sidebar-upcoming-meeting-status
-      className="border-border bg-popover text-foreground w-28 justify-center shadow-md"
-      icon={
-        <ArrowUp aria-hidden className="text-destructive size-3" weight="bold" />
-      }
+      className={cn([floatingChipClassName, "w-28 justify-center"])}
+      icon={<ArrowUp aria-hidden className="size-3" />}
       onClick={onClick}
     >
       {label}
@@ -46,9 +45,10 @@ export function TimelineTopChip({
   onClick?: () => void;
 }) {
   const className = cn([
-    "border-border bg-card text-muted-foreground flex h-6 items-center gap-1 rounded-full border px-2.5 text-xs font-medium shadow-xs",
-    onClick && "hover:bg-accent hover:text-foreground transition-colors",
-    "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+    floatingChipClassName,
+    "text-muted-foreground text-label flex h-6 items-center gap-1 px-2.5 font-medium",
+    onClick &&
+      "hover:bg-muted hover:text-foreground transition-colors duration-100",
     props.className,
   ]);
 
@@ -100,17 +100,17 @@ export function TimelineNowChip({
       type="button"
       aria-label={ariaLabel}
       className={cn([
-        "border-border bg-card text-foreground flex h-6 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold shadow-md",
-        "hover:border-border hover:bg-accent hover:text-foreground transition-colors",
-        "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+        floatingChipClassName,
+        "text-label flex h-6 items-center gap-1 px-2.5 font-medium",
+        "hover:bg-muted transition-colors duration-100",
         className,
       ])}
       onClick={onClick}
     >
-      {direction === "up" ? <DirectionIcon size={12} /> : null}
-      <Sun size={13} className="shrink-0 text-yellow-400" />
+      {direction === "up" ? <DirectionIcon className="size-3" /> : null}
+      <Sun className="text-warm-strong size-3 shrink-0" />
       <span>{children}</span>
-      {direction === "down" ? <DirectionIcon size={12} /> : null}
+      {direction === "down" ? <DirectionIcon className="size-3" /> : null}
     </button>
   );
 }

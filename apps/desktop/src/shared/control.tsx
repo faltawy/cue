@@ -7,12 +7,7 @@ import {
 import { relaunch } from "@tauri-apps/plugin-process";
 import { motion } from "motion/react";
 
-import {
-  ArrowClockwise,
-  House,
-  MagnifyingGlass,
-  Warning,
-} from "@anlg/ui/components/icons";
+import { ArrowClockwise, House, Warning } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
@@ -63,40 +58,27 @@ const ReportedErrorComponent = ({ error }: { error: Error }) => {
       <div className="flex h-full min-h-[300px] items-center justify-center p-6">
         <motion.div
           className="w-full max-w-sm"
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
         >
-          <div className="border-border bg-card rounded-xl border p-6 shadow-xs">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <motion.div
-                className="bg-muted flex h-12 w-12 items-center justify-center rounded-full"
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  delay: 0.1,
-                  type: "spring",
-                  stiffness: 200,
-                }}
-              >
-                <Warning className="h-6 w-6 text-red-500" />
-              </motion.div>
-
-              <div className="flex flex-col gap-1.5">
-                <h2 className="text-foreground text-base font-semibold">
+          <div className="border-destructive/30 bg-destructive/[0.06] flex flex-col gap-2.5 rounded-lg border px-3 py-2.5">
+            <div className="flex items-start gap-2">
+              <Warning className="text-destructive mt-0.5 size-4 shrink-0" />
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <h2 className="text-strong text-foreground font-medium">
                   {t`Something went wrong`}
                 </h2>
-                <p className="text-muted-foreground max-w-[260px] text-sm leading-relaxed">
+                <p className="text-muted-foreground text-ui break-words">
                   {error.message || t`An unexpected error occurred.`}
                 </p>
               </div>
-
-              <div className="pt-2">
-                <Button size="sm" onClick={handleRestart}>
-                  <ArrowClockwise className="mr-1.5 h-3.5 w-3.5" />
-                  {t`Restart App`}
-                </Button>
-              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={handleRestart}>
+                <ArrowClockwise />
+                {t`Restart App`}
+              </Button>
             </div>
           </div>
         </motion.div>
@@ -122,53 +104,27 @@ export const NotFoundComponent: NotFoundRouteComponent = () => {
       <div className="flex h-full min-h-[300px] items-center justify-center p-6">
         <motion.div
           className="w-full max-w-sm"
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
         >
-          <div className="border-border bg-card rounded-xl border p-6 shadow-xs">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <motion.div
-                className="bg-muted flex h-12 w-12 items-center justify-center rounded-full"
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  delay: 0.1,
-                  type: "spring",
-                  stiffness: 200,
-                }}
-              >
-                <MagnifyingGlass className="text-muted-foreground h-6 w-6" />
-              </motion.div>
-
-              <div className="flex flex-col gap-1.5">
-                <motion.span
-                  className="text-muted-foreground/70 block text-4xl font-semibold"
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{
-                    delay: 0.15,
-                    type: "spring",
-                    stiffness: 200,
-                  }}
-                >
-                  404
-                </motion.span>
-                <h2 className="text-foreground text-base font-semibold">
-                  {t`Page not found`}
-                </h2>
-                <p className="text-muted-foreground text-sm">
-                  {t`The page you're looking for doesn't exist.`}
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <Button size="sm" onClick={() => navigate({ to: "/app" })}>
-                  <House className="mr-1.5 h-3.5 w-3.5" />
-                  {t`Go to Home`}
-                </Button>
-              </div>
+          <div className="m-auto flex max-w-[340px] flex-col items-center gap-3 py-8 text-center">
+            <div>
+              <h2 className="text-title text-foreground">
+                {t`Page not found`}
+              </h2>
+              <p className="text-muted-foreground text-ui mt-1 text-balance">
+                {t`The page you're looking for doesn't exist.`}
+              </p>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate({ to: "/app" })}
+            >
+              <House />
+              {t`Go to Home`}
+            </Button>
           </div>
         </motion.div>
       </div>

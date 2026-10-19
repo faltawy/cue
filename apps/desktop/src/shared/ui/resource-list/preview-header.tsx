@@ -44,7 +44,7 @@ export function ResourcePreviewHeader({
       className={actionClassName}
     >
       {actionIcon === undefined ? (
-        <Copy className="mr-2 h-4 w-4" />
+        <Copy className="me-2 h-4 w-4" />
       ) : (
         actionIcon
       )}
@@ -54,10 +54,10 @@ export function ResourcePreviewHeader({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-12 items-center justify-between gap-3 pr-1 pl-3">
+      <div className="flex h-12 items-center justify-between gap-3 ps-3 pe-1">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {icon}
-          <h2 className="min-w-0 truncate text-sm font-semibold">
+          <h2 className="text-body min-w-0 truncate font-semibold">
             {title || t`Untitled`}
           </h2>
           {titleMeta}
@@ -71,7 +71,7 @@ export function ResourcePreviewHeader({
       <div className="scroll-fade-y min-h-0 flex-1 overflow-y-auto px-6 pt-3 pb-6">
         <div className="min-w-0">
           {description && (
-            <p className="text-muted-foreground min-h-[24px] text-sm">
+            <p className="text-muted-foreground text-body min-h-[24px]">
               {description}
             </p>
           )}
@@ -80,7 +80,7 @@ export function ResourcePreviewHeader({
               {targets.map((target, index) => (
                 <span
                   key={index}
-                  className="bg-muted text-muted-foreground inline-flex h-6 items-center rounded-md px-2 py-0.5 text-xs"
+                  className="bg-muted text-muted-foreground text-label inline-flex h-6 items-center rounded-md px-2 py-0.5"
                 >
                   {target}
                 </span>
@@ -88,7 +88,7 @@ export function ResourcePreviewHeader({
             </div>
           )}
           {footer === undefined ? (
-            <p className="text-muted-foreground mt-2 text-xs">
+            <p className="text-muted-foreground text-label mt-2">
               {getTemplateCreatorLabel({ isUserTemplate: false })}
             </p>
           ) : (

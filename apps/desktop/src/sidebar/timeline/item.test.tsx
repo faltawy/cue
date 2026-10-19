@@ -252,7 +252,7 @@ describe("TimelineItemComponent", () => {
     mocks.sessionMode = "active";
     const { container } = renderSession("session-live", {}, { selected: true });
 
-    expect(rowButton().className).toContain("bg-accent");
+    expect(rowButton().className).toContain("bg-foreground/[0.08]");
     expect(rowButton().className).not.toContain("bg-destructive");
     expect(
       container.querySelector("[data-sidebar-recording-dot]"),

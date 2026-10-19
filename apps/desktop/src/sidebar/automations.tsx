@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 
 import { Lightning, MagnifyingGlass, Plus, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
+import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { CustomSidebarHeader } from "./custom-sidebar-header";
@@ -101,7 +102,7 @@ export function AutomationsNav() {
               }
             }}
             placeholder={t`Search automations...`}
-            className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm placeholder:text-sm focus:outline-hidden"
+            className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
           />
           {search ? (
             <button
@@ -148,7 +149,7 @@ export function AutomationsNav() {
           <>
             {filteredStarters.length > 0 ? (
               <div className="pb-2">
-                <h3 className="text-muted-foreground px-3 pt-1 pb-1 text-xs font-medium">
+                <h3 className="text-muted-foreground text-label px-3 pt-1 pb-1 font-medium">
                   <Trans>Get started</Trans>
                 </h3>
                 {filteredStarters.map((starter) => (
@@ -167,7 +168,7 @@ export function AutomationsNav() {
 
             {filteredDraftIds.length > 0 || filteredWorkflows.length > 0 ? (
               <div>
-                <h3 className="text-muted-foreground px-3 pt-1 pb-1 text-xs font-medium">
+                <h3 className="text-muted-foreground text-label px-3 pt-1 pb-1 font-medium">
                   <Trans>My automations</Trans>
                 </h3>
                 {filteredDraftIds.map((draftId) => (
@@ -240,8 +241,8 @@ function StarterListItem({
         void showContextMenu(event);
       }}
       className={cn([
-        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-        selected ? "bg-accent" : "hover:bg-accent/50",
+        "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+        selected ? ROW_SELECTED : ROW_HOVER,
       ])}
     >
       <span className="flex items-center gap-2">
@@ -296,15 +297,15 @@ function DraftListItem({
         void showContextMenu(event);
       }}
       className={cn([
-        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-        selected ? "bg-accent" : "hover:bg-accent/50",
+        "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+        selected ? ROW_SELECTED : ROW_HOVER,
       ])}
     >
       <span className="flex items-center gap-2">
         <Lightning className="text-warm size-4 shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{title}</span>
-          <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+          <span className="text-muted-foreground text-label mt-0.5 block truncate">
             <Trans>Draft</Trans>
           </span>
         </span>
@@ -352,8 +353,8 @@ function WorkflowListItem({
         void showContextMenu(event);
       }}
       className={cn([
-        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-        selected ? "bg-accent" : "hover:bg-accent/50",
+        "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+        selected ? ROW_SELECTED : ROW_HOVER,
       ])}
     >
       <span className="flex items-center gap-2">
@@ -362,7 +363,7 @@ function WorkflowListItem({
           <span className="block truncate font-medium">
             {workflow.title.trim() || t`Untitled automation`}
           </span>
-          <span className="text-muted-foreground mt-0.5 block truncate text-xs">
+          <span className="text-muted-foreground text-label mt-0.5 block truncate">
             {workflow.enabled ? <Trans>Enabled</Trans> : <Trans>Draft</Trans>}
           </span>
         </span>

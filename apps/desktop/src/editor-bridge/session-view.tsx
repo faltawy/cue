@@ -134,7 +134,7 @@ export const SessionNodeView = forwardRef<
             className="flex size-[18px] shrink-0 items-center justify-center"
             contentEditable={false}
           >
-            <div className="size-2.5 animate-pulse rounded-full bg-red-500" />
+            <div className="bg-live coach-live-dot size-2 rounded-full" />
           </div>
         ) : (
           <TaskCheckbox status={status} isInteractive onToggle={handleToggle} />
@@ -144,7 +144,7 @@ export const SessionNodeView = forwardRef<
             ref={nodeProps.contentDOMRef}
             data-session-title
             className={cn([
-              "text-foreground min-w-0 text-sm",
+              "text-foreground text-body min-w-0",
               "[&>p]:m-0 [&>p]:min-w-0 [&>p]:truncate",
               status === "done" && "[&>p]:line-through [&>p]:opacity-60",
             ])}
@@ -153,7 +153,7 @@ export const SessionNodeView = forwardRef<
           </div>
           {displayTime && (
             <span
-              className="text-muted-foreground shrink-0 text-xs tabular-nums"
+              className="text-muted-foreground text-label shrink-0 tabular-nums"
               contentEditable={false}
             >
               {displayTime}

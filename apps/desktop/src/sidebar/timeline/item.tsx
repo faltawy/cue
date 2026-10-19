@@ -17,6 +17,7 @@ import {
   Square,
 } from "@anlg/ui/components/icons";
 import { DancingSticks } from "@anlg/ui/components/ui/dancing-sticks";
+import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { Spinner } from "@anlg/ui/components/ui/spinner";
 import { cn, format, getYear, safeParseDate, TZDate } from "@anlg/utils";
 
@@ -226,13 +227,11 @@ const ItemBase = memo(function ItemBase({
         onDragStart={onDragStart}
         contextMenu={hasSelection ? undefined : contextMenu}
         className={cn([
-          "w-full rounded-lg px-3 py-2 text-left",
-          showUpcomingGauge && "pl-4",
-          showLiveStop && "pr-10",
+          "w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100",
+          showUpcomingGauge && "ps-4",
+          showLiveStop && "pe-10",
           ignored ? "cursor-default" : "cursor-pointer",
-          multiSelected && "bg-accent",
-          !multiSelected && selected && "bg-accent",
-          !multiSelected && !selected && "hover:bg-accent/50",
+          multiSelected || selected ? ROW_SELECTED : ROW_HOVER,
           ignored && "opacity-40",
           !ignored && muted && !isLive && !isUpcoming && "opacity-65",
         ])}
@@ -241,14 +240,14 @@ const ItemBase = memo(function ItemBase({
         <div className="flex items-center gap-2">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             {folderLabel ? (
-              <div className="text-muted-foreground pointer-events-none flex min-w-0 items-center gap-1 text-[11px] leading-4">
+              <div className="text-muted-foreground text-caption pointer-events-none flex min-w-0 items-center gap-1 leading-4">
                 <FolderSimple className="size-3 shrink-0" aria-hidden />
                 <span className="min-w-0 truncate">{folderLabel}</span>
               </div>
             ) : null}
             <div
               className={cn(
-                "pointer-events-none min-w-0 truncate text-left text-sm font-normal [unicode-bidi:plaintext]",
+                "text-ui pointer-events-none min-w-0 truncate text-start [unicode-bidi:plaintext]",
                 ignored && "line-through",
                 !title && "text-muted-foreground",
               )}
@@ -256,19 +255,19 @@ const ItemBase = memo(function ItemBase({
               {title || t`Untitled`}
             </div>
             {displayTime && (
-              <div className="text-muted-foreground flex items-center gap-1.5 text-[11px] leading-4 tabular-nums">
+              <div className="text-muted-foreground text-caption flex items-center gap-1.5 leading-4 tabular-nums">
                 {isLive ? (
                   <span
                     aria-hidden
                     data-sidebar-recording-dot
-                    className="bg-destructive size-1.5 shrink-0 animate-pulse rounded-full motion-reduce:animate-none"
+                    className="bg-live coach-live-dot size-1.5 shrink-0 rounded-full"
                   />
                 ) : null}
                 {displayTime}
               </div>
             )}
             {tagLine ? (
-              <div className="text-muted-foreground pointer-events-none min-w-0 truncate text-[11px] leading-4">
+              <div className="text-muted-foreground text-caption pointer-events-none min-w-0 truncate leading-4">
                 {tagLine}
               </div>
             ) : null}
@@ -299,11 +298,11 @@ const ItemBase = memo(function ItemBase({
         <div
           aria-hidden
           data-sidebar-timeline-upcoming-gauge
-          className="bg-destructive/20 pointer-events-none absolute top-2 bottom-2 left-1.5 w-0.5 overflow-hidden rounded-full"
+          className="bg-destructive/20 pointer-events-none absolute start-1.5 top-2 bottom-2 w-0.5 overflow-hidden rounded-full"
         >
           <div
             data-sidebar-timeline-upcoming-gauge-fill
-            className="bg-destructive absolute bottom-0 left-0 w-full rounded-full transition-[height] duration-300 ease-linear"
+            className="bg-destructive absolute start-0 bottom-0 w-full rounded-full transition-[height] duration-300 ease-linear"
             style={{ height: `${upcomingGaugePercent}%` }}
           />
         </div>
@@ -318,9 +317,8 @@ const ItemBase = memo(function ItemBase({
             onStop();
           }}
           className={cn([
-            "absolute top-1/2 right-3 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm",
+            "absolute end-3 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm",
             "text-destructive hover:bg-destructive/10 transition-colors",
-            "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
           ])}
         >
           <span

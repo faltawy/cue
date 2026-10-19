@@ -144,7 +144,6 @@ export function LeftSurfaceChromeButton({
         className={cn([
           "pointer-events-auto relative flex size-7 items-center justify-center rounded-md",
           "text-muted-foreground hover:bg-accent hover:text-foreground active:bg-accent/70 transition-colors",
-          "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
           "disabled:text-muted-foreground/70 disabled:hover:text-muted-foreground/70 disabled:hover:bg-transparent",
         ])}
         onClick={onClick}
@@ -154,7 +153,7 @@ export function LeftSurfaceChromeButton({
           <span
             aria-hidden="true"
             data-testid="collapsed-sidebar-upcoming-meeting-badge"
-            className="ring-background bg-warm pointer-events-none absolute top-1 right-1 size-1.5 rounded-full ring-2"
+            className="ring-background bg-warm pointer-events-none absolute end-1 top-1 size-1.5 rounded-full ring-2"
           />
         ) : null}
       </button>

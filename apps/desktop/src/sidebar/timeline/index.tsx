@@ -70,7 +70,6 @@ export const TimelineView = memo(function TimelineView({
   const [uncontrolledShowIgnored, setUncontrolledShowIgnored] = useState(false);
   const showIgnored = showIgnoredEvents ?? uncontrolledShowIgnored;
   const [isScrolledToTop, setIsScrolledToTop] = useState(true);
-  const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
 
   const { isIgnored } = useIgnoredEvents();
   const { buckets, hasMoreFutureItems } = useTimelineData({
@@ -285,15 +284,10 @@ export const TimelineView = memo(function TimelineView({
     }
 
     const updateScrollPosition = () => {
-      const maxScrollTop = Math.max(
-        0,
-        container.scrollHeight - container.clientHeight,
-      );
       const nextScrollTop = container.scrollTop;
       const scrolledToTop = nextScrollTop <= 12;
 
       setIsScrolledToTop(scrolledToTop);
-      setIsScrolledToBottom(maxScrollTop - nextScrollTop <= 12);
       setIsUpcomingMeetingVisible(
         isTimelineItemVisible(container, upcomingMeetingNodeRef.current),
       );
@@ -503,7 +497,7 @@ export const TimelineView = memo(function TimelineView({
           data-sidebar-timeline-scroll
           onContextMenu={showContextMenu}
           className={cn([
-            "scrollbar-hide flex h-full flex-col overflow-y-auto",
+            "scrollbar-hide scroll-fade-y flex h-full flex-col overflow-y-auto",
             "rounded-xl",
           ])}
         >
@@ -536,14 +530,6 @@ export const TimelineView = memo(function TimelineView({
           />
         </div>
 
-        {!isScrolledToBottom && (
-          <div
-            aria-hidden
-            data-sidebar-timeline-bottom-fade
-            className="from-background/0 to-background pointer-events-none absolute inset-x-0 bottom-0 z-30 h-7 bg-linear-to-b"
-          />
-        )}
-
         {topChromeInset && (
           <div
             aria-hidden
@@ -565,7 +551,7 @@ export const TimelineView = memo(function TimelineView({
             {showOpenCalendarChip && (
               <TimelineTopChip
                 ariaLabel={t`Open calendar`}
-                icon={<CalendarDots size={12} />}
+                icon={<CalendarDots className="size-3" />}
                 onClick={handleOpenCalendar}
               >
                 <Trans>Open calendar</Trans>

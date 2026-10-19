@@ -39,7 +39,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
       >
         <div className="flex items-center gap-1">
           <span
-            className="text-foreground min-w-0 flex-1 truncate text-xs font-medium"
+            className="text-foreground text-label min-w-0 flex-1 truncate font-medium"
             title={folderPath}
           >
             {folderPath}
@@ -49,8 +49,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
             aria-label={t`Rename folder`}
             disabled={busy}
             className={cn([
-              "text-muted-foreground hover:bg-accent hover:text-foreground flex size-6 items-center justify-center rounded-full",
-              "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+              "text-muted-foreground hover:bg-accent hover:text-foreground flex size-6 items-center justify-center rounded-md",
               "disabled:opacity-50",
             ])}
             onClick={() => setRenaming(true)}
@@ -62,8 +61,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
             aria-label={t`Delete folder`}
             disabled={busy}
             className={cn([
-              "text-muted-foreground hover:bg-accent hover:text-destructive flex size-6 items-center justify-center rounded-full",
-              "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+              "text-muted-foreground hover:bg-accent hover:text-destructive flex size-6 items-center justify-center rounded-md",
               "disabled:opacity-50",
             ])}
             onClick={() => setDeleting(true)}
@@ -75,7 +73,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
           <FolderInstructionsField folderPath={folderPath} />
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-muted-foreground min-w-0 flex-1 truncate text-xs font-medium">
+          <span className="text-muted-foreground text-label min-w-0 flex-1 truncate font-medium">
             <Trans>Materials</Trans>
           </span>
           <button
@@ -83,8 +81,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
             aria-label={t`Add material`}
             disabled={busy}
             className={cn([
-              "text-muted-foreground hover:bg-accent hover:text-foreground flex size-6 items-center justify-center rounded-full",
-              "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+              "text-muted-foreground hover:bg-accent hover:text-foreground flex size-6 items-center justify-center rounded-md",
               "disabled:opacity-50",
             ])}
             onClick={() => inputRef.current?.click()}
@@ -111,7 +108,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
           />
         </div>
         {materials.length === 0 ? (
-          <p className="text-muted-foreground/80 pt-1 text-[11px] leading-4">
+          <p className="text-muted-foreground/80 text-caption pt-1 leading-4">
             <Trans>Add a syllabus or PDF for this folder</Trans>
           </p>
         ) : (
@@ -119,7 +116,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
             {materials.map((material) => (
               <li
                 key={material.id}
-                className="flex min-w-0 items-center gap-1 text-xs"
+                className="text-label flex min-w-0 items-center gap-1"
               >
                 <span
                   className="min-w-0 flex-1 truncate"
@@ -132,8 +129,7 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
                   aria-label={t`Remove ${material.filename}`}
                   disabled={busy}
                   className={cn([
-                    "text-muted-foreground hover:bg-accent hover:text-foreground flex size-5 items-center justify-center rounded-full",
-                    "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+                    "text-muted-foreground hover:bg-accent hover:text-foreground flex size-5 items-center justify-center rounded-md",
                     "disabled:opacity-50",
                   ])}
                   onClick={async () => {

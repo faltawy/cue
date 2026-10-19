@@ -69,7 +69,7 @@ export function SettingsNav() {
               }
             }}
             placeholder={t`Search settings...`}
-            className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm placeholder:text-sm focus:outline-hidden"
+            className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
           />
           {search ? (
             <button
@@ -95,14 +95,14 @@ export function SettingsNav() {
                 size={32}
                 className="text-muted-foreground/70 mx-auto mb-2"
               />
-              <p className="text-sm">
+              <p className="text-body">
                 <Trans>No results found.</Trans>
               </p>
             </div>
           ) : null}
           {visibleGroups.map((group) => (
             <div key={group.label} className="flex flex-col gap-0.5">
-              <span className="text-muted-foreground px-3 pb-1 text-[11px] font-medium tracking-wide uppercase">
+              <span className="text-muted-foreground text-caption px-3 pb-1 font-medium tracking-wide uppercase">
                 {group.label}
               </span>
               {group.items.map((item) => (
@@ -118,7 +118,7 @@ export function SettingsNav() {
                       setActiveTab(item.id);
                     }}
                     className={cn([
-                      "flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm",
+                      "text-body flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-start",
                       "transition-colors",
                       activeTab === item.id
                         ? "bg-sidebar-accent text-foreground font-medium"

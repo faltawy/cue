@@ -124,18 +124,18 @@ function StartupErrorView({ error }: { error: Error }) {
         "bg-background flex h-screen w-screen items-center justify-center p-6",
       ])}
     >
-      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <h1 className="text-foreground text-base font-semibold">
+      <div className="flex max-w-[340px] flex-col items-center gap-3 text-center">
+        <h1 className="text-title text-foreground">
           {needsUpdate ? "Cue needs an update" : "Cue could not start"}
         </h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="text-muted-foreground text-ui -mt-2 text-balance">
           {needsUpdate
             ? "Your data was updated by a newer version of Cue, and this version cannot open it yet. Your existing data was left unchanged. Install the latest version of Cue, or keep using the newer app until this version catches up."
             : "Your existing data was left unchanged. Please restart the app. If the problem continues, contact support."}
         </p>
         {needsUpdate ? null : (
           <Button size="sm" onClick={() => void handleRestart()}>
-            <ArrowClockwise className="mr-1.5 h-3.5 w-3.5" />
+            <ArrowClockwise />
             Restart App
           </Button>
         )}

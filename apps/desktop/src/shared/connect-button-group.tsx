@@ -28,7 +28,7 @@ export function ConnectButtonGroup({
           role="progressbar"
           aria-label={busyLabel}
           className={cn([
-            "bg-primary-foreground/20 pointer-events-none absolute inset-y-0 left-0",
+            "bg-primary-foreground/20 pointer-events-none absolute inset-y-0 start-0",
             reducedMotion ? "w-full" : "w-1/3",
           ])}
           animate={reducedMotion ? undefined : { x: ["-100%", "300%"] }}

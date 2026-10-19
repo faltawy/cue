@@ -96,7 +96,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
 
   return (
     <section className="flex h-full flex-1 flex-col" aria-label={folderPath}>
-      <div className="flex h-12 items-center justify-between gap-3 pr-1 pl-3">
+      <div className="flex h-12 items-center justify-between gap-3 ps-3 pe-1">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <TemplateIconPicker
             size="sm"
@@ -113,7 +113,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
           <div className="relative max-w-full min-w-0">
             <span
               aria-hidden="true"
-              className="invisible block px-0 py-0 text-sm font-semibold whitespace-pre"
+              className="text-body invisible block px-0 py-0 font-semibold whitespace-pre"
             >
               {(draft || t`Folder name`) + " "}
             </span>
@@ -136,7 +136,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
                 }
               }}
               placeholder={t`Folder name`}
-              className="absolute inset-0 h-auto w-full max-w-full min-w-0 border-0 px-0 py-0 text-sm font-semibold shadow-none focus-visible:ring-0 md:text-sm"
+              className="text-body absolute inset-0 h-auto w-full max-w-full min-w-0 border-0 px-0 py-0 font-semibold shadow-none"
             />
           </div>
         </div>
@@ -159,9 +159,9 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
+                destructive
                 disabled={busy}
                 onClick={() => setDeleting(true)}
-                className="cursor-pointer text-red-600 focus:text-red-600"
               >
                 <Trans>Delete</Trans>
               </DropdownMenuItem>
@@ -173,17 +173,17 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
       <div className="scrollbar-hide flex-1 overflow-y-auto px-3 pt-3 pb-6">
         <div className="flex max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">
-            <h4 className="text-sm font-medium">
+            <h4 className="text-body font-medium">
               <Trans>Context</Trans>
             </h4>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-label">
               <Trans>What these notes are usually about</Trans>
             </p>
             <FolderInstructionsField folderPath={folderPath} rows={4} />
           </div>
 
           <div className="flex flex-col gap-2">
-            <h4 className="text-sm font-medium">
+            <h4 className="text-body font-medium">
               <Trans>Materials</Trans>
             </h4>
             <input
@@ -212,13 +212,12 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
                   className={cn([
                     "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
                     "flex aspect-[4/3] w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed",
-                    "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
                     "disabled:opacity-50",
                   ])}
                   onClick={() => inputRef.current?.click()}
                 >
                   <Plus className="size-6" />
-                  <span className="text-xs font-medium">
+                  <span className="text-label font-medium">
                     <Trans>Add file</Trans>
                   </span>
                 </button>
@@ -231,7 +230,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
                       aria-hidden
                     />
                     <span
-                      className="w-full truncate text-center text-xs"
+                      className="text-label w-full truncate text-center"
                       title={material.filename}
                     >
                       {material.filename}
@@ -242,8 +241,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
                       disabled={busy}
                       className={cn([
                         "text-muted-foreground hover:bg-accent hover:text-foreground",
-                        "absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full",
-                        "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
+                        "absolute end-1.5 top-1.5 flex size-6 items-center justify-center rounded-md",
                         "disabled:opacity-50",
                       ])}
                       onClick={async () => {

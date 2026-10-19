@@ -29,15 +29,15 @@ export function LockScreen({
       ])}
     >
       <div className="flex max-w-sm flex-col items-center px-6 text-center">
-        <div className="bg-muted flex size-14 items-center justify-center rounded-full">
-          <Lock className="text-foreground size-6" />
-        </div>
-        <h1 className="mt-5 text-lg font-semibold">{title}</h1>
+        <Lock className="text-muted-foreground size-4" />
+        <h1 className="text-title mt-3">{title}</h1>
         {description ? (
-          <p className="text-muted-foreground mt-2 text-sm">{description}</p>
+          <p className="text-muted-foreground text-ui mt-1 text-balance">
+            {description}
+          </p>
         ) : null}
         <Button
-          className="mt-6"
+          className="mt-4"
           disabled={authenticating}
           onClick={onUnlock}
           data-tauri-drag-region="false"

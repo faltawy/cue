@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 
 import { MagnifyingGlass, Plus, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
+import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { useActiveFolderPath, useFolderSelection } from "./selection";
@@ -69,7 +70,7 @@ export function FoldersSidebar() {
                 }
               }}
               placeholder={t`Search folders...`}
-              className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm placeholder:text-sm focus:outline-hidden"
+              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
             />
             {search ? (
               <button
@@ -125,10 +126,13 @@ export function FoldersSidebar() {
                     aria-current={selected ? "page" : undefined}
                     onClick={() => setSelectedPath(folder)}
                     className={cn([
-                      "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
+                      "text-ui w-full rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
                       selected
-                        ? "bg-accent font-medium"
-                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                        ? ROW_SELECTED
+                        : [
+                            "text-muted-foreground hover:text-foreground",
+                            ROW_HOVER,
+                          ],
                     ])}
                   >
                     <span className="flex min-w-0 items-center gap-2">
@@ -138,7 +142,7 @@ export function FoldersSidebar() {
                           persistedIcons,
                           iconOverrides,
                         )}
-                        className="size-4 text-sm"
+                        className="text-body size-4"
                       />
                       <span className="min-w-0 truncate">{folder}</span>
                     </span>

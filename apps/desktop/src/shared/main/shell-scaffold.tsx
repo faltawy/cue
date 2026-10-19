@@ -24,7 +24,7 @@ export function MainShellScaffold({
       <div
         className={cn([
           "bg-background flex h-full gap-1 overflow-hidden",
-          !hasTopMainSurfaceChrome && "pl-1",
+          !hasTopMainSurfaceChrome && "ps-1",
           hasTopMainSurfaceChrome && [
             "[&_[data-chat-floating-anchor]]:rounded-t-xl",
             "[&_[data-chat-floating-anchor]]:rounded-b-none",
@@ -35,11 +35,11 @@ export function MainShellScaffold({
             "[&_[data-chat-floating-anchor]]:border-b-0",
           ],
           resolvedMainSurfaceChrome === "left" && [
-            "[&_[data-chat-floating-anchor]]:rounded-l-xl",
-            "[&_[data-chat-floating-anchor]]:rounded-r-none",
+            "[&_[data-chat-floating-anchor]]:rounded-s-xl",
+            "[&_[data-chat-floating-anchor]]:rounded-e-none",
             "[&_[data-chat-floating-anchor]]:border-y-0",
-            "[&_[data-chat-floating-anchor]]:border-r-0",
-            "[&_[data-chat-floating-anchor]]:border-l",
+            "[&_[data-chat-floating-anchor]]:border-e-0",
+            "[&_[data-chat-floating-anchor]]:border-s",
           ],
         ])}
         data-testid="main-app-shell"

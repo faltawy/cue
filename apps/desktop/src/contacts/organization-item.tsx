@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 
 import { Buildings, PushPin } from "@anlg/ui/components/icons";
+import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { ContactImage } from "~/contacts/contact-avatar";
@@ -60,8 +61,8 @@ export function OrganizationItem({
         }
       }}
       className={cn([
-        "group flex w-full items-center gap-2 overflow-hidden rounded-lg px-3 py-2 text-left text-sm transition-colors select-none",
-        active ? "bg-accent" : "hover:bg-accent/50",
+        "group text-ui flex w-full items-center gap-2 overflow-hidden rounded-md px-2.5 py-1.5 text-start transition-colors duration-100 select-none",
+        active ? ROW_SELECTED : ROW_HOVER,
       ])}
     >
       {organization.avatarDataUrl ? (
@@ -77,7 +78,7 @@ export function OrganizationItem({
       <button
         onClick={handleTogglePin}
         className={cn([
-          "shrink-0 rounded-xs p-1 transition-colors",
+          "shrink-0 rounded-sm p-1 transition-colors",
           isPinned
             ? "text-warm hover:text-warm/80"
             : "text-muted-foreground/70 hover:text-muted-foreground opacity-0 group-hover:opacity-100",

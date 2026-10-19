@@ -19,13 +19,13 @@ export function CustomSidebarHeader({ children }: { children?: ReactNode }) {
     <div
       data-tauri-drag-region
       className={cn([
-        "flex h-12 shrink-0 items-start py-0 pr-1",
+        "flex h-12 shrink-0 items-start py-0 pe-1",
         showWindowControlsGutter
           ? [
               WINDOW_CONTROLS_GUTTER_CLASS,
               WINDOW_CONTROLS_ROW_PADDING_TOP_CLASS,
             ]
-          : "pt-[9px] pl-2",
+          : "ps-2 pt-[9px]",
       ])}
     >
       <div
@@ -43,7 +43,7 @@ export function CustomSidebarHeader({ children }: { children?: ReactNode }) {
       {children ? (
         <div
           data-tauri-drag-region="false"
-          className="ml-1 flex shrink-0 items-center"
+          className="ms-1 flex shrink-0 items-center"
         >
           {children}
         </div>
@@ -73,9 +73,8 @@ function CustomSidebarHeaderButton({
       data-tauri-drag-region="false"
       disabled={disabled}
       className={cn([
-        "relative z-50 flex size-7 shrink-0 items-center justify-center rounded-full",
+        "relative z-50 flex size-7 shrink-0 items-center justify-center rounded-md",
         "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-        "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-hidden",
         "disabled:text-muted-foreground/70 disabled:hover:text-muted-foreground/70 disabled:hover:bg-transparent",
       ])}
       onClick={onClick}

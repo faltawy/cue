@@ -80,10 +80,10 @@ export function TimelineBuckets({
               className={cn([
                 "sticky z-20",
                 bucketHeaderTopClassName,
-                "bg-background pt-1 pr-1 pb-1 pl-3",
+                "bg-background ps-3 pe-1 pt-1 pb-1",
               ])}
             >
-              <div className="text-muted-foreground text-xs font-medium">
+              <div className="text-muted-foreground text-label font-medium">
                 {bucket.label}
               </div>
             </div>
@@ -242,7 +242,7 @@ function TodayBucket({
           ) : (
             <CurrentTimeIndicator ref={registerIndicator} timezone={timezone} />
           )}
-          <div className="text-muted-foreground px-3 py-4 text-center text-sm">
+          <div className="text-muted-foreground text-body px-3 py-4 text-center">
             {emptyLabel}
           </div>
         </>

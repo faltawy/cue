@@ -75,7 +75,7 @@ function ActionItem({
       className={cn([
         "group",
         "flex items-center justify-between gap-8",
-        "text-foreground text-sm",
+        "text-foreground text-body",
         "rounded-md px-3 py-2",
         "hover:bg-accent focus-visible:bg-accent cursor-pointer transition-colors motion-reduce:transition-none",
       ])}

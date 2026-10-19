@@ -314,7 +314,7 @@ export const AppLinkView = forwardRef<HTMLSpanElement, NodeViewComponentProps>(
             void handleClick();
           }}
           className={cn([
-            "border-border/60 bg-muted/35 inline-flex h-6 max-w-full items-center gap-1.5 rounded-md border px-1.5 text-left align-baseline",
+            "border-border/60 bg-muted/35 inline-flex h-6 max-w-full items-center gap-1.5 rounded-md border px-1.5 text-start align-baseline",
             "hover:bg-accent transition-colors",
           ])}
         >
@@ -324,10 +324,10 @@ export const AppLinkView = forwardRef<HTMLSpanElement, NodeViewComponentProps>(
             <BrandIcon attrs={attrs} />
           )}
           <span className="flex min-w-0 items-baseline gap-1.5">
-            <span className="text-foreground truncate text-sm leading-none font-medium">
+            <span className="text-foreground text-body truncate leading-none font-medium">
               {header}
             </span>
-            <span className="text-muted-foreground truncate text-xs leading-none">
+            <span className="text-muted-foreground text-label truncate leading-none">
               {subline}
             </span>
           </span>
