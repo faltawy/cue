@@ -23,7 +23,6 @@ impl BusyReason {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum UpdateStatus {
     Unsupported,
-    NeedsToken,
     Idle,
     Checking,
     Downloading { version: String },
@@ -52,12 +51,7 @@ pub trait Backend: Send + Sync + 'static {
 
     fn current_version(&self) -> String;
     fn supported(&self) -> bool;
-    fn token(&self) -> Result<Option<String>>;
-    fn save_token(&self, token: Option<&str>) -> Result<()>;
-    fn check(
-        &self,
-        token: String,
-    ) -> impl Future<Output = Result<Option<Found<Self::Pending>>>> + Send;
+    fn check(&self) -> impl Future<Output = Result<Option<Found<Self::Pending>>>> + Send;
     fn download(
         &self,
         pending: &Self::Pending,
@@ -89,16 +83,10 @@ fn now_ms() -> i64 {
 
 impl<B: Backend> Core<B> {
     pub fn new(backend: B) -> Self {
-        let status = if !backend.supported() {
-            UpdateStatus::Unsupported
+        let status = if backend.supported() {
+            UpdateStatus::Idle
         } else {
-            match backend.token() {
-                Ok(Some(_)) => UpdateStatus::Idle,
-                Ok(None) => UpdateStatus::NeedsToken,
-                Err(error) => UpdateStatus::Failed {
-                    message: error.to_string(),
-                },
-            }
+            UpdateStatus::Unsupported
         };
         let state = UpdaterState {
             current_version: backend.current_version(),
@@ -150,28 +138,12 @@ impl<B: Backend> Core<B> {
         if !self.backend.supported() {
             return self.state();
         }
-        let token = match self.backend.token() {
-            Ok(Some(token)) => token,
-            Ok(None) => {
-                self.set(UpdateStatus::NeedsToken, false);
-                return self.state();
-            }
-            Err(error) => {
-                self.set(
-                    UpdateStatus::Failed {
-                        message: error.to_string(),
-                    },
-                    false,
-                );
-                return self.state();
-            }
-        };
         let Ok(mut staged) = self.staged.try_lock() else {
             return self.state();
         };
 
         self.set(UpdateStatus::Checking, false);
-        let found = match self.backend.check(token).await {
+        let found = match self.backend.check().await {
             Ok(Some(found)) => found,
             Ok(None) => {
                 *staged = None;
@@ -228,26 +200,6 @@ impl<B: Backend> Core<B> {
         self.backend.relaunch();
         Ok(())
     }
-
-    pub fn set_token(&self, token: &str) -> Result<()> {
-        let token = token.trim();
-        if token.is_empty() {
-            return Err(Error::EmptyToken);
-        }
-        self.backend.save_token(Some(token))?;
-        if self.backend.supported() {
-            self.set(UpdateStatus::Idle, false);
-        }
-        Ok(())
-    }
-
-    pub fn clear_token(&self) -> Result<()> {
-        self.backend.save_token(None)?;
-        if self.backend.supported() {
-            self.set(UpdateStatus::NeedsToken, false);
-        }
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -258,19 +210,17 @@ mod tests {
 
     #[derive(Default)]
     struct Fake {
-        token: Mutex<Option<String>>,
         busy: Mutex<Option<BusyReason>>,
         latest: Option<&'static str>,
-        checks: Mutex<Vec<String>>,
+        checks: Mutex<u32>,
         downloads: Mutex<u32>,
         installs: Mutex<Vec<String>>,
         relaunches: Mutex<u32>,
     }
 
     impl Fake {
-        fn with_release(token: Option<&str>, latest: &'static str) -> Self {
+        fn with_release(latest: &'static str) -> Self {
             Self {
-                token: Mutex::new(token.map(str::to_string)),
                 latest: Some(latest),
                 ..Default::default()
             }
@@ -289,17 +239,8 @@ mod tests {
             true
         }
 
-        fn token(&self) -> Result<Option<String>> {
-            Ok(self.token.lock().unwrap().clone())
-        }
-
-        fn save_token(&self, token: Option<&str>) -> Result<()> {
-            *self.token.lock().unwrap() = token.map(str::to_string);
-            Ok(())
-        }
-
-        async fn check(&self, token: String) -> Result<Option<Found<String>>> {
-            self.checks.lock().unwrap().push(token);
+        async fn check(&self) -> Result<Option<Found<String>>> {
+            *self.checks.lock().unwrap() += 1;
             Ok(self.latest.map(|version| Found {
                 version: version.into(),
                 pending: version.into(),
@@ -334,26 +275,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn without_a_token_the_updater_stays_idle_and_never_calls_github() {
-        let core = Core::new(Fake::with_release(None, "0.2.0"));
-        assert_eq!(core.state().status, UpdateStatus::NeedsToken);
+    async fn a_fresh_install_checks_and_stages_the_release_with_no_setup() {
+        let core = Core::new(Fake::with_release("0.2.0"));
+        assert_eq!(core.state().status, UpdateStatus::Idle);
 
-        let state = core.check().await;
-
-        assert_eq!(state.status, UpdateStatus::NeedsToken);
-        assert!(core.backend.checks.lock().unwrap().is_empty());
-        assert_eq!(*core.backend.downloads.lock().unwrap(), 0);
-
-        core.set_token("  github_pat_abc \n").unwrap();
         let state = core.check().await;
 
         assert_eq!(state.status, ready("0.2.0"));
-        assert_eq!(*core.backend.checks.lock().unwrap(), vec!["github_pat_abc"]);
+        assert_eq!(*core.backend.checks.lock().unwrap(), 1);
         assert_eq!(*core.backend.downloads.lock().unwrap(), 1);
     }
 
     async fn restart_is_refused_while(reason: BusyReason) {
-        let core = Core::new(Fake::with_release(Some("tok"), "0.2.0"));
+        let core = Core::new(Fake::with_release("0.2.0"));
         assert_eq!(core.check().await.status, ready("0.2.0"));
 
         *core.backend.busy.lock().unwrap() = Some(reason);
@@ -386,13 +320,13 @@ mod tests {
 
     #[tokio::test]
     async fn a_repeated_check_for_the_staged_version_does_not_download_again() {
-        let core = Core::new(Fake::with_release(Some("tok"), "0.2.0"));
+        let core = Core::new(Fake::with_release("0.2.0"));
 
         core.check().await;
         let state = core.check().await;
 
         assert_eq!(state.status, ready("0.2.0"));
-        assert_eq!(core.backend.checks.lock().unwrap().len(), 2);
+        assert_eq!(*core.backend.checks.lock().unwrap(), 2);
         assert_eq!(*core.backend.downloads.lock().unwrap(), 1);
     }
 }

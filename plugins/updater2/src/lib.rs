@@ -2,7 +2,6 @@ mod backend;
 mod commands;
 mod core;
 mod error;
-mod github;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -36,8 +35,6 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::get_state,
             commands::check,
             commands::restart,
-            commands::set_token,
-            commands::clear_token,
         ])
         .events(tauri_specta::collect_events![UpdaterState])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)

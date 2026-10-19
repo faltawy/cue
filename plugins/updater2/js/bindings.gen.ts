@@ -29,22 +29,6 @@ async restart() : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
-},
-async setToken(token: string) : Promise<Result<UpdaterState, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("plugin:updater2|set_token", { token }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async clearToken() : Promise<Result<UpdaterState, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("plugin:updater2|clear_token") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
 }
 }
 
@@ -63,7 +47,7 @@ updaterState: "plugin:updater2:updater-state"
 
 /** user-defined types **/
 
-export type UpdateStatus = { kind: "unsupported" } | { kind: "needsToken" } | { kind: "idle" } | { kind: "checking" } | { kind: "downloading"; version: string } | { kind: "ready"; version: string } | { kind: "failed"; message: string }
+export type UpdateStatus = { kind: "unsupported" } | { kind: "idle" } | { kind: "checking" } | { kind: "downloading"; version: string } | { kind: "ready"; version: string } | { kind: "failed"; message: string }
 export type UpdaterState = { currentVersion: string; status: UpdateStatus; lastCheckedAtMs: number | null }
 
 /** tauri-specta globals **/

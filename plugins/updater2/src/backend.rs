@@ -5,12 +5,10 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tauri_specta::Event;
 
+use crate::Result;
 use crate::core::{Backend, BusyReason, Found, UpdaterState};
-use crate::{Error, Result, github};
 
 pub const STABLE_IDENTIFIER: &str = "com.hyprnote.stable";
-const SECRET_SCOPE: &str = "updater";
-const SECRET_KEY: &str = "github_token";
 
 pub type BusyProbe = Arc<
     dyn Fn(AppHandle) -> std::pin::Pin<Box<dyn Future<Output = Option<BusyReason>> + Send>>
@@ -54,36 +52,8 @@ impl Backend for TauriBackend {
         self.app.config().identifier == STABLE_IDENTIFIER
     }
 
-    fn token(&self) -> Result<Option<String>> {
-        tauri_plugin_store2::read_secret_blocking(&self.app, SECRET_SCOPE, SECRET_KEY)
-            .map(|token| token.filter(|t| !t.is_empty()))
-            .map_err(Error::Secret)
-    }
-
-    fn save_token(&self, token: Option<&str>) -> Result<()> {
-        match token {
-            Some(token) => tauri_plugin_store2::write_secret_blocking(
-                &self.app,
-                SECRET_SCOPE,
-                SECRET_KEY,
-                token,
-            ),
-            None => {
-                tauri_plugin_store2::delete_secret_blocking(&self.app, SECRET_SCOPE, SECRET_KEY)
-            }
-        }
-        .map_err(Error::Secret)
-    }
-
-    async fn check(&self, token: String) -> Result<Option<Found<Update>>> {
-        let manifest = github::latest_manifest_url(&token).await?;
-        let updater = self
-            .app
-            .updater_builder()
-            .endpoints(vec![manifest])?
-            .headers(github::auth_headers(&token, "application/octet-stream")?)
-            .build()?;
-        Ok(updater.check().await?.map(|update| Found {
+    async fn check(&self) -> Result<Option<Found<Update>>> {
+        Ok(self.app.updater()?.check().await?.map(|update| Found {
             version: update.version.clone(),
             pending: update,
         }))

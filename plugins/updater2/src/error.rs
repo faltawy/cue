@@ -6,12 +6,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("{0}")]
-    Github(String),
-    #[error("{0}")]
-    Secret(String),
-    #[error("Paste a GitHub token first.")]
-    EmptyToken,
     #[error("The update isn't ready yet.")]
     NotReady,
     #[error("{}", .0.message())]

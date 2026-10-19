@@ -15060,20 +15060,16 @@ dependencies = [
 name = "tauri-plugin-updater2"
 version = "0.1.0"
 dependencies = [
- "reqwest 0.13.2",
  "serde",
- "serde_json",
  "specta",
  "specta-typescript",
  "tauri",
  "tauri-plugin",
- "tauri-plugin-store2",
  "tauri-plugin-updater",
  "tauri-specta",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
- "url",
 ]
 
 [[package]]

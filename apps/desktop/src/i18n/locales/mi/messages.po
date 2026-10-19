@@ -203,10 +203,6 @@ msgstr ""
 msgid "Add {0} in System Settings > General > Language & Region to transcribe with {model}, or choose another model."
 msgstr ""
 
-#: src/settings/general/updates.tsx
-msgid "Add a GitHub token below to turn on updates."
-msgstr ""
-
 #: src/sidebar/folder-materials.tsx
 msgid "Add a syllabus or PDF for this folder"
 msgstr ""
@@ -938,16 +934,8 @@ msgstr ""
 msgid "Create a brief to prepare this meeting"
 msgstr ""
 
-#: src/settings/general/updates.tsx
-msgid "Create a fine-grained token for the faltawy/cue repository with Contents set to Read-only, then paste it here."
-msgstr ""
-
 #: src/folders/index.tsx
 msgid "Create a folder from the sidebar to group related notes and files."
-msgstr ""
-
-#: src/settings/general/updates.tsx
-msgid "Create a token on GitHub"
 msgstr ""
 
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
@@ -1413,14 +1401,6 @@ msgstr ""
 
 #: src/settings/general/notification.tsx
 msgid "Get your attention when a summary is ready in the background."
-msgstr ""
-
-#: src/settings/general/updates.tsx
-msgid "GitHub token"
-msgstr ""
-
-#: src/settings/general/updates.tsx
-msgid "github_pat_…"
 msgstr ""
 
 #: src/sidebar/timeline/index.tsx
@@ -2454,7 +2434,6 @@ msgstr ""
 
 #: src/settings/claude/instructions.tsx
 #: src/settings/claude/tools.tsx
-#: src/settings/general/updates.tsx
 #: src/sidebar/automations.tsx
 msgid "Remove"
 msgstr ""
@@ -2551,16 +2530,16 @@ msgstr ""
 msgid "Respect Do-Not-Disturb mode"
 msgstr ""
 
-#: src/settings/general/updates.tsx
-msgid "Restart"
-msgstr ""
-
 #: src/shared/control.tsx
 msgid "Restart App"
 msgstr ""
 
 #: src/settings/general/updates.tsx
 msgid "Restart to finish. Cue never restarts mid-meeting."
+msgstr ""
+
+#: src/settings/general/updates.tsx
+msgid "Restart to update"
 msgstr ""
 
 #: src/session/components/version-history-dialog.tsx
@@ -2599,7 +2578,6 @@ msgstr ""
 
 #: src/settings/claude/tools.tsx
 #: src/settings/dictionary/index.tsx
-#: src/settings/general/updates.tsx
 #: src/templates/auto-form.tsx
 msgid "Save"
 msgstr ""
@@ -2634,10 +2612,6 @@ msgstr ""
 
 #: src/settings/ai/shared/index.tsx
 msgid "Saved"
-msgstr ""
-
-#: src/settings/general/updates.tsx
-msgid "Saved in your Keychain."
 msgstr ""
 
 #: src/session/components/note-input/transcript/renderer/index.tsx

@@ -2,7 +2,7 @@ use crate::Store2PluginExt;
 use crate::chunked::{self, ChunkedError};
 
 const SECURE_STORE_SUFFIX: &str = "secure-store";
-const NATIVE_SECRET_ACCOUNT_PREFIXES: &[&str] = &["e2ee:", "updater:"];
+const NATIVE_SECRET_ACCOUNT_PREFIXES: &[&str] = &["e2ee:"];
 #[cfg(target_os = "macos")]
 const MACOS_KEYCHAIN_ACCESS_ERROR_PREFIX: &str = "macOS couldn't access your login Keychain.";
 
@@ -554,14 +554,8 @@ mod tests {
             .is_err()
         );
         assert!(
-            validate_secret_coordinate(SecretCaller::Renderer, "updater", "github_token").is_err()
-        );
-        assert!(
             validate_secret_coordinate(SecretCaller::Native, "e2ee", "account:user-a:recovery-v1")
                 .is_ok()
-        );
-        assert!(
-            validate_secret_coordinate(SecretCaller::Native, "updater", "github_token").is_ok()
         );
     }
 

@@ -1,22 +1,18 @@
-import { Trans, useLingui } from "@lingui/react/macro";
-import { useForm } from "@tanstack/react-form";
+import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect } from "react";
 
-import { commands as openerCommands } from "@anlg/plugin-opener2";
 import {
   type UpdaterState,
   commands as updater,
   events as updaterEvents,
 } from "@anlg/plugin-updater2";
 import { Button } from "@anlg/ui/components/ui/button";
-import { Input } from "@anlg/ui/components/ui/input";
 
 import { SettingRow } from "~/settings/setting-row";
 
 const UPDATER_STATE_KEY = ["updater-state"];
-const NEW_TOKEN_URL = "https://github.com/settings/personal-access-tokens/new";
 
 function unwrap<T>(
   result: { status: "ok"; data: T } | { status: "error"; error: string },
@@ -41,18 +37,12 @@ export function UpdateSettings() {
     };
   }, [queryClient]);
 
-  const onState = (next: UpdaterState) =>
-    queryClient.setQueryData(UPDATER_STATE_KEY, next);
   const check = useMutation({
     mutationFn: async () => unwrap(await updater.check()),
-    onSuccess: onState,
+    onSuccess: (next) => queryClient.setQueryData(UPDATER_STATE_KEY, next),
   });
   const restart = useMutation({
     mutationFn: async () => unwrap(await updater.restart()),
-  });
-  const clearToken = useMutation({
-    mutationFn: async () => unwrap(await updater.clearToken()),
-    onSuccess: onState,
   });
 
   if (!state) return null;
@@ -83,7 +73,7 @@ export function UpdateSettings() {
                 disabled={restart.isPending}
                 onClick={() => restart.mutate()}
               >
-                <Trans>Restart</Trans>
+                <Trans>Restart to update</Trans>
               </Button>
             )}
           </SettingRow>
@@ -94,8 +84,7 @@ export function UpdateSettings() {
             description={<StatusText state={state} />}
           >
             {(labelProps) =>
-              status.kind === "unsupported" ||
-              status.kind === "needsToken" ? null : (
+              status.kind === "unsupported" ? null : (
                 <Button
                   {...labelProps}
                   size="sm"
@@ -113,28 +102,6 @@ export function UpdateSettings() {
             }
           </SettingRow>
         )}
-
-        {status.kind === "needsToken" && <TokenForm onSaved={onState} />}
-
-        {status.kind !== "unsupported" && status.kind !== "needsToken" && (
-          <SettingRow
-            controlWidth="content"
-            title={<Trans>GitHub token</Trans>}
-            description={<Trans>Saved in your Keychain.</Trans>}
-          >
-            {(labelProps) => (
-              <Button
-                {...labelProps}
-                size="sm"
-                variant="ghost"
-                disabled={clearToken.isPending}
-                onClick={() => clearToken.mutate()}
-              >
-                <Trans>Remove</Trans>
-              </Button>
-            )}
-          </SettingRow>
-        )}
       </div>
     </div>
   );
@@ -145,8 +112,6 @@ function StatusText({ state }: { state: UpdaterState }) {
   switch (status.kind) {
     case "unsupported":
       return <Trans>Updates are only available in release builds.</Trans>;
-    case "needsToken":
-      return <Trans>Add a GitHub token below to turn on updates.</Trans>;
     case "checking":
       return <Trans>Checking for updates…</Trans>;
     case "downloading":
@@ -159,77 +124,4 @@ function StatusText({ state }: { state: UpdaterState }) {
       return <Trans>Up to date · checked {ago}</Trans>;
     }
   }
-}
-
-function TokenForm({ onSaved }: { onSaved: (state: UpdaterState) => void }) {
-  const { t } = useLingui();
-  const save = useMutation({
-    mutationFn: async (token: string) => unwrap(await updater.setToken(token)),
-    onSuccess: onSaved,
-  });
-  const form = useForm({
-    defaultValues: { token: "" },
-    onSubmit: ({ value }) => save.mutate(value.token),
-  });
-
-  return (
-    <SettingRow
-      title={<Trans>GitHub token</Trans>}
-      description={
-        save.error?.message ?? (
-          <>
-            <Trans>
-              Create a fine-grained token for the faltawy/cue repository with
-              Contents set to Read-only, then paste it here.
-            </Trans>{" "}
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0"
-              onClick={async () => {
-                await openerCommands.openUrl(NEW_TOKEN_URL, null);
-              }}
-            >
-              <Trans>Create a token on GitHub</Trans>
-            </Button>
-          </>
-        )
-      }
-    >
-      {(labelProps) => (
-        <form
-          className="flex w-full gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void form.handleSubmit();
-          }}
-        >
-          <form.Field name="token">
-            {(field) => (
-              <Input
-                {...labelProps}
-                type="password"
-                autoComplete="off"
-                placeholder={t`github_pat_…`}
-                value={field.state.value}
-                onChange={(event) => field.handleChange(event.target.value)}
-              />
-            )}
-          </form.Field>
-          <form.Subscribe selector={(s) => s.values.token.trim() === ""}>
-            {(empty) => (
-              <Button
-                type="submit"
-                size="sm"
-                disabled={empty || save.isPending}
-              >
-                <Trans>Save</Trans>
-              </Button>
-            )}
-          </form.Subscribe>
-        </form>
-      )}
-    </SettingRow>
-  );
 }

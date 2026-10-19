@@ -7,8 +7,6 @@ Default permissions for the plugin
 - `allow-get-state`
 - `allow-check`
 - `allow-restart`
-- `allow-set-token`
-- `allow-clear-token`
 
 ## Permission Table
 
@@ -41,32 +39,6 @@ Enables the check command without any pre-configured scope.
 <td>
 
 Denies the check command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`updater2:allow-clear-token`
-
-</td>
-<td>
-
-Enables the clear_token command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`updater2:deny-clear-token`
-
-</td>
-<td>
-
-Denies the clear_token command without any pre-configured scope.
 
 </td>
 </tr>
@@ -119,32 +91,6 @@ Enables the restart command without any pre-configured scope.
 <td>
 
 Denies the restart command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`updater2:allow-set-token`
-
-</td>
-<td>
-
-Enables the set_token command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`updater2:deny-set-token`
-
-</td>
-<td>
-
-Denies the set_token command without any pre-configured scope.
 
 </td>
 </tr>

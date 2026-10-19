@@ -203,10 +203,6 @@ msgstr "Add \"{0}\""
 msgid "Add {0} in System Settings > General > Language & Region to transcribe with {model}, or choose another model."
 msgstr "Add {0} in System Settings > General > Language & Region to transcribe with {model}, or choose another model."
 
-#: src/settings/general/updates.tsx
-msgid "Add a GitHub token below to turn on updates."
-msgstr "Add a GitHub token below to turn on updates."
-
 #: src/sidebar/folder-materials.tsx
 msgid "Add a syllabus or PDF for this folder"
 msgstr "Add a syllabus or PDF for this folder"
@@ -938,17 +934,9 @@ msgstr "Create \"{folderName}\""
 msgid "Create a brief to prepare this meeting"
 msgstr "Create a brief to prepare this meeting"
 
-#: src/settings/general/updates.tsx
-msgid "Create a fine-grained token for the faltawy/cue repository with Contents set to Read-only, then paste it here."
-msgstr "Create a fine-grained token for the faltawy/cue repository with Contents set to Read-only, then paste it here."
-
 #: src/folders/index.tsx
 msgid "Create a folder from the sidebar to group related notes and files."
 msgstr "Create a folder from the sidebar to group related notes and files."
-
-#: src/settings/general/updates.tsx
-msgid "Create a token on GitHub"
-msgstr "Create a token on GitHub"
 
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
 msgid "Create new speaker"
@@ -1414,14 +1402,6 @@ msgstr "Get started"
 #: src/settings/general/notification.tsx
 msgid "Get your attention when a summary is ready in the background."
 msgstr "Get your attention when a summary is ready in the background."
-
-#: src/settings/general/updates.tsx
-msgid "GitHub token"
-msgstr "GitHub token"
-
-#: src/settings/general/updates.tsx
-msgid "github_pat_…"
-msgstr "github_pat_…"
 
 #: src/sidebar/timeline/index.tsx
 msgid "Go back to now"
@@ -2454,7 +2434,6 @@ msgstr "Reminders"
 
 #: src/settings/claude/instructions.tsx
 #: src/settings/claude/tools.tsx
-#: src/settings/general/updates.tsx
 #: src/sidebar/automations.tsx
 msgid "Remove"
 msgstr "Remove"
@@ -2551,10 +2530,6 @@ msgstr "Reset to Downloads"
 msgid "Respect Do-Not-Disturb mode"
 msgstr "Respect Do-Not-Disturb mode"
 
-#: src/settings/general/updates.tsx
-msgid "Restart"
-msgstr "Restart"
-
 #: src/shared/control.tsx
 msgid "Restart App"
 msgstr "Restart App"
@@ -2562,6 +2537,10 @@ msgstr "Restart App"
 #: src/settings/general/updates.tsx
 msgid "Restart to finish. Cue never restarts mid-meeting."
 msgstr "Restart to finish. Cue never restarts mid-meeting."
+
+#: src/settings/general/updates.tsx
+msgid "Restart to update"
+msgstr "Restart to update"
 
 #: src/session/components/version-history-dialog.tsx
 msgid "Restore"
@@ -2599,7 +2578,6 @@ msgstr "Runs after the recording finishes, not during the meeting."
 
 #: src/settings/claude/tools.tsx
 #: src/settings/dictionary/index.tsx
-#: src/settings/general/updates.tsx
 #: src/templates/auto-form.tsx
 msgid "Save"
 msgstr "Save"
@@ -2635,10 +2613,6 @@ msgstr "Save visible chat from supported meetings using Accessibility."
 #: src/settings/ai/shared/index.tsx
 msgid "Saved"
 msgstr "Saved"
-
-#: src/settings/general/updates.tsx
-msgid "Saved in your Keychain."
-msgstr "Saved in your Keychain."
 
 #: src/session/components/note-input/transcript/renderer/index.tsx
 msgid "Scroll to bottom"
