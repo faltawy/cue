@@ -59,6 +59,34 @@ export function toolLabels(name: string, input: Record<string, unknown>): ToolLa
       return label("Checked off an action item", "Checking off an action item");
     case "mcp__meeting__undo_last_coach_edit":
       return label("Undid its last edit", "Undoing its last edit");
+    case "mcp__meeting__search_meetings":
+      return label("Searched your notes", "Searching your notes");
+    case "mcp__meeting__get_meeting":
+      return label("Read a past note", "Reading a past note");
+    case "mcp__meeting__list_folders":
+      return label("Checked your folders", "Checking your folders");
+    case "mcp__meeting__list_tags":
+      return label("Checked your tags", "Checking your tags");
+    case "mcp__meeting__search_people":
+      return label("Looked up contacts", "Looking up contacts");
+    case "mcp__meeting__list_templates":
+      return label("Checked your templates", "Checking your templates");
+    case "mcp__meeting__list_action_items":
+      return label("Checked action items", "Checking action items");
+    case "mcp__meeting__create_note":
+      return label("Created a note", "Creating a note");
+    case "mcp__meeting__update_note_details":
+      return label("Updated a note", "Updating a note");
+    case "mcp__meeting__create_folder":
+      return label("Created a folder", "Creating a folder");
+    case "mcp__meeting__upsert_person":
+      return label("Saved a contact", "Saving a contact");
+    case "mcp__meeting__upsert_organization":
+      return label("Saved an organization", "Saving an organization");
+    case "mcp__meeting__add_participant":
+      return label("Added a participant", "Adding a participant");
+    case "mcp__meeting__upsert_template":
+      return label("Saved a template", "Saving a template");
     case "mcp__meeting__show":
       return asRecord(input.block).kind === "move"
         ? label("Suggested a move", "Suggesting a move")

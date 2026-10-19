@@ -5,16 +5,10 @@ import { z } from "zod";
 import type { AppBridge, CoachEdit } from "./app-bridge";
 import { type Block, showInputShape } from "./blocks";
 import { MOVE_TAGS } from "./move";
+import { libraryTools } from "./library-tools";
 import { readMeetingNote } from "./notes";
+import { failed, text } from "./tool-result";
 import { readLiveTranscript, readMeetingInfo, renderTranscript } from "./transcript";
-
-function text(value: string) {
-  return { content: [{ type: "text" as const, text: value }] };
-}
-
-function failed(error: unknown) {
-  return { ...text(error instanceof Error ? error.message : String(error)), isError: true };
-}
 
 export type MeetingEdits = {
   bridge: AppBridge;
@@ -104,7 +98,7 @@ export function meetingServer(
         ),
         tool(
           "undo_last_coach_edit",
-          "Undo the coach's most recent change to this meeting's notes or action items.",
+          "Undo the coach's most recent change: to this meeting's notes or action items, or to the user's notes library (a created note, folder, contact, organization or template, a rename, move or tag change, an added participant). A note, contact or folder the coach created is removed only while nobody changed it since; otherwise undo refuses and says why.",
           {},
           async () => {
             try {
@@ -157,6 +151,7 @@ export function meetingServer(
         { annotations: { readOnlyHint: true } },
       ),
       ...editTools,
+      ...libraryTools(db, current, edits),
       ...(onShow ? [showTool(onShow)] : []),
     ],
   });

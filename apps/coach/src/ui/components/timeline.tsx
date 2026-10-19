@@ -1,6 +1,27 @@
 // Timeline structure (stick-to-bottom log, jump-to-latest, per-turn footer) adapted from
 // Catamorphic's packages/registry/src/chat-timeline (Apache-2.0, see NOTICE).
-import { AlertCircle, ArrowDown, Check, ChevronRight, Copy, Info, ListChecks, ListPlus, LogIn, NotebookPen, RotateCcw, SquarePen } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowDown,
+  Building2,
+  Check,
+  ChevronRight,
+  Copy,
+  FilePen,
+  FilePlus,
+  FolderPlus,
+  Info,
+  LayoutTemplate,
+  ListChecks,
+  ListPlus,
+  LogIn,
+  NotebookPen,
+  RotateCcw,
+  SquarePen,
+  UserPen,
+  UserPlus,
+  UsersRound,
+} from "lucide-react";
 import { memo, type ReactNode, useEffect, useId, useState } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
@@ -196,6 +217,13 @@ const EDIT_TOOLS: ReadonlySet<string> = new Set([
   "mcp__meeting__add_action_item",
   "mcp__meeting__complete_action_item",
   "mcp__meeting__undo_last_coach_edit",
+  "mcp__meeting__create_note",
+  "mcp__meeting__update_note_details",
+  "mcp__meeting__create_folder",
+  "mcp__meeting__upsert_person",
+  "mcp__meeting__upsert_organization",
+  "mcp__meeting__add_participant",
+  "mcp__meeting__upsert_template",
 ]);
 
 const SHOW_TOOL = "mcp__meeting__show";
@@ -377,18 +405,48 @@ const EDIT_LABEL: Record<EditView["kind"], string> = {
   note: "Note added",
   add_action_item: "Action item added",
   complete_action_item: "Action item done",
+  create_note: "Note created",
+  update_note: "Note updated",
+  create_folder: "Folder created",
+  create_person: "Contact created",
+  update_person: "Contact updated",
+  create_organization: "Organization created",
+  update_organization: "Organization updated",
+  add_participant: "Participant added",
+  create_template: "Template created",
+  update_template: "Template updated",
 };
 
 const UNDONE_LABEL: Record<EditView["kind"], string> = {
   note: "Note removed",
   add_action_item: "Action item removed",
   complete_action_item: "Action item reopened",
+  create_note: "Created note removed",
+  update_note: "Note change undone",
+  create_folder: "Created folder removed",
+  create_person: "Created contact removed",
+  update_person: "Contact change undone",
+  create_organization: "Created organization removed",
+  update_organization: "Organization change undone",
+  add_participant: "Participant removed",
+  create_template: "Created template removed",
+  update_template: "Template change undone",
 };
 
 const EDIT_ICON: Record<EditView["kind"], typeof NotebookPen> = {
   note: NotebookPen,
   add_action_item: ListPlus,
   complete_action_item: ListChecks,
+  create_note: FilePlus,
+  update_note: FilePen,
+  create_folder: FolderPlus,
+  create_person: UserPlus,
+  update_person: UserPen,
+  create_organization: Building2,
+  update_organization: Building2,
+  add_participant: UsersRound,
+  create_template: LayoutTemplate,
+  update_template: LayoutTemplate,
 };
 
 export function EditRow({ edit, undoable, onUndo }: { edit: EditView; undoable: boolean; onUndo(id: string): void }) {

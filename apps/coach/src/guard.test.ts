@@ -211,6 +211,13 @@ describe("coachPrompt", () => {
     expect(coachPrompt(["clients"])).toContain("Tools from clients may change data");
   });
 
+  test("offers library reads always and library changes only when the app accepts them", () => {
+    expect(COACH_PROMPT).toContain("mcp__meeting__search_meetings");
+    expect(coachPrompt([], true)).toContain("only when the user asks or confirms");
+    expect(coachPrompt([], true)).toContain("Nothing can be deleted");
+    expect(coachPrompt([], false)).not.toContain("create_note");
+  });
+
   test("mentions note edits only when the app accepts them", () => {
     expect(coachPrompt([], true)).toContain(NOTES_PROMPT);
     expect(coachPrompt([], false)).not.toContain("meeting_notes");

@@ -149,6 +149,29 @@ describe("coach edits", () => {
     fireEvent.click(within(edit).getByRole("button", { name: "Undo" }));
     expect(api.undo).toHaveBeenCalledWith("edit-1");
   });
+
+  test("library changes get the same row: newest has Undo, an undone one says what was reverted", () => {
+    const change = (id: string, kind: "create_note" | "update_note", summary: string): CoachEvent => ({
+      type: "edit",
+      edit: { id, session_id: "m1", kind, summary, task_id: null, target_id: "n1" },
+    });
+    const api = setup(
+      stateFrom([
+        status(),
+        change("e1", "create_note", "Created note “Pricing follow-up” in Clients/Lumen"),
+        change("e2", "update_note", "Tags on “Pricing follow-up”: +pricing −draft"),
+        { type: "undone", id: "e2", summary: "Tags on “Pricing follow-up”: +pricing −draft" },
+      ]),
+    );
+
+    const [created, tagged] = view.getAllByTestId("coach-edit");
+    if (!created || !tagged) throw new Error("both edit rows should render");
+    expect(within(created).getByText("Created note “Pricing follow-up” in Clients/Lumen")).toBeTruthy();
+    expect(within(created).getByRole("img", { name: "Note created" })).toBeTruthy();
+    expect(tagged.textContent).toBe("Note change undone");
+    fireEvent.click(within(created).getByRole("button", { name: "Undo" }));
+    expect(api.undo).toHaveBeenCalledWith("e1");
+  });
 });
 
 describe("keyboard", () => {
