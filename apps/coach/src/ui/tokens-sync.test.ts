@@ -8,18 +8,24 @@ import { join } from "node:path";
 const coachCss = readFileSync(join(import.meta.dir, "styles.css"), "utf8");
 const appCss = readFileSync(join(import.meta.dir, "../../../../packages/design-system/src/tokens.css"), "utf8");
 
-function block(css: string, opener: string): Record<string, string> {
-  const start = css.indexOf(opener);
-  if (start === -1) throw new Error(`missing ${opener}`);
-  const body = css.slice(start + opener.length, css.indexOf("}", start));
-  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(([, name, value = ""]) => [name, value.trim()]));
+// The first innermost rule whose selector list includes `selector` (`:root`, `:root, .light`, …).
+function block(css: string, selector: string): Record<string, string> {
+  const uncommented = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const [, prelude = "", body = ""] of uncommented.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectors = prelude.split(";").at(-1) ?? "";
+    if (!selectors.split(",").some((part) => part.trim() === selector)) continue;
+    return Object.fromEntries(
+      [...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(([, name, value = ""]) => [name, value.trim()]),
+    );
+  }
+  throw new Error(`missing a rule for ${selector}`);
 }
 
 const coach = {
-  light: block(coachCss, ":root {"),
-  dark: block(coachCss.slice(coachCss.indexOf("@media (prefers-color-scheme: dark)")), ":root {"),
+  light: block(coachCss, ":root"),
+  dark: block(coachCss.slice(coachCss.indexOf("@media (prefers-color-scheme: dark)")), ":root"),
 };
-const app = { light: block(appCss, ":root {"), dark: block(appCss, ".dark {") };
+const app = { light: block(appCss, ":root"), dark: block(appCss, ".dark") };
 
 // coach name -> app name
 const SHARED: Record<string, string> = {
