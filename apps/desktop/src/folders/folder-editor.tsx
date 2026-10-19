@@ -170,7 +170,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
         </div>
       </div>
 
-      <div className="scrollbar-hide flex-1 overflow-y-auto px-3 pt-3 pb-6">
+      <div className="scroll-fade-y scrollbar-hide flex-1 overflow-y-auto px-6 pt-3 pb-6">
         <div className="flex max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-1.5">
             <h4 className="text-body font-medium">

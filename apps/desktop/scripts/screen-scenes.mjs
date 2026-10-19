@@ -131,7 +131,7 @@ export const SCENES = [
     name: "17-folders",
     steps: [
       ...settings("Folders"),
-      { click: { text: "Lumen", exact: true }, wait: 800 },
+      { click: { text: "Clients", selector: "button", contains: true }, wait: 800 },
     ],
   },
   { name: "17-calendar-settings", steps: settings("Calendar") },
