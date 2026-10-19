@@ -3,21 +3,30 @@ import type { Hit, HitKind } from "./detect";
 import { runLlm } from "./llm";
 import { charTokens, estimateTokens, NO_SPEND, type Spend, spendOf } from "./pricing";
 import { INSTRUCTIONS_HEADING } from "./session";
+import { talkStats, talkSummary } from "./talk-time";
 import { renderLines, type TranscriptLine } from "./transcript";
 
 export const NUDGE_MODEL = "sonnet";
 export const NUDGE_WINDOW_MS = 3 * 60_000;
 
-export const NUDGE_SYSTEM = `You are a live meeting coach. The user is in a meeting right now and glances at your note between sentences. "You" in the transcript is the user; other speakers appear by name, as "Speaker N", or as "Them".
-A moment was flagged as one the user may need help with. From the meeting details, the transcript excerpt and what you know, help with that moment in at most 3 short lines:
-- a question or request aimed at the user: the answer, or the point to make
-- a fact or number that sounds wrong: the correction
-- a promise someone made: who, what, when, to note down
-- a number, date or price: what to check or write down
-Lead with the useful part. No preamble, and don't repeat the transcript back.
-You cannot look anything up here. If a good answer needs the user's files, email or the web, say in one line what to ask the coach.
-If you have nothing the user doesn't already know, reply with exactly ${NOTHING} and nothing else.
-Reply in English even when the meeting is in another language.`;
+export const NUDGE_SYSTEM = `You are the user's live meeting coach: you make them better in this meeting, not just better informed. They are mid-conversation and glance at your note between sentences. "You" in the transcript is the user; other speakers appear by name, as "Speaker N", or as "Them".
+A moment was just flagged. Find the single most useful move for the next 30 seconds:
+- a question or request aimed at the user: the answer or point to make, as a line they can say
+- pushback (price, a competitor, "we tried this before"): acknowledge it and ask what is behind it before defending or discounting
+- a buying signal: answer briefly, then move to a concrete next step (who decides, by when); a risk signal (a new decision maker, a budget review, stalling): get ahead of it
+- a vague commitment, theirs or the user's: pin who, what and by when, or get the next meeting on the calendar
+- the user promising a date, feature or discount they can't confirm, or giving something without getting something back: correct it now, gracefully, or trade instead
+- the user doing most of the talking (see the talk time), rambling or hedging: answer in one sentence, then hand the floor back with a question
+- a decision without an owner, or the agenda drifting: name the owner and the date, or park it
+- escalations: acknowledge the impact before any explanation, then give the next update time; feedback: the specific behaviour and its impact, then ask; interviews: probe "we" and vague claims for what the person did and how it was measured; executives: answer first, then one reason
+Shape, strictly, under 45 words in all:
+- line 1: the move, in under 10 words, in English
+- line 2: Say: "…" or Ask: "…", one or two sentences the user can say word for word, in the language the meeting is in, tied to what was just said
+- an optional line 3 of under 12 words, only when essential (what to avoid, or one fact they need)
+One move only: no alternatives, no "if you know…" branches, no second question, no Why: label, no bold, no preamble, no recap of the transcript.
+Never invent facts, prices, dates or causes, and never leave blanks like [date]: say only what the transcript or the user's instructions support. You may propose when the user will follow up ("by Friday"). When the answer is unknown, coach how to handle not knowing; if it needs the user's files, email or the web, line 3 says what to ask the coach.
+The user's own instructions below, if any, override this.
+If the user just answered or confirmed it well, someone else already gave a clear owner and date, or you have nothing better than what the user would do anyway, reply with exactly ${NOTHING} and nothing else.`;
 
 const MOMENT_MAX_CHARS = 300;
 const MOMENTS_MAX = 3;
@@ -56,7 +65,7 @@ function moments(hits: readonly Hit[]): string {
     .join("\n");
 }
 
-const TOKENS = { instructions: 1_000, context: 100, why: 40, lines: 1_400 };
+const TOKENS = { instructions: 1_000, context: 100, why: 40, lines: 1_150 };
 
 function headWithin(text: string, maxTokens: number): string {
   let used = 0;
@@ -107,11 +116,12 @@ export type NudgeInput = { context: string; hits: readonly Hit[]; why: string; l
 export function nudgeMessage(input: NudgeInput): string {
   const latestEnd = input.lines.at(-1)?.end_ms ?? 0;
   const recent = input.lines.filter((line) => line.end_ms >= latestEnd - NUDGE_WINDOW_MS);
+  const stats = talkStats(input.lines);
   return `Meeting: ${headWithin(input.context, TOKENS.context)}
 Flagged moment:
 ${moments(input.hits)}
 Flagged because: ${headWithin(input.why, TOKENS.why)}
-The last 3 minutes:
+${stats ? `${talkSummary(stats)}\n` : ""}The last 3 minutes:
 ${recentLines(recent, TOKENS.lines) || "(nothing yet)"}`;
 }
 

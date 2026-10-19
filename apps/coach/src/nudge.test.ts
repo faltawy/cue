@@ -50,6 +50,19 @@ describe("lightweight nudge prompt", () => {
     );
   });
 
+  test("adds the talk-time line before the excerpt once enough has been said to judge the balance", () => {
+    const lines = [
+      line("You", "So let me walk you through the whole platform end to end.", 300, 420),
+      line("Omar", "Okay.", 421, 422),
+      line("You", "And then there is the reporting layer too.", 423, 480),
+      line("Omar", QUESTION, 481, 490),
+    ];
+    const message = nudgeMessage({ context: "Discovery call · with Omar", hits: [hit(3)], why: "open question", lines });
+    expect(message).toContain(
+      "Flagged because: open question\nTalk time, last 3 min: You 95%, Omar 5% · your longest stretch 02:00 · questions you asked: 0\nThe last 3 minutes:\n",
+    );
+  });
+
   test("the fixed instructions lead the system prompt byte for byte, then the user's own instructions; no tools are named", () => {
     const system = nudgeSystem("I'm the CTO. Never promise dates.");
     expect(system.startsWith(NUDGE_SYSTEM)).toBe(true);
