@@ -16,10 +16,10 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
         "group/input-group border-input bg-background relative flex w-full items-center rounded-md border outline-hidden transition-[border-color] duration-150",
         "h-8 has-[>textarea]:h-auto",
         // Variants based on alignment.
-        "[&>input]:has-[>[data-align=inline-start]]:ps-1.5",
-        "[&>input]:has-[>[data-align=inline-end]]:pe-1.5",
-        "has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col [&>input]:has-[>[data-align=block-start]]:pb-3",
-        "has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col [&>input]:has-[>[data-align=block-end]]:pt-3",
+        "has-[>[data-align=inline-start]]:[&>input]:ps-1.5",
+        "has-[>[data-align=inline-end]]:[&>input]:pe-1.5",
+        "has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:[&>input]:pb-3",
+        "has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3",
         // Focus state.
         "has-[[data-slot=input-group-control]:focus]:border-foreground",
         // Error state.
