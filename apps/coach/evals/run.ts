@@ -19,7 +19,7 @@ import { JUDGE_SYSTEM } from "./rubric";
 // stand-in for the main coach with the transcript inlined), scores the note with a fixed judge, and checks
 // triage on the same moments. "old" is the frozen pre-rewrite prompts in baseline.ts, "new" is src/ as it is.
 // Calls are cached by prompt hash under results/raw, so a rerun only pays for prompts that changed.
-// Usage: bun evals/run.ts --variant old|new [--judge] [--triage] [--only id,id] ; bun evals/run.ts --summary
+// Usage: bun evals/run.ts --variant old|new [--judge] [--triage] [--only id,id] [--kind nudge|ask] ; bun evals/run.ts --summary
 
 const { values } = parseArgs({
   options: {
@@ -27,6 +27,7 @@ const { values } = parseArgs({
     judge: { type: "boolean", default: false },
     triage: { type: "boolean", default: false },
     only: { type: "string" },
+    kind: { type: "string" },
     summary: { type: "boolean", default: false },
   },
 });
@@ -220,18 +221,23 @@ function aggregate(all: readonly Row[]) {
 
 async function writeSummary() {
   const byVariant = Object.fromEntries(await Promise.all(VARIANTS.map(async (variant) => [variant, await rows(variant)] as const)));
-  const totals = Object.fromEntries(VARIANTS.map((variant) => [variant, aggregate(byVariant[variant] ?? [])]));
-  const header = `| | ${VARIANTS.join(" | ")} |\n|---|${VARIANTS.map(() => "---").join("|")}|`;
-  const line = (label: string, pick: (variant: Variant) => string | number) =>
-    `| ${label} | ${VARIANTS.map(pick).join(" | ")} |`;
+  const totalsOf = (kind: Moment["kind"]) =>
+    Object.fromEntries(
+      VARIANTS.map((variant) => [variant, aggregate((byVariant[variant] ?? []).filter((row) => row.moment.kind === kind))]),
+    );
+  const nudges = totalsOf("nudge");
+  const asks = totalsOf("ask");
+  const header = `| | ${VARIANTS.map((variant) => `${variant} nudges`).join(" | ")} | ${VARIANTS.map((variant) => `${variant} asks`).join(" | ")} |\n|---|${[...VARIANTS, ...VARIANTS].map(() => "---").join("|")}|`;
+  const line = (label: string, pick: (totals: ReturnType<typeof aggregate> | undefined) => string | number) =>
+    `| ${label} | ${[...VARIANTS.map((variant) => pick(nudges[variant])), ...VARIANTS.map((variant) => pick(asks[variant]))].join(" | ")} |`;
   const table = [
     header,
-    ...DIMENSIONS.map((dimension) => line(`${dimension} (1-5)`, (variant) => totals[variant]?.dims[dimension] ?? "–")),
-    line("right to speak or stay silent (nudges)", (variant) => totals[variant]?.silence ?? "–"),
-    line("stayed silent when it should have spoken", (variant) => totals[variant]?.missed ?? "–"),
-    line("triage agrees with the label", (variant) => totals[variant]?.triage ?? "–"),
-    line("mean words per note", (variant) => totals[variant]?.words ?? "–"),
-    line("notes judged", (variant) => totals[variant]?.judged ?? "–"),
+    ...DIMENSIONS.map((dimension) => line(`${dimension} (1-5)`, (totals) => totals?.dims[dimension] ?? "–")),
+    line("right to speak or stay silent", (totals) => totals?.silence ?? "–"),
+    line("stayed silent when it should have spoken", (totals) => totals?.missed ?? "–"),
+    line("triage agrees with the label", (totals) => totals?.triage ?? "–"),
+    line("mean words per note", (totals) => totals?.words ?? "–"),
+    line("notes judged", (totals) => totals?.judged ?? "–"),
   ].join("\n");
   const perMoment = MOMENTS.map((moment, index) => {
     const cell = (variant: Variant) => {
@@ -267,6 +273,9 @@ if (values.summary) {
   const variant = VARIANTS.find((candidate) => candidate === values.variant);
   if (!variant) throw new Error("pass --variant old or --variant new");
   const only = values.only?.split(",");
-  await runVariant(variant, only ? MOMENTS.filter((moment) => only.includes(moment.id)) : MOMENTS);
+  await runVariant(
+    variant,
+    MOMENTS.filter((moment) => (!only || only.includes(moment.id)) && (!values.kind || moment.kind === values.kind)),
+  );
   console.log(`\n${calls} live calls`);
 }
