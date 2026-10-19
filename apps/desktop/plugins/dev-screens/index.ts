@@ -12,6 +12,8 @@ import { resolve } from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import type { Plugin } from "vite";
 
+import { type Dataset, type DatasetName, isDatasetName } from "./dataset";
+import { DATASET_BUILDERS } from "./datasets";
 import { fixture } from "./fixtures";
 import { seed } from "./seed";
 
@@ -35,10 +37,10 @@ function migrate(db: DatabaseSync) {
   }
 }
 
-function createDatabase() {
+function createDatabase(dataset: Dataset) {
   const db = new DatabaseSync(":memory:");
   migrate(db);
-  seed(db);
+  seed(db, dataset);
   return db;
 }
 
@@ -70,6 +72,7 @@ let nextSubscription = 1;
 
 function handle(
   db: DatabaseSync,
+  dataset: Dataset,
   cmd: string,
   args: Record<string, unknown>,
 ): { payload: unknown; write?: boolean; rows?: unknown[] } {
@@ -123,7 +126,7 @@ function handle(
         rows: run(db, String(args.sql), args.params as unknown[]),
       };
     default:
-      return { payload: fixture(cmd, args) };
+      return { payload: fixture(cmd, args, dataset.fixtures) };
   }
 }
 
@@ -143,14 +146,36 @@ export function devScreens(): Plugin {
     apply: "serve",
     configureServer(server) {
       if (!enabled) return;
-      let db = createDatabase();
+      // One dataset at a time (dataset.ts); the toggle in shim.js and the
+      // screenshot script pick it with ?data=<name>.
+      let name: DatasetName = "demo";
+      let dataset = DATASET_BUILDERS[name]();
+      let db = createDatabase(dataset);
+      const load = (next: DatasetName) => {
+        name = next;
+        dataset = DATASET_BUILDERS[next]();
+        db = createDatabase(dataset);
+      };
+      const requested = (req: IncomingMessage) => {
+        const value = new URL(req.url ?? "", "http://screens").searchParams.get(
+          "data",
+        );
+        return isDatasetName(value) ? value : null;
+      };
       server.middlewares.use("/__cue_screens/shim.js", (_req, res) => {
         res.setHeader("Content-Type", "application/javascript");
         res.end(readFileSync(resolve(import.meta.dirname, "shim.js"), "utf8"));
       });
-      server.middlewares.use("/__cue_screens/reset", (_req, res) => {
-        db = createDatabase();
-        res.end("ok");
+      server.middlewares.use("/__cue_screens/reset", (req, res) => {
+        load(requested(req) ?? name);
+        res.end(name);
+      });
+      // Page loads switch the dataset only when it differs, so edits made in
+      // the app survive a reload.
+      server.middlewares.use("/__cue_screens/dataset", (req, res) => {
+        const next = requested(req);
+        if (next && next !== name) load(next);
+        res.end(name);
       });
       // Seeds and screen setup run SQL here directly (the screenshot script).
       server.middlewares.use("/__cue_screens/sql", async (req, res) => {
@@ -173,7 +198,12 @@ export function devScreens(): Plugin {
         };
         res.setHeader("Content-Type", "application/json");
         try {
-          res.end(JSON.stringify({ ok: true, ...handle(db, cmd, args ?? {}) }));
+          res.end(
+            JSON.stringify({
+              ok: true,
+              ...handle(db, dataset, cmd, args ?? {}),
+            }),
+          );
         } catch (error) {
           const message =
             error instanceof Error ? error.message : String(error);

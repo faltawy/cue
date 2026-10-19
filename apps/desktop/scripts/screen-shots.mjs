@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 // Screenshots of real app screens through the dev screen harness
 // (plugins/dev-screens): headless Chrome over the DevTools protocol, one PNG
-// per scene and theme, at a 1280×800 window.
+// per scene and theme, at a 1280×800 window unless --size says otherwise.
 //
 //   CUE_SCREENS=1 pnpm -F @anlg/desktop dev        # Vite on :1422
 //   node apps/desktop/scripts/screen-shots.mjs [scene,...] [--tag after]
 //        [--themes light,dark] [--rtl] [--base http://localhost:1422]
-//        [--out /tmp/cue-redesign]
+//        [--out /tmp/cue-redesign] [--data demo|worst|empty|one|huge]
+//        [--size 1280x800]
 //
-// Files are named b-<scene>[-<tag>]-<theme>.png (and -rtl-<theme> with --rtl).
-// Every shot starts from a freshly seeded database.
+// Files are named b-<scene>[-<tag>]-<theme>.png (and -rtl-<theme> with --rtl);
+// the worst-case dataset writes break-<scene>-<theme>.png and the others
+// break-<data>-<scene>-<theme>.png. Every shot starts from a freshly seeded
+// database.
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { SCENES } from "./screen-scenes.mjs";
+import { scenes } from "./screen-scenes.mjs";
 
 const args = process.argv.slice(2);
 const option = (name, fallback) =>
@@ -29,12 +32,15 @@ const base = option("base", "http://localhost:1422");
 const out = option("out", "/tmp/cue-redesign");
 const themes = option("themes", "light,dark").split(",");
 const rtl = args.includes("--rtl");
+const data = option("data", "demo");
+const prefix =
+  data === "demo" ? "b" : data === "worst" ? "break" : `break-${data}`;
+const SCENES = scenes(data);
 const debug = args.includes("--debug");
 const chrome =
   process.env.CHROME ??
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const WIDTH = 1280;
-const HEIGHT = 800;
+const [WIDTH, HEIGHT] = option("size", "1280x800").split("x").map(Number);
 
 mkdirSync(out, { recursive: true });
 const profile = mkdtempSync(join(tmpdir(), "cue-screens-chrome-"));
@@ -134,7 +140,7 @@ const KEYS = {
 const MODIFIERS = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
 
 async function shot(scene, theme, direction, file) {
-  await fetch(`${base}/__cue_screens/reset`);
+  await fetch(`${base}/__cue_screens/reset?data=${data}`);
   await setting("theme", theme);
   if (direction === "rtl") await setting("ai_language", "ar");
   for (const statement of scene.sql ?? []) await sql(statement);
@@ -214,12 +220,12 @@ async function shot(scene, theme, direction, file) {
     };
     listeners.add(listener);
   });
-  await call("Page.navigate", {
-    url: `${base}${scene.url ?? "/app/main"}`,
-  });
+  const url = new URL(scene.url ?? "/app/main", base);
+  url.searchParams.set("data", data);
+  await call("Page.navigate", { url: url.toString() });
   await loaded;
   await evaluate("document.fonts.ready.then(() => true)");
-  await locate({ text: scene.ready ?? "Weekly sync with Lumen" }, 60);
+  await locate({ text: scene.ready ?? "Open calendar" }, 60);
   await sleep(600);
 
   for (const step of scene.steps ?? []) {
@@ -273,16 +279,21 @@ async function shot(scene, theme, direction, file) {
     await sleep(step.wait ?? 350);
   }
 
-  if (!scene.keepToasts)
-    await evaluate(
-      `document.head.insertAdjacentHTML("beforeend", "<style>[data-app-toaster], [data-sonner-toaster] { display: none !important; }</style>")`,
-    );
+  const hidden = [
+    "[data-cue-screens-toggle]",
+    ...(scene.keepToasts
+      ? []
+      : ["[data-app-toaster]", "[data-sonner-toaster]"]),
+  ].join(", ");
+  await evaluate(
+    `document.head.insertAdjacentHTML("beforeend", "<style>${hidden} { display: none !important; }</style>")`,
+  );
   await sleep(scene.settle ?? 500);
-  const { data } = await call("Page.captureScreenshot", {
+  const capture = await call("Page.captureScreenshot", {
     format: "png",
     clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 1 },
   });
-  writeFileSync(file, Buffer.from(data, "base64"));
+  writeFileSync(file, Buffer.from(capture.data, "base64"));
   listeners.delete(onConsole);
   for (const error of errors) console.warn(`  ! ${error}`);
   await send("Target.closeTarget", { targetId });
@@ -304,7 +315,7 @@ try {
             direction,
             join(
               out,
-              `${["b", scene.name, tag, variant].filter(Boolean).join("-")}.png`,
+              `${[prefix, scene.name, tag, variant].filter(Boolean).join("-")}.png`,
             ),
           );
         } catch (error) {

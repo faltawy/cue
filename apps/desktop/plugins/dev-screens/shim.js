@@ -145,4 +145,54 @@
   style.textContent =
     "html:root, html:root body { background: var(--sidebar-background) !important; }";
   document.head.appendChild(style);
+
+  // Dataset toggle (break-ui): ?data=<name> picks the seed, and the choice
+  // sticks for this tab because the router drops unknown search params.
+  var DATASETS = [
+    ["demo", "Demo data"],
+    ["worst", "Worst case"],
+    ["empty", "Empty"],
+    ["one", "One"],
+    ["huge", "12,480 notes"],
+  ];
+  var wanted = query.get("data") || sessionStorage.getItem("cue-screens-data");
+  var request = new XMLHttpRequest();
+  request.open(
+    "GET",
+    "/__cue_screens/dataset" +
+      (wanted ? "?data=" + encodeURIComponent(wanted) : ""),
+    false,
+  );
+  request.send();
+  var dataset = request.responseText || "demo";
+  sessionStorage.setItem("cue-screens-data", dataset);
+
+  function mountToggle() {
+    var bar = document.createElement("div");
+    bar.setAttribute("data-cue-screens-toggle", "");
+    bar.style.cssText =
+      "position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:2147483647;display:flex;gap:2px;padding:2px;border-radius:8px;background:#d4d4d4;font:500 12px/1 -apple-system,system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.2);direction:ltr";
+    DATASETS.forEach(function (entry) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.textContent = entry[1];
+      var active = entry[0] === dataset;
+      button.style.cssText =
+        "border:0;border-radius:6px;padding:6px 10px;cursor:pointer;color:#171717;background:" +
+        (active ? "#fff" : "transparent");
+      button.addEventListener("click", function () {
+        if (active) return;
+        fetch("/__cue_screens/reset?data=" + entry[0]).then(function () {
+          sessionStorage.setItem("cue-screens-data", entry[0]);
+          var url = new URL(location.href);
+          url.searchParams.set("data", entry[0]);
+          location.replace(url.toString());
+        });
+      });
+      bar.appendChild(button);
+    });
+    document.body.appendChild(bar);
+  }
+  if (document.body) mountToggle();
+  else document.addEventListener("DOMContentLoaded", mountToggle);
 })();

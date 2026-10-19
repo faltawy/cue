@@ -8,6 +8,7 @@ type Word = {
   start_ms: number;
   end_ms: number;
   channel: number;
+  speaker_index?: number | null;
 };
 type Assignment = {
   human_id: string;
@@ -21,7 +22,8 @@ type RenderRequest = {
 const CHANNELS = ["DirectMic", "RemoteParty", "MixedCapture"];
 
 // Stands in for the native segmenter: consecutive words of one speaker form a
-// segment, and an assignment carries over until the next one.
+// segment. Words carry their assignment or provider speaker index; unassigned
+// words are labelled like crates/transcript/src/label.rs does.
 function renderTranscript({ params: request }: { params: RenderRequest }) {
   const names = new Map(request.humans.map((h) => [h.human_id, h.name]));
   const segments: Record<string, unknown>[] = [];
@@ -30,25 +32,29 @@ function renderTranscript({ params: request }: { params: RenderRequest }) {
     for (const assignment of transcript.assignments)
       for (const id of assignment.scope.word_ids ?? [])
         byWord.set(id, assignment.human_id);
-    let human = "";
     let current: {
       words: Record<string, unknown>[];
-      human: string;
-      channel: string;
+      speaker: string;
     } | null = null;
     for (const word of transcript.words) {
-      human = byWord.get(word.id) ?? human;
+      const human = byWord.get(word.id) ?? "";
+      const index = human ? null : (word.speaker_index ?? null);
       const channel = CHANNELS[word.channel] ?? "MixedCapture";
-      if (!current || current.human !== human) {
-        current = { words: [], human, channel };
+      const speaker = `${human}|${index}|${channel}`;
+      if (!current || current.speaker !== speaker) {
+        current = { words: [], speaker };
         segments.push({
           id: `segment-${segments.length}`,
           key: {
             channel,
-            speaker_index: null,
+            speaker_index: index,
             speaker_human_id: human || null,
           },
-          speaker_label: names.get(human) ?? "Speaker",
+          speaker_label: human
+            ? (names.get(human) ?? "Speaker")
+            : index !== null
+              ? `Speaker ${index + 1}`
+              : `Speaker ${{ DirectMic: "A", RemoteParty: "B" }[channel] ?? "C"}`,
           words: current.words,
         });
       }
@@ -106,9 +112,13 @@ const FIXTURES: Record<string, unknown> = {
   show_devtool: false,
 };
 
-export function fixture(cmd: string, args: Record<string, unknown>): unknown {
-  if (cmd in FIXTURES) {
-    const value = FIXTURES[cmd];
+export function fixture(
+  cmd: string,
+  args: Record<string, unknown>,
+  overrides: Record<string, unknown> = {},
+): unknown {
+  if (cmd in overrides || cmd in FIXTURES) {
+    const value = cmd in overrides ? overrides[cmd] : FIXTURES[cmd];
     return typeof value === "function" ? value(args) : value;
   }
   // Lists default to empty rather than null, which the callers iterate.
