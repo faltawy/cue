@@ -49,6 +49,7 @@ const SEGMENTS: Array<{ id: DataSet | "demo"; label: string }> = [
   { id: "empty", label: "Empty" },
   { id: "one", label: "One" },
   { id: "huge", label: "Huge" },
+  { id: "rich", label: "Rich blocks" },
 ];
 
 function select(id: DataSet | "demo") {

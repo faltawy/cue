@@ -1,4 +1,5 @@
 import type { CoachEvent, StatusEvent, WrapUpView } from "../../src/protocol";
+import { screenshotThumb } from "../../src/ui/fixtures";
 import { type CoachState, initialState, reduce } from "../../src/ui/state";
 
 // Dev-only fixtures for the preview's "Demo data / Worst case / Empty / One / Huge" toggle.
@@ -7,7 +8,7 @@ import { type CoachState, initialState, reduce } from "../../src/ui/state";
 // server.ts keeps the last 6 transcript lines). Meeting titles, speaker names, prompts, answers,
 // question text and wrap-up fields are unbounded.
 
-export type DataSet = "worst" | "empty" | "one" | "huge";
+export type DataSet = "worst" | "empty" | "one" | "huge" | "rich";
 export type Phase = "live" | "ended";
 
 const LONG_PATH =
@@ -442,7 +443,99 @@ function huge(phase: Phase): CoachEvent[] {
   return events;
 }
 
-const BUILDERS: Record<DataSet, (phase: Phase) => CoachEvent[]> = { worst, empty, one, huge };
+// Rich blocks: the show tool allows up to 30 action items (text ≤ 300, owner ≤ 80, due ≤ 60) and 2–3
+// follow-ups (≤ 60 chars); source chips are capped at 5 with labels clipped to 80; images are capped at 4
+// per ask with thumbnails ≤ 192px on the long edge, any aspect.
+const LONG_ITEM =
+  "share the two WhatsApp session IDs that stayed open since 14 September, plus screenshots of the agent view showing them as still assigned to bartholomew.fitzgerald@northwind-industries-holdings.example.com, and confirm with procurement that the renewal call can move to the week after the Bcc rollout lands";
+
+const RICH_ITEMS = [
+  { text: LONG_ITEM, owner: "Christopher Alexander Montgomery III", due: "by end of day Thursday 16 October (Riyadh time)" },
+  { text: "ترسل قائمة بالفرق اللي محتاجة نسخة من كل رد قبل التجديد", owner: "نور الهدى عبد الرحمن", due: "الأسبوع الجاي" },
+  { text: "invite https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved", owner: "Jo" },
+  { text: "X", owner: "You" },
+  ...Array.from({ length: 26 }, (_, index) => ({
+    text: `follow up on open question ${index + 5} about the Bcc rollout`,
+    ...(index % 3 === 0 ? { owner: "Aleksandra Wiśniewska-Kowalczyk" } : {}),
+    ...(index % 4 === 0 ? { due: "Fri" } : {}),
+  })),
+];
+
+const thumb = (width: number, height: number, label: string) => ({ thumb: screenshotThumb(width, height, label), width, height });
+
+function rich(phase: Phase): CoachEvent[] {
+  const edit = (id: string, index: number, summary: string): CoachEvent => ({
+    type: "edit",
+    edit: { id, session_id: "m1", kind: "add_action_item", summary, task_id: id },
+    block: { id: "rich-actions", index },
+  });
+  return [
+    status({ busy: false, meeting: phase === "live" }),
+    phase === "live" ? worstTranscript : waiting(WORST_TITLE),
+    {
+      type: "user",
+      kind: "ask",
+      text: "Here are the screenshots from Aleksandra Wiśniewska-Kowalczyk's team — what's wrong with the agent view? https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments",
+      images: [thumb(192, 8, "panorama"), thumb(8, 192, "tall"), thumb(1, 1, ""), thumb(192, 144, "Agent view")],
+    },
+    { type: "text", delta: "Both sessions are still assigned to an agent who went offline on 14 September, so they never auto-close." },
+    { type: "done", seconds: 9.4, ok: true, silent: false, interrupted: false },
+    { type: "user", kind: "ask", text: "", images: [thumb(144, 192, "Settings")] },
+    { type: "text", delta: "That's the inbox settings page; Outbound Bcc addresses is the third field." },
+    { type: "done", seconds: 3.1, ok: true, silent: false, interrupted: false },
+    { type: "user", kind: "ask", text: "List every promise from this call as action items" },
+    { type: "tool", id: "rw1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
+    { type: "tool_result", id: "rw1", ok: true, output: "…", durationMs: 380 },
+    { type: "text", delta: "Thirty promises; most are follow-ups on open questions." },
+    { type: "block", id: "rich-actions", block: { kind: "actions", items: RICH_ITEMS } },
+    { type: "block_check", id: "rich-actions", index: 1, checked: true },
+    { type: "block_check", id: "rich-actions", index: 3, checked: true },
+    edit("rich-e1", 0, LONG_ITEM),
+    edit("rich-e2", 2, "Jo: invite …"),
+    { type: "undone", id: "rich-e2", summary: "" },
+    edit("rich-e3", 1, RICH_ITEMS[1]?.text ?? ""),
+    { type: "done", seconds: 12.6, ok: true, silent: false, interrupted: false },
+    { type: "user", kind: "ask", text: "What does their CTO say publicly about Bcc, and did anyone email us?" },
+    { type: "tool", id: "rw2", name: "WebSearch", label: "Searched the web for “Northwind Industries Holdings CTO Bcc C…”", activeLabel: "Searching the web for “Northwind Industries Holdings CTO Bcc C…”", detail: "query: Northwind Industries Holdings CTO Bcc CRM" },
+    { type: "tool_result", id: "rw2", ok: true, output: "…", durationMs: 2_400 },
+    { type: "text", delta: "Their CTO wrote that every customer reply must reach the CRM; nobody emailed about the address yet." },
+    {
+      type: "sources",
+      sources: [
+        {
+          kind: "web",
+          url: "https://docs.northwind-industries-holdings.example.com/engineering/blog/2026/10/why-every-customer-reply-must-land-in-the-crm-before-renewal?utm_source=newsletter&utm_medium=email",
+          label: "docs.northwind-industries-holdings.example.com",
+          title: "Why every customer reply must land in the CRM before renewal — Northwind Engineering Blog",
+        },
+        {
+          kind: "email",
+          url: "https://mail.google.com/mail/u/0/#all/18f2a9c4b7e1d3a0",
+          label: "Re: Fwd: Re: Bcc on every reply before the Q4 renewal (Northwind × Contoso, EMEA)…",
+          title: "Re: Fwd: Re: Bcc on every reply before the Q4 renewal\nAleksandra Wiśniewska-Kowalczyk",
+        },
+        { kind: "email", url: "https://mail.google.com/mail/u/0/#all/18f2b0d1e2f3a4b5", label: "طلب تفعيل النسخة المخفية لكل الردود", title: "طلب تفعيل النسخة المخفية لكل الردود" },
+        { kind: "email", url: "https://mail.google.com/mail/u/0/#all/18f2c1c1c1c1c1c1", label: "(no subject)", title: "(no subject)\nJo" },
+        { kind: "web", url: "https://x.co/a", label: "x.co", title: "https://x.co/a" },
+      ],
+    },
+    {
+      type: "block",
+      id: "rich-replies",
+      block: {
+        kind: "replies",
+        options: [
+          "Draft a reply to Aleksandra confirming the Bcc rollout dates",
+          "اكتب ملخص للاجتماع عشان أبعته لفريق المبيعات على سلاك",
+          "Summarise for Slack",
+        ],
+      },
+    },
+    { type: "done", seconds: 14.2, ok: true, silent: false, interrupted: false },
+  ];
+}
+
+const BUILDERS: Record<DataSet, (phase: Phase) => CoachEvent[]> = { worst, empty, one, huge, rich };
 
 export function isDataSet(name: string | null): name is DataSet {
   return name !== null && name in BUILDERS;

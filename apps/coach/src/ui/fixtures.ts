@@ -143,6 +143,67 @@ const readyWrapUp: CoachEvent = {
   },
 };
 
+export function screenshotThumb(width: number, height: number, label: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#f4f4f5"/><rect width="100%" height="${Math.max(1, Math.round(height * 0.14))}" fill="#27272a"/><rect x="8%" y="26%" width="52%" height="10%" rx="2" fill="#d4d4d8"/><rect x="8%" y="44%" width="84%" height="34%" rx="3" fill="#ffffff" stroke="#e4e4e7"/><text x="50%" y="66%" font-family="Inter, sans-serif" font-size="${Math.max(6, Math.round(Math.min(width, height) / 9))}" text-anchor="middle" fill="#dc2626">${label}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const chartAnswer = `The **Sessions by channel** chart is empty because the date filter is set to *Next 7 days*. Switch it to *Last 7 days* and the bars come back.`;
+
+const rich: CoachEvent[] = [
+  {
+    type: "user",
+    kind: "ask",
+    text: "Why is this chart empty?",
+    images: [
+      { thumb: screenshotThumb(192, 120, "No data"), width: 192, height: 120 },
+      { thumb: screenshotThumb(120, 192, "Filters"), width: 120, height: 192 },
+    ],
+  },
+  { type: "text", delta: chartAnswer },
+  { type: "done", seconds: 5.2, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "ask", text: "What did we promise so far?" },
+  { type: "tool", id: "r1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
+  { type: "tool_result", id: "r1", ok: true, output: "…", durationMs: 410 },
+  { type: "text", delta: "Three promises so far, two of them yours." },
+  { type: "tool", id: "r2", name: "mcp__meeting__show", label: "Showed a list", activeLabel: "Preparing a list", detail: null },
+  {
+    type: "block",
+    id: "blk-1",
+    block: {
+      kind: "actions",
+      items: [
+        { text: "send Sara the Bcc setup steps", owner: "You", due: "today" },
+        { text: "share the two session IDs that stayed open", owner: "Omar", due: "Thursday" },
+        { text: "check whether internal notes are copied", owner: "You" },
+      ],
+    },
+  },
+  { type: "tool_result", id: "r2", ok: true, output: "Shown.", durationMs: 12 },
+  { type: "block_check", id: "blk-1", index: 2, checked: true },
+  {
+    type: "edit",
+    edit: { id: "edit-r1", session_id: "m1", kind: "add_action_item", summary: "send Sara the Bcc setup steps (today)", task_id: "task-r1" },
+    block: { id: "blk-1", index: 0 },
+  },
+  { type: "done", seconds: 4.4, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "ask", text: "Did Sara email us about the CRM address?" },
+  { type: "tool", id: "r3", name: "mcp__claude_ai_Gmail__search_threads", label: "claude ai Gmail · search threads", activeLabel: "claude ai Gmail · search threads", detail: "query: from:sara crm" },
+  { type: "tool_result", id: "r3", ok: true, output: "2 threads", durationMs: 1_100 },
+  { type: "tool", id: "r4", name: "WebFetch", label: "Read help.example.com", activeLabel: "Reading help.example.com", detail: "url: https://help.example.com/email/outbound-bcc" },
+  { type: "tool_result", id: "r4", ok: true, output: "…", durationMs: 900 },
+  { type: "text", delta: "Yes: she sent it on Tuesday, **crm-drop@wafeq.example.com**. Their help page confirms Bcc copies every reply." },
+  {
+    type: "sources",
+    sources: [
+      { kind: "email", url: "https://mail.google.com/mail/u/0/#all/18f2a9c4b7e1d3a0", label: "Re: CRM dropbox address", title: "Re: CRM dropbox address\nSara Haddad" },
+      { kind: "web", url: "https://help.example.com/email/outbound-bcc", label: "help.example.com", title: "Outbound Bcc addresses\nhttps://help.example.com/email/outbound-bcc" },
+    ],
+  },
+  { type: "block", id: "blk-2", block: { kind: "replies", options: ["Draft the reply", "Summarise for Slack", "Add it to the notes"] } },
+  { type: "done", seconds: 7.9, ok: true, silent: false, interrupted: false },
+];
+
 const scenarios = {
   idle: [status({ meeting: false, project: { ...status().project, source: "default", series: null } }), waiting(null)],
   live: [status(), liveTranscript],
@@ -160,6 +221,7 @@ const scenarios = {
     { type: "text", delta: answer.slice(0, 120) },
   ],
   conversation: [status(), liveTranscript, ...conversation],
+  rich: [status(), liveTranscript, ...rich],
   question: [
     status({ busy: true }),
     liveTranscript,
