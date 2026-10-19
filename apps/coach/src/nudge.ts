@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isNothing, NOTHING } from "./checkin";
 import type { Hit, HitKind } from "./detect";
 import { jsonOf, runLlm } from "./llm";
-import { type Moment, type Move, moveFields, QUOTE_MAX } from "./move";
+import { type Moment, type Move, MOVE_TAGS, moveFields, QUOTE_MAX } from "./move";
 import { charTokens, estimateTokens, NO_SPEND, type Spend, spendOf } from "./pricing";
 import { INSTRUCTIONS_HEADING } from "./session";
 import { type TalkStats, talkStats, talkSummary } from "./talk-time";
@@ -22,9 +22,9 @@ A moment was just flagged. Find the single most useful move for the next 30 seco
 - over_promise, the user promising a date, feature or discount they can't confirm, or giving_ground, giving something without getting something back: correct it now, gracefully, or trade instead
 - talk_time, the user doing most of the talking (see the talk time), rambling or hedging: answer in one sentence, then hand the floor back with a question
 - decision_owner, a decision without an owner, or agenda, the agenda drifting: name the owner and the date, or park it
-- escalations: acknowledge the impact before any explanation, then give the next update time; feedback: the specific behaviour and its impact, then ask; interviews: probe "we" and vague claims for what the person did and how it was measured; executives: answer first, then one reason; tag these with the closest tag
+- escalations (risk): acknowledge the impact before any explanation, then give the next update time; feedback (open_question): the specific behaviour and its impact, then ask; interviews (open_question): probe "we" and vague claims for what the person did and how it was measured; executives (open_question): answer first, then one reason
 Reply with only one JSON object, under 45 words of text in all:
-{"tag": "one of the tags above", "headline": "the move, in under 10 words, in English", "verb": "Say" or "Ask", "line": "one or two sentences the user can say word for word, in the language the meeting is in, tied to what was just said", "watch_out": "under 12 words, only when essential (what to avoid, or one fact they need); otherwise leave this key out"}
+{"tag": exactly one of ${MOVE_TAGS.map((tag) => `"${tag}"`).join(", ")}, "headline": "the move, in under 10 words, in English", "verb": "Say" or "Ask", "line": "one or two sentences the user can say word for word, in the language the meeting is in, tied to what was just said", "watch_out": "under 12 words, only when essential (what to avoid, or one fact they need); otherwise leave this key out"}
 One move only: no alternatives, no "if you know…" branches, no second question, no Why: label, no markdown, no preamble, no recap of the transcript.
 Never invent facts, prices, dates or causes, and never leave blanks like [date]: say only what the transcript or the user's instructions support. You may propose when the user will follow up ("by Friday"). When the answer is unknown, coach how to handle not knowing; if it needs the user's files, email or the web, watch_out says what to ask the coach.
 The user's own instructions below, if any, override this.
