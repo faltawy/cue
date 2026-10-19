@@ -6,7 +6,8 @@ import { z } from "zod";
 
 import { isNothing } from "../src/checkin";
 import { type LlmTuning, runLlm } from "../src/llm";
-import { NUDGE_MODEL, nudgeMessage, nudgeSystem } from "../src/nudge";
+import { moveText } from "../src/move";
+import { NUDGE_MODEL, nudgeMessage, nudgeSystem, parseNudge } from "../src/nudge";
 import { PROACTIVE_DEFAULTS } from "../src/proactive";
 import { coachPrompt, userContextPrompt } from "../src/session";
 import { renderLines } from "../src/transcript";
@@ -164,11 +165,24 @@ async function readCached(target: string): Promise<string | null> {
   return (await cached.exists()) ? ((await cached.json()) as Cached).text : null;
 }
 
+type Shown = { text: string; silent: boolean; malformed: boolean };
+
+// What the user would see: the new nudge path replies in JSON, rendered back to the old three-line text so
+// the judge scores the same content; a reply that fails the schema is dropped in the app, so it counts as silent.
+function shownNote(variant: Variant, moment: Moment, raw: string): Shown {
+  if (variant === "new" && moment.kind === "nudge") {
+    const parsed = parseNudge(raw);
+    if (parsed.kind === "move") return { text: moveText(parsed.reply), silent: false, malformed: false };
+    return { text: "", silent: true, malformed: parsed.kind === "malformed" };
+  }
+  return { text: raw, silent: isNothing(raw) || raw === "", malformed: false };
+}
+
 async function runVariant(variant: Variant, moments: readonly Moment[]) {
   await pool(moments, async (moment) => {
-    const note = await complete(coachPromptFor(variant, moment), file(variant, moment, "note"));
-    const silent = isNothing(note) || note === "";
-    console.log(`${variant} ${moment.id}: ${silent ? "(silent)" : note.replace(/\s+/g, " ").slice(0, 160)}`);
+    const raw = await complete(coachPromptFor(variant, moment), file(variant, moment, "note"));
+    const { text: note, silent, malformed } = shownNote(variant, moment, raw);
+    console.log(`${variant} ${moment.id}: ${malformed ? "(malformed, dropped)" : silent ? "(silent)" : note.replace(/\s+/g, " ").slice(0, 160)}`);
     if (values.judge && !moment.silent && !silent) {
       const score = scoreSchema.parse(JSON.parse(await complete(judgePrompt(moment, note), file(variant, moment, "judge"))));
       console.log(`   judge: ${DIMENSIONS.map((dimension) => `${dimension} ${score[dimension]}`).join(", ")} · ${score.notes}`);
@@ -181,16 +195,18 @@ async function runVariant(variant: Variant, moments: readonly Moment[]) {
   });
 }
 
-type Row = { moment: Moment; note: string | null; score: Score | null; triage: boolean | null };
+type Row = { moment: Moment; note: Shown | null; score: Score | null; triage: boolean | null };
 
 async function rows(variant: Variant): Promise<Row[]> {
   return Promise.all(
     MOMENTS.map(async (moment) => {
-      const judged = await readCached(file(variant, moment, "judge"));
+      const raw = await readCached(file(variant, moment, "note"));
+      const note = raw === null ? null : shownNote(variant, moment, raw);
+      const judged = note && !note.silent ? await readCached(file(variant, moment, "judge")) : null;
       const triaged = await readCached(file(variant, moment, "triage"));
       return {
         moment,
-        note: await readCached(file(variant, moment, "note")),
+        note,
         score: judged ? scoreSchema.parse(JSON.parse(judged)) : null,
         triage: triaged === null ? null : (parseTriage(triaged)?.nudge ?? false),
       };
@@ -202,19 +218,20 @@ const mean = (values: readonly number[]) => (values.length ? (values.reduce((a, 
 
 function aggregate(all: readonly Row[]) {
   const nudges = all.filter((row) => row.moment.kind === "nudge" && row.note !== null);
-  const silentRight = nudges.filter((row) => (isNothing(row.note ?? "") || row.note === "") === row.moment.silent).length;
+  const silentRight = nudges.filter((row) => row.note?.silent === row.moment.silent).length;
   const spoke = all.filter((row) => !row.moment.silent && row.note !== null);
-  const missed = spoke.filter((row) => isNothing(row.note ?? "")).length;
+  const missed = spoke.filter((row) => row.note?.silent).length;
   const judged = all.filter((row) => row.score !== null);
   const triaged = all.filter((row) => row.triage !== null);
   return {
     silence: `${silentRight}/${nudges.length}`,
     missed,
+    malformed: all.filter((row) => row.note?.malformed).length,
     triage: triaged.length ? `${triaged.filter((row) => row.triage === !row.moment.silent).length}/${triaged.length}` : "–",
     dims: Object.fromEntries(
       DIMENSIONS.map((dimension) => [dimension, mean(judged.map((row) => row.score?.[dimension] ?? 0))]),
     ),
-    words: mean(spoke.filter((row) => !isNothing(row.note ?? "")).map((row) => (row.note ?? "").split(/\s+/).length)),
+    words: mean(spoke.filter((row) => !row.note?.silent).map((row) => (row.note?.text ?? "").split(/\s+/).length)),
     judged: judged.length,
   };
 }
@@ -235,6 +252,7 @@ async function writeSummary() {
     ...DIMENSIONS.map((dimension) => line(`${dimension} (1-5)`, (totals) => totals?.dims[dimension] ?? "–")),
     line("right to speak or stay silent", (totals) => totals?.silence ?? "–"),
     line("stayed silent when it should have spoken", (totals) => totals?.missed ?? "–"),
+    line("malformed replies (dropped)", (totals) => totals?.malformed ?? "–"),
     line("triage agrees with the label", (totals) => totals?.triage ?? "–"),
     line("mean words per note", (totals) => totals?.words ?? "–"),
     line("notes judged", (totals) => totals?.judged ?? "–"),
@@ -243,7 +261,8 @@ async function writeSummary() {
     const cell = (variant: Variant) => {
       const row = byVariant[variant]?.[index];
       if (!row?.note) return "–";
-      if (isNothing(row.note)) return moment.silent ? "silent ✓" : "silent ✗";
+      if (row.note.malformed) return "malformed ✗";
+      if (row.note.silent) return moment.silent ? "silent ✓" : "silent ✗";
       if (moment.silent) return "spoke ✗";
       return row.score ? `${row.score.coaching}/${row.score.actionability}/${row.score.correctness}/${row.score.brevity}` : "spoke";
     };
@@ -253,6 +272,8 @@ async function writeSummary() {
 
 Generated by \`bun evals/run.ts --summary\`. Judge: a fixed rubric (evals/rubric.ts), scores 1-5. Silence is
 checked without the judge: a note of exactly NOTHING on a moment labelled silent is right, anything else is wrong.
+New nudges reply in JSON; the judge sees them rendered back to the three-line text (headline, Say/Ask line,
+watch-out), and a reply that fails the schema is dropped as in the app, so it counts as silent.
 Direct asks run through a one-shot stand-in for the main coach with the transcript inlined, not the full agent.
 
 ${table}
