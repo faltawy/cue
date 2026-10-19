@@ -53,11 +53,6 @@ const ALLOWED = {
   "packages/ui/src/components/ui/switch.tsx": ["bg-white", "shadow-sm"],
   // Kbd keeps the coach's 10.5px.
   "packages/ui/src/components/ui/kbd.tsx": ["text-[10.5px]"],
-  // OS-native Windows close button.
-  "apps/desktop/src/main/windows-window-controls.tsx": [
-    "hover:text-white",
-    "hover:bg-[#c42b1c]",
-  ],
   // App icon preview mirrors the macOS icon mask (22.5% of the tile).
   "apps/desktop/src/settings/appearance/app-icon.tsx": ["rounded-[18px]"],
   // Streaming summary heading matches the editor H1 (editor prose scale).
