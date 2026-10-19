@@ -9,6 +9,7 @@ import { defineConfig, type Plugin, type UserConfig } from "vite";
 import { relayShim } from "@anlg/plugin-relay/vite";
 
 import { changelog } from "./plugins/changelog";
+import { devScreens } from "./plugins/dev-screens";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -16,6 +17,7 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [
     devGallery(),
+    devScreens(),
     relayShim(),
     changelog(),
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
