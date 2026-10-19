@@ -28,7 +28,7 @@ describe("the show tool", () => {
   });
 
   test("a move reaches the UI with its tag, headline, line, watch-out and moment, and the coach is told not to repeat it", async () => {
-    const block = {
+    const block: Extract<Block, { kind: "move" }> = {
       kind: "move",
       tag: "pushback",
       headline: "Ask what's behind the price concern",
