@@ -463,6 +463,8 @@ export function TranscriptViewer({
           onContextMenu={handleContextMenu}
           className={cn([
             "flex min-h-0 min-w-0 flex-1 flex-col gap-8 overflow-x-clip overflow-y-auto",
+            // Gutter for the scroll controls, so long lines never run under them.
+            "pe-10",
             "scrollbar-hide",
             "scroll-pb-[calc(8rem+env(safe-area-inset-bottom))]",
             "pb-[calc(4rem+env(safe-area-inset-bottom))]",

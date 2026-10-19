@@ -373,7 +373,7 @@ const SegmentsList = memo(
               onFocus={virtual.handleRowFocus}
               onBlur={virtual.handleRowBlur}
             >
-              <div className={cn([index > 0 && "pt-4"])}>
+              <div className={cn([index > 0 && "pt-5"])}>
                 <SegmentRenderer
                   segment={segment}
                   offsetMs={offsetMs}

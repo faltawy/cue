@@ -22,7 +22,7 @@ export function SegmentHeader({
 }) {
   const { selectMode } = useTranscriptSelectionState();
   const headerClassName = cn([
-    "relative py-1",
+    "relative",
     "text-label",
     "flex items-center gap-2",
   ]);

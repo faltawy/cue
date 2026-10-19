@@ -107,7 +107,7 @@ export function SpeakerAssignPopover({
           type="button"
           data-transcript-speaker-assign
           className={cn([
-            "text-muted-foreground -my-0.5 inline-flex cursor-pointer items-center gap-1.5 rounded-sm py-0.5 pe-1 font-medium",
+            "text-muted-foreground -my-0.5 inline-flex max-w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-sm py-0.5 pe-1 text-start font-medium",
             "hover:text-foreground focus-visible:text-foreground underline-offset-2 hover:underline focus-visible:underline",
             open ? "text-foreground underline" : null,
             className,
@@ -121,7 +121,13 @@ export function SpeakerAssignPopover({
               style={{ backgroundColor: dotColor }}
             />
           ) : null}
-          <span dir="auto">{label}</span>
+          <span
+            dir="auto"
+            title={label}
+            className="line-clamp-2 min-w-0 [overflow-wrap:anywhere]"
+          >
+            {label}
+          </span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -650,11 +656,17 @@ function ParticipantOptionButton({
         />
       )}
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">
+        <span
+          title={option.name}
+          className="block w-fit max-w-full truncate font-medium [unicode-bidi:plaintext]"
+        >
           {option.isCreateOption ? t`Add "${option.name}"` : option.name}
         </span>
-        {option.email && (
-          <span className="text-muted-foreground text-label block truncate">
+        {option.email && option.email !== option.name && (
+          <span
+            title={option.email}
+            className="text-muted-foreground text-label block truncate"
+          >
             {option.email}
           </span>
         )}
