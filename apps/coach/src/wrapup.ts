@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { runLlm } from "./llm";
+import { talkStats, talkSummary } from "./talk-time";
 import { type LiveTranscript, type MeetingInfo, renderTranscript } from "./transcript";
 
 export const wrapUpSchema = z.object({
@@ -13,6 +14,10 @@ export const wrapUpSchema = z.object({
   ),
   open_questions: z.array(z.string()),
   follow_up_draft: z.string(),
+  coaching: z.object({
+    went_well: z.array(z.string()),
+    next_time: z.array(z.object({ moment: z.string(), instead: z.string() })),
+  }),
 });
 
 export type WrapUp = z.infer<typeof wrapUpSchema>;
@@ -23,14 +28,22 @@ const WRAP_UP_SYSTEM = `You write the wrap-up of a meeting that just ended, from
 - commitments: every concrete promise made in the meeting. who = the person who promised: "You" for the user, otherwise their name, taken from the invite list when the transcript only says "Them" and there is a single other invitee; keep "Them" only when you cannot tell. what = the promised action in a few words, when = the stated deadline in the speaker's words, or null.
 - open_questions: questions raised and left unanswered, one line each.
 - follow_up_draft: a short follow-up message in the user's own voice (first person) to the other participants: a one-line thanks, the agreed next steps with owners, and the open questions. Never write speaker labels such as "You:" or "Them:" in it. Plain text, no subject line, written in English.
+- coaching: short, specific feedback for the user on how they ran this meeting, so they do better next time. Judge only the user ("You"), from the transcript only.
+  went_well: one or two things the user did well, each naming the moment.
+  next_time: two or three changes, biggest impact first. moment = the timestamp and a few words of what happened, e.g. "[12:40] Marco pushed back on price". instead = what to do differently, with the line they could have said, in the meeting's language.
+  Look for what a strong coach would: questions the user left unanswered or never asked, pushback handled or dodged, vague commitments left open, promising what they can't confirm, conceding without getting something back, the user talking far more than the others (see the talk time), decisions without an owner, a meeting that ended without a clear next step. No generic advice. Leave both lists empty when the meeting was too short or the user barely spoke.
 Never invent commitments or deadlines that were not said.`;
+
+const WENT_WELL_MAX = 2;
+const NEXT_TIME_MAX = 3;
 
 export function wrapUpPrompt(transcript: LiveTranscript, info: MeetingInfo | null): string {
   const participants = info?.participants
     .map((participant) => participant.name || participant.email)
     .filter(Boolean)
     .join(", ");
-  return `${participants ? `Invited: ${participants}\n\n` : ""}${renderTranscript(transcript)}`;
+  const stats = talkStats(transcript.lines, Number.POSITIVE_INFINITY);
+  return `${participants ? `Invited: ${participants}\n\n` : ""}${stats ? `${talkSummary(stats)}\n\n` : ""}${renderTranscript(transcript)}`;
 }
 
 export function commitmentText(commitment: Commitment): string {
@@ -86,5 +99,9 @@ export function parseWrapUp(json: unknown): WrapUp {
     ...wrapUp,
     commitments: unique(wrapUp.commitments, (commitment) => `${sameText(commitment.who)}\n${sameText(commitment.what)}`),
     open_questions: unique(wrapUp.open_questions, sameText),
+    coaching: {
+      went_well: wrapUp.coaching.went_well.slice(0, WENT_WELL_MAX),
+      next_time: wrapUp.coaching.next_time.slice(0, NEXT_TIME_MAX),
+    },
   };
 }

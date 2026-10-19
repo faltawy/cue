@@ -11,6 +11,7 @@ import { orderKeys } from "./components/primitives";
 import { useDom } from "./dom-setup";
 import type { ProactiveView } from "../proactive";
 import type { CoachEvent } from "../protocol";
+import type { WrapUp } from "../wrapup";
 import { fixtureState, type Scenario, status } from "./fixtures";
 import { type CoachState, initialState, reduce } from "./state";
 import { type ActionResult, type CoachApi, eventQueue } from "./use-coach";
@@ -225,12 +226,13 @@ describe("live transcript", () => {
 
 const ARABIC_TITLE = "اجتماع المتابعة الأسبوعي مع فريق المبيعات";
 const waitingAfter = (lastTitle: string): CoachEvent => ({ type: "transcript", strip: { state: "waiting", lastTitle, endedAt: null }, lines: [], pending: "" });
-const readyWrapUp = (wrapUp: { commitments: Array<{ who: string; what: string; when: string | null }>; open_questions: string[]; follow_up_draft: string }): CoachEvent => ({
+const NO_COACHING: WrapUp["coaching"] = { went_well: [], next_time: [] };
+const readyWrapUp = (wrapUp: Omit<WrapUp, "coaching"> & { coaching?: WrapUp["coaching"] }): CoachEvent => ({
   type: "wrapup",
   wrapUp: {
     state: "ready",
     title: ARABIC_TITLE,
-    wrapUp,
+    wrapUp: { coaching: NO_COACHING, ...wrapUp },
     commitments: [],
     actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: false, hint: null } },
     added: false,
@@ -424,6 +426,20 @@ describe("second design review", () => {
     expect(view.getByTestId("follow-up-draft").className).not.toContain("coach-fade-bottom");
   });
 
+  test("coaching shows what went well and, for next time, each moment with what to do instead", () => {
+    const coaching = {
+      went_well: ["[03:10] You asked Marco what was driving the budget gap."],
+      next_time: [{ moment: "[12:40] Marco pushed back on price", instead: 'Ask: "Price aside, is this the solution you want?"' }],
+    };
+    setup(stateFrom([status({ meeting: false }), waitingAfter("Weekly"), readyWrapUp({ commitments: [], open_questions: [], follow_up_draft: "", coaching })]));
+    const card = view.getByTestId("wrap-up");
+    expect(within(card).getByRole("heading", { name: "Went well" })).toBeTruthy();
+    expect(within(card).getByText("[03:10] You asked Marco what was driving the budget gap.")).toBeTruthy();
+    const next = within(card).getByRole("list", { name: "Next time" });
+    expect(within(next).getByText("[12:40] Marco pushed back on price")).toBeTruthy();
+    expect(within(next).getByText('Ask: "Price aside, is this the solution you want?"').getAttribute("dir")).toBe("auto");
+  });
+
   test("an empty wrap-up is one quiet line with no card and no wrap-up suggestions", () => {
     setup(stateFrom([status({ meeting: false }), waitingAfter("Weekly"), readyWrapUp({ commitments: [], open_questions: [], follow_up_draft: "" })]));
     expect(view.getByTestId("wrap-up").textContent).toBe("Too short to wrap up.");
@@ -476,7 +492,7 @@ describe("second design review", () => {
           wrapUp: {
             state: "ready",
             title: "Weekly",
-            wrapUp: { commitments: [{ who: "You", what: "send steps", when: null }], open_questions: [], follow_up_draft: "Thanks." },
+            wrapUp: { commitments: [{ who: "You", what: "send steps", when: null }], open_questions: [], follow_up_draft: "Thanks.", coaching: NO_COACHING },
             commitments: ["You: send steps"],
             actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: true, hint: null } },
             added: false,

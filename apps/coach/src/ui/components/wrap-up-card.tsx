@@ -14,7 +14,13 @@ export type WrapUpActions = {
 export function isEmptyWrapUp(view: WrapUpView | null): boolean {
   if (view?.state !== "ready") return false;
   const { wrapUp } = view;
-  return wrapUp.commitments.length === 0 && wrapUp.open_questions.length === 0 && !hasFollowUp(wrapUp.follow_up_draft);
+  return (
+    wrapUp.commitments.length === 0 &&
+    wrapUp.open_questions.length === 0 &&
+    !hasFollowUp(wrapUp.follow_up_draft) &&
+    wrapUp.coaching.went_well.length === 0 &&
+    wrapUp.coaching.next_time.length === 0
+  );
 }
 
 export function WrapUpCard({ view, actions, busy }: { view: WrapUpView; actions: WrapUpActions; busy: boolean }) {
@@ -148,6 +154,34 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
           />
         )}
       </div>
+      )}
+      {wrapUp.coaching.went_well.length > 0 && (
+        <Section title="Went well">
+          <ul className="flex flex-col gap-1">
+            {wrapUp.coaching.went_well.map((point, index) => (
+              <li key={index} dir="auto" className="flex gap-2 text-[13.5px] leading-[1.45]">
+                <span aria-hidden className="mt-[0.6em] size-1 shrink-0 rounded-full bg-muted-foreground" />
+                <span className="min-w-0">{point}</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      {wrapUp.coaching.next_time.length > 0 && (
+        <Section title="Next time">
+          <ul aria-label="Next time" className="flex flex-col gap-2">
+            {wrapUp.coaching.next_time.map((item, index) => (
+              <li key={index} className="flex flex-col gap-0.5">
+                <span dir="auto" className="text-[12px] text-muted-foreground">
+                  {item.moment}
+                </span>
+                <span dir="auto" className="text-[13.5px] leading-[1.45]">
+                  {item.instead}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
       )}
     </div>
   );

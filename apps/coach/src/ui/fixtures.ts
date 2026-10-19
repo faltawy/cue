@@ -132,6 +132,16 @@ const readyWrapUp: CoachEvent = {
       open_questions: ["Should the Bcc copy include internal notes?", "هل نحتاج نسخة لكل فريق المبيعات؟"],
       follow_up_draft:
         "Thanks for the time today, Sara and Omar.\n\nNext steps:\n- I'll send the Bcc setup steps today.\n- Omar will share two session IDs that stayed open by Thursday.\n\nOpen: should the Bcc copy include internal notes?",
+      coaching: {
+        went_well: ["[04:12] You asked Omar which sessions stayed open before proposing a fix."],
+        next_time: [
+          {
+            moment: "[18:30] Sara asked about internal notes and the topic moved on",
+            instead: 'Ask: "Should internal notes go to the CRM too? I can confirm by Thursday."',
+          },
+          { moment: "[26:05] The call ended without a next meeting", instead: 'Say: "Can we book 20 minutes next Tuesday to check the Bcc setup?"' },
+        ],
+      },
     },
     commitments: ["You: send Sara the Bcc setup steps (today)", "Omar: share two session IDs that stayed open (by Thursday)"],
     actions: {

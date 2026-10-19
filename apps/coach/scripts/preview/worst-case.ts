@@ -311,6 +311,20 @@ Open questions:
 
 Best,
 Ahmad`,
+    coaching: {
+      went_well: [
+        "[02:40] You let Aleksandra finish the story about the two lost renewals before saying anything about Bcc, and then asked what the account executives actually need to see in the CRM.",
+        "[31:05] لخصت مين هيعمل إيه قبل ما المكالمة تخلص.",
+      ],
+      next_time: [
+        {
+          moment: "[14:22] Christopher Alexander Montgomery III asked whether Bcc applies to replies a ticketing integration delivers, and the conversation moved on to pricing before anyone answered",
+          instead: 'Ask: "Before we move on, can I come back to you by Thursday on whether integration replies get the Bcc too?"',
+        },
+        { moment: "[22:10] نور الهدى قالت \"الأسبوع الجاي\"", instead: 'اسأل: "تمام، ينفع نقول يوم الثلاثاء؟ ومين هيبعت القائمة؟"' },
+        { moment: "[27:45] You talked for four minutes straight", instead: "Stop after the first answer and ask what they think." },
+      ],
+    },
   },
   commitments: [],
   actions: {
@@ -345,7 +359,7 @@ function empty(phase: Phase): CoachEvent[] {
         wrapUp: {
           state: "ready",
           title: null,
-          wrapUp: { commitments: [], open_questions: [], follow_up_draft: "" },
+          wrapUp: { commitments: [], open_questions: [], follow_up_draft: "", coaching: { went_well: [], next_time: [] } },
           commitments: [],
           actions: { addActionItems: { enabled: false, hint: null }, logToClients: { enabled: false, hint: null } },
           added: false,
@@ -381,7 +395,7 @@ function one(phase: Phase): CoachEvent[] {
         wrapUp: {
           state: "ready",
           title: "J",
-          wrapUp: { commitments: [{ who: "Jo", what: "call", when: null }], open_questions: ["Why?"], follow_up_draft: "Thanks." },
+          wrapUp: { commitments: [{ who: "Jo", what: "call", when: null }], open_questions: ["Why?"], follow_up_draft: "Thanks.", coaching: { went_well: [], next_time: [{ moment: "[00:01] Jo", instead: "Ask." }] } },
           commitments: [],
           actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: false, hint: null } },
           added: false,
