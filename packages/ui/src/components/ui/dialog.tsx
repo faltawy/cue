@@ -71,7 +71,9 @@ const DialogContent = React.forwardRef<
         <DialogPrimitive.Content
           ref={ref}
           className={cn([
-            "pointer-events-auto relative grid max-h-full w-full max-w-[420px] gap-3 overflow-y-auto",
+            // minmax(0, 1fr): one unbreakable title must not widen the column
+            // past the panel and scroll the whole dialog sideways.
+            "pointer-events-auto relative grid max-h-full w-full max-w-[420px] grid-cols-[minmax(0,1fr)] gap-3 overflow-y-auto",
             "border-border bg-background text-foreground rounded-lg border p-4 shadow-2xl outline-hidden",
             "data-[state=closed]:animate-exit data-[state=open]:animate-enter",
             className,
