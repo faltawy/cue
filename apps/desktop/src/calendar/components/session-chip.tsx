@@ -92,7 +92,7 @@ export function SessionChip({
             {title}
           </span>
           {createdAt && (
-            <span className="text-muted-foreground ms-auto shrink-0 tabular-nums">
+            <span className="text-muted-foreground ms-auto shrink-0 tabular-nums @max-[8.5rem]:hidden">
               {createdAt}
             </span>
           )}
