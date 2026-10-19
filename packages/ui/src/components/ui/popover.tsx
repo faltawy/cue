@@ -34,7 +34,7 @@ const PopoverContent = React.forwardRef<
         sideOffset={sideOffset}
         collisionPadding={collisionPadding}
         className={cn([
-          "z-50 w-72 origin-(--radix-popover-content-transform-origin) p-3 outline-hidden",
+          "z-50 w-72 origin-(--radix-popover-content-transform-origin) p-3",
           floatingSurfaceClassName,
           floatingMotionClassName,
           className,

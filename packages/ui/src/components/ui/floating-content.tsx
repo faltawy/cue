@@ -1,7 +1,7 @@
 // One surface for every floating layer: menus, selects, popovers and command
 // lists (docs/design/cue.md §6). Items sit 4px inside the 8px container.
 export const floatingSurfaceClassName =
-  "bg-popover text-popover-foreground border-border rounded-lg border shadow-lg";
+  "bg-popover text-popover-foreground border-border rounded-lg border shadow-lg outline-hidden";
 
 export const floatingMotionClassName =
   "data-[state=open]:animate-enter data-[state=closed]:animate-exit";

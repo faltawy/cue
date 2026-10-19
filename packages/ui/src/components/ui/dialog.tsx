@@ -72,7 +72,7 @@ const DialogContent = React.forwardRef<
           ref={ref}
           className={cn([
             "pointer-events-auto relative grid max-h-full w-full max-w-[420px] gap-3 overflow-y-auto",
-            "border-border bg-background text-foreground rounded-lg border p-4 shadow-2xl",
+            "border-border bg-background text-foreground rounded-lg border p-4 shadow-2xl outline-hidden",
             "data-[state=closed]:animate-exit data-[state=open]:animate-enter",
             className,
           ])}
