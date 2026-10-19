@@ -1,0 +1,369 @@
+{
+  "replies": "recorded from haiku on 2026-10-19 by scripts/record-triage.ts",
+  "moments": [
+    {
+      "id": "bcc-crm-by-name",
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "So on our side the main thing this quarter is one inbox."
+        ],
+        [
+          "Omar",
+          "Ahmad, can you Bcc every reply to our CRM, or only new sessions?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks you directly whether to Bcc all replies or only new sessions.\"}"
+    },
+    {
+      "id": "agent-headcount",
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "We have around 40 agents and maybe 12 team leads."
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Sara gave headcount figures (about 40 agents, 12 team leads) worth noting.\"}"
+    },
+    {
+      "id": "rhetorical-you-know",
+      "flagged": false,
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "It is a lot of change for them, you know?"
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"rhetorical aside\"}"
+    },
+    {
+      "id": "own-promise-friday",
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "Can we see how the rollout would go?"
+        ],
+        [
+          "You",
+          "I'll send you the rollout plan by Friday."
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"You committed to sending the rollout plan to Sara by Friday.\"}"
+    },
+    {
+      "id": "sso-okta",
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "Do you support single sign on with Okta?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Sara asks whether the product supports Okta SSO; open question for user.\"}"
+    },
+    {
+      "id": "offsite-small-talk",
+      "flagged": true,
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "We had 200 people at the offsite, it was a lot of fun."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"Past attendance remark; no action or check needed from the user now.\"}"
+    },
+    {
+      "id": "price-40-seats",
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "What would the price be for 40 seats, roughly?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks the user for a rough price for 40 seats.\"}"
+    },
+    {
+      "id": "whatsapp-same-number",
+      "lang": "ar",
+      "lines": [
+        [
+          "Sara",
+          "هل ممكن نربط الواتساب بنفس الرقم اللي عندنا؟"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Sara asks an open question about linking WhatsApp to the existing number.\"}"
+    },
+    {
+      "id": "users-own-question",
+      "flagged": false,
+      "lang": "en",
+      "lines": [
+        [
+          "You",
+          "What do you think about starting with the billing team?"
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"the user's own question\"}"
+    },
+    {
+      "id": "macros-export-next-week",
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "We will share the old macros export next week."
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar committed to sharing the old macros export next week.\"}"
+    },
+    {
+      "id": "tag-question",
+      "flagged": true,
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "Is that really how it works, right?"
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"Sara's question is vague and rhetorical; no clear open question aimed at user.\"}"
+    },
+    {
+      "id": "ai-not-sure",
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "Could you walk us through what happens when the AI is not sure?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar asked the user an open question about AI uncertainty handling; needs an answer.\"}"
+    },
+    {
+      "id": "renewal-date",
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "Our renewal with the current vendor is on March 3rd."
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Vendor renewal date March 3rd is a key date to note.\"}"
+    },
+    {
+      "id": "sandbox-by-name",
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "Falta mentioned a sandbox last time, is that still possible?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks Falta directly whether the sandbox is still possible.\"}"
+    },
+    {
+      "id": "questions-list-tomorrow",
+      "lang": "ar",
+      "lines": [
+        [
+          "Sara",
+          "هبعتلكم قائمة الأسئلة اللي عند الفريق بكره."
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Sara promised to send the team's question list tomorrow.\"}"
+    },
+    {
+      "id": "summary-after-call",
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "Can you send a short summary after this call?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks the user for a summary after the call; open request needing action.\"}"
+    },
+    {
+      "id": "blind-copy-crm",
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "Thanks for joining. Quick one before we start."
+        ],
+        [
+          "You",
+          "Sure, go ahead."
+        ],
+        [
+          "Sara",
+          "Can your email channel send a blind copy of every reply to our CRM inbox?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Sara asked an open yes/no question directed at the user about email BCC capability.\"}"
+    },
+    {
+      "id": "whatsapp-open-sessions",
+      "lang": "ar",
+      "lines": [
+        [
+          "Omar",
+          "هل تم حل مشكلة الجلسات المفتوحة على واتساب؟"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Omar asks you directly whether the WhatsApp open-sessions issue is resolved.\"}"
+    },
+    {
+      "id": "greeting",
+      "flagged": false,
+      "lang": "en",
+      "lines": [
+        [
+          "Sara",
+          "Thanks for joining. Quick one before we start."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"greeting\"}"
+    },
+    {
+      "id": "back-channel-yep",
+      "flagged": false,
+      "lang": "en",
+      "lines": [
+        [
+          "Jo",
+          "Yep."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"back-channel\"}"
+    },
+    {
+      "id": "send-to-other-address",
+      "lang": "en",
+      "lines": [
+        [
+          "Đặng Thị Ngọc Hân",
+          "Can you send it to bartholomew.fitzgerald@northwind-industries-holdings.example.com instead?"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Open request asks you to send it to a new address; needs your answer.\"}"
+    },
+    {
+      "id": "bcc-replies-or-tickets",
+      "lang": "ar",
+      "lines": [
+        [
+          "نور الهدى عبد الرحمن",
+          "يعني الـ Bcc بيشتغل على كل الـ replies ولا على الـ tickets بس؟"
+        ]
+      ],
+      "nudge": true,
+      "reply": "{\"nudge\": true, \"why\": \"Open question for the user: does the Bcc apply to all replies or just tickets?\"}"
+    },
+    {
+      "id": "pasted-link",
+      "flagged": true,
+      "lang": "en",
+      "lines": [
+        [
+          "Speaker 12",
+          "https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved"
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"Shared link only; no open question, claim, promise, or figure to act on.\"}"
+    },
+    {
+      "id": "user-will-check",
+      "flagged": true,
+      "lang": "en",
+      "lines": [
+        [
+          "You",
+          "Let me check that while we talk."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"User's own line; no open question, claim, promise, or figure to act on.\"}"
+    },
+    {
+      "id": "team-used-to-old-way",
+      "flagged": false,
+      "lang": "ar",
+      "lines": [
+        [
+          "Sara",
+          "يعني الفريق كله متعود على الطريقة القديمة، محتاجين وقت شوية."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"رأي عام، مفيش حاجة تتعمل دلوقتي\"}"
+    },
+    {
+      "id": "tried-before",
+      "flagged": false,
+      "lang": "ar",
+      "lines": [
+        [
+          "Sara",
+          "احنا جربنا حاجة شبه كده قبل كده ومكانتش ماشية كويس."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"background, no open ask\"}"
+    },
+    {
+      "id": "lost-renewals-story",
+      "flagged": false,
+      "lang": "en",
+      "lines": [
+        [
+          "Aleksandra Wiśniewska-Kowalczyk",
+          "So the way our sales team works today is that every single reply has to land in the CRM, otherwise the account executive doesn't see it, and last quarter we lost two renewals because nobody saw the customer had already asked for a discount in a thread that never got logged."
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"background story, nothing to answer yet\"}"
+    },
+    {
+      "id": "weekend-small-talk",
+      "flagged": true,
+      "lang": "en",
+      "lines": [
+        [
+          "Omar",
+          "So, how was everyone's weekend?"
+        ]
+      ],
+      "nudge": false,
+      "reply": "{\"nudge\": false, \"why\": \"Small talk greeting question; not aimed at a fact or action the user needs to give.\"}"
+    }
+  ]
+}

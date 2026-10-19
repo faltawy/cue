@@ -1,0 +1,62 @@
+import { spawn } from "node:child_process";
+import { mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const [target, ...args] = process.argv.slice(2);
+const ports = { desktop: "18081" };
+
+if (!Object.hasOwn(ports, target)) {
+  console.error("Usage: node scripts/dev.mjs desktop [process-compose flags]");
+  process.exit(1);
+}
+
+const root = fileURLToPath(new URL("../", import.meta.url));
+process.chdir(root);
+
+const env = {
+  ...process.env,
+  PC_PORT_NUM: process.env.PC_PORT_NUM || ports[target],
+  PC_LOG_DIR: process.env.PC_LOG_DIR || `.process-compose/${target}`,
+};
+if (
+  !process.stdout.isTTY ||
+  !process.stdin.isTTY ||
+  process.env.TERM === "dumb"
+) {
+  env.PC_DISABLE_TUI ??= "1";
+}
+mkdirSync(env.PC_LOG_DIR, { recursive: true });
+console.log(`Logs: ${env.PC_LOG_DIR}`);
+
+const composeArgs = [
+  "--disable-dotenv",
+  "-f",
+  "process-compose.yaml",
+  "up",
+  target,
+];
+if (args[0] === "--") {
+  args.shift();
+}
+composeArgs.push(...args);
+
+const child = spawn("process-compose", composeArgs, {
+  cwd: root,
+  env,
+  stdio: "inherit",
+});
+const signalExitCodes = { SIGINT: 130, SIGTERM: 143 };
+for (const signal of Object.keys(signalExitCodes)) {
+  process.on(signal, () => child.kill(signal));
+}
+child.on("error", (error) => {
+  console.error(
+    error.code === "ENOENT"
+      ? "Install process-compose first (macOS: brew install process-compose). See README.md."
+      : error.message,
+  );
+  process.exit(1);
+});
+child.on("exit", (code, signal) => {
+  process.exit(code ?? signalExitCodes[signal] ?? 1);
+});

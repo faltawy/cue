@@ -1,0 +1,16 @@
+[package]
+name = "audio-device"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cidre = { workspace = true, features = ["av"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }

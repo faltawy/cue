@@ -1,0 +1,17 @@
+runs:
+  using: "composite"
+  steps:
+    - id: toolchain
+      run: |
+        echo "channel=$(grep 'channel' rust-toolchain.toml | cut -d'"' -f2)" >> $GITHUB_OUTPUT
+        echo "components=$(grep 'components' rust-toolchain.toml | sed 's/.*\[//' | sed 's/\].*//' | tr -d '"' | tr -d ' ')" >> $GITHUB_OUTPUT
+      shell: bash
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ steps.toolchain.outputs.channel }}
+        targets: aarch64-apple-darwin,x86_64-apple-darwin
+        components: ${{ steps.toolchain.outputs.components }}
+    - uses: Swatinem/rust-cache@v2
+      with:
+        cache-targets: "true"
+        prefix-key: v0-rust

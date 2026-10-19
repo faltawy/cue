@@ -1,0 +1,114 @@
+use super::support::{setup_enabled_cloudsync_runtime, setup_runtime, unreachable_witness};
+
+#[tokio::test]
+async fn cloudsync_transport_stays_inert_until_configured() {
+    let (_dir, runtime) = setup_runtime().await;
+
+    let status = runtime.cloudsync_status().await.unwrap();
+    assert_eq!(status["cloudsync_enabled"], false);
+    assert_eq!(status["configured"], false);
+
+    runtime
+        .configure_cloudsync(
+            serde_json::json!({
+                "connection_string": "managed-database-id",
+                "auth": { "type": "token", "token": "test-token" },
+                "tables": anlg_db_app::cloudsync_table_registry(),
+                "sync_interval_ms": 30_000,
+                "wait_ms": 5_000,
+                "max_retries": 3
+            })
+            .to_string(),
+        )
+        .await
+        .unwrap();
+    runtime.start_cloudsync().await.unwrap();
+
+    let status = runtime.cloudsync_status().await.unwrap();
+    assert_eq!(status["configured"], true);
+    assert_eq!(status["running"], false);
+    assert_eq!(status["network_initialized"], false);
+
+    runtime.logout_cloudsync(false).await.unwrap();
+    assert_eq!(
+        runtime.cloudsync_status().await.unwrap()["configured"],
+        false
+    );
+}
+
+#[tokio::test]
+async fn cloudsync_waits_for_legacy_migration_verification() {
+    let (_dir, runtime) = setup_enabled_cloudsync_runtime().await;
+    sqlx::query(
+        "UPDATE storage_migration_state
+         SET parity_verified = 0, last_error = 'completed_with_issues'
+         WHERE id = 'legacy_v1'",
+    )
+    .execute(runtime.pool())
+    .await
+    .unwrap();
+
+    let error = runtime
+        .configure_cloudsync_token(
+            "managed-database-id".to_string(),
+            "token".to_string(),
+            "user-a".to_string(),
+            unreachable_witness("user-a"),
+        )
+        .await
+        .unwrap_err();
+
+    assert!(matches!(&error, crate::Error::Io(_)));
+    assert!(
+        error
+            .to_string()
+            .contains("migration needs attention before CloudSync can start")
+    );
+    assert!(runtime.start_cloudsync().await.is_err());
+    assert!(runtime.sync_cloudsync_now().await.is_err());
+    assert_eq!(
+        runtime.cloudsync_status().await.unwrap()["configured"],
+        false
+    );
+}
+
+#[tokio::test]
+async fn cloudsync_accepts_conflict_only_legacy_migration() {
+    let (_dir, runtime) = setup_runtime().await;
+    anlg_db_app::begin_legacy_import_run(runtime.pool(), "conflict-run", "/vault", false)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO migration_import_items
+         (id, run_id, source_path, source_kind, source_sha256, status,
+          discovered_count, conflict_count, error, completed_at)
+         VALUES ('conflict-item', 'conflict-run', 'sessions/note.md', 'session_document',
+                 'hash', 'conflict', 1, 1, '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+    )
+    .execute(runtime.pool())
+    .await
+    .unwrap();
+    assert_eq!(
+        anlg_db_app::finish_legacy_import_run(runtime.pool(), "conflict-run")
+            .await
+            .unwrap(),
+        "completed_with_conflicts"
+    );
+
+    runtime
+        .configure_cloudsync(
+            serde_json::json!({
+                "connection_string": "managed-database-id",
+                "auth": { "type": "token", "token": "test-token" },
+                "tables": anlg_db_app::cloudsync_table_registry(),
+                "sync_interval_ms": 30_000,
+                "wait_ms": 5_000,
+                "max_retries": 3
+            })
+            .to_string(),
+        )
+        .await
+        .unwrap();
+    runtime.start_cloudsync().await.unwrap();
+    runtime.sync_cloudsync_now().await.unwrap();
+}

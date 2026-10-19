@@ -1,0 +1,31 @@
+Anarlog coach
+
+This package includes code adapted from Catamorphic
+(https://github.com/opencx-labs/catamorphic, commit 29bd60ff).
+
+Catamorphic
+Copyright 2026 The Catamorphic Authors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use these files except in compliance with the License. You may obtain a copy
+of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.
+
+Adapted files (modified from the originals):
+
+  src/errors.ts         from packages/claude-code/src/errors.ts
+  src/usage.ts          from packages/claude-code/src/usage.ts
+  src/questions.ts      from packages/claude-code/src/questions.ts
+  src/interrupt.ts      from packages/claude-code/src/adapter.ts (interrupt grace)
+  src/turn-events.ts    from packages/claude-code/src/transcript.ts (tool lifecycle)
+  src/ui/components/steps.tsx          from packages/registry/src/chat-timeline (step disclosure)
+  src/ui/components/timeline.tsx       from packages/registry/src/chat-timeline (log, jump to latest, turn footer)
+  src/ui/components/question-panel.tsx from packages/registry/src/agent-question-panel
+  src/ui/components/header.tsx         from packages/registry/src/context-meter (memory bar)

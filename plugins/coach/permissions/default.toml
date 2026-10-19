@@ -1,0 +1,13 @@
+[default]
+description = "Default permissions for the plugin"
+permissions = [
+  "allow-llm-endpoint",
+  "allow-get-settings",
+  "allow-set-settings",
+  "allow-choose-project",
+  "allow-probe-mcp-server",
+  "allow-set-mcp-secret",
+  "allow-mcp-statuses",
+  "allow-find-claude-connectors",
+  "allow-add-knowledge",
+]

@@ -1,0 +1,175 @@
+import { Trans, useLingui } from "@lingui/react/macro";
+
+import { ChangelogContent } from "@anlg/changelog";
+import { commands as openerCommands } from "@anlg/plugin-opener2";
+import { X } from "@anlg/ui/components/icons";
+import { Button } from "@anlg/ui/components/ui/button";
+import { cn } from "@anlg/utils";
+
+import { useChangelogContent } from "./data";
+
+import { useShell } from "~/contexts/shell";
+import {
+  useWindowControlsGutter,
+  WINDOW_CONTROLS_GUTTER_PLUS_28_CLASS,
+  WINDOW_CONTROLS_GUTTER_PLUS_80_CLASS,
+} from "~/shared/hooks/useWindowControlsGutter";
+import { StandardContentWrapper } from "~/shared/main";
+import { type Tab, useTabs } from "~/store/zustand/tabs";
+
+export function TabContentChangelog({
+  tab,
+}: {
+  tab: Extract<Tab, { type: "changelog" }>;
+}) {
+  const { current } = tab.state;
+  const { leftsidebar } = useShell();
+  const close = useTabs((state) => state.close);
+  const showSidebarTimelineHeaderGutter = !leftsidebar.expanded;
+  const showExpandedSidebarTimelineHeader = leftsidebar.expanded;
+
+  const content = useChangelogContent(current);
+
+  return (
+    <StandardContentWrapper>
+      <div className="flex h-full flex-col">
+        <div data-tauri-drag-region className="shrink-0 pr-1 pl-3">
+          <ChangelogHeader
+            version={current}
+            showSidebarTimelineHeaderGutter={showSidebarTimelineHeaderGutter}
+            showExpandedSidebarTimelineHeader={
+              showExpandedSidebarTimelineHeader
+            }
+            onClose={() => close(tab)}
+          />
+        </div>
+
+        <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
+          <div className="scroll-fade-y h-full overflow-y-auto px-3 pb-4">
+            <ChangelogBody content={content} />
+          </div>
+        </div>
+      </div>
+    </StandardContentWrapper>
+  );
+}
+
+function ExternalLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <a
+      className="text-foreground decoration-foreground/30 hover:decoration-foreground underline underline-offset-2 transition-colors"
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        void openerCommands.openUrl(href, null);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+function ChangelogBody({ content }: { content: string | null }) {
+  if (content) {
+    return (
+      <ChangelogContent
+        content={content}
+        components={{
+          a: ({
+            href,
+            children,
+          }: {
+            href?: string;
+            children?: React.ReactNode;
+          }) =>
+            href ? (
+              <ExternalLink href={href}>{children}</ExternalLink>
+            ) : (
+              <>{children}</>
+            ),
+        }}
+      />
+    );
+  }
+
+  return (
+    <p className="text-muted-foreground">
+      <Trans>No changelog available for this version.</Trans>
+    </p>
+  );
+}
+
+function ChangelogHeader({
+  showExpandedSidebarTimelineHeader,
+  showSidebarTimelineHeaderGutter,
+  version,
+  onClose,
+}: {
+  showExpandedSidebarTimelineHeader: boolean;
+  showSidebarTimelineHeaderGutter: boolean;
+  version: string;
+  onClose: () => void;
+}) {
+  const { t } = useLingui();
+  const showWindowControlsGutter = useWindowControlsGutter();
+  return (
+    <div
+      data-tauri-drag-region
+      className={cn([
+        "relative flex h-12 w-full items-center",
+        showSidebarTimelineHeaderGutter &&
+          (showWindowControlsGutter
+            ? WINDOW_CONTROLS_GUTTER_PLUS_80_CLASS
+            : "pl-[80px]"),
+      ])}
+    >
+      <div
+        data-tauri-drag-region
+        className={cn([
+          "pointer-events-none absolute inset-y-0 flex items-center",
+          showExpandedSidebarTimelineHeader
+            ? "right-[70px] left-0 justify-start"
+            : showSidebarTimelineHeaderGutter
+              ? cn([
+                  "right-[70px] justify-start",
+                  showWindowControlsGutter
+                    ? WINDOW_CONTROLS_GUTTER_PLUS_28_CLASS
+                    : "left-[28px]",
+                ])
+              : "left-1/2 w-[min(640px,calc(100%_-_160px))] -translate-x-1/2 justify-center",
+        ])}
+      >
+        <h1
+          className={cn([
+            "text-foreground truncate text-xl font-semibold",
+            showExpandedSidebarTimelineHeader || showSidebarTimelineHeaderGutter
+              ? "text-left"
+              : "text-center",
+          ])}
+        >
+          <Trans>What's new in {version}?</Trans>
+        </h1>
+      </div>
+
+      <div className="relative z-10 ml-auto flex shrink-0 items-center gap-0 pr-1">
+        <Button
+          size="icon"
+          variant="ghost"
+          data-tauri-drag-region="false"
+          className="text-muted-foreground hover:text-foreground"
+          aria-label={t`Close changelog`}
+          title={t`Close`}
+          onClick={onClose}
+        >
+          <X size={16} />
+        </Button>
+      </div>
+    </div>
+  );
+}

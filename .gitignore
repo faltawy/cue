@@ -1,0 +1,28 @@
+target/
+**/.build/
+node_modules/
+.pnpm-store/
+.DS_Store
+.env
+.env.*
+!.env.sample
+.venv
+**/__pycache__/
+
+*storybook.log
+.cache/
+
+internal
+.turbo
+.process-compose/
+.pc_env
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Agent scratch / reference material (not for commit)
+.tmp/
+.changelog-hmr-*/
+.codex-security-artifacts-*/
+.codex-security-work-ledger-*.jsonl
+.claude/launch.json

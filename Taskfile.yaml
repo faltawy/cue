@@ -1,0 +1,22 @@
+version: "3"
+dotenv: [".env"]
+
+tasks:
+  clean-plugins:
+    cmds:
+      - find plugins -mindepth 1 -maxdepth 1 -type d ! -exec test -f {}/Cargo.toml \; -exec rm -rf {} \;
+
+  diff:
+    vars:
+      DIFF_FROM: "desktop_v0.0.79"
+      DIFF_TO: "desktop_v0.0.80"
+      PATHS: "apps/desktop/src-tauri plugins crates"
+    cmds:
+      - git diff {{.DIFF_FROM}} {{.DIFF_TO}} -- {{.PATHS}} | diff2html -i stdin
+
+  env-sample:
+    vars:
+      INPUT_ENV: '{{.INPUT_ENV | default ".env"}}'
+      OUTPUT_ENV: '{{.OUTPUT_ENV | default ".env.sample"}}'
+    cmds:
+      - sed -E '/^[A-Z_][A-Z0-9_]*=/s/=.*/=""/' {{.INPUT_ENV}} > {{.OUTPUT_ENV}}

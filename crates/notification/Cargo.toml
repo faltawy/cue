@@ -1,0 +1,16 @@
+[package]
+name = "notification"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["legacy"]
+legacy = ["dep:anlg-notification-macos"]
+
+[dependencies]
+tracing = { workspace = true }
+
+anlg-notification-interface = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+anlg-notification-macos = { path = "../notification-macos", package = "notification-macos", optional = true }

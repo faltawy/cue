@@ -1,0 +1,7 @@
+[default]
+description = "Default permissions for the plugin"
+permissions = [
+  "allow-start-callback-server",
+  "allow-stop-callback-server",
+  "allow-take-pending-deep-links",
+]

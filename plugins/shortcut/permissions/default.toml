@@ -1,0 +1,10 @@
+[default]
+description = "Default permissions for the plugin"
+permissions = [
+  "allow-configure",
+  "allow-validate",
+  "allow-set-active",
+  "allow-configure-coach",
+  "allow-register-hotkey",
+  "allow-unregister-hotkey",
+]

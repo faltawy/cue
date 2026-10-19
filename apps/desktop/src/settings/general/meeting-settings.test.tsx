@@ -1,0 +1,76 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { MeetingSettingsView } from "./meeting-settings";
+
+function setting(value = true) {
+  return {
+    value,
+    onChange: vi.fn(),
+  };
+}
+
+function renderMeetingSettings({
+  autoStartScheduledMeetings = true,
+  floatingBar = true,
+  meetingDisclosureAutoPost = setting(),
+  captureMeetingChat = setting(false),
+  captureSharedScreens = setting(false),
+} = {}) {
+  return {
+    ...render(
+      <MeetingSettingsView
+        autoJoinScheduledMeetings={setting()}
+        autoStartScheduledMeetings={setting(autoStartScheduledMeetings)}
+        autoStopMeetings={setting()}
+        floatingBar={setting(floatingBar)}
+        meetingDisclosureAutoPost={meetingDisclosureAutoPost}
+        captureMeetingChat={captureMeetingChat}
+        captureSharedScreens={captureSharedScreens}
+      />,
+    ),
+    meetingDisclosureAutoPost,
+  };
+}
+
+describe("MeetingSettingsView", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("exposes meeting chat capture, disclosure and stop-on-end controls", () => {
+    renderMeetingSettings();
+
+    expect(
+      screen.getByText("Post recording disclosure in meeting chat"),
+    ).toBeTruthy();
+    expect(screen.getByText("Capture meeting chat in Memos")).toBeTruthy();
+    expect(
+      screen.getByText(/supported meetings using Accessibility/),
+    ).toBeTruthy();
+    expect(screen.getByText("Stop when meeting ends")).toBeTruthy();
+  });
+
+  it("only enables automatic joining when scheduled listening is enabled", () => {
+    renderMeetingSettings({ autoStartScheduledMeetings: false });
+
+    expect(
+      screen
+        .getByRole("switch", { name: "Join scheduled meetings" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+  });
+
+  it("updates the recording disclosure setting", () => {
+    const meetingDisclosureAutoPost = setting(false);
+    renderMeetingSettings({ meetingDisclosureAutoPost });
+
+    fireEvent.click(
+      screen.getByRole("switch", {
+        name: "Post recording disclosure in meeting chat",
+      }),
+    );
+
+    expect(meetingDisclosureAutoPost.onChange).toHaveBeenCalledWith(true);
+  });
+});

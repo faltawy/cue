@@ -1,0 +1,3503 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-05-30 20:26+0900\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: he\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#: src/services/enhancer/summary-notification.ts
+msgid "\"{title}\" is ready to read."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "\"meeting\" is reserved for the coach's own tools."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "(default)"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "(Unavailable — using current default)"
+msgstr ""
+
+#. placeholder {0}: group.sessionIds.length
+#: src/sidebar/toast/undo-delete-toast.tsx
+msgid "{0} {noteLabel} deleted"
+msgstr ""
+
+#. placeholder {0}: auth.name
+#: src/settings/claude/tools.tsx
+msgid "{0} header"
+msgstr ""
+
+#. placeholder {0}: issue.user?.login
+#: src/task/resource-view.tsx
+msgid "{0} opened on"
+msgstr ""
+
+#. placeholder {0}: Math.round((percentage ?? 0) * 100)
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "{0}% complete"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "{absDays} days ago"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "{entryCount} selected"
+msgstr ""
+
+#. placeholder {0}: formatLanguageList(unsupportedLanguages)
+#: src/settings/ai/stt/select.tsx
+msgid "{model} can't transcribe {0}. Try another model or change your spoken languages."
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "{model} can't transcribe all selected languages together. Try another model or use fewer spoken languages."
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "{months} months ago"
+msgstr ""
+
+#: src/sidebar/toast/undo-delete-toast.tsx
+msgid "{title} deleted"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "{weeks} weeks ago"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "1 day"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "1 month"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "1 week"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "3 days"
+msgstr ""
+
+#: src/sidebar/folder-name-dialog.tsx
+msgid "A folder with this name already exists."
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "A Markdown file with the note, summary, and transcript."
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "a month ago"
+msgstr ""
+
+#: src/templates/template-sidebar.tsx
+msgid "A to Z"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "A tool with this name already exists."
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "a week ago"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Access token"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+#: src/settings/general/permissions.tsx
+msgid "Accessibility"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/settings/automations/workflow-builder.tsx
+msgid "Action"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Actions"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Activity"
+msgstr ""
+
+#: src/contacts/shared.tsx
+#: src/settings/dictionary/index.tsx
+#: src/sidebar/toast/registry.tsx
+msgid "Add"
+msgstr ""
+
+#. placeholder {0}: option.name
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "Add \"{0}\""
+msgstr ""
+
+#. placeholder {0}: formatLanguageList(needsSystemSettings)
+#: src/settings/ai/stt/select.tsx
+msgid "Add {0} in System Settings > General > Language & Region to transcribe with {model}, or choose another model."
+msgstr ""
+
+#: src/sidebar/folder-materials.tsx
+msgid "Add a syllabus or PDF for this folder"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Add a trigger and actions."
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Add a trigger, then stack actions like Zapier."
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Add an action"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Add and configure at least one action first."
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Add at least one configured action before enabling."
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Add at least one example summary."
+msgstr ""
+
+#: src/session/folder-instructions.tsx
+msgid "Add context for this folder"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Add email"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Add example"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+msgid "Add file"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "Add file…"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "Add folder…"
+msgstr ""
+
+#: src/settings/general/spoken-languages.tsx
+msgid "Add language"
+msgstr "הוסף שפה"
+
+#: src/sidebar/folder-materials.tsx
+msgid "Add material"
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
+msgid "Add names, jargon, or product terms to prefer"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Add notes about this contact..."
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Add organization"
+msgstr ""
+
+#: src/contacts/new-person-form.tsx
+msgid "Add person"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Add server"
+msgstr ""
+
+#: src/settings/general/spoken-languages.tsx
+msgid "Add spoken language"
+msgstr "הוסף שפה מדוברת"
+
+#: src/calendar/components/event-chip.tsx
+msgid "Add to folder"
+msgstr ""
+
+#: src/settings/general/spoken-languages.tsx
+msgid "Additional spoken languages"
+msgstr "שפות מדוברות נוספות"
+
+#: src/settings/ai/shared/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Advanced"
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+#: src/settings/ai/stt/select.tsx
+msgid "After recording"
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "After the meeting ends"
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "After the meeting summary is ready"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "AI step"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "AI-generated summary of all interactions and notes with this contact will appear here. This will synthesize key discussion points, action items, and relationship context across all meetings and notes."
+msgstr ""
+
+#. placeholder {0}: row.name
+#. placeholder {0}: server.name
+#: src/settings/claude/connectors.tsx
+#: src/settings/claude/tools.tsx
+msgid "Allow {0} to make changes"
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+#: src/settings/claude/tools.tsx
+msgid "Allow changes"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/always-on-top.tsx
+msgid "Always on Top"
+msgstr ""
+
+#: src/settings/appearance/app-icon.tsx
+msgid "Amber"
+msgstr ""
+
+#: src/shared/control.tsx
+msgid "An unexpected error occurred."
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+msgid "Analyzing structure..."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Animals & Nature"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "API Key"
+msgstr ""
+
+#: src/settings/ai/shared/provider-selection-prompt.ts
+msgid "API key saved"
+msgstr ""
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "App"
+msgstr "אפליקציה"
+
+#: src/settings/appearance/app-icon.tsx
+msgid "App icon"
+msgstr ""
+
+#: src/settings/appearance/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Appearance"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "Apple Calendar access is off"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "Apply to all"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Ask before stopping when a meeting may have ended. When alerts are off, Cue keeps listening."
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "Assignees:"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Attach Markdown or text"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Attach up to three past summaries you like. Cue will learn how you prefer meeting notes to be structured and written."
+msgstr ""
+
+#: src/settings/general/index.tsx
+#: src/settings/general/permissions.tsx
+msgid "Audio"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Audio available"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "Audio file retention"
+msgstr ""
+
+#: src/lock/screen.tsx
+msgid "Authenticating…"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Auto summary format"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Auto-add"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Auto-add future meetings?"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Automate what happens before, during, or after meetings based on the conditions you choose."
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Automatically put all future instances of this recurring meeting into a folder."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Automation actions"
+msgstr ""
+
+#: src/automations/actions.ts
+msgid "Automation deleted"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Automation disabled"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Automation draft saved"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Automation enabled"
+msgstr ""
+
+#: src/automations/actions.ts
+msgid "Automation removed"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Automations"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+#: src/calendar/components/event-chip.tsx
+#: src/settings/claude/tools.tsx
+#: src/sidebar/custom-sidebar-header.tsx
+msgid "Back"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Base URL"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Best for this Mac"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "blank"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Bloom"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Bounce app icon"
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Bright canvas"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "Build voiceprints from meeting audio so speakers you name in a transcript are recognized in later meetings. Voiceprints never leave this device, and unnamed ones are deleted after 45 days."
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Busy"
+msgstr ""
+
+#: src/settings/general/permissions.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Calendar"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Calendar connected"
+msgstr ""
+
+#: src/meeting-float/display-setting.tsx
+msgid "camera"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Can transcribe while the meeting is happening."
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+#: src/settings/dictionary/index.tsx
+#: src/settings/general/storage/legacy-cleanup.tsx
+#: src/shared/ui/destructive-confirmation-dialog.tsx
+#: src/sidebar/folder-name-dialog.tsx
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Cancel"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Cancel date edit"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Cancel dictation"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Capture meeting chat in Memos"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Capture shared screens in Memos"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Change auto-add folder"
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/contacts/organization-details.tsx
+msgid "Change photo"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "Change speaker"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "Change speaker from here"
+msgstr ""
+
+#. placeholder {0}: server.name
+#: src/settings/claude/tools.tsx
+msgid "Change the secret for {0}"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Change…"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Check"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Checking migration..."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Checking…"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Chime"
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+msgid "Choose a .bin model"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Choose a file format and what to include."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Choose a starter from the sidebar, or create a workflow and add steps like Zapier."
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+msgid "Choose a transcription model"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Choose a transcription model to start listening."
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Choose an AI model before generating a format."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Choose an export folder first."
+msgstr ""
+
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Choose at least one section to export."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Choose custom color"
+msgstr ""
+
+#: src/settings/automations/starter-config.tsx
+#: src/settings/general/storage/export-location.tsx
+msgid "Choose export folder"
+msgstr ""
+
+#: src/settings/appearance/sidebar-item-fields.tsx
+msgid "Choose extra fields to show on each note."
+msgstr ""
+
+#: src/settings/automations/starter-config.tsx
+#: src/settings/general/storage/export-location.tsx
+msgid "Choose folder"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+msgid "Choose folder icon"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Choose from five completion sounds."
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Choose how Auto structures and styles your summaries."
+msgstr ""
+
+#: src/settings/appearance/app-icon.tsx
+msgid "Choose how Cue appears in the Dock."
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Choose how Cue looks on this device."
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "Choose how long recordings stay on this device."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Choose template icon"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Choose the folder the coach can read."
+msgstr ""
+
+#: src/settings/dictation.tsx
+#: src/settings/general/audio-settings.tsx
+msgid "Choose the microphone that captures your voice."
+msgstr ""
+
+#: src/settings/general/week-start.tsx
+msgid "Choose which day begins your calendar week."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Choose…"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Claude"
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+msgid "Claude connectors"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "Claude isn’t available"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Clean Up"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Clean up legacy files?"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Cleaning up..."
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+#: src/contacts/shared.tsx
+#: src/folders/sidebar.tsx
+#: src/settings/ai/shared/provider-search.tsx
+#: src/sidebar/automations.tsx
+#: src/sidebar/settings.tsx
+#: src/templates/template-icon-picker.tsx
+#: src/templates/template-sidebar.tsx
+msgid "Clear search"
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+msgid "Clear selected model"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "Clear selection"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Click here, then use your dictation shortcut."
+msgstr ""
+
+#: src/shared/ui/resource-list/preview-header.tsx
+msgid "Clone"
+msgstr ""
+
+#: src/changelog/index.tsx
+#: src/session/components/note-input/search/bar.tsx
+msgid "Close"
+msgstr ""
+
+#: src/changelog/index.tsx
+msgid "Close changelog"
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "Closed"
+msgstr ""
+
+#: src/settings/general/index.tsx
+msgid "Coach"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "Coach instructions"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Coach project"
+msgstr ""
+
+#: src/coach/shortcut.tsx
+msgid "Coach shortcut"
+msgstr ""
+
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Collect action items"
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Color theme"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Combine metadata, summary, notes, and transcript."
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "comment"
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "commented on"
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "comments"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Company"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Completion sound"
+msgstr ""
+
+#: src/settings/ai/stt/configure.tsx
+msgid "Configure Providers"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "Confirm"
+msgstr ""
+
+#. placeholder {0}: provider.displayName
+#: src/calendar/components/sidebar.tsx
+msgid "Connect {0}"
+msgstr ""
+
+#: src/onboarding/calendar.tsx
+#: src/onboarding/index.tsx
+msgid "Connect calendar"
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+msgid "Connectors on your Claude account. The coach only uses the ones you turn on, and only reads unless you allow changes."
+msgstr ""
+
+#: src/contacts/contact-page-header.tsx
+msgid "Contact options"
+msgstr ""
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Contacts"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+msgid "Context"
+msgstr ""
+
+#: src/onboarding/calendar.tsx
+msgid "Continue"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Control listening without reopening Cue."
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Copied"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "Copy"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Copy last dictation"
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+msgid "Could not clear the selected model"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Could not copy the transcript. Select the text above to copy it."
+msgstr ""
+
+#: src/shared/copy-text.ts
+msgid "Could not copy to clipboard"
+msgstr ""
+
+#: src/session/hooks/useCreatePreMeetingBrief.ts
+msgid "Could not create the pre-meeting brief. Try again."
+msgstr ""
+
+#: src/automations/actions.ts
+msgid "Could not delete the automation"
+msgstr ""
+
+#: src/session/hooks/useDeleteSession.ts
+msgid "Could not delete this note. Please try again."
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Could not export. Check the export location in Settings and try again."
+msgstr ""
+
+#: src/session/insights/past-notes.ts
+msgid "Could not generate meeting insights. Try again."
+msgstr ""
+
+#: src/automations/actions.ts
+msgid "Could not remove the automation"
+msgstr ""
+
+#: src/sidebar/toast/undo-delete-toast.tsx
+msgid "Could not restore deleted note"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Could not save the automation draft"
+msgstr ""
+
+#: src/sidebar/folder-name-dialog.tsx
+msgid "Could not save the folder."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/settings/automations/workflow-builder.tsx
+msgid "Could not update the automation"
+msgstr ""
+
+#: src/settings/automations/starter-config.tsx
+#: src/settings/general/storage/export-location.tsx
+msgid "Could not update the export folder"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Could not update the note date."
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+msgid "Could not use the selected model"
+msgstr ""
+
+#. placeholder {0}: probe.reason
+#: src/settings/claude/tools.tsx
+msgid "Couldn't reach it: {0}"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "create"
+msgstr ""
+
+#: src/folders/sidebar.tsx
+msgid "Create"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "Create \"{folderName}\""
+msgstr ""
+
+#: src/session/components/note-input/create-brief-suggestion.tsx
+msgid "Create a brief to prepare this meeting"
+msgstr ""
+
+#: src/folders/index.tsx
+msgid "Create a folder from the sidebar to group related notes and files."
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "Create new speaker"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Created"
+msgstr ""
+
+#: src/session/components/note-input/raw.tsx
+msgid "Creating brief..."
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Cue can hear others"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Cue can hear your voice"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Cue can read meeting details"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Cue needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat."
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Cue will retry automatically. This does not affect your notes."
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Cue will sync your calendar to get meeting reminders"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+#: src/templates/auto-form.tsx
+msgid "Current default"
+msgstr ""
+
+#: src/templates/template-sidebar.tsx
+msgid "Customized"
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Dark"
+msgstr ""
+
+#: src/settings/automations/markdown-export-options.tsx
+#: src/sidebar/note-filter-menu.tsx
+msgid "Date"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Date and time are required"
+msgstr ""
+
+#: src/settings/appearance/app-icon.tsx
+msgid "Default"
+msgstr ""
+
+#: src/settings/general/main-language.tsx
+msgid "Default language for transcription and AI responses."
+msgstr ""
+
+#: src/contacts/contact-page-header.tsx
+#: src/folders/folder-editor.tsx
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+#: src/session/components/outer-header/overflow/delete.tsx
+#: src/sidebar/automations.tsx
+#: src/sidebar/timeline/index.tsx
+#: src/templates/sections-editor.tsx
+#: src/templates/template-form.tsx
+msgid "Delete"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Delete {pendingDeleteCount} selected notes?"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Delete 1 selected note?"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Delete All Recurring Events"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Delete automation"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Delete Event"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+#: src/sidebar/folder-materials.tsx
+msgid "Delete folder"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Delete model"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Delete Note"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Delete Selected ({sessionCount})"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Delete This Event"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Deprecated"
+msgstr ""
+
+#: src/templates/template-form.tsx
+msgid "Describe the template purpose..."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Detect meetings from microphone activity."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Detection delay"
+msgstr ""
+
+#: src/settings/dictation.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Dictation"
+msgstr ""
+
+#: src/settings/dictation-shortcut.tsx
+msgid "Dictation shortcut"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Dictation uses your microphone, transcription provider, languages, and dictionary. Temporary audio is deleted after transcription. Your last transcript stays in memory until dictation is disabled or Cue closes."
+msgstr ""
+
+#: src/settings/dictation.tsx
+#: src/settings/dictionary/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Dictionary"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Disable"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Disable all notifications"
+msgstr ""
+
+#: src/calendar/components/sidebar.tsx
+msgid "Disconnect"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "Don't save"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Download"
+msgstr ""
+
+#. placeholder {0}: activeDownloads.length
+#: src/sidebar/toast/registry.tsx
+msgid "Downloading {0} models"
+msgstr ""
+
+#: src/sidebar/toast/registry.tsx
+msgid "Downloading {downloadingModel}"
+msgstr ""
+
+#: src/sidebar/toast/registry.tsx
+msgid "Downloading model"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/settings/automations/workflow-builder.tsx
+#: src/sidebar/automations.tsx
+msgid "Draft"
+msgstr ""
+
+#: src/templates/details.tsx
+#: src/templates/template-form.tsx
+msgid "Duplicate"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Duration"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "e.g. I'm the CTO of Northwind. Prefer short answers. Never promise dates."
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Each example must be 12,000 characters or fewer."
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "Earlier versions of this note, newest first."
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+#: src/settings/dictionary/index.tsx
+#: src/sidebar/automations.tsx
+msgid "Edit"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Edit date"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Email"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Emojis"
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "Empty note"
+msgstr ""
+
+#. placeholder {0}: permissionName.toLowerCase()
+#: src/onboarding/permissions.tsx
+msgid "Enable {0}"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Enable dictation"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/settings/automations/workflow-builder.tsx
+#: src/sidebar/automations.tsx
+msgid "Enabled"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/participants/chip.tsx
+msgid "Enhance contact"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/participants/chip.tsx
+msgid "Enhance contact {label}"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Enter a model identifier"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Enter a user name without \":\"."
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Enter a valid date and time"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+#: src/sidebar/folder-name-dialog.tsx
+msgid "Enter a valid folder name."
+msgstr ""
+
+#: src/settings/claude/spend-limit.tsx
+msgid "Enter an amount from $0.01 to $100."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Enter an http or https address."
+msgstr ""
+
+#: src/templates/template-form.tsx
+msgid "Enter template title"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Enter the secret this server needs."
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Enter your API key"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Enter your API key (optional)"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Event notifications"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Example summary"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Examples are used only to improve this format. They are not saved or reused for future meetings."
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Examples must be Markdown or plain text files."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Exclude apps from detection"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Expected output"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+#: src/session/components/outer-header/overflow/index.tsx
+msgid "Export"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Export every meeting as Markdown"
+msgstr ""
+
+#: src/settings/automations/starter-config.tsx
+msgid "Export folder"
+msgstr ""
+
+#: src/settings/general/storage/export-location.tsx
+msgid "Export location"
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Export the meeting as Markdown"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Exporting..."
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "Failed to load issue"
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "Failed to load pull request"
+msgstr ""
+
+#: src/templates/details.tsx
+msgid "Favorite template"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "File format"
+msgstr ""
+
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Filename"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "Files and folders the coach can read when they're relevant. They are read on demand, not sent with every message."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Flags"
+msgstr ""
+
+#: src/settings/shortcut-recorder.tsx
+msgid "Fn / Globe"
+msgstr ""
+
+#: src/settings/appearance/sidebar-item-fields.tsx
+#: src/sidebar/note-filter-menu.tsx
+msgid "Folder"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+msgid "Folder actions"
+msgstr ""
+
+#: src/session/folder-instructions.tsx
+msgid "Folder context"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+#: src/sidebar/folder-name-dialog.tsx
+msgid "Folder name"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "Folder: {currentPath}"
+msgstr ""
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Folders"
+msgstr ""
+
+#: src/meeting-float/display-setting.tsx
+msgid "Follow my pointer"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Food & Drink"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "For enabled notifications"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "Forever"
+msgstr ""
+
+#. placeholder {0}: probe.server_name
+#: src/settings/claude/tools.tsx
+msgid "Found {0}. No sign-in needed."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Frequently used"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Future meetings"
+msgstr ""
+
+#: src/settings/general/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "General"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/index.tsx
+msgid "Generate summary"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+#: src/session/components/title-input.tsx
+msgid "Generating title..."
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Generating transcript..."
+msgstr ""
+
+#: src/sidebar/automations.tsx
+msgid "Get started"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Get your attention when a summary is ready in the background."
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Go back to now"
+msgstr ""
+
+#: src/sidebar/custom-sidebar-header.tsx
+msgid "Go home"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Go to"
+msgstr ""
+
+#: src/shared/control.tsx
+msgid "Go to Home"
+msgstr ""
+
+#: src/onboarding/shared.tsx
+msgid "Go to next section"
+msgstr ""
+
+#: src/onboarding/shared.tsx
+msgid "Go to previous section"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Got it"
+msgstr ""
+
+#: src/folders/sidebar.tsx
+msgid "Group related notes and files in a folder."
+msgstr ""
+
+#: src/sidebar/note-filter-menu.tsx
+msgid "Grouping"
+msgstr ""
+
+#: src/sidebar/note-filter-menu.tsx
+msgid "Grouping, {groupingLabel}"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Haiku"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Hands-free dictation"
+msgstr ""
+
+#: src/settings/general/app-settings.tsx
+msgid "Have Cue ready when you sign in."
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "Having trouble?"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Header name"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Header names use letters, digits, - or _."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Header value"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Header, e.g. X-API-Key"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Help Cue listen to others"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Help Cue listen to you"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Help Cue read meeting activity"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Hide all notification panels, Dock alerts, and completion sounds."
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Hide Deleted Events"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Hide preview"
+msgstr ""
+
+#: src/session/components/note-conflict-banner.tsx
+msgid "History"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Hold your shortcut while speaking, then release it to finish."
+msgstr ""
+
+#: src/contacts/humans.tsx
+msgid "Human"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Icons"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Importing audio..."
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Improve format"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Improve summary format"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Improve with examples"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "in {absDays} days"
+msgstr ""
+
+#: src/sidebar/timeline/upcoming-meeting.ts
+msgid "In {minutes}m {seconds}s"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "in {months} months"
+msgstr ""
+
+#: src/sidebar/timeline/upcoming-meeting.ts
+msgid "In {totalSeconds}s"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "in {weeks} weeks"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Include"
+msgstr ""
+
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Include meeting ID"
+msgstr ""
+
+#: src/templates/sections-editor.tsx
+msgid "Insert above"
+msgstr ""
+
+#: src/templates/sections-editor.tsx
+msgid "Insert below"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Job Title"
+msgstr ""
+
+#: src/services/event-notification/index.ts
+#: src/session/components/outer-header/index.tsx
+msgid "Join & record"
+msgstr ""
+
+#: src/session/components/outer-header/index.tsx
+msgid "Join meeting and record"
+msgstr ""
+
+#: src/onboarding/final.tsx
+msgid "Join our community and stay updated:"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Join scheduled meetings"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Keep Cue running to use your shortcut in other apps."
+msgstr ""
+
+#: src/session/components/note-conflict-banner.tsx
+msgid "Keep this version"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "Knowledge"
+msgstr ""
+
+#: src/settings/general/index.tsx
+msgid "Language & Region"
+msgstr "שפה ואזור"
+
+#: src/settings/dictation.tsx
+msgid "Language & transcription"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Last dictation"
+msgstr ""
+
+#. placeholder {0}: lastRun.detail
+#: src/settings/automations/starter-config.tsx
+msgid "Last run {relative}: {0}"
+msgstr ""
+
+#. placeholder {0}: lastRun.detail
+#: src/settings/automations/starter-config.tsx
+msgid "Last run failed {relative}: {0}"
+msgstr ""
+
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Leave blank to use the meeting date and title."
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Light"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "LinkedIn"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "listen"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Listening…"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Live"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Live transcript preview"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Loading Auto format..."
+msgstr ""
+
+#: src/calendar/components/calendar-selection.tsx
+msgid "Loading calendars"
+msgstr ""
+
+#: src/settings/general/index.tsx
+#: src/settings/hydration-boundary.tsx
+msgid "Loading settings"
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/task/resource-view.tsx
+msgid "Loading..."
+msgstr ""
+
+#: src/session/components/outer-header/overflow/lock-note.tsx
+#: src/sidebar/timeline/item.tsx
+msgid "Lock Note"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Locked note"
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+msgid "Looking for connectors on your Claude account…"
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Low-light canvas"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "macOS cannot access your login Keychain. Repairing briefly locks it and asks for your Mac password before Cue retries this API key."
+msgstr ""
+
+#: src/settings/general/main-language.tsx
+msgid "Main language"
+msgstr "שפה ראשית"
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Markdown export"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Match case"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Match whole word"
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Match your device"
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+#: src/sidebar/folder-materials.tsx
+msgid "Materials"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "MCP servers the coach can use in every meeting. Their tools only read unless you allow changes. Secrets stay in your Keychain."
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Meeting"
+msgstr ""
+
+#: src/session/components/note-input/meeting-chat-highlights.tsx
+msgid "Meeting chat"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Meeting details access turned on"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Meeting ends"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/index.tsx
+msgid "Meeting info"
+msgstr ""
+
+#: src/settings/general/index.tsx
+msgid "Meeting island"
+msgstr ""
+
+#: src/settings/general/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Meetings"
+msgstr "פגישות"
+
+#: src/contacts/organization-details.tsx
+msgid "member"
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+msgid "members"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Memo"
+msgstr ""
+
+#: src/session/components/note-input/header-raw.tsx
+msgid "Memos"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "Merge"
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "Merged"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Metadata"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+#: src/settings/dictation.tsx
+#: src/settings/general/audio-settings.tsx
+#: src/settings/general/permissions.tsx
+msgid "Microphone"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Microphone access turned on"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Microphone detection"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Migration complete"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Migration needs attention"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Migration status unavailable"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Model"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Model being used"
+msgstr ""
+
+#: src/settings/ai/stt/context.tsx
+msgid "Model download couldn’t start"
+msgstr ""
+
+#: src/contexts/notifications.tsx
+msgid "Model downloaded"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+msgid "Model is thinking..."
+msgstr ""
+
+#: src/settings/general/week-start.tsx
+msgid "Monday"
+msgstr ""
+
+#: src/templates/sections-editor.tsx
+msgid "Move down"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Move this note"
+msgstr ""
+
+#: src/templates/sections-editor.tsx
+msgid "Move up"
+msgstr ""
+
+#: src/sidebar/automations.tsx
+msgid "My automations"
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/contacts/organization-details.tsx
+msgid "Name"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Name, e.g. clients"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Navigate"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Needs a secret"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Needs a user name and password."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Needs an access token."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Needs an access token. This server usually signs in through a browser; paste an API key or personal token from its settings."
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Needs setup"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "New access token"
+msgstr ""
+
+#: src/sidebar/automations.tsx
+msgid "New automation"
+msgstr ""
+
+#: src/folders/sidebar.tsx
+msgid "New folder"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "New note"
+msgstr ""
+
+#: src/main/empty.tsx
+msgid "New Note"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "New password"
+msgstr ""
+
+#. placeholder {0}: server.name
+#: src/settings/claude/tools.tsx
+msgid "New secret for {0}"
+msgstr ""
+
+#: src/session/components/note-input/raw.tsx
+#: src/templates/details.tsx
+#: src/templates/template-sidebar.tsx
+msgid "New template"
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+#: src/contacts/shared.tsx
+#: src/sidebar/note-filter-menu.tsx
+msgid "Newest"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Next match"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "next month"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "next week"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "No"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "No apps found."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "No automation draft yet"
+msgstr ""
+
+#. placeholder {0}: search.trim()
+#: src/sidebar/automations.tsx
+msgid "No automations match “{0}”"
+msgstr ""
+
+#: src/sidebar/automations.tsx
+msgid "No automations yet"
+msgstr ""
+
+#: src/calendar/components/calendar-selection.tsx
+msgid "No calendars found"
+msgstr ""
+
+#: src/changelog/index.tsx
+msgid "No changelog available for this version."
+msgstr ""
+
+#: src/templates/details.tsx
+msgid "No community templates available"
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+msgid "No connectors found. Add them in Claude under Settings → Connectors."
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "No content."
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "No description provided."
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "No earlier versions yet."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "No emoji found"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "No folder"
+msgstr ""
+
+#: src/settings/automations/starter-config.tsx
+msgid "No folder selected yet."
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "No folders found."
+msgstr ""
+
+#. placeholder {0}: search.trim()
+#: src/folders/sidebar.tsx
+msgid "No folders match “{0}”"
+msgstr ""
+
+#: src/folders/index.tsx
+#: src/folders/sidebar.tsx
+msgid "No folders yet"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "No folders yet."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "No icons found"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "No items today"
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
+msgid "No match"
+msgstr ""
+
+#: src/settings/general/main-language.tsx
+#: src/settings/general/spoken-languages.tsx
+msgid "No matching languages found"
+msgstr "לא נמצאו שפות מתאימות"
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "No matching people"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "No people"
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+msgid "No people in this organization"
+msgstr ""
+
+#: src/settings/ai/stt/configure.tsx
+#: src/settings/ai/stt/select.tsx
+msgid "No providers found."
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+msgid "No related notes found"
+msgstr ""
+
+#. placeholder {0}: rankedQuery.trim()
+#: src/shared/open-note-dialog.tsx
+msgid "No results for “{0}”"
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+#: src/settings/general/searchable-select.tsx
+#: src/sidebar/settings.tsx
+msgid "No results found."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "No sign-in"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "No sign-in needed."
+msgstr ""
+
+#. placeholder {0}: search.trim()
+#: src/templates/template-sidebar.tsx
+msgid "No templates match “{0}”"
+msgstr ""
+
+#: src/templates/details.tsx
+#: src/templates/template-sidebar.tsx
+msgid "No templates yet"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "No transcript available"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Not connected"
+msgstr ""
+
+#: src/sidebar/toast/undo-delete-toast.tsx
+msgid "note"
+msgstr ""
+
+#: src/lock/screen.tsx
+msgid "Note is Locked"
+msgstr ""
+
+#: src/sidebar/toast/undo-delete-toast.tsx
+msgid "notes"
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/shared/open-note-dialog.tsx
+msgid "Notes"
+msgstr ""
+
+#: src/settings/appearance/sidebar-item-fields.tsx
+msgid "Notes list"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/folders/folder-editor.tsx
+#: src/sidebar/folder-materials.tsx
+msgid "Notes stay in All notes. Materials in this folder will be deleted."
+msgstr ""
+
+#: src/settings/general/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Notifications"
+msgstr "התראות"
+
+#: src/sidebar/timeline/index.tsx
+#: src/sidebar/timeline/upcoming-meeting.ts
+msgid "Now"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Nudges"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Nudges pause once they reach this estimated amount in a meeting. Asking the coach always works."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Objects"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Older files that differ from your current data were kept as recovery copies. No action is required."
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+#: src/contacts/shared.tsx
+#: src/sidebar/note-filter-menu.tsx
+msgid "Oldest"
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+#: src/settings/claude/tools.tsx
+msgid "On"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+#: src/shared/open-note-dialog.tsx
+#: src/task/resource-view.tsx
+msgid "Open"
+msgstr ""
+
+#. placeholder {0}: permissionName.toLowerCase()
+#. placeholder {0}: title.toLowerCase()
+#: src/calendar/components/apple/permission.tsx
+#: src/onboarding/permissions.tsx
+#: src/settings/general/permissions.tsx
+msgid "Open {0} settings"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Open calendar"
+msgstr ""
+
+#: src/calendar/components/calendar-selection.tsx
+#: src/calendar/components/sidebar.tsx
+msgid "Open calendar account actions"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "Open Claude settings"
+msgstr ""
+
+#: src/onboarding/final.tsx
+#: src/services/enhancer/summary-notification.ts
+msgid "Open Cue"
+msgstr ""
+
+#: src/settings/general/app-settings.tsx
+msgid "Open Cue from the menu bar."
+msgstr ""
+
+#: src/session/components/outer-header/overflow/index.tsx
+msgid "Open floating panel"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Open in new tab"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/index.tsx
+#: src/sidebar/timeline/item.tsx
+msgid "Open in New Window"
+msgstr ""
+
+#: src/services/event-notification/index.ts
+msgid "Open meeting"
+msgstr ""
+
+#: src/task/resource-view.tsx
+msgid "Open on GitHub"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "Open Settings"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Open the meeting link when a scheduled meeting begins."
+msgstr ""
+
+#. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
+#: src/onboarding/permissions.tsx
+msgid "Opens System Settings and guides you to add Cue to the {0} list"
+msgstr ""
+
+#. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
+#: src/settings/general/permissions.tsx
+msgid "Opens System Settings and guides you to add Cue to the {0} list."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Opus"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "or"
+msgstr ""
+
+#: src/sidebar/note-filter-menu.tsx
+msgid "Ordering"
+msgstr ""
+
+#: src/sidebar/note-filter-menu.tsx
+msgid "Ordering, {orderingLabel}"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Organization"
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+msgid "Organization name"
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "Other device's version"
+msgstr ""
+
+#: src/settings/general/permissions.tsx
+msgid "Others"
+msgstr ""
+
+#: src/shared/control.tsx
+msgid "Page not found"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Participants"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Password"
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Paste a past summary you like..."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Pause alerts while Do Not Disturb is on."
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+#: src/shared/open-note-dialog.tsx
+msgid "People"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "permission panel."
+msgstr ""
+
+#: src/settings/dictation.tsx
+#: src/settings/general/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Permissions"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Permissions granted"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Phone"
+msgstr ""
+
+#: src/contacts/contact-page-header.tsx
+msgid "Pin"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Play a sound when transcription or summaries finish."
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+msgid "Play from here"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Post recording disclosure in meeting chat"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "preferences"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Prepare for events with a 5-minute reminder."
+msgstr ""
+
+#: src/session/components/outer-header/overflow/export-modal.tsx
+msgid "Preparing transcript..."
+msgstr ""
+
+#: src/settings/shortcut-recorder.tsx
+msgid "Preparing…"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Press Escape to cancel. Dictation stops after five minutes and pauses while Cue records a meeting."
+msgstr ""
+
+#: src/settings/shortcut-recorder.tsx
+msgid "Press shortcut…"
+msgstr ""
+
+#: src/settings/shortcut-recorder.tsx
+msgid "Press the new keys. Esc cancels."
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Press your shortcut to start, then press it again to finish."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Prevent selected apps from triggering meeting detection."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/settings/general/notification.tsx
+msgid "Preview"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Previous match"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Re-transcribe"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Re-transcribe this audio, or upload a transcript file."
+msgstr ""
+
+#: src/session/components/note-input/transcript/actions.ts
+msgid "Re-transcription failed"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Read meeting controls and visible chat"
+msgstr ""
+
+#: src/settings/general/permissions.tsx
+msgid "Read meeting controls and visible chat."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+#: src/settings/general/notification.tsx
+msgid "Ready"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Ready to dictate"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Ready to go"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+msgid "Reasoning models think through the transcript before writing."
+msgstr ""
+
+#: src/session/components/note-input/meeting-chat-highlights.tsx
+msgid "received"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Recent"
+msgstr ""
+
+#: src/calendar/components/sidebar.tsx
+msgid "Reconnect"
+msgstr ""
+
+#: src/session/components/outer-header/index.tsx
+msgid "Record"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Record a meeting"
+msgstr ""
+
+#: src/settings/general/permissions.tsx
+msgid "Record other participants in meetings."
+msgstr ""
+
+#: src/settings/general/permissions.tsx
+msgid "Record your voice in meetings and calls."
+msgstr ""
+
+#: src/session/components/note-input/transcript/actions.ts
+msgid "Recording not found. It may have been deleted."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Recording status prompts"
+msgstr ""
+
+#: src/calendar/components/calendar-selection.tsx
+msgid "Refresh calendars"
+msgstr ""
+
+#: src/session/components/note-input/template-picker.tsx
+msgid "Regenerate"
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+msgid "Related Notes"
+msgstr ""
+
+#: src/settings/general/audio-settings.tsx
+msgid "Remember speakers"
+msgstr ""
+
+#: src/settings/todo/provider-content.tsx
+msgid "Reminders"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+#: src/settings/claude/tools.tsx
+#: src/sidebar/automations.tsx
+msgid "Remove"
+msgstr ""
+
+#. placeholder {0}: material.filename
+#. placeholder {0}: server.name
+#: src/folders/folder-editor.tsx
+#: src/settings/claude/tools.tsx
+#: src/sidebar/folder-materials.tsx
+msgid "Remove {0}"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "Remove {path}"
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
+msgid "Remove {term}"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Remove automation"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Remove email"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "Remove example {0}"
+msgstr ""
+
+#: src/contacts/contact-page-header.tsx
+msgid "Remove photo"
+msgstr ""
+
+#: src/sidebar/folder-materials.tsx
+msgid "Rename"
+msgstr ""
+
+#: src/sidebar/folder-materials.tsx
+msgid "Rename folder"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Render canonical Markdown"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Repair Keychain Access"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Replace"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Replace all"
+msgstr ""
+
+#: src/session/components/note-input/search/bar.tsx
+msgid "Replace with..."
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "Request"
+msgstr ""
+
+#. placeholder {0}: title.toLowerCase()
+#: src/calendar/components/apple/permission.tsx
+msgid "Request {0}"
+msgstr ""
+
+#. placeholder {0}: title.toLowerCase()
+#: src/settings/general/permissions.tsx
+msgid "Request {0} permission"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+#: src/settings/ai/shared/index.tsx
+msgid "Reset"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Reset to default format"
+msgstr ""
+
+#: src/settings/general/storage/export-location.tsx
+msgid "Reset to Downloads"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Respect Do-Not-Disturb mode"
+msgstr ""
+
+#: src/shared/control.tsx
+msgid "Restart App"
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "Restore"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Retry"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Retry setup"
+msgstr ""
+
+#: src/settings/shortcut-recorder.tsx
+msgid "Right Command"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Run"
+msgstr ""
+
+#: src/sidebar/automations.tsx
+msgid "Run steps automatically when a meeting ends."
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+#: src/settings/ai/stt/select.tsx
+msgid "Runs after the recording finishes, not during the meeting."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+#: src/settings/dictionary/index.tsx
+#: src/templates/auto-form.tsx
+msgid "Save"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Save & enable"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Save completed meetings as local Markdown files."
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Save date"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Save draft"
+msgstr ""
+
+#: src/settings/general/storage/export-location.tsx
+msgid "Save PDF, text, Markdown, and Org exports to this folder."
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Save slides and screens others share in meetings. Requires Screen Recording."
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Save visible chat from supported meetings using Accessibility."
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Saved"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/index.tsx
+msgid "Scroll to bottom"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/index.tsx
+msgid "Scroll to top"
+msgstr ""
+
+#: src/sidebar/automations.tsx
+msgid "Search automations..."
+msgstr ""
+
+#: src/contacts/shared.tsx
+msgid "Search contacts..."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Search emoji..."
+msgstr ""
+
+#: src/folders/sidebar.tsx
+msgid "Search folders..."
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Search icons..."
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Search installed apps..."
+msgstr ""
+
+#: src/settings/general/main-language.tsx
+msgid "Search language..."
+msgstr "שפת חיפוש..."
+
+#: src/contacts/details.tsx
+msgid "Search or add company"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "Search or create folder"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Search or jump to…"
+msgstr ""
+
+#: src/settings/ai/shared/provider-search.tsx
+msgid "Search providers"
+msgstr ""
+
+#: src/settings/ai/shared/provider-search.tsx
+msgid "Search providers..."
+msgstr ""
+
+#: src/sidebar/settings.tsx
+msgid "Search settings..."
+msgstr ""
+
+#: src/session/components/note-input/template-picker.tsx
+#: src/templates/template-sidebar.tsx
+msgid "Search templates..."
+msgstr ""
+
+#: src/settings/general/timezone.tsx
+msgid "Search timezone..."
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+#: src/session/components/note-input/search/bar.tsx
+#: src/settings/general/searchable-select.tsx
+msgid "Search..."
+msgstr ""
+
+#: src/settings/claude/connectors.tsx
+msgid "Searches and reads mail. With changes allowed it can write drafts. It never sends, deletes or labels mail."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Secret"
+msgstr ""
+
+#: src/templates/sections-editor.tsx
+msgid "Section actions"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "See all folders"
+msgstr ""
+
+#: src/session/components/note-input/template-picker.tsx
+msgid "See all templates"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Select a model"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Select a person to view details"
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+msgid "Select a provider"
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+msgid "Select an organization to view details"
+msgstr ""
+
+#: src/settings/general/week-start.tsx
+msgid "Select day"
+msgstr ""
+
+#: src/session/components/folder-picker.tsx
+msgid "Select folder"
+msgstr ""
+
+#: src/settings/general/main-language.tsx
+msgid "Select language"
+msgstr "בחר שפה"
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "Select or type to add speaker"
+msgstr ""
+
+#: src/settings/general/timezone.tsx
+msgid "Select timezone"
+msgstr ""
+
+#: src/settings/general/searchable-select.tsx
+msgid "Select..."
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+msgid "Send email"
+msgstr ""
+
+#: src/session/components/note-input/meeting-chat-highlights.tsx
+msgid "sent"
+msgstr ""
+
+#: src/session/components/note-input/header.tsx
+msgid "Session note views"
+msgstr ""
+
+#: src/session/components/title-input.tsx
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Session title"
+msgstr ""
+
+#: src/settings/ai/shared/provider-selection-prompt.ts
+msgid "Set {providerName} as the current provider?"
+msgstr ""
+
+#: src/settings/ai/shared/provider-selection-prompt.ts
+msgid "Set as current"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+#: src/templates/details.tsx
+msgid "Set as default"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Setting up dictation…"
+msgstr ""
+
+#: src/main/empty.tsx
+#: src/shared/open-note-dialog.tsx
+#: src/sidebar/toast/registry.tsx
+msgid "Settings"
+msgstr ""
+
+#: src/session/components/note-input/meeting-screen-gallery.tsx
+msgid "Shared screen at {time}"
+msgstr ""
+
+#: src/session/components/note-input/meeting-screen-gallery.tsx
+msgid "Shared screens"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Show All Recurring Events"
+msgstr ""
+
+#: src/settings/general/app-settings.tsx
+msgid "Show app in Dock"
+msgstr ""
+
+#: src/settings/general/permissions.tsx
+msgid "Show Apple Calendar events in Cue."
+msgstr ""
+
+#: src/settings/general/app-settings.tsx
+msgid "Show Cue in the Dock and app switcher."
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Show Deleted Events"
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Show Event"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Show floating bar"
+msgstr ""
+
+#: src/calendar/components/session-chip.tsx
+#: src/settings/ai/stt/select.tsx
+#: src/sidebar/timeline/item.tsx
+msgid "Show in Finder"
+msgstr ""
+
+#: src/meeting-float/screenshot-setting.tsx
+msgid "Show in screenshots and screen sharing"
+msgstr ""
+
+#: src/settings/appearance/time-format.tsx
+msgid "Show meeting times as 14:00 instead of 2:00 PM."
+msgstr ""
+
+#: src/meeting-float/display-setting.tsx
+msgid "Show on"
+msgstr ""
+
+#: src/settings/appearance/sidebar-item-fields.tsx
+msgid "Show tags under the date and time."
+msgstr ""
+
+#: src/settings/appearance/sidebar-item-fields.tsx
+msgid "Show the folder above the title."
+msgstr ""
+
+#: src/settings/general/timezone.tsx
+msgid "Show the timeline in your preferred timezone."
+msgstr ""
+
+#: src/sidebar/timeline/item.tsx
+msgid "Show This Event"
+msgstr ""
+
+#: src/settings/general/app-settings.tsx
+msgid "Show tray icon"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Show when a summary is ready."
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Show words in the floating panel as you speak. Uses a live connection to your selected transcription provider when supported. Text is inserted when you finish."
+msgstr ""
+
+#: src/contacts/self-name.tsx
+msgid "Shown for your voice in transcripts. Empty shows “You”."
+msgstr ""
+
+#: src/settings/appearance/app-icon.tsx
+msgid "Silver"
+msgstr ""
+
+#: src/onboarding/shared.tsx
+msgid "Skip"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Smileys & People"
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Software Engineer"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/selection-menu.tsx
+#: src/shared/control.tsx
+msgid "Something went wrong"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Something went wrong while generating the summary."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Sonnet"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Sonnet is the default. Opus is slower and smarter."
+msgstr ""
+
+#: src/sidebar/note-filter-menu.tsx
+msgid "Sort notes"
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+#: src/contacts/shared.tsx
+msgid "Sort options"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Sound"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Source: {provider} (AI model provider)"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Source: AI model provider"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Source: OpenRouter (AI routing service)"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Source: OpenRouter or the AI model provider"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Sparkle"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Speak into the focused text field in your apps. Your transcript appears when you finish."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Spend limit per meeting"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "SQLite migration verification is incomplete"
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Stack another destination. Steps run top to bottom."
+msgstr ""
+
+#: src/settings/general/app-settings.tsx
+msgid "Start Cue at login"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Start listening when a scheduled meeting begins."
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "start recording"
+msgstr ""
+
+#: src/services/event-notification/index.ts
+msgid "Start recording"
+msgstr ""
+
+#: src/main/empty.tsx
+msgid "Start Recording"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Start when meeting begins"
+msgstr "התחל כאשר הפגישה מתחילה"
+
+#: src/session/components/note-input/raw.tsx
+msgid "Start with a favorite template"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Start with permissions"
+msgstr ""
+
+#: src/session/components/note-input/raw.tsx
+msgid "Start writing..."
+msgstr ""
+
+#: src/settings/ai/stt/select.tsx
+#: src/sidebar/toast/registry.tsx
+msgid "Starting"
+msgstr ""
+
+#: src/services/event-notification/index.ts
+msgid "Starting in {minutesUntil} minutes"
+msgstr ""
+
+#: src/services/event-notification/index.ts
+msgid "Starting in 1 minute"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Starting microphone…"
+msgstr ""
+
+#: src/sidebar/toast/registry.tsx
+msgid "Starting transcription..."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Steps run from top to bottom."
+msgstr ""
+
+#: src/session/components/outer-header/index.tsx
+msgid "Stop"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Stop auto-add"
+msgstr ""
+
+#: src/session/components/outer-header/index.tsx
+#: src/sidebar/timeline/item.tsx
+msgid "Stop listening"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Stop listening when your call ends."
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Stop transcription"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Stop when meeting ends"
+msgstr "עצור כאשר הפגישה מסתיימת"
+
+#: src/settings/general/storage/index.tsx
+msgid "Storage"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Success"
+msgstr ""
+
+#: src/session/components/note-input/raw.tsx
+msgid "Suggested templates"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "Summaries use Claude through the Claude sign-in on this Mac. Check the Claude settings, then try again."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Summaries, titles, briefs and the coach run on Claude, using the Claude sign-in on this Mac. No API keys needed."
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/session/components/outer-header/overflow/export-modal.tsx
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Summary"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Summary complete"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Summary format"
+msgstr ""
+
+#: src/templates/auto-form.tsx
+msgid "Summary format cannot be empty."
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/session/components/note-input/enhanced/enhance-error.tsx
+msgid "Summary generation failed"
+msgstr ""
+
+#: src/services/enhancer/summary-notification.ts
+msgid "Summary ready"
+msgstr ""
+
+#: src/settings/general/week-start.tsx
+msgid "Sunday"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Symbols"
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "Synced"
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "System"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+#: src/settings/general/permissions.tsx
+msgid "System audio"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "System audio enabled"
+msgstr ""
+
+#: src/settings/appearance/sidebar-item-fields.tsx
+msgid "Tags"
+msgstr ""
+
+#: src/settings/general/meeting-settings.tsx
+msgid "Tell participants when listening starts; this does not confirm consent."
+msgstr ""
+
+#: src/templates/auto-form.tsx
+#: src/templates/details.tsx
+#: src/templates/template-form.tsx
+msgid "Template actions"
+msgstr ""
+
+#: src/templates/sections-editor.tsx
+msgid "Template content with Jinja2: {{ variable }}, {% if condition %}"
+msgstr ""
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Templates"
+msgstr ""
+
+#: src/templates/details.tsx
+#: src/templates/template-sidebar.tsx
+msgid "Templates shape how your meeting notes are written."
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Test"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+msgid "Test runs are not available yet."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "The coach can search the web and read public pages when you ask about something mentioned in a meeting."
+msgstr ""
+
+#: src/shared/control.tsx
+msgid "The page you're looking for doesn't exist."
+msgstr ""
+
+#: src/settings/appearance/theme.tsx
+msgid "Theme"
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Then"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "These are sent with every message, so long instructions use more of your Claude plan."
+msgstr ""
+
+#: src/session/components/version-history-dialog.tsx
+msgid "This device"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "This note"
+msgstr ""
+
+#: src/session/components/note-conflict-banner.tsx
+msgid "This note was edited on another device at the same time. The later edit was kept."
+msgstr ""
+
+#. placeholder {0}: status.fileCount
+#. placeholder {1}: formatBytes(status.totalBytes)
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "This will remove {0} legacy files and free {1}. Your app data will not be affected because the migration to SQLite is complete."
+msgstr ""
+
+#: src/settings/todo/index.tsx
+msgid "Ticket"
+msgstr ""
+
+#: src/settings/general/timezone.tsx
+msgid "Timezone"
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
+msgid "Tip: Add teammate names, acronyms, company jargon, and product terms."
+msgstr ""
+
+#: src/session/components/note-input/enhanced/streaming.tsx
+msgid "Tip: The Cue team loves our users!"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "Today"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Token"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "Tomorrow"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Tool address"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Tool name"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Tools"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "transcribe"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Transcribing…"
+msgstr ""
+
+#: src/session/components/note-input/header-transcript.tsx
+#: src/session/components/outer-header/overflow/export-modal.tsx
+#: src/settings/automations/markdown-export-options.tsx
+msgid "Transcript"
+msgstr ""
+
+#: src/settings/ai/stt/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "Transcription"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Transcription failed"
+msgstr ""
+
+#: src/sidebar/toast/registry.tsx
+msgid "Transcription provider needed"
+msgstr ""
+
+#: src/sidebar/toast/registry.tsx
+msgid "Transcription unavailable"
+msgstr ""
+
+#: src/templates/template-icon-picker.tsx
+msgid "Travel & Places"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/settings/automations/workflow-builder.tsx
+msgid "Trigger"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Try a note title, a person, or a setting."
+msgstr ""
+
+#: src/contacts/details.tsx
+msgid "Try again"
+msgstr ""
+
+#: src/settings/dictation.tsx
+msgid "Try dictation"
+msgstr ""
+
+#: src/meeting-float/screenshot-setting.tsx
+msgid "Turn off to hide the meeting island and captions from anything you share or record."
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "Turn on Cue in System Settings → Privacy & Security → Calendars, then return here."
+msgstr ""
+
+#: src/sidebar/toast/undo-delete-toast.tsx
+msgid "Undo"
+msgstr ""
+
+#: src/calendar/components/event-chip.tsx
+msgid "Unfiled"
+msgstr ""
+
+#: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
+msgid "Unknown"
+msgstr ""
+
+#: src/session/components/outer-header/metadata/date.tsx
+msgid "Unknown date"
+msgstr ""
+
+#: src/lock/screen.tsx
+msgid "Unlock"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/lock-note.tsx
+#: src/sidebar/timeline/item.tsx
+msgid "Unlock Note"
+msgstr ""
+
+#: src/settings/ai/shared/index.tsx
+msgid "Unlock your login Keychain in the macOS prompt. Cue will retry saving this API key automatically."
+msgstr ""
+
+#: src/contacts/details.tsx
+#: src/contacts/organization-details.tsx
+msgid "Unnamed"
+msgstr ""
+
+#: src/contacts/contact-page-header.tsx
+msgid "Unpin"
+msgstr ""
+
+#: src/session/components/note-input/raw.tsx
+#: src/session/components/outer-header/overflow/export-modal.tsx
+#: src/session/components/title-input.tsx
+#: src/shared/open-note-dialog.tsx
+#: src/shared/ui/resource-list/preview-header.tsx
+#: src/sidebar/timeline/item.tsx
+#: src/sidebar/toast/undo-delete-toast.tsx
+#: src/templates/details.tsx
+#: src/templates/sections-editor.tsx
+msgid "Untitled"
+msgstr ""
+
+#: src/settings/automations/index.tsx
+#: src/sidebar/automations.tsx
+msgid "Untitled automation"
+msgstr ""
+
+#: src/contacts/related-notes.tsx
+msgid "Untitled Note"
+msgstr ""
+
+#: src/services/event-notification/index.ts
+msgid "Upcoming Event"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+#: src/session/components/outer-header/overflow/index.tsx
+msgid "Upload audio"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Upload audio or a transcript file to populate this note."
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+#: src/session/components/outer-header/overflow/index.tsx
+msgid "Upload transcript"
+msgstr ""
+
+#. placeholder {0}: row.name
+#. placeholder {0}: server.name
+#: src/settings/claude/connectors.tsx
+#: src/settings/claude/tools.tsx
+msgid "Use {0}"
+msgstr ""
+
+#: src/settings/appearance/time-format.tsx
+msgid "Use 24-hour time"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Use a custom header instead"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Use a stable filename in the configured export directory."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Use lowercase letters, digits, - or _ for the name."
+msgstr ""
+
+#: src/settings/general/index.tsx
+msgid "Use main language for summaries"
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Use system audio to capture other speakers"
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "Use the detected sign-in"
+msgstr ""
+
+#: src/session/components/note-conflict-banner.tsx
+msgid "Use the other version"
+msgstr ""
+
+#: src/lock/screen.tsx
+msgid "Use Touch ID or enter your password to view."
+msgstr ""
+
+#: src/onboarding/permissions.tsx
+msgid "Use your microphone to capture your voice"
+msgstr ""
+
+#: src/settings/general/spoken-languages.tsx
+msgid "Used for transcription and automatic summary language detection."
+msgstr ""
+
+#: src/settings/claude/tools.tsx
+msgid "User name"
+msgstr ""
+
+#: src/settings/general/storage/legacy-cleanup.tsx
+msgid "Verifying the SQLite migration status"
+msgstr ""
+
+#: src/session/components/outer-header/overflow/index.tsx
+#: src/session/components/version-history-dialog.tsx
+msgid "Version history"
+msgstr ""
+
+#: src/contacts/organization-details.tsx
+msgid "View LinkedIn profile"
+msgstr ""
+
+#: src/lock/screen.tsx
+msgid "View Note"
+msgstr ""
+
+#: src/settings/general/notification.tsx
+msgid "Wait before treating microphone activity as a meeting."
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Wait until the transcript and note are complete."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Web access"
+msgstr ""
+
+#: src/settings/general/week-start.tsx
+msgid "Week starts on"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Welcome to Cue"
+msgstr ""
+
+#: src/settings/claude/instructions.tsx
+msgid "What the coach should know about you and how to answer. Markdown is fine. Changes apply from the coach's next chat."
+msgstr ""
+
+#: src/folders/folder-editor.tsx
+msgid "What these notes are usually about"
+msgstr ""
+
+#: src/changelog/index.tsx
+msgid "What's new in {version}?"
+msgstr ""
+
+#: src/settings/general/index.tsx
+msgid "When off, summaries follow the detected meeting language."
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "When this happens"
+msgstr ""
+
+#: src/meeting-float/display-setting.tsx
+msgid "Which display the island appears on. You can also drag it there."
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "While recording, the coach speaks up on its own when a question, promise or number may need you."
+msgstr ""
+
+#: src/settings/ai/stt/local-file-model.tsx
+msgid "whisper.cpp models"
+msgstr ""
+
+#: src/settings/appearance/app-icon.tsx
+msgid "White"
+msgstr ""
+
+#: src/settings/automations/workflow-builder.tsx
+msgid "Workflow"
+msgstr ""
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Workspace"
+msgstr ""
+
+#: src/automations/starters.tsx
+msgid "Write to a folder"
+msgstr ""
+
+#: src/sidebar/timeline/utils/index.ts
+msgid "Yesterday"
+msgstr ""
+
+#: src/contacts/self-name.tsx
+msgid "You"
+msgstr ""
+
+#: src/calendar/components/apple/permission.tsx
+msgid "You can"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "You can undo this action for a short time."
+msgstr ""
+
+#: src/templates/auto-format-examples-dialog.tsx
+msgid "You can use up to three example summaries."
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
+msgid "Your dictionary is empty"
+msgstr ""
+
+#: src/contacts/self-name.tsx
+msgid "Your name"
+msgstr ""
+
+#: src/services/enhancer/summary-notification.ts
+msgid "Your summary is ready."
+msgstr ""
+
+#: src/templates/template-sidebar.tsx
+msgid "Z to A"
+msgstr ""

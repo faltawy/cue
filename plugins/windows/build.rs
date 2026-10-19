@@ -1,0 +1,36 @@
+const COMMANDS: &[&str] = &[
+    "window_show",
+    "window_hide",
+    "window_destroy",
+    "window_navigate",
+    "window_emit_navigate",
+    "window_is_exists",
+    "window_is_occluded",
+    "webview_health_ack",
+    "webview_health_ready",
+    "window_set_frame_animated",
+    "window_save_frame",
+    "window_restore_frame_animated",
+    "window_expand_width",
+    "window_restore_width",
+    "set_show_app_in_dock",
+    "floating_bar_show",
+    "floating_bar_hide",
+    "floating_bar_update",
+    "floating_bar_update_amplitude",
+    "floating_bar_displays",
+    "live_caption_show",
+    "live_caption_hide",
+    "live_caption_update",
+];
+
+fn main() {
+    #[cfg(target_os = "macos")]
+    {
+        swift_rs::SwiftLinker::new("14.2")
+            .with_package("windows-swift", "./swift-lib/")
+            .link();
+    }
+
+    tauri_plugin::Builder::new(COMMANDS).build();
+}

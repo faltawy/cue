@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-add-knowledge"
+description = "Enables the add_knowledge command without any pre-configured scope."
+commands.allow = ["add_knowledge"]
+
+[[permission]]
+identifier = "deny-add-knowledge"
+description = "Denies the add_knowledge command without any pre-configured scope."
+commands.deny = ["add_knowledge"]

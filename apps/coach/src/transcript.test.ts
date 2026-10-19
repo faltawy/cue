@@ -1,0 +1,159 @@
+import { Database } from "bun:sqlite";
+import { describe, expect, test } from "bun:test";
+
+import {
+  foldDeltas,
+  type LiveDelta,
+  readLiveTranscript,
+  readMeetingInfo,
+  readSelfName,
+  renderTranscript,
+  toLines,
+  type Word,
+} from "./transcript";
+
+const noLabels = new Map<string, string>();
+
+const word = (id: string, text: string, start_ms: number, channel = 1): Word => ({
+  id,
+  text,
+  start_ms,
+  end_ms: start_ms + 300,
+  channel,
+});
+
+function schema() {
+  const db = new Database(":memory:");
+  db.run(`CREATE TABLE sessions (
+    id TEXT PRIMARY KEY NOT NULL, title TEXT, started_at TEXT, ended_at TEXT
+  )`);
+  db.run(`CREATE TABLE transcripts (
+    id TEXT PRIMARY KEY NOT NULL, session_id TEXT NOT NULL DEFAULT '', owner_user_id TEXT NOT NULL DEFAULT '',
+    started_at_ms INTEGER NOT NULL DEFAULT 0, ended_at_ms INTEGER,
+    words_json TEXT NOT NULL DEFAULT '[]', speaker_hints_json TEXT NOT NULL DEFAULT '[]', deleted_at TEXT
+  )`);
+  db.run(`CREATE TABLE transcript_live_deltas (
+    id TEXT PRIMARY KEY, transcript_id TEXT NOT NULL, sequence INTEGER NOT NULL, delta_json TEXT NOT NULL
+  )`);
+  db.run(`CREATE TABLE session_participants (
+    id TEXT PRIMARY KEY, session_id TEXT NOT NULL, human_id TEXT NOT NULL DEFAULT '', display_name TEXT, email TEXT,
+    created_at TEXT NOT NULL DEFAULT '', deleted_at TEXT
+  )`);
+  db.run(`CREATE TABLE humans (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', email TEXT NOT NULL DEFAULT '', deleted_at TEXT
+  )`);
+  return db;
+}
+
+function delta(new_words: Word[], replaced_ids: string[] = [], partials: LiveDelta["partials"] = []): string {
+  return JSON.stringify({ new_words, replaced_ids, partials });
+}
+
+describe("foldDeltas", () => {
+  test("applies deltas in order: replacements drop words, re-sent ids replace, result stays time-ordered", () => {
+    const base = [word("a", " hello", 0), word("b", " wrold", 400)];
+    const folded = foldDeltas(base, [
+      { new_words: [word("c", " world", 400)], replaced_ids: ["b"] },
+      { new_words: [word("a", " Hello", 0), word("d", " again", 800)], replaced_ids: [] },
+    ]);
+    expect(folded.map((w) => w.text)).toEqual([" Hello", " world", " again"]);
+  });
+});
+
+describe("toLines", () => {
+  test("groups consecutive words per speaker and splits on speaker change or a 2s pause", () => {
+    const lines = toLines([
+      word("1", " What's", 0, 1),
+      word("2", " the", 300, 1),
+      word("3", " ETA?", 600, 1),
+      word("4", " Next", 1_000, 0),
+      word("5", " week.", 1_300, 0),
+      word("6", " Thanks.", 5_000, 0),
+    ], noLabels);
+    expect(lines).toEqual([
+      { speaker: "Them", channel: 1, start_ms: 0, end_ms: 900, text: "What's the ETA?" },
+      { speaker: "You", channel: 0, start_ms: 1_000, end_ms: 1_600, text: "Next week." },
+      { speaker: "You", channel: 0, start_ms: 5_000, end_ms: 5_300, text: "Thanks." },
+    ]);
+  });
+
+  test("since_ms keeps only speech that ends after the offset", () => {
+    const lines = toLines([word("1", " old", 0), word("2", " new", 10_000)], noLabels, 5_000);
+    expect(lines.map((line) => line.text)).toEqual(["new"]);
+  });
+});
+
+describe("readLiveTranscript", () => {
+  test("prefers the live transcript and folds its pending deltas over the stored words", () => {
+    const db = schema();
+    db.run(`INSERT INTO sessions VALUES ('s-old', 'Old call', NULL, NULL), ('s-live', 'Pricing sync', NULL, NULL)`);
+    db.run(
+      `INSERT INTO transcripts (id, session_id, started_at_ms, ended_at_ms, words_json) VALUES
+       ('t-old', 's-old', 2000, 3000, ?), ('t-live', 's-live', 1000, NULL, ?)`,
+      [JSON.stringify([word("o", " finished", 0)]), JSON.stringify([word("a", " What's", 0)])],
+    );
+    db.run(`INSERT INTO transcript_live_deltas VALUES ('d2', 't-live', 2, ?), ('d1', 't-live', 1, ?)`, [
+      delta([word("c", " ETA?", 600)], [], [{ text: " for", start_ms: 900, end_ms: 1_000, channel: 1 }]),
+      delta([word("b", " the", 300)]),
+    ]);
+
+    const transcript = readLiveTranscript(db);
+
+    expect(transcript?.sessionId).toBe("s-live");
+    expect(transcript?.live).toBe(true);
+    expect(transcript?.lines.map((line) => line.text)).toEqual(["What's the ETA?"]);
+    expect(transcript && renderTranscript(transcript)).toBe(
+      "Meeting: Pricing sync (recording)\n[00:00] Them: What's the ETA?\n(still being spoken: for)",
+    );
+  });
+
+  test("reads a named ended session, ignoring deleted transcripts", () => {
+    const db = schema();
+    db.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', NULL, NULL)`);
+    db.run(
+      `INSERT INTO transcripts (id, session_id, started_at_ms, ended_at_ms, words_json, deleted_at) VALUES
+       ('t-deleted', 's1', 5000, 6000, ?, '2026-01-01'), ('t1', 's1', 1000, 2000, ?, NULL)`,
+      [JSON.stringify([word("x", " gone", 0)]), JSON.stringify([word("y", " kept", 0, 0)])],
+    );
+
+    const transcript = readLiveTranscript(db, { sessionId: "s1" });
+
+    expect(transcript?.transcriptId).toBe("t1");
+    expect(transcript?.live).toBe(false);
+    expect(transcript?.lines).toEqual([{ speaker: "You", channel: 0, start_ms: 0, end_ms: 300, text: "kept" }]);
+  });
+});
+
+describe("readMeetingInfo", () => {
+  test("returns title and non-deleted participants", () => {
+    const db = schema();
+    db.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', '2026-10-18T10:00:00Z', NULL)`);
+    db.run(
+      `INSERT INTO session_participants (id, session_id, display_name, email, created_at, deleted_at) VALUES
+       ('p1', 's1', 'Dana', 'dana@example.com', '1', NULL), ('p2', 's1', 'Removed', NULL, '2', 'x')`,
+    );
+
+    expect(readMeetingInfo(db, "s1")).toEqual({
+      sessionId: "s1",
+      title: "Kickoff",
+      startedAt: "2026-10-18T10:00:00Z",
+      endedAt: null,
+      participants: [{ name: "Dana", email: "dana@example.com" }],
+    });
+  });
+});
+
+describe("readSelfName", () => {
+  test("is the meeting owner's name from Your name, not another human's; blank means none", () => {
+    const db = schema();
+    db.run(`INSERT INTO humans (id, name) VALUES ('me', ' Ahmad Falta '), ('omar', 'Omar'), ('blank', '  ')`);
+    db.run(
+      `INSERT INTO transcripts (id, session_id, owner_user_id, started_at_ms) VALUES
+       ('t1', 's1', 'me', 1000), ('t2', 's2', 'blank', 1000)`,
+    );
+
+    expect(readSelfName(db, "s1")).toBe("Ahmad Falta");
+    expect(readSelfName(db, "s2")).toBeNull();
+    expect(readSelfName(db, "missing")).toBeNull();
+  });
+});

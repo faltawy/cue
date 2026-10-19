@@ -1,0 +1,245 @@
+import { SIGN_IN_STEPS } from "../errors";
+import type { CoachEvent, StatusEvent } from "../protocol";
+import { type CoachState, initialState, reduce } from "./state";
+
+export const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
+  type: "status",
+  project: {
+    path: "/Users/falta/work/northwind",
+    source: "series",
+    series: "Wafeq weekly sync",
+    defaultProject: "/Users/falta/work/northwind",
+  },
+  model: "sonnet",
+  busy: false,
+  appConnected: true,
+  meeting: true,
+  proactive: { state: "on", nudgesUsd: 0.0123, capUsd: 0.5, meetingUsd: 0.0441, meetingTokens: 182_400, cachedTokens: 160_000 },
+  ...overrides,
+});
+
+const liveTranscript: CoachEvent = {
+  type: "transcript",
+  strip: { state: "live", title: "Wafeq weekly sync", startedAt: Date.now() - 724_000 },
+  lines: [
+    { speaker: "Sara", you: false, text: "Thanks for joining. Quick one before we start." },
+    { speaker: "You", you: true, text: "Sure, go ahead." },
+    { speaker: "Sara", you: false, text: "Can your email channel send a blind copy of every reply to our CRM inbox?" },
+    { speaker: "Omar", you: false, text: "هل تم حل مشكلة الجلسات المفتوحة على واتساب؟" },
+  ],
+  pending: "Our sales team needs every reply logged",
+};
+
+const waiting = (lastTitle: string | null): CoachEvent => ({
+  type: "transcript",
+  strip: { state: "waiting", lastTitle, endedAt: lastTitle ? Date.now() - 240_000 : null },
+  lines: [],
+  pending: "",
+});
+
+const answer = `**Yes, Bcc is live.** Email replies can copy a fixed address on every outbound message.
+
+- Set it under **Settings → Channels → Email → Bcc address**
+- It shipped as OPEN-1861 in \`backend/src/email/outbound.ts\`
+- Sara can point it at their CRM's dropbox address
+
+العميل يقدر يفعّلها بنفسه من الإعدادات.`;
+
+const steps: CoachEvent[] = [
+  {
+    type: "tool",
+    id: "t1",
+    name: "mcp__meeting__live_transcript",
+    label: "Read the transcript",
+    activeLabel: "Reading the transcript",
+    detail: "since ms: 0",
+  },
+  { type: "tool_result", id: "t1", ok: true, output: "[00:12] Sara: Can your email channel send a blind copy…", durationMs: 420 },
+  {
+    type: "tool",
+    id: "t2",
+    name: "Grep",
+    label: "Searched for “bcc”",
+    activeLabel: "Searching for “bcc”",
+    detail: "bcc in backend/src/email",
+  },
+  { type: "tool_result", id: "t2", ok: true, output: "backend/src/email/outbound.ts:88:  bcc: settings.bcc_address", durationMs: 1_350 },
+  {
+    type: "tool",
+    id: "t3",
+    name: "mcp__clients__brief",
+    label: "clients · brief",
+    activeLabel: "clients · brief",
+    detail: "client: wafeq",
+  },
+  { type: "tool_result", id: "t3", ok: false, output: "The clients server didn't answer in 10s.", durationMs: 10_020 },
+];
+
+const usage: CoachEvent = {
+  type: "usage",
+  usage: {
+    model: "claude-sonnet",
+    inputTokens: 3_100,
+    cachedInputTokens: 38_000,
+    cacheCreationTokens: 900,
+    outputTokens: 240,
+    costUsd: 0.021,
+    contextTokens: 42_000,
+    contextWindow: 200_000,
+  },
+};
+
+const conversation: CoachEvent[] = [
+  { type: "user", kind: "ask", text: "Can we Bcc every reply to their CRM?" },
+  ...steps,
+  { type: "text", delta: answer },
+  usage,
+  { type: "done", seconds: 6.4, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "nudge", text: "Question for you · 14:32" },
+  { type: "tool", id: "c1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
+  { type: "tool_result", id: "c1", ok: true, output: "…", durationMs: 380 },
+  {
+    type: "text",
+    delta:
+      "- **Unanswered:** Omar asked whether the WhatsApp sessions that stayed open are fixed.\n- **You promised** to send the Bcc setup steps today.",
+  },
+  { type: "done", seconds: 4.1, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "ask", text: "Add an action item to send Sara the Bcc steps" },
+  {
+    type: "tool",
+    id: "e1",
+    name: "mcp__meeting__add_action_item",
+    label: "Added an action item",
+    activeLabel: "Adding an action item",
+    detail: "text: Send Sara the Bcc setup steps",
+  },
+  { type: "edit", edit: { id: "edit-1", session_id: "m1", kind: "add_action_item", summary: "Send Sara the Bcc setup steps", task_id: "task-1" } },
+  { type: "tool_result", id: "e1", ok: true, output: "Added.", durationMs: 210 },
+  { type: "text", delta: "Want me to draft the steps for Sara too?" },
+  { type: "done", seconds: 3.2, ok: true, silent: false, interrupted: false },
+];
+
+const readyWrapUp: CoachEvent = {
+  type: "wrapup",
+  wrapUp: {
+    state: "ready",
+    title: "Wafeq weekly sync",
+    wrapUp: {
+      commitments: [
+        { who: "You", what: "send Sara the Bcc setup steps", when: "today" },
+        { who: "Omar", what: "share two session IDs that stayed open", when: "by Thursday" },
+      ],
+      open_questions: ["Should the Bcc copy include internal notes?", "هل نحتاج نسخة لكل فريق المبيعات؟"],
+      follow_up_draft:
+        "Thanks for the time today, Sara and Omar.\n\nNext steps:\n- I'll send the Bcc setup steps today.\n- Omar will share two session IDs that stayed open by Thursday.\n\nOpen: should the Bcc copy include internal notes?",
+    },
+    commitments: ["You: send Sara the Bcc setup steps (today)", "Omar: share two session IDs that stayed open (by Thursday)"],
+    actions: {
+      addActionItems: { enabled: true, hint: null },
+      logToClients: { enabled: false, hint: "Turn on Allow changes for “clients” in Settings → Claude → Tools to log promises" },
+    },
+    added: false,
+    logged: false,
+  },
+};
+
+const scenarios = {
+  idle: [status({ meeting: false, project: { ...status().project, source: "default", series: null } }), waiting(null)],
+  live: [status(), liveTranscript],
+  thinking: [
+    status({ busy: true }),
+    liveTranscript,
+    { type: "user", kind: "ask", text: "What did Sara just ask?" },
+    ...steps.slice(0, 1),
+  ],
+  streaming: [
+    status({ busy: true }),
+    liveTranscript,
+    { type: "user", kind: "ask", text: "Can we Bcc every reply to their CRM?" },
+    ...steps.slice(0, 4),
+    { type: "text", delta: answer.slice(0, 120) },
+  ],
+  conversation: [status(), liveTranscript, ...conversation],
+  question: [
+    status({ busy: true }),
+    liveTranscript,
+    { type: "user", kind: "ask", text: "Draft a reply to Sara" },
+    { type: "tool", id: "q1", name: "AskUserQuestion", label: "Asked you a question", activeLabel: "Waiting for your answer", detail: null },
+    {
+      type: "question",
+      id: "q1",
+      questions: [
+        {
+          question: "How formal should the reply be?",
+          header: "Tone",
+          multiSelect: false,
+          options: [
+            { label: "Short and friendly (Recommended)", description: "Two lines, first names" },
+            { label: "Formal", description: "Full sentences, sign-off with your title" },
+            { label: "In Arabic", description: "Semi-formal, same content" },
+          ],
+        },
+      ],
+    },
+  ],
+  error: [
+    status(),
+    liveTranscript,
+    { type: "user", kind: "ask", text: "What did Sara just ask?" },
+    {
+      type: "error",
+      error: {
+        kind: "auth",
+        title: "Sign-in expired",
+        message: "Your session timed out.",
+        detail: `${SIGN_IN_STEPS}\n\nFailed to authenticate. API Error: 401 OAuth token has expired\n\nClaude Code: Error: Invalid API key`,
+      },
+    },
+    { type: "done", seconds: 1.2, ok: false, silent: false, interrupted: false },
+  ],
+  ended: [status(), waiting("Wafeq weekly sync"), readyWrapUp],
+  wrapping: [status(), waiting("Wafeq weekly sync"), { type: "wrapup", wrapUp: { state: "running", title: "Wafeq weekly sync" } }],
+  resumed: [
+    status(),
+    liveTranscript,
+    ...conversation.slice(0, 11),
+    { type: "divider", text: "Picked up where you left off" },
+    { type: "notice", text: "That edit can no longer be undone here." },
+  ],
+} satisfies Record<string, CoachEvent[]>;
+
+export type Scenario = keyof typeof scenarios;
+export function isScenario(name: string): name is Scenario {
+  return name in scenarios;
+}
+export const SCENARIOS: Scenario[] = Object.keys(scenarios).filter(isScenario);
+
+const LONG_ANSWER_SECTION = `## Where Bcc is set
+
+The inbox settings keep a list of **outbound Bcc addresses**. Every reply sent from that inbox copies each address, so a CRM dropbox sees the whole thread.
+
+- Admins edit the list under the inbox settings.
+- Up to ten addresses per inbox.
+- Replies sent through a ticketing integration are not copied.
+
+\`\`\`ts
+const recipients = resolveOutboundBcc(inbox);
+await send({ to, cc, bcc: recipients, subject, html });
+\`\`\`
+
+العميل يقدر يفعّلها بنفسه من الإعدادات، ومش محتاج يكلم الدعم.
+
+`;
+
+export function longAnswerDeltas(tokens: number): string[] {
+  const pieces = LONG_ANSWER_SECTION.match(/\S+\s*|\s+/g) ?? [];
+  return Array.from({ length: tokens }, (_, index) => pieces[index % pieces.length] ?? " ");
+}
+
+export function fixtureState(name: Scenario, connection: CoachState["connection"] = "open"): CoachState {
+  const events: CoachEvent[] = scenarios[name];
+  return events.reduce(
+    (state, event) => reduce(state, { type: "event", event }),
+    reduce(initialState, { type: "connection", connection }),
+  );
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Cue",
+  "mainBinaryName": "anarlog",
+  "identifier": "com.hyprnote.stable",
+  "bundle": {
+    "icon": [
+      "icons/stable/32x32.png",
+      "icons/stable/128x128.png",
+      "icons/stable/128x128@2x.png",
+      "icons/stable/icon.icns"
+    ],
+    "macOS": {
+      "files": {
+        "Resources/AppIcon.icns": "resources/stable/AppIcon.icns"
+      }
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["anarlog", "hyprnote"] }
+    }
+  }
+}
