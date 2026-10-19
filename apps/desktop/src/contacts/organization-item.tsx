@@ -73,7 +73,12 @@ export function OrganizationItem({
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{organization.name}</div>
+        <div
+          title={organization.name}
+          className="w-fit max-w-full truncate font-medium [unicode-bidi:plaintext]"
+        >
+          {organization.name}
+        </div>
       </div>
       <button
         onClick={handleTogglePin}

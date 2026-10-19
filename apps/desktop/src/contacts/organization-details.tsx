@@ -1,5 +1,5 @@
 import { Icon } from "@iconify-icon/react";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 
 import { commands as openerCommands } from "@anlg/plugin-opener2";
@@ -121,13 +121,19 @@ export function OrganizationDetailsColumn({
                 <Trans>People</Trans>
                 <span className="text-muted-foreground font-normal">
                   {" "}
-                  &middot; {peopleInOrg.length}{" "}
-                  {peopleInOrg.length === 1 ? t`member` : t`members`}
+                  &middot;{" "}
+                  <span className="tabular-nums">
+                    <Plural
+                      value={peopleInOrg.length}
+                      one="# member"
+                      other="# members"
+                    />
+                  </span>
                 </span>
               </h3>
               <div>
                 {peopleInOrg.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-4">
                     {peopleInOrg.map((human) => {
                       return (
                         <div
@@ -135,7 +141,7 @@ export function OrganizationDetailsColumn({
                           className="border-border hover:bg-muted cursor-pointer rounded-lg border p-3 transition-colors duration-100"
                           onClick={() => onPersonClick?.(human.id)}
                         >
-                          <div className="flex flex-col items-center gap-3 text-center">
+                          <div className="flex h-full flex-col items-center gap-3 text-center">
                             {human.avatarDataUrl ? (
                               <ContactImage
                                 src={human.avatarDataUrl}
@@ -150,16 +156,22 @@ export function OrganizationDetailsColumn({
                               />
                             )}
                             <div className="w-full">
-                              <div className="text-body truncate font-semibold">
+                              <div
+                                title={human.name || human.email}
+                                className="text-body truncate font-semibold [unicode-bidi:plaintext]"
+                              >
                                 {human.name || human.email || t`Unnamed`}
                               </div>
                               {human.jobTitle && (
-                                <div className="text-muted-foreground text-label mt-1 truncate">
+                                <div
+                                  title={human.jobTitle}
+                                  className="text-muted-foreground text-label mt-1 truncate"
+                                >
                                   {human.jobTitle}
                                 </div>
                               )}
                             </div>
-                            <div className="mt-1 flex gap-2">
+                            <div className="mt-auto flex gap-2">
                               {human.email && (
                                 <Button
                                   variant="ghost"

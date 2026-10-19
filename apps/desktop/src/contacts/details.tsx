@@ -1,4 +1,4 @@
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import React, { useCallback, useRef, useState } from "react";
 
 import {
@@ -187,16 +187,18 @@ export function DetailsColumn({
             {!readOnly && duplicatesWithData.length > 0 && (
               <div className="border-alert-border bg-alert border-b px-6 py-4">
                 <h4 className="text-alert-foreground text-body mb-1 font-semibold">
-                  Duplicate Contact
-                  {duplicatesWithData.length > 1 ? "s" : ""} Found
+                  <Plural
+                    value={duplicatesWithData.length}
+                    one="Duplicate Contact Found"
+                    other="Duplicate Contacts Found"
+                  />
                 </h4>
                 <p className="text-foreground text-body mb-3">
-                  {duplicatesWithData.length > 1
-                    ? `${duplicatesWithData.length} contacts`
-                    : "Another contact"}{" "}
-                  with the same name or email{" "}
-                  {duplicatesWithData.length > 1 ? "exist" : "exists"}. Merge to
-                  consolidate all related notes and information.
+                  <Plural
+                    value={duplicatesWithData.length}
+                    one="Another contact with the same name or email exists. Merge to consolidate all related notes and information."
+                    other="# contacts with the same name or email exist. Merge to consolidate all related notes and information."
+                  />
                 </p>
                 <div className="flex flex-col gap-2">
                   {duplicatesWithData.map((dup) => (

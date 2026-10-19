@@ -77,11 +77,17 @@ export function PersonItem({
         <ContactFacehash name={facehashName} size={32} />
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1 truncate font-medium">
+        <div
+          title={personName || personEmail}
+          className="w-fit max-w-full truncate font-medium [unicode-bidi:plaintext]"
+        >
           {personName || personEmail || "Unnamed"}
         </div>
         {personEmail && personName && (
-          <div className="text-muted-foreground text-label truncate">
+          <div
+            title={personEmail}
+            className="text-muted-foreground text-label truncate"
+          >
             {personEmail}
           </div>
         )}
