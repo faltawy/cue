@@ -72,14 +72,14 @@ function TemplateTargetsInput({
       {value.map((target, index) => (
         <Badge
           key={`${target}-${index}`}
-          className="bg-muted flex h-6 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-normal"
+          className="bg-muted text-label flex h-6 items-center gap-1 rounded-md px-2 py-0.5 font-normal"
         >
           {target}
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="ml-0.5 h-3 w-3 p-0 hover:bg-transparent"
+            className="ms-0.5 h-3 w-3 p-0 hover:bg-transparent"
             onClick={(e) => {
               e.stopPropagation();
               onChange(
@@ -95,7 +95,7 @@ function TemplateTargetsInput({
       {!isAddingTag ? (
         <button
           type="button"
-          className="bg-muted text-muted-foreground hover:bg-muted/80 inline-flex h-6 items-center gap-1 rounded-md px-2 py-0.5 text-xs transition-colors"
+          className="bg-muted text-muted-foreground hover:bg-muted/80 text-label inline-flex h-6 items-center gap-1 rounded-md px-2 py-0.5 transition-colors"
           onClick={() => setIsAddingTag(true)}
         >
           <Plus className="h-3 w-3" />
@@ -107,7 +107,7 @@ function TemplateTargetsInput({
           type="text"
           autoFocus
           value={inputValue}
-          className="text-muted-foreground min-w-[84px] flex-1 bg-transparent py-0 text-xs leading-none outline-hidden"
+          className="text-muted-foreground text-label min-w-[84px] flex-1 bg-transparent py-0 leading-none outline-hidden"
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={submitTargets}
           onKeyDown={(e) => {
@@ -192,7 +192,7 @@ export function TemplateForm({
 
   return (
     <div className="flex h-full flex-1 flex-col">
-      <div className="flex h-12 items-center justify-between gap-3 pr-1 pl-3">
+      <div className="flex h-12 items-center justify-between gap-3 ps-3 pe-1">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <form.Field name="icon">
             {(field) => (
@@ -208,7 +208,7 @@ export function TemplateForm({
               <div className="relative max-w-full min-w-0">
                 <span
                   aria-hidden="true"
-                  className="invisible block px-0 py-0 text-sm font-semibold whitespace-pre"
+                  className="text-body invisible block px-0 py-0 font-semibold whitespace-pre"
                 >
                   {(field.state.value || t`Enter template title`) + " "}
                 </span>
@@ -216,7 +216,7 @@ export function TemplateForm({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder={t`Enter template title`}
-                  className="absolute inset-0 h-auto w-full max-w-full min-w-0 border-0 px-0 py-0 text-sm font-semibold shadow-none focus-visible:ring-0 md:text-sm"
+                  className="text-body absolute inset-0 h-auto w-full max-w-full min-w-0 border-0 px-0 py-0 font-semibold shadow-none"
                 />
               </div>
             )}
@@ -231,15 +231,13 @@ export function TemplateForm({
             aria-pressed={isDefault}
             title={isDefault ? "Remove as default" : "Set as default"}
             className={cn([
-              "text-muted-foreground shrink-0 hover:text-black",
-              isDefault
-                ? "text-emerald-600 hover:bg-transparent hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                : null,
+              "shrink-0",
+              isDefault && "text-foreground hover:bg-transparent",
             ])}
           >
             {isDefault ? (
               <>
-                <Check className="size-3.5" weight="bold" />
+                <Check className="text-success size-3.5" />
                 Current default
               </>
             ) : (
@@ -253,7 +251,7 @@ export function TemplateForm({
             onClick={() => toggleTemplateFavorite(id)}
             className={cn([
               "text-muted-foreground hover:text-foreground",
-              template.pinned && "text-rose-500 hover:text-rose-600",
+              template.pinned && "text-foreground",
             ])}
             title={
               template.pinned ? "Unfavorite template" : "Favorite template"
@@ -263,8 +261,10 @@ export function TemplateForm({
             }
           >
             <Heart
-              className="size-4"
-              weight={template.pinned ? "bold" : "regular"}
+              className={cn([
+                "size-3.5",
+                template.pinned && "[&_path]:fill-current",
+              ])}
             />
           </Button>
           <DropdownMenu open={actionsOpen} onOpenChange={setActionsOpen}>
@@ -290,8 +290,8 @@ export function TemplateForm({
                 <Trans>Duplicate</Trans>
               </DropdownMenuItem>
               <DropdownMenuItem
+                destructive
                 onClick={() => handleDeleteTemplate(id)}
-                className="cursor-pointer text-red-600 focus:text-red-600"
               >
                 <Trans>Delete</Trans>
               </DropdownMenuItem>
@@ -309,7 +309,7 @@ export function TemplateForm({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   placeholder={t`Describe the template purpose...`}
-                  className="text-muted-foreground min-h-[24px] resize-none border-0 px-0 py-0 text-sm shadow-none focus-visible:ring-0"
+                  className="text-muted-foreground text-body min-h-[24px] resize-none border-0 px-0 py-0 shadow-none"
                   rows={1}
                 />
               )}

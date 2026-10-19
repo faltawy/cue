@@ -40,7 +40,7 @@ export function AutoTemplateDetails() {
 
   if (sourceQuery.isLoading) {
     return (
-      <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+      <div className="text-muted-foreground text-body flex h-full items-center justify-center">
         <Trans>Loading Auto format...</Trans>
       </div>
     );
@@ -48,7 +48,7 @@ export function AutoTemplateDetails() {
 
   if (sourceQuery.error || !sourceQuery.data) {
     return (
-      <div className="text-destructive flex h-full items-center justify-center px-6 text-center text-sm">
+      <div className="text-destructive text-body flex h-full items-center justify-center px-6 text-center">
         {sourceQuery.error?.message || "Auto format is unavailable."}
       </div>
     );
@@ -129,10 +129,10 @@ export function AutoFormatForm({
         void form.handleSubmit().catch(() => {});
       }}
     >
-      <div className="flex h-12 shrink-0 items-center justify-between gap-3 pr-1 pl-3">
+      <div className="flex h-12 shrink-0 items-center justify-between gap-3 ps-3 pe-1">
         <div className="flex min-w-0 items-center gap-2">
           <Sparkle className="text-warm size-4 shrink-0" />
-          <span className="truncate text-sm font-semibold">Auto</span>
+          <span className="text-strong truncate">Auto</span>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <Button
@@ -140,10 +140,9 @@ export function AutoFormatForm({
             size="sm"
             variant="ghost"
             className={cn([
-              "text-muted-foreground shrink-0 hover:text-black",
-              isDefault
-                ? "text-emerald-600 hover:bg-transparent hover:text-emerald-700 disabled:opacity-100 dark:text-emerald-400 dark:hover:text-emerald-300"
-                : null,
+              "shrink-0",
+              isDefault &&
+                "text-foreground hover:bg-transparent disabled:opacity-100",
             ])}
             onClick={() => {
               void setSettingValue("selected_template_id", "").catch(
@@ -159,7 +158,7 @@ export function AutoFormatForm({
           >
             {isDefault ? (
               <>
-                <Check className="size-3.5" weight="bold" />
+                <Check className="text-success size-3.5" />
                 <Trans>Current default</Trans>
               </>
             ) : (
@@ -175,9 +174,8 @@ export function AutoFormatForm({
                     size="icon"
                     variant="ghost"
                     aria-label={t`Template actions`}
-                    className="text-muted-foreground hover:bg-accent hover:text-foreground rounded-full"
                   >
-                    <DotsThree size={16} />
+                    <DotsThree />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -205,10 +203,10 @@ export function AutoFormatForm({
         <div className="flex max-w-4xl flex-col gap-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-lg font-semibold">
+              <h1 className="text-title">
                 <Trans>Summary format</Trans>
               </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-muted-foreground text-ui mt-1">
                 <Trans>
                   Choose how Auto structures and styles your summaries.
                 </Trans>
@@ -221,7 +219,7 @@ export function AutoFormatForm({
               className="shrink-0"
               onClick={() => setShowExamplesDialog(true)}
             >
-              <MagicWand className="size-4" />
+              <MagicWand />
               <Trans>Improve with examples</Trans>
             </Button>
           </div>
@@ -229,11 +227,11 @@ export function AutoFormatForm({
           <div className="flex flex-col gap-5">
             <form.Field name="format">
               {(field) => (
-                <div className="border-border bg-card overflow-hidden rounded-2xl border">
+                <div className="border-border bg-background overflow-hidden rounded-lg border">
                   <PromptEditor
                     ref={editorRef}
                     ariaLabel={t`Auto summary format`}
-                    className="min-h-[28rem] px-4 py-3 font-mono text-sm leading-5"
+                    className="text-body min-h-[28rem] px-4 py-3 font-mono leading-5"
                     initialValue={field.state.value}
                     maxLength={16000}
                     onChange={field.handleChange}

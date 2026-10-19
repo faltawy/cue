@@ -151,7 +151,7 @@ function SearchField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-hidden"
+        className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent outline-hidden"
       />
       {value ? (
         <button
@@ -265,7 +265,7 @@ export function TemplateIconPicker({
             "relative flex shrink-0 items-center justify-center overflow-hidden rounded-md transition-colors",
             size === "sm"
               ? "hover:bg-accent size-7"
-              : "border-border bg-muted/60 hover:bg-accent after:border-t-background size-9 border after:absolute after:top-0 after:right-0 after:size-0 after:border-t-[8px] after:border-l-[8px] after:border-l-transparent",
+              : "border-border bg-muted/60 hover:bg-accent after:border-t-background size-9 border after:absolute after:end-0 after:top-0 after:size-0 after:border-s-[8px] after:border-t-[8px] after:border-s-transparent",
           ])}
           aria-label={label ?? t`Choose template icon`}
         >
@@ -274,7 +274,7 @@ export function TemplateIconPicker({
             className={
               selected.type === "emoji"
                 ? size === "sm"
-                  ? "text-sm"
+                  ? "text-body"
                   : "text-lg"
                 : size === "sm"
                   ? "size-4"
@@ -297,9 +297,9 @@ export function TemplateIconPicker({
               aria-selected={tab === nextTab}
               onClick={() => setTab(nextTab)}
               className={cn([
-                "relative h-full pt-1 text-sm font-medium capitalize",
+                "text-body relative h-full pt-1 font-medium capitalize",
                 tab === nextTab
-                  ? "text-foreground after:bg-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5"
+                  ? "text-foreground after:bg-primary after:absolute after:start-0 after:end-0 after:bottom-0 after:h-0.5"
                   : "text-muted-foreground hover:text-foreground",
               ])}
             >
@@ -334,7 +334,7 @@ export function TemplateIconPicker({
                   type="button"
                   className={cn([
                     "size-7 rounded-full bg-[conic-gradient(from_180deg,red,#ff0,#0f0,#0ff,#00f,#f0f,red)]",
-                    customColorOpen && "ring-primary ring-2 ring-offset-2",
+                    customColorOpen && "ring-primary ring-2",
                   ])}
                   onClick={() => setCustomColorOpen((current) => !current)}
                   aria-label={t`Choose custom color`}
@@ -348,14 +348,14 @@ export function TemplateIconPicker({
                       className="size-6 rounded-full"
                       style={{ backgroundColor: iconColor }}
                     />
-                    <span className="text-muted-foreground text-xs font-medium">
+                    <span className="text-muted-foreground text-label font-medium">
                       HEX
                     </span>
                     <HexColorInput
                       color={iconColor}
                       onChange={selectColor}
                       prefixed
-                      className="min-w-0 flex-1 bg-transparent text-sm uppercase outline-hidden"
+                      className="text-body min-w-0 flex-1 bg-transparent uppercase outline-hidden"
                     />
                   </div>
                   <HexColorPicker
@@ -396,7 +396,7 @@ export function TemplateIconPicker({
                 ))}
               </div>
               {filteredIcons.length === 0 ? (
-                <p className="text-muted-foreground py-8 text-center text-sm">
+                <p className="text-muted-foreground text-body py-8 text-center">
                   {t`No icons found`}
                 </p>
               ) : null}
@@ -426,7 +426,7 @@ export function TemplateIconPicker({
                 />
               ))}
               {filteredEmojiCategories.length === 0 ? (
-                <p className="text-muted-foreground py-8 text-center text-sm">
+                <p className="text-muted-foreground text-body py-8 text-center">
                   {t`No emoji found`}
                 </p>
               ) : null}
@@ -449,7 +449,7 @@ function EmojiSection({
 }) {
   return (
     <section className="mb-4 last:mb-0">
-      <h3 className="text-muted-foreground mb-1.5 text-sm font-medium">
+      <h3 className="text-muted-foreground text-body mb-1.5 font-medium">
         {title}
       </h3>
       <div className="grid grid-cols-12 gap-1">

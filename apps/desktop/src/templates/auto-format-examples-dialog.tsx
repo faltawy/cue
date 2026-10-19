@@ -122,7 +122,7 @@ export function AutoFormatExamplesDialog({
         showCloseButton
         className="max-h-[85vh] max-w-2xl gap-0 overflow-hidden p-0"
       >
-        <DialogHeader className="border-border border-b px-6 py-5 pr-12">
+        <DialogHeader className="border-border border-b px-6 py-5 pe-12">
           <DialogTitle>
             <Trans>Improve summary format</Trans>
           </DialogTitle>
@@ -135,7 +135,7 @@ export function AutoFormatExamplesDialog({
         </DialogHeader>
 
         <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto px-6 py-5">
-          <div className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs">
+          <div className="bg-muted/50 text-muted-foreground text-label flex items-start gap-2 rounded-lg px-3 py-2.5">
             <FileText className="mt-0.5 size-4 shrink-0" />
             <Trans>
               Examples are used only to improve this format. They are not saved
@@ -148,7 +148,7 @@ export function AutoFormatExamplesDialog({
               <div className="flex items-center justify-between gap-2">
                 <label
                   htmlFor={`auto-format-example-${index}`}
-                  className="text-sm font-medium"
+                  className="text-body font-medium"
                 >
                   <Trans>Example summary</Trans> {index + 1}
                 </label>
@@ -170,7 +170,7 @@ export function AutoFormatExamplesDialog({
                 maxLength={MAX_FORMAT_EXAMPLE_LENGTH}
                 onChange={(event) => updateExample(index, event.target.value)}
                 placeholder={t`Paste a past summary you like...`}
-                className="min-h-36 resize-y font-mono text-sm leading-5"
+                className="text-body min-h-36 resize-y font-mono leading-5"
                 disabled={inferenceMutation.isPending}
               />
             </div>
@@ -203,7 +203,7 @@ export function AutoFormatExamplesDialog({
               <UploadSimple className="size-4" />
               <Trans>Attach Markdown or text</Trans>
             </Button>
-            <span className="text-muted-foreground ml-auto text-xs">
+            <span className="text-muted-foreground text-label ms-auto">
               {populatedExamples.length} / {MAX_FORMAT_EXAMPLES}
             </span>
             <input

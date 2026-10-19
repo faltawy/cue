@@ -117,13 +117,16 @@ function WebTemplatePreview({
     <div className="flex h-full flex-1 flex-col">
       <ResourcePreviewHeader
         icon={
-          <TemplateIconGlyph icon={template.icon} className="size-4 text-sm" />
+          <TemplateIconGlyph
+            icon={template.icon}
+            className="text-body size-4"
+          />
         }
         title={template.title || t`Untitled`}
         description={template.description}
         targets={template.targets}
         titleMeta={
-          <span className="text-muted-foreground shrink-0 text-xs font-normal whitespace-nowrap">
+          <span className="text-muted-foreground text-label shrink-0 font-normal whitespace-nowrap">
             {getTemplateCreatorLabel({
               isUserTemplate: false,
               format: "short",
@@ -138,7 +141,7 @@ function WebTemplatePreview({
               size="sm"
               variant="ghost"
               onClick={() => onSetDefault(nextTemplate)}
-              className="text-muted-foreground shrink-0 hover:text-black"
+              className="shrink-0"
             >
               <Trans>Set as default</Trans>
             </Button>

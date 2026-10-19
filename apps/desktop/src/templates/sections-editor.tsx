@@ -175,11 +175,11 @@ export function SectionsList({
         <Button
           variant="outline"
           size="sm"
-          className="border-border bg-card text-foreground hover:bg-background h-auto w-fit rounded-full px-4 py-2.5 text-sm shadow-[0_2px_6px_rgba(87,83,78,0.08),0_10px_18px_-10px_rgba(87,83,78,0.22)]"
+          className="w-fit"
           onClick={addSection}
           disabled={disabled}
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus />
           Add Section
         </Button>
       )}
@@ -218,7 +218,7 @@ function SectionItem({
       {!disabled && (
         <button
           type="button"
-          className="absolute top-2.5 -left-5 cursor-move opacity-0 transition-opacity group-hover:opacity-30 hover:opacity-60"
+          className="absolute -start-5 top-2.5 cursor-move opacity-0 transition-opacity group-hover:opacity-30 hover:opacity-60"
           onPointerDown={(event) => dragControls.start(event)}
           disabled={disabled}
         >
@@ -227,7 +227,7 @@ function SectionItem({
       )}
 
       {!disabled && (
-        <div className="absolute top-2 right-2 opacity-0 transition-all group-hover:opacity-100">
+        <div className="absolute end-2 top-2 opacity-0 transition-all group-hover:opacity-100">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -267,10 +267,7 @@ function SectionItem({
               >
                 <Trans>Move down</Trans>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDelete(item.key)}
-                className="cursor-pointer text-red-600 focus:text-red-600"
-              >
+              <DropdownMenuItem destructive onClick={() => onDelete(item.key)}>
                 <Trans>Delete</Trans>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -278,13 +275,13 @@ function SectionItem({
         </div>
       )}
 
-      <div className="flex flex-col gap-1 pr-9">
+      <div className="flex flex-col gap-1 pe-9">
         <Input
           disabled={disabled}
           value={item.title}
           onChange={(e) => onChange({ ...item, title: e.target.value })}
           placeholder={t`Untitled`}
-          className="placeholder:text-muted-foreground/60 border-0 bg-transparent p-0 font-medium shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="placeholder:text-muted-foreground/60 border-0 bg-transparent p-0 font-medium shadow-none"
         />
 
         <textarea
@@ -295,7 +292,7 @@ function SectionItem({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           className={cn([
-            "min-h-[100px] w-full resize-y rounded-xl border p-3 text-sm transition-colors",
+            "text-body min-h-[100px] w-full resize-y rounded-xl border p-3 transition-colors",
             "focus-visible:outline-hidden",
             disabled
               ? "bg-muted"
