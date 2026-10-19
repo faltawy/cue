@@ -118,15 +118,18 @@ export function AutoFormatExamplesDialog({
         if (!open && !inferenceMutation.isPending) onClose();
       }}
     >
-      <DialogContent className="max-h-[85vh] max-w-2xl gap-0 overflow-hidden p-0">
+      <DialogContent
+        showCloseButton
+        className="max-h-[85vh] max-w-2xl gap-0 overflow-hidden p-0"
+      >
         <DialogHeader className="border-border border-b px-6 py-5 pr-12">
           <DialogTitle>
             <Trans>Improve summary format</Trans>
           </DialogTitle>
           <DialogDescription>
             <Trans>
-              Attach up to three past summaries you like. Cue will learn how
-              you prefer meeting notes to be structured and written.
+              Attach up to three past summaries you like. Cue will learn how you
+              prefer meeting notes to be structured and written.
             </Trans>
           </DialogDescription>
         </DialogHeader>

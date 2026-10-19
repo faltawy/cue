@@ -11,13 +11,16 @@ import {
 } from "@anlg/plugin-export";
 import { commands as fs2Commands } from "@anlg/plugin-fs2";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
+import { Button } from "@anlg/ui/components/ui/button";
+import { Checkbox } from "@anlg/ui/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
-import { cn } from "@anlg/utils";
 
 import { formatDate, formatDuration } from "./export-utils";
 
@@ -392,118 +395,104 @@ export function ExportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        overlayClassName="bg-black/20 backdrop-blur-xs"
-        className={cn([
-          "w-full max-w-xs gap-0 border-0 bg-transparent p-4 shadow-none sm:rounded-none",
-          "[&>button:last-child]:hidden",
-        ])}
-      >
-        <div
-          className={cn([
-            "border-border/80 bg-background rounded-xl border",
-            "shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]",
-            "flex flex-col gap-4 p-5 text-center",
-          ])}
-        >
-          <div className="flex flex-col gap-1">
-            <DialogTitle className="text-base leading-normal font-semibold">
-              <Trans>Export</Trans>
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground text-sm">
-              <Trans>Choose a file format and what to include.</Trans>
-            </DialogDescription>
+      <DialogContent className="max-w-xs">
+        <DialogHeader>
+          <DialogTitle>
+            <Trans>Export</Trans>
+          </DialogTitle>
+          <DialogDescription>
+            <Trans>Choose a file format and what to include.</Trans>
+          </DialogDescription>
+        </DialogHeader>
+
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="text-label text-muted-foreground pb-1.5 font-medium">
+            <Trans>File format</Trans>
+          </legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {(["pdf", "txt", "md", "org"] as const).map((f) => (
+              <label
+                key={f}
+                className="text-ui flex cursor-pointer items-center gap-1.5"
+              >
+                <input
+                  type="radio"
+                  name="export-format"
+                  checked={format === f}
+                  onChange={() => setFormat(f)}
+                  className="accent-primary size-3.5"
+                />
+                {f === "md"
+                  ? "Markdown"
+                  : f === "org"
+                    ? "Org"
+                    : f.toUpperCase()}
+              </label>
+            ))}
           </div>
+        </fieldset>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">
-                <Trans>File format</Trans>
-              </span>
-              <div className="flex justify-center gap-4">
-                {(["pdf", "txt", "md", "org"] as const).map((f) => (
-                  <label
-                    key={f}
-                    className="flex cursor-pointer items-center gap-1.5 text-sm"
-                  >
-                    <input
-                      type="radio"
-                      name="export-format"
-                      checked={format === f}
-                      onChange={() => setFormat(f)}
-                      className="accent-primary"
-                    />
-                    {f === "md"
-                      ? "Markdown"
-                      : f === "org"
-                        ? "Org"
-                        : f.toUpperCase()}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">
-                <Trans>Include</Trans>
-              </span>
-              <div className="flex justify-center gap-4">
-                {(
-                  [
-                    ["memo", <Trans>Memo</Trans>, includeMemo, setIncludeMemo],
-                    [
-                      "summary",
-                      <Trans>Summary</Trans>,
-                      includeSummary,
-                      setIncludeSummary,
-                    ],
-                    [
-                      "transcript",
-                      <Trans>Transcript</Trans>,
-                      includeTranscript,
-                      setIncludeTranscript,
-                    ],
-                  ] as const
-                ).map(([id, label, checked, setter]) => (
-                  <label
-                    key={id}
-                    className="flex cursor-pointer items-center gap-1.5 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => setter(e.target.checked)}
-                      className="accent-primary"
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
-            </div>
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="text-label text-muted-foreground pb-1.5 font-medium">
+            <Trans>Include</Trans>
+          </legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {(
+              [
+                ["memo", <Trans>Memo</Trans>, includeMemo, setIncludeMemo],
+                [
+                  "summary",
+                  <Trans>Summary</Trans>,
+                  includeSummary,
+                  setIncludeSummary,
+                ],
+                [
+                  "transcript",
+                  <Trans>Transcript</Trans>,
+                  includeTranscript,
+                  setIncludeTranscript,
+                ],
+              ] as const
+            ).map(([id, label, checked, setter]) => (
+              <label
+                key={id}
+                className="text-ui flex cursor-pointer items-center gap-1.5"
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(next) => setter(next === true)}
+                />
+                {label}
+              </label>
+            ))}
           </div>
+        </fieldset>
 
-          {error && (
-            <p role="alert" className="text-xs text-red-500">
-              <Trans>
-                Could not export. Check the export location in Settings and try
-                again.
-              </Trans>
-            </p>
-          )}
-          <button
+        {error && (
+          <p role="alert" className="text-destructive text-label">
+            <Trans>
+              Could not export. Check the export location in Settings and try
+              again.
+            </Trans>
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
             onClick={() => mutate(null)}
             disabled={
               isPending || isTranscriptPending || !hasAnyContentSelected
             }
-            className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full rounded-full border-2 text-sm font-medium shadow-[0_4px_14px_rgba(87,83,78,0.4)] transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPending
               ? t`Exporting...`
               : isTranscriptPending
                 ? t`Preparing transcript...`
                 : t`Export`}
-          </button>
-        </div>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

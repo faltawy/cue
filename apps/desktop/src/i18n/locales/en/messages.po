@@ -474,6 +474,7 @@ msgid "Can transcribe while the meeting is happening."
 msgstr "Can transcribe while the meeting is happening."
 
 #: src/calendar/components/apple/permission.tsx
+#: src/session/components/outer-header/overflow/export-modal.tsx
 #: src/settings/dictionary/index.tsx
 #: src/settings/general/storage/legacy-cleanup.tsx
 #: src/shared/ui/destructive-confirmation-dialog.tsx

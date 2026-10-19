@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
   Dialog,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -12,10 +13,6 @@ import {
 import { Input } from "@anlg/ui/components/ui/input";
 
 import { normalizeFolderPath } from "~/session/folders";
-import {
-  GlassDialogCancelButton,
-  GlassDialogContent,
-} from "~/shared/ui/glass-dialog";
 
 export function FolderNameDialog({
   open,
@@ -77,11 +74,9 @@ export function FolderNameDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <GlassDialogContent>
-        <DialogHeader className="items-center gap-2 text-center sm:text-center">
-          <DialogTitle className="text-foreground text-[13px] leading-5 font-semibold tracking-normal">
-            {title}
-          </DialogTitle>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="sr-only">
             <Trans>Folder name</Trans>
           </DialogDescription>
@@ -103,25 +98,23 @@ export function FolderNameDialog({
             }}
           />
           {error ? (
-            <p className="text-destructive pt-2 text-center text-xs">{error}</p>
+            <p className="text-destructive text-label pt-2">{error}</p>
           ) : null}
-          <DialogFooter className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-2 sm:justify-normal">
-            <GlassDialogCancelButton
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
               disabled={busy}
               onClick={() => onOpenChange(false)}
             >
               <Trans>Cancel</Trans>
-            </GlassDialogCancelButton>
-            <Button
-              type="submit"
-              className="h-8 rounded-full px-4 text-xs font-medium shadow-sm"
-              disabled={busy}
-            >
+            </Button>
+            <Button type="submit" disabled={busy}>
               {confirmLabel}
             </Button>
           </DialogFooter>
         </form>
-      </GlassDialogContent>
+      </DialogContent>
     </Dialog>
   );
 }

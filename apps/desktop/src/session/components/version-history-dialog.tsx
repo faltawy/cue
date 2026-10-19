@@ -61,7 +61,10 @@ export function VersionHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(560px,calc(100vh-80px))] w-full max-w-lg flex-col gap-4 overflow-hidden">
+      <DialogContent
+        showCloseButton
+        className="flex max-h-[min(560px,calc(100vh-80px))] w-full max-w-lg flex-col gap-4 overflow-hidden"
+      >
         <DialogHeader>
           <DialogTitle className="text-base">
             <Trans>Version history</Trans>

@@ -25,6 +25,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
+import { Kbd } from "@anlg/ui/components/ui/kbd";
 import { cn } from "@anlg/utils";
 
 import { useHumans } from "~/contacts/queries";
@@ -353,22 +354,18 @@ export function OpenNoteDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         aria-describedby={undefined}
-        overlayClassName="bg-black/20"
+        placement="top"
         overlayChildren={
           <div
             data-open-note-dialog-drag-region
             data-tauri-drag-region
-            className="absolute top-0 right-0 left-0 h-[15%]"
+            className="absolute inset-x-0 top-0 h-14"
             onClick={(event) => event.stopPropagation()}
           />
         }
-        className={cn([
-          "top-[15%] w-full -translate-y-0 gap-0 border-0 bg-transparent px-4 py-0 shadow-none sm:rounded-none",
-          "data-[state=closed]:animate-none data-[state=open]:animate-none",
-          "[&>button:last-child]:hidden",
-        ])}
+        className="gap-0 overflow-hidden p-0"
         style={{
-          marginLeft: mainContentCenterOffset,
+          left: mainContentCenterOffset,
           maxWidth: OPEN_NOTE_DIALOG_MAX_WIDTH_PX,
         }}
         onPointerDownOutside={(event) => {
@@ -384,90 +381,81 @@ export function OpenNoteDialog({
         <DialogTitle className="sr-only">
           <Trans>Search or jump to…</Trans>
         </DialogTitle>
-        <div
-          className={cn([
-            "border-border bg-popover text-popover-foreground overflow-hidden rounded-xl border",
-            "shadow-[0_24px_48px_-16px_rgba(0,0,0,0.3)]",
-          ])}
+        <CommandPrimitive
+          shouldFilter={false}
+          value={selected}
+          onValueChange={setSelected}
+          onKeyDown={handleKeyDown}
+          loop
+          className="flex flex-col"
         >
-          <CommandPrimitive
-            shouldFilter={false}
-            value={selected}
-            onValueChange={setSelected}
-            onKeyDown={handleKeyDown}
-            loop
-            className="flex flex-col"
-          >
-            <div className="border-border flex items-center gap-2.5 border-b px-4">
-              <MagnifyingGlass className="text-muted-foreground size-4 shrink-0" />
-              <CommandPrimitive.Input
-                ref={focusInput}
-                value={query}
-                onValueChange={setQuery}
-                placeholder={t`Search or jump to…`}
-                className={cn([
-                  "h-12 flex-1 bg-transparent text-[14px]",
-                  "placeholder:text-muted-foreground outline-hidden",
-                ])}
-              />
-              <kbd className="text-muted-foreground border-border rounded border px-1.5 py-0.5 font-sans text-[10px]">
-                esc
-              </kbd>
-            </div>
+          <div className="border-border flex h-11 items-center gap-2 border-b px-3">
+            <MagnifyingGlass className="text-muted-foreground size-4 shrink-0" />
+            <CommandPrimitive.Input
+              ref={focusInput}
+              value={query}
+              onValueChange={setQuery}
+              placeholder={t`Search or jump to…`}
+              className={cn([
+                "text-body h-full min-w-0 flex-1 bg-transparent",
+                "placeholder:text-tertiary-foreground focus-visible:outline-none",
+              ])}
+            />
+            <Kbd>Esc</Kbd>
+          </div>
 
-            <CommandPrimitive.List className="max-h-[min(420px,60vh)] scroll-py-2 overflow-y-auto p-1.5">
-              {groups.length === 0 ? (
-                <CommandPrimitive.Empty className="flex flex-col items-center gap-1 py-10 text-center">
-                  <span className="text-foreground text-sm">
-                    <Trans>No results for “{rankedQuery.trim()}”</Trans>
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    <Trans>Try a note title, a person, or a setting.</Trans>
-                  </span>
-                </CommandPrimitive.Empty>
-              ) : (
-                groups.map((group) => (
-                  <CommandPrimitive.Group
-                    key={group.id}
-                    heading={headings[group.id]}
-                    className={cn([
-                      "[&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-medium",
-                    ])}
-                  >
-                    {group.items.map((command) => (
-                      <CommandRow
-                        key={`${group.id}-${command.id}`}
-                        command={command}
-                        onSelect={() => runCommand(command, "current")}
-                      />
-                    ))}
-                  </CommandPrimitive.Group>
-                ))
-              )}
-            </CommandPrimitive.List>
-
-            <div className="border-border text-muted-foreground flex h-9 items-center gap-4 border-t px-4 text-[11px]">
-              <span className="flex items-center gap-1.5">
-                <ShortcutKeys keys={["↑", "↓"]} />
-                <Trans>Navigate</Trans>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <ShortcutKeys keys={["enter"]} />
-                {selectedCommand && !selectedCommand.opensTab ? (
-                  <Trans>Run</Trans>
-                ) : (
-                  <Trans>Open</Trans>
-                )}
-              </span>
-              {selectedCommand?.opensTab ? (
-                <span className="flex items-center gap-1.5">
-                  <ShortcutKeys keys={["mod", "enter"]} />
-                  <Trans>Open in new tab</Trans>
+          <CommandPrimitive.List className="max-h-[min(420px,60vh)] scroll-py-1 overflow-y-auto p-1">
+            {groups.length === 0 ? (
+              <CommandPrimitive.Empty className="flex flex-col items-center gap-1 py-10 text-center">
+                <span className="text-foreground text-ui">
+                  <Trans>No results for “{rankedQuery.trim()}”</Trans>
                 </span>
-              ) : null}
-            </div>
-          </CommandPrimitive>
-        </div>
+                <span className="text-muted-foreground text-label">
+                  <Trans>Try a note title, a person, or a setting.</Trans>
+                </span>
+              </CommandPrimitive.Empty>
+            ) : (
+              groups.map((group) => (
+                <CommandPrimitive.Group
+                  key={group.id}
+                  heading={headings[group.id]}
+                  className={cn([
+                    "[&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:text-label [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-1.5 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-medium",
+                  ])}
+                >
+                  {group.items.map((command) => (
+                    <CommandRow
+                      key={`${group.id}-${command.id}`}
+                      command={command}
+                      onSelect={() => runCommand(command, "current")}
+                    />
+                  ))}
+                </CommandPrimitive.Group>
+              ))
+            )}
+          </CommandPrimitive.List>
+
+          <div className="border-border text-muted-foreground text-caption flex h-9 items-center gap-4 border-t px-3">
+            <span className="flex items-center gap-1.5">
+              <ShortcutKeys keys={["↑", "↓"]} />
+              <Trans>Navigate</Trans>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ShortcutKeys keys={["enter"]} />
+              {selectedCommand && !selectedCommand.opensTab ? (
+                <Trans>Run</Trans>
+              ) : (
+                <Trans>Open</Trans>
+              )}
+            </span>
+            {selectedCommand?.opensTab ? (
+              <span className="flex items-center gap-1.5">
+                <ShortcutKeys keys={["mod", "enter"]} />
+                <Trans>Open in new tab</Trans>
+              </span>
+            ) : null}
+          </div>
+        </CommandPrimitive>
       </DialogContent>
     </Dialog>
   );
@@ -492,12 +480,12 @@ function CommandRow({
       }
       className={cn([
         "group flex h-9 cursor-pointer items-center gap-2.5 rounded-md px-2.5",
-        "text-foreground text-[13px]",
-        "data-[selected=true]:bg-accent",
+        "text-foreground text-ui",
+        "data-[selected=true]:bg-muted",
       ])}
     >
       <CommandIcon className="text-muted-foreground group-data-[selected=true]:text-foreground size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate text-left [unicode-bidi:plaintext]">
+      <span className="min-w-0 flex-1 truncate text-start [unicode-bidi:plaintext]">
         {command.label}
       </span>
       {command.shortcut ? (
@@ -507,7 +495,7 @@ function CommandRow({
       ) : command.meta ? (
         <span
           aria-hidden
-          className="text-muted-foreground max-w-[40%] shrink-0 truncate text-xs"
+          className="text-muted-foreground text-label max-w-[40%] shrink-0 truncate"
         >
           {command.meta}
         </span>

@@ -196,12 +196,12 @@ export function LegacyMigrationCleanupRow() {
             if (!cleanupMutation.isPending) setConfirmationOpen(open);
           }}
         >
-          <DialogContent className="border-border/45 bg-card/95 w-[calc(100vw-48px)] max-w-[320px] gap-0 overflow-hidden rounded-[26px] p-0 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl sm:rounded-[26px] [&>button:last-child]:hidden">
-            <DialogHeader className="items-center gap-2 px-5 pt-6 text-center sm:text-center">
-              <DialogTitle className="text-foreground text-[13px] leading-5 font-semibold tracking-normal">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
                 <Trans>Clean up legacy files?</Trans>
               </DialogTitle>
-              <DialogDescription className="text-foreground w-full text-center text-[13px] leading-[1.36]">
+              <DialogDescription>
                 <Trans>
                   This will remove {status.fileCount} legacy files and free{" "}
                   {formatBytes(status.totalBytes)}. Your app data will not be
@@ -211,23 +211,21 @@ export function LegacyMigrationCleanupRow() {
             </DialogHeader>
 
             {cleanupMutation.error && (
-              <p className="mx-4 mt-3 text-center text-xs text-red-500">
+              <p className="text-destructive text-label">
                 {cleanupMutation.error.message}
               </p>
             )}
 
-            <DialogFooter className="grid grid-cols-2 gap-2 px-4 pt-4 pb-4 sm:grid-cols-2 sm:justify-normal">
+            <DialogFooter>
               <Button
-                variant="ghost"
-                className="bg-accent/80 text-foreground hover:bg-accent hover:text-foreground h-8 rounded-full px-4 text-xs font-medium shadow-none"
+                variant="outline"
                 onClick={() => setConfirmationOpen(false)}
                 disabled={cleanupMutation.isPending}
               >
                 <Trans>Cancel</Trans>
               </Button>
               <Button
-                variant="destructive"
-                className="h-8 rounded-full px-4 text-xs font-medium shadow-sm"
+                variant="destructive-solid"
                 onClick={() => cleanupMutation.mutate()}
                 disabled={cleanupMutation.isPending}
               >
