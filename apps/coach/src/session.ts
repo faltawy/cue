@@ -13,6 +13,7 @@ import type { Database } from "bun:sqlite";
 import type { Block } from "./blocks";
 import { sessionEnv } from "./env";
 import { decide, GMAIL_SERVER, REMOVED_TOOLS, WEB_TOOLS } from "./guard";
+import type { AskContent } from "./images";
 import type { Connectors } from "./mcp-config";
 import { type MeetingEdits, meetingServer } from "./meeting-server";
 import { answerInput, parseQuestions, type QuestionOutcome, type Question } from "./questions";
@@ -120,10 +121,10 @@ class InputQueue implements AsyncIterable<SDKUserMessage> {
   private waiters: Array<(result: IteratorResult<SDKUserMessage>) => void> = [];
   private closed = false;
 
-  push(text: string) {
+  push(content: AskContent) {
     const message: SDKUserMessage = {
       type: "user",
-      message: { role: "user", content: text },
+      message: { role: "user", content },
       parent_tool_use_id: null,
     };
     const waiter = this.waiters.shift();
@@ -240,7 +241,7 @@ function toolResultHook(onToolResult: NonNullable<CoachOptions["onToolResult"]>)
 }
 
 export type CoachSession = {
-  ask(text: string): void;
+  ask(content: AskContent): void;
   messages: AsyncIterable<SDKMessage>;
   interrupt(): Promise<unknown>;
   abort(): void;
@@ -252,7 +253,7 @@ export function startCoach(options: CoachOptions): CoachSession {
   const abortController = options.abortController ?? new AbortController();
   const handle: Query = query({ prompt: input, options: coachQueryOptions({ ...options, abortController }) });
   return {
-    ask: (text) => input.push(text),
+    ask: (content) => input.push(content),
     messages: handle,
     interrupt: () => handle.interrupt(),
     abort: () => abortController.abort(),

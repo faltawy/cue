@@ -1,8 +1,97 @@
-import { ArrowUp, ChevronDown, Folder, Square } from "lucide-react";
-import { forwardRef, type KeyboardEvent, useEffect, useId, useImperativeHandle, useRef, useState } from "react";
+import { AlertCircle, ArrowUp, ChevronDown, Folder, ImagePlus, Square, X } from "lucide-react";
+import {
+  forwardRef,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
+import { admitFiles, IMAGE_TYPES, MAX_IMAGES } from "../../image-limits";
 import type { StatusEvent } from "../../protocol";
+import { imageErrorMessage, type PreparedImage, prepareImage } from "../images";
 import { cx, IconButton, Kbd } from "./primitives";
+
+type Attachment = { id: number; image: PreparedImage | null };
+
+function useAttachments() {
+  const [entries, setEntries] = useState<Attachment[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const nextId = useRef(0);
+  const count = useRef(0);
+  count.current = entries.length;
+
+  const add = useCallback((files: readonly File[]) => {
+    const { accepted, error: rejected } = admitFiles(files, count.current);
+    setError(rejected);
+    const added = accepted.map((file) => ({ id: (nextId.current += 1), file }));
+    count.current += added.length;
+    setEntries((current) => [...current, ...added.map(({ id }) => ({ id, image: null }))]);
+    for (const { id, file } of added) {
+      prepareImage(file)
+        .then((image) => setEntries((current) => current.map((entry) => (entry.id === id ? { id, image } : entry))))
+        .catch((failure: unknown) => {
+          setEntries((current) => current.filter((entry) => entry.id !== id));
+          setError(imageErrorMessage(failure));
+        });
+    }
+  }, []);
+
+  return useMemo(() => {
+    const ready = entries.flatMap((entry) => (entry.image ? [entry.image] : []));
+    return {
+      entries,
+      error,
+      ready,
+      loading: entries.some((entry) => entry.image === null),
+      add,
+      fail: setError,
+      remove: (id: number) => {
+        setError(null);
+        setEntries((current) => current.filter((entry) => entry.id !== id));
+      },
+      take: () => {
+        const taken = entries.flatMap((entry) => (entry.image ? [{ id: entry.id, image: entry.image }] : []));
+        setEntries([]);
+        setError(null);
+        return taken;
+      },
+      restore: (taken: Array<{ id: number; image: PreparedImage }>) => setEntries((current) => [...taken, ...current]),
+    };
+  }, [add, entries, error]);
+}
+
+function AttachmentStrip({ entries, onRemove }: { entries: readonly Attachment[]; onRemove(id: number): void }) {
+  return (
+    <ul className="flex flex-wrap gap-2 px-3 pt-2.5" aria-label="Attached images">
+      {entries.map((entry, index) => (
+        <li key={entry.id} className="relative size-14 shrink-0" data-testid="attachment">
+          {entry.image ? (
+            <img
+              src={entry.image.thumb}
+              alt={`Attached image ${index + 1}`}
+              className="size-14 rounded-md border border-border object-cover"
+            />
+          ) : (
+            <span role="status" aria-label="Preparing image" className="coach-skeleton block size-14 rounded-md" />
+          )}
+          <button
+            type="button"
+            aria-label={`Remove image ${index + 1}`}
+            onClick={() => onRemove(entry.id)}
+            className="absolute -end-1.5 -top-1.5 grid size-5 place-items-center rounded-full border border-border bg-surface text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground"
+          >
+            <X aria-hidden className="size-3" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export type ComposerHandle = { focus(): void; fill(text: string): void };
 
@@ -19,7 +108,7 @@ export const Composer = forwardRef<
     status: StatusEvent | null;
     chips: string[];
     above?: React.ReactNode;
-    onSubmit(text: string): Promise<boolean>;
+    onSubmit(text: string, images: readonly PreparedImage[]): Promise<boolean>;
     onStop(): void;
     recall(): string | null;
     onChooseFolder(): void;
@@ -31,7 +120,11 @@ export const Composer = forwardRef<
 ) {
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
+  const picker = useRef<HTMLInputElement>(null);
+  const attachments = useAttachments();
+  const canAttach = !above;
 
   useImperativeHandle(ref, () => ({
     focus: () => input.current?.focus(),
@@ -53,15 +146,32 @@ export const Composer = forwardRef<
     element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
   }, [text]);
 
-  const canSend = ready && !busy && text.trim().length > 0;
+  const images = canAttach ? attachments.ready : [];
+  const canSend = ready && !busy && !attachments.loading && (text.trim().length > 0 || images.length > 0);
 
   const send = async (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || !ready || busy) return;
+    if ((!trimmed && images.length === 0) || !ready || busy || attachments.loading) return;
+    const sent = attachments.take();
     setText("");
-    const ok = await onSubmit(trimmed);
-    if (!ok) setText(trimmed);
+    const ok = await onSubmit(trimmed, canAttach ? sent.map((entry) => entry.image) : []);
+    if (!ok) {
+      setText(trimmed);
+      attachments.restore(sent);
+    }
   };
+
+  const attach = (files: readonly File[]) => {
+    if (files.length === 0) return;
+    if (!canAttach) {
+      attachments.fail("Answer the question first, then attach images.");
+      return;
+    }
+    attachments.add(files);
+  };
+
+  const filesOf = (transfer: DataTransfer | null) => [...(transfer?.files ?? [])];
+  const carriesFiles = (transfer: DataTransfer | null) => [...(transfer?.types ?? [])].includes("Files");
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.nativeEvent.isComposing) return;
@@ -80,7 +190,7 @@ export const Composer = forwardRef<
     }
   };
 
-  const showChips = chips.length > 0 && text === "" && !busy && ready && !above;
+  const showChips = chips.length > 0 && text === "" && attachments.entries.length === 0 && !busy && ready && !above;
 
   return (
     <div className="flex min-h-0 flex-col border-t border-border bg-surface px-3 pt-2.5 pb-3">
@@ -105,12 +215,38 @@ export const Composer = forwardRef<
             ))}
           </div>
         )}
+        {attachments.error && (
+          <p role="alert" dir="auto" className="coach-enter mb-1.5 flex items-start gap-1.5 text-[12px] text-destructive">
+            <AlertCircle aria-hidden className="mt-[2px] size-3.5 shrink-0" />
+            <span className="min-w-0">{attachments.error}</span>
+          </p>
+        )}
         <div
           className={cx(
             "shrink-0 rounded-lg border bg-surface transition-[border-color] duration-150",
-            focused ? "border-foreground/25" : "border-border",
+            focused || dragging ? "border-foreground/25" : "border-border",
           )}
+          data-dragging={dragging || undefined}
+          onDragOver={(event) => {
+            if (!carriesFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) {
+              setDragging(false);
+            }
+          }}
+          onDrop={(event) => {
+            if (!carriesFiles(event.dataTransfer)) return;
+            event.preventDefault();
+            setDragging(false);
+            attach(filesOf(event.dataTransfer));
+          }}
         >
+          {attachments.entries.length > 0 && (
+            <AttachmentStrip entries={attachments.entries} onRemove={attachments.remove} />
+          )}
           <label className="sr-only" htmlFor="coach-input">
             Ask the coach
           </label>
@@ -122,6 +258,12 @@ export const Composer = forwardRef<
             dir="auto"
             placeholder={placeholder}
             onChange={(event) => setText(event.target.value)}
+            onPaste={(event) => {
+              const files = filesOf(event.clipboardData);
+              if (files.length === 0) return;
+              event.preventDefault();
+              attach(files);
+            }}
             onKeyDown={onKeyDown}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -130,6 +272,30 @@ export const Composer = forwardRef<
           <div className="flex items-center gap-1 px-1.5 pb-1.5">
             <ProjectMenu status={status} onChooseFolder={onChooseFolder} onDefaultFolder={onDefaultFolder} />
             <span className="flex-1" />
+            {canAttach && (
+              <>
+                <input
+                  ref={picker}
+                  type="file"
+                  accept={IMAGE_TYPES.join(",")}
+                  multiple
+                  hidden
+                  data-testid="image-picker"
+                  onChange={(event) => {
+                    attach([...(event.target.files ?? [])]);
+                    event.target.value = "";
+                  }}
+                />
+                <IconButton
+                  label="Attach images"
+                  tooltipSide="top"
+                  disabled={attachments.entries.length >= MAX_IMAGES}
+                  onClick={() => picker.current?.click()}
+                >
+                  <ImagePlus aria-hidden className="size-4" />
+                </IconButton>
+              </>
+            )}
             {focused && !busy && (
               <span className="mr-1 hidden items-center gap-1 text-[11px] text-muted-foreground min-[400px]:flex">
                 <Kbd keys={["enter"]} /> send

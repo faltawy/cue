@@ -1,6 +1,7 @@
 import { Check, Globe, ListPlus, Mail } from "lucide-react";
 import { useState } from "react";
 
+import type { ImageThumb } from "../../image-limits";
 import type { Source } from "../../sources";
 import type { ActionItemView, BlockView } from "../state";
 import { Button, cx, IconButton } from "./primitives";
@@ -189,5 +190,22 @@ export function SourceChips({ sources, onOpen }: { sources: readonly Source[]; o
         );
       })}
     </ul>
+  );
+}
+
+export function ImageThumbs({ images, className }: { images: readonly ImageThumb[]; className?: string }) {
+  return (
+    <div className={cx("flex flex-wrap gap-1.5", className)} data-testid="sent-images">
+      {images.map((image, index) => (
+        <img
+          key={index}
+          src={image.thumb}
+          width={image.width}
+          height={image.height}
+          alt={`Attached image ${index + 1}`}
+          className="h-16 w-auto max-w-[160px] rounded-md border border-border object-cover"
+        />
+      ))}
+    </div>
   );
 }

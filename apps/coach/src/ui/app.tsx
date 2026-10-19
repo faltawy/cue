@@ -6,6 +6,7 @@ import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
 import { EmptyState, Timeline, type TimelineActions } from "./components/timeline";
 import { hasFollowUp, isEmptyWrapUp, WrapUpCard } from "./components/wrap-up-card";
+import type { PreparedImage } from "./images";
 import { chipsAllowed, type CoachState, isBusy, lastAsk, latestUndoable, meetingPhase, suggestions, type Turn } from "./state";
 import { type CoachApi, useCoach } from "./use-coach";
 
@@ -52,9 +53,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
   const chips = suggestions(phase, state.wrapUp?.state === "ready" && hasFollowUp(state.wrapUp.wrapUp.follow_up_draft));
 
   const ask = useCallback(
-    async (text: string) => {
+    async (text: string, images: readonly PreparedImage[] = []) => {
       setSent((count) => count + 1);
-      const result = await api.ask(text);
+      const result = images.length > 0 ? await api.ask(text, images) : await api.ask(text);
       return result.ok;
     },
     [api],
@@ -166,9 +167,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         : `Ask about ${projectName}…`;
 
   const submit = useCallback(
-    async (text: string) => {
+    async (text: string, images: readonly PreparedImage[]) => {
       if (state.question) return answer(state.question.id, [text]);
-      return ask(text);
+      return ask(text, images);
     },
     [answer, ask, state.question],
   );

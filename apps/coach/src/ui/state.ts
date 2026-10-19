@@ -1,6 +1,7 @@
 import type { CoachEdit } from "../app-bridge";
 import type { ActionItem, Block } from "../blocks";
 import type { CoachError } from "../errors";
+import type { ImageThumb } from "../image-limits";
 import type { CoachEvent, StatusEvent, TurnKind, WrapUpView } from "../protocol";
 import type { Question } from "../questions";
 import type { Source } from "../sources";
@@ -34,6 +35,7 @@ export type Turn = {
   key: string;
   ask: TurnKind;
   prompt: string;
+  images: ImageThumb[];
   text: string;
   steps: Step[];
   edits: EditView[];
@@ -80,7 +82,7 @@ export type Action =
   | { type: "event"; event: CoachEvent }
   | { type: "events"; events: readonly CoachEvent[] }
   | { type: "connection"; connection: Connection }
-  | { type: "send"; prompt: string }
+  | { type: "send"; prompt: string; images?: ImageThumb[] }
   | { type: "send_failed"; prompt: string; message: string };
 
 function key(state: CoachState, prefix: string): [string, number] {
@@ -162,12 +164,13 @@ function updateCurrentTurn(state: CoachState, update: (turn: Turn) => Turn): Coa
   return lastTurnIndex(state.items, isOpen) === -1 ? updateTurn(state, update, () => true) : updateTurn(state, update);
 }
 
-function newTurn(keyValue: string, ask: TurnKind, prompt: string, status: TurnStatus): Turn {
+function newTurn(keyValue: string, ask: TurnKind, prompt: string, status: TurnStatus, images: ImageThumb[] = []): Turn {
   return {
     kind: "turn",
     key: keyValue,
     ask,
     prompt,
+    images,
     text: "",
     steps: [],
     edits: [],
@@ -193,11 +196,15 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
       const pendingTurn = pending === -1 ? undefined : state.items[pending];
       if (event.kind === "ask" && pendingTurn?.kind === "turn" && pendingTurn.prompt === event.text) {
         const items = [...state.items];
-        items[pending] = { ...pendingTurn, status: "running" };
+        items[pending] = { ...pendingTurn, status: "running", images: event.images ?? pendingTurn.images };
         return { ...state, items };
       }
       const [turnKey, serial] = key(state, "turn");
-      return { ...state, serial, items: [...state.items, newTurn(turnKey, event.kind, event.text, "running")] };
+      return {
+        ...state,
+        serial,
+        items: [...state.items, newTurn(turnKey, event.kind, event.text, "running", event.images)],
+      };
     }
     case "block":
       return updateCurrentTurn(state, (turn) => ({ ...turn, blocks: [...turn.blocks, blockView(event.id, event.block)] }));
@@ -297,7 +304,11 @@ export function reduce(state: CoachState, action: Action): CoachState {
       return { ...state, connection: action.connection };
     case "send": {
       const [turnKey, serial] = key(state, "turn");
-      return { ...state, serial, items: [...state.items, newTurn(turnKey, "ask", action.prompt, "sending")] };
+      return {
+        ...state,
+        serial,
+        items: [...state.items, newTurn(turnKey, "ask", action.prompt, "sending", action.images)],
+      };
     }
     case "send_failed": {
       const index = lastTurnIndex(state.items, (turn) => turn.status === "sending" && turn.prompt === action.prompt);

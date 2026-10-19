@@ -14,6 +14,7 @@ import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from ".
 import { NO_SPEND, spendOf } from "./pricing";
 import { type NudgeRequest, PROACTIVE_DEFAULTS, Proactive, type ProactiveView } from "./proactive";
 import { actionItemText } from "./blocks";
+import { type AskImage, askContent, parseAskImages, thumbsOf } from "./images";
 import {
   addedBlockItem,
   appendHistory,
@@ -407,13 +408,13 @@ async function openChat(reason: OpenReason) {
   pump(session, mine);
 }
 
-function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt: string) {
+function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt: string, images: AskImage[] = []) {
   busy = true;
   askedAt = Date.now();
   tracker.beginTurn();
-  feed({ type: "user", kind, text: label });
+  feed({ type: "user", kind, text: label, ...(images.length > 0 ? { images: thumbsOf(images) } : {}) });
   broadcast(status());
-  session.ask(withNudgeNotes(nudgeNotes, prompt));
+  session.ask(askContent(withNudgeNotes(nudgeNotes, prompt), images));
   nudgeNotes = [];
 }
 
@@ -624,10 +625,12 @@ const server = Bun.serve({
       POST: async (request) => {
         const body = await jsonBody(request);
         const text = typeof body.text === "string" ? body.text.trim() : "";
-        if (!text) return new Response("Type a question first.", { status: 400 });
+        const images = parseAskImages(body.images);
+        if (!images.ok) return new Response(images.error, { status: 400 });
+        if (!text && images.images.length === 0) return new Response("Type a question first.", { status: 400 });
         if (!coach) return new Response("The coach is starting. Try again in a moment.", { status: 503 });
         if (busy) return conflict("The coach is still answering. Stop it first, or wait a moment.");
-        startTurn(coach, "ask", text, text);
+        startTurn(coach, "ask", text, text, images.images);
         return new Response(null, { status: 204 });
       },
     },

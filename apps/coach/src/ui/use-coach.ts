@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 
 import type { CoachEvent } from "../protocol";
+import type { PreparedImage } from "./images";
 import { type CoachState, initialState, reduce } from "./state";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -20,7 +21,7 @@ export async function post(url: string, body?: unknown, method = "POST"): Promis
 }
 
 export type CoachApi = {
-  ask(text: string): Promise<ActionResult>;
+  ask(text: string, images?: readonly PreparedImage[]): Promise<ActionResult>;
   checkItem(blockId: string, index: number, checked: boolean): Promise<ActionResult>;
   addItemToNote(blockId: string, index: number): Promise<ActionResult>;
   open(url: string): Promise<ActionResult>;
@@ -156,9 +157,9 @@ export function useCoach(): [CoachState, CoachApi] {
     [notify],
   );
 
-  const ask = useCallback(async (text: string) => {
-    dispatch({ type: "send", prompt: text });
-    const result = await post("/ask", { text });
+  const ask = useCallback(async (text: string, images: readonly PreparedImage[] = []) => {
+    dispatch({ type: "send", prompt: text, images: images.map(({ thumb, width, height }) => ({ thumb, width, height })) });
+    const result = await post("/ask", images.length > 0 ? { text, images } : { text });
     if (!result.ok) dispatch({ type: "send_failed", prompt: text, message: result.message });
     return result;
   }, []);

@@ -6,7 +6,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import type { CoachError } from "../../errors";
 import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
-import { ActionsBlock, type BlockActions, Replies, SourceChips } from "./blocks";
+import { ActionsBlock, type BlockActions, ImageThumbs, Replies, SourceChips } from "./blocks";
 import { CoachMarkdown } from "./markdown";
 import { Button, cx, IconButton } from "./primitives";
 import { Steps } from "./steps";
@@ -274,7 +274,7 @@ function TurnView({
     </>
   );
   const footer = !running && turn.ask !== "nudge" && (
-    <TurnFooter turn={turn} latest={latest} canRetry={canRetry} actions={actions} />
+    <TurnFooter turn={turn} latest={latest} canRetry={canRetry && turn.images.length === 0} actions={actions} />
   );
 
   if (turn.ask !== "ask") {
@@ -289,9 +289,12 @@ function TurnView({
 
   return (
     <article className="group/turn flex flex-col gap-2.5" aria-label="Question and answer">
-      <div className="coach-enter ms-auto max-w-[85%] rounded-lg bg-muted px-3 py-2 text-[14px] leading-[1.5] break-words whitespace-pre-wrap">
-        <p dir="auto">{turn.prompt}</p>
-      </div>
+      {turn.images.length > 0 && <ImageThumbs images={turn.images} className="coach-enter ms-auto max-w-[85%] justify-end" />}
+      {turn.prompt && (
+        <div className="coach-enter ms-auto max-w-[85%] rounded-lg bg-muted px-3 py-2 text-[14px] leading-[1.5] break-words whitespace-pre-wrap">
+          <p dir="auto">{turn.prompt}</p>
+        </div>
+      )}
       <div className="min-w-0">
         {body}
         {footer}

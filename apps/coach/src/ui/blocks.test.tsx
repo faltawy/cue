@@ -1,7 +1,12 @@
 import { describe, expect, mock, test } from "bun:test";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { act, fireEvent, render, type RenderResult, within } from "@testing-library/react";
 
+import { loadChats, remember, saveChats } from "../chat-store";
+import { IMAGE_ERRORS } from "../image-limits";
 import type { CoachEvent } from "../protocol";
 import { CoachView } from "./app";
 import { useDom } from "./dom-setup";
@@ -45,6 +50,7 @@ function setup(state: CoachState) {
 }
 
 const done: CoachEvent = { type: "done", seconds: 2, ok: true, silent: false, interrupted: false };
+const THUMB = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD";
 
 const answered = (extra: CoachEvent[], text = "What did we promise?"): CoachEvent[] => [
   { type: "user", kind: "ask", text },
@@ -160,5 +166,35 @@ describe("source chips", () => {
     fireEvent.click(within(list).getByText("Re: Bcc before renewal"));
     expect(api.open).toHaveBeenCalledWith("https://mail.google.com/mail/u/0/#all/18f2a9c4b7e1d3a0");
     expect(within(list).getByText("help.example.com").closest("a")?.getAttribute("title")).toBe("Outbound Bcc");
+  });
+});
+
+describe("images in the composer", () => {
+  test("an unsupported file is refused with plain copy and nothing is attached", () => {
+    setup(stateFrom([status()]));
+    const picker = view.getByTestId("image-picker");
+    fireEvent.change(picker, { target: { files: [new File(["x"], "IMG_0042.HEIC", { type: "image/heic" })] } });
+    expect(view.getByRole("alert").textContent).toBe(IMAGE_ERRORS.type);
+    expect(view.queryAllByTestId("attachment")).toHaveLength(0);
+  });
+
+  test("a sent message keeps its thumbnails after the chat is saved and reopened", () => {
+    const dir = mkdtempSync(join(tmpdir(), "coach-images-"));
+    const file = join(dir, "coach-chats.json");
+    const history: CoachEvent[] = [
+      { type: "user", kind: "ask", text: "What's this error?", images: [{ thumb: THUMB, width: 192, height: 108 }, { thumb: THUMB, width: 90, height: 192 }] },
+      { type: "text", delta: "A missing env var." },
+      done,
+    ];
+    saveChats(file, remember({ meetings: {} }, "m1", { claudeSessionId: "c1", project: "/work", history, updatedAt: 1 }));
+    const restored = loadChats(file).meetings.m1?.history ?? [];
+    setup(stateFrom([status(), { type: "reset", reason: "sync" }, ...restored]));
+    const images = within(view.getByTestId("sent-images")).getAllByRole("img");
+    expect(images.map((image) => [image.getAttribute("src"), image.getAttribute("alt")])).toEqual([
+      [THUMB, "Attached image 1"],
+      [THUMB, "Attached image 2"],
+    ]);
+    expect(view.getByText("What's this error?")).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Ask again" })).toBeNull();
   });
 });

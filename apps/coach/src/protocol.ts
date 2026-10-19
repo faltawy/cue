@@ -1,6 +1,7 @@
 import type { CoachEdit, MeetingProject } from "./app-bridge";
 import type { Block } from "./blocks";
 import type { CoachError } from "./errors";
+import type { ImageThumb } from "./image-limits";
 import type { StripView, WrapUpActions } from "./meeting-state";
 import type { ProactiveView } from "./proactive";
 import type { Question } from "./questions";
@@ -49,7 +50,7 @@ export type CoachEvent =
   | StatusEvent
   | { type: "reset"; reason: ResetReason }
   | { type: "divider"; text: string }
-  | { type: "user"; kind: TurnKind; text: string }
+  | { type: "user"; kind: TurnKind; text: string; images?: ImageThumb[] }
   | { type: "text"; delta: string }
   | { type: "tool"; id: string; name: string; label: string; activeLabel: string; detail: string | null }
   | { type: "tool_result"; id: string; ok: boolean; output: string | null; durationMs: number | null }
