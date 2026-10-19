@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getActiveLineIndex,
+  groupWordsIntoLines,
   getSegmentSpeakerColor,
   getSegmentSpeakerSlot,
 } from "./utils";
@@ -73,6 +74,23 @@ describe("transcript renderer utils", () => {
     expect(getActiveLineIndex(words, 50, 1450)).toBe(1);
     expect(getActiveLineIndex(words, 50, 2150)).toBe(1);
     expect(getActiveLineIndex(words, 50, 2200)).toBeNull();
+  });
+
+  it("ends lines at Arabic and CJK sentence marks too", () => {
+    const words: SegmentWord[] = [
+      createWord("word-1", "هل", 0, 100),
+      createWord("word-2", "انتهينا؟", 100, 200),
+      createWord("word-3", "完成了。", 300, 400),
+      createWord("word-4", "好吗？", 500, 600),
+      createWord("word-5", "Yes", 700, 800),
+    ];
+
+    expect(
+      groupWordsIntoLines(words).map((line) =>
+        line.words.map((word) => word.text).join(" "),
+      ),
+    ).toEqual(["هل انتهينا؟", "完成了。", "好吗？", "Yes"]);
+    expect(getActiveLineIndex(words, 0, 550)).toBe(2);
   });
 });
 

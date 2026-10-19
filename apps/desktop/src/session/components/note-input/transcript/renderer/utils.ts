@@ -8,6 +8,13 @@ export type SentenceLine = {
   endMs: number;
 };
 
+// Latin, Arabic (؟ ۔) and full-width CJK (。？！) sentence marks.
+const SENTENCE_END = /[.?!؟۔。？！]$/;
+
+function endsSentence(word: SegmentWord) {
+  return SENTENCE_END.test(word.text.trim());
+}
+
 export function groupWordsIntoLines(words: SegmentWord[]): SentenceLine[] {
   if (words.length === 0) return [];
 
@@ -16,8 +23,7 @@ export function groupWordsIntoLines(words: SegmentWord[]): SentenceLine[] {
 
   for (const word of words) {
     currentLine.push(word);
-    const text = word.text.trim();
-    if (text.endsWith(".") || text.endsWith("?") || text.endsWith("!")) {
+    if (endsSentence(word)) {
       lines.push({
         words: currentLine,
         startMs: currentLine[0]!.start_ms,
@@ -50,12 +56,7 @@ export function getActiveLineIndex(
 
   for (let index = 0; index < words.length; index += 1) {
     const word = words[index]!;
-    const text = word.text.trim();
-    const closesLine =
-      text.endsWith(".") ||
-      text.endsWith("?") ||
-      text.endsWith("!") ||
-      index === words.length - 1;
+    const closesLine = endsSentence(word) || index === words.length - 1;
 
     if (!closesLine) {
       continue;
