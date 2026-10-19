@@ -485,17 +485,17 @@ function CommandRow({
       ])}
     >
       <CommandIcon className="text-muted-foreground group-data-[selected=true]:text-foreground size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate [text-align:match-parent] [unicode-bidi:plaintext]">
+      <span className="min-w-0 truncate [unicode-bidi:plaintext]">
         {command.label}
       </span>
       {command.shortcut ? (
-        <span aria-hidden className="shrink-0">
+        <span aria-hidden className="ms-auto shrink-0">
           <ShortcutKeys keys={command.shortcut} />
         </span>
       ) : command.meta ? (
         <span
           aria-hidden
-          className="text-muted-foreground text-label max-w-[40%] shrink-0 truncate"
+          className="text-muted-foreground text-label ms-auto max-w-[40%] shrink-0 truncate"
         >
           {command.meta}
         </span>

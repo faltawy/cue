@@ -88,7 +88,7 @@ export function SessionChip({
           onContextMenu={showContextMenu}
         >
           <div className="border-border w-[4px] shrink-0 self-stretch rounded-full border bg-transparent" />
-          <span className="truncate [text-align:match-parent] [unicode-bidi:plaintext]">
+          <span className="min-w-0 truncate [unicode-bidi:plaintext]">
             {title}
           </span>
           {createdAt && (

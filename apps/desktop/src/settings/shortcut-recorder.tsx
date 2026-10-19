@@ -132,7 +132,7 @@ export function ShortcutRecorder({
               <Trans>Press shortcut…</Trans>
             )
           ) : (
-            <span className="inline-flex items-center gap-1">
+            <span dir="ltr" className="inline-flex items-center gap-1">
               {shortcut.split("+").map((key) => (
                 <kbd
                   key={key}

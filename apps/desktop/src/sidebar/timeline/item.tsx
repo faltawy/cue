@@ -247,7 +247,7 @@ const ItemBase = memo(function ItemBase({
             ) : null}
             <div
               className={cn(
-                "text-ui pointer-events-none min-w-0 truncate [text-align:match-parent] [unicode-bidi:plaintext]",
+                "text-ui pointer-events-none max-w-full min-w-0 self-start truncate [unicode-bidi:plaintext]",
                 ignored && "line-through",
                 !title && "text-muted-foreground",
               )}
@@ -263,7 +263,7 @@ const ItemBase = memo(function ItemBase({
                     className="bg-live coach-live-dot size-1.5 shrink-0 rounded-full"
                   />
                 ) : null}
-                {displayTime}
+                <bdi>{displayTime}</bdi>
               </div>
             )}
             {tagLine ? (

@@ -84,7 +84,7 @@ export function TimelineBuckets({
               ])}
             >
               <div className="text-muted-foreground text-label font-medium">
-                {bucket.label}
+                <bdi>{bucket.label}</bdi>
               </div>
             </div>
             {isToday ? (
