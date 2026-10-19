@@ -12,6 +12,7 @@ import { createNamedFolder } from "~/session/folder-catalog";
 import { resolvedFolderIcon } from "~/session/folder-icon";
 import { useFolderIcons, useFolderPaths } from "~/session/queries";
 import { EmptyState } from "~/shared/ui/empty-state";
+import { FolderPathLabel } from "~/shared/ui/folder-path-label";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 import { FolderNameDialog } from "~/sidebar/folder-name-dialog";
 import { SidebarSearchField } from "~/sidebar/search-field";
@@ -112,9 +113,9 @@ export function FoldersSidebar() {
                           persistedIcons,
                           iconOverrides,
                         )}
-                        className="text-body size-4"
+                        className="text-body size-4 shrink-0"
                       />
-                      <span className="min-w-0 truncate">{folder}</span>
+                      <FolderPathLabel path={folder} />
                     </span>
                   </button>
                 </li>

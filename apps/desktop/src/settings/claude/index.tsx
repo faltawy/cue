@@ -27,6 +27,7 @@ import {
   SettingRow,
   SettingSwitchRow,
 } from "~/settings/setting-row";
+import { FolderPathLabel } from "~/shared/ui/folder-path-label";
 
 async function saveSettings(next: CoachSettings) {
   const result = await coachCommands.setSettings(next);
@@ -142,7 +143,9 @@ export function SettingsClaude() {
           <SettingRow
             title={<Trans>Coach project</Trans>}
             description={
-              settings.project ?? (
+              settings.project ? (
+                <FolderPathLabel path={settings.project} />
+              ) : (
                 <Trans>Choose the folder the coach can read.</Trans>
               )
             }

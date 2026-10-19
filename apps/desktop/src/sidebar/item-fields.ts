@@ -56,6 +56,19 @@ export function resolveSidebarItemMeta({
   };
 }
 
-export function formatSidebarItemTags(tags: string[]): string {
-  return tags.map((tag) => `#${tag}`).join(" ");
+const SIDEBAR_VISIBLE_TAGS = 2;
+
+// A one-line tag row truncates; name the first tags and count the rest so
+// "+3" says there is more instead of an ellipsis hiding it.
+export function formatSidebarItemTags(tags: string[]): {
+  text: string;
+  overflow: number;
+} {
+  return {
+    text: tags
+      .slice(0, SIDEBAR_VISIBLE_TAGS)
+      .map((tag) => `#${tag}`)
+      .join(" "),
+    overflow: Math.max(0, tags.length - SIDEBAR_VISIBLE_TAGS),
+  };
 }

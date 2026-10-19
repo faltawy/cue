@@ -27,6 +27,7 @@ import {
   useSession,
   useUpdateSession,
 } from "~/session/queries";
+import { FolderPathLabel } from "~/shared/ui/folder-path-label";
 import { useTabs } from "~/store/zustand/tabs";
 import { TemplateIconGlyph } from "~/templates/template-icon";
 
@@ -65,7 +66,7 @@ export function FolderPicker({
           className={cn([
             "flex h-7 items-center rounded-md [&_svg]:size-3.5",
             currentPath
-              ? "max-w-36 min-w-0 gap-1 px-1.5 @max-[480px]:w-7 @max-[480px]:gap-0 @max-[480px]:px-0"
+              ? "max-w-60 min-w-0 gap-1 px-1.5 @max-[480px]:w-7 @max-[480px]:gap-0 @max-[480px]:px-0"
               : "w-7 justify-center",
             "text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-100",
             open && "bg-muted text-foreground",
@@ -80,9 +81,10 @@ export function FolderPicker({
             <Folder className="size-3.5 shrink-0" />
           )}
           {currentPath ? (
-            <span className="text-label min-w-0 truncate @max-[480px]:sr-only">
-              {currentPath}
-            </span>
+            <FolderPathLabel
+              path={currentPath}
+              className="text-label @max-[480px]:sr-only"
+            />
           ) : null}
         </button>
       </PopoverTrigger>
@@ -212,7 +214,7 @@ export function FolderPickerContent({
                     icon={resolvedFolderIcon(path, folderIcons)}
                     className="size-4 opacity-70"
                   />
-                  <span className="min-w-0 flex-1 truncate">{path}</span>
+                  <FolderPathLabel path={path} className="flex-1" />
                   {path === currentPath ? (
                     <Check className="size-4 shrink-0" />
                   ) : null}

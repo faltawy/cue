@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@anlg/ui/components/ui/button";
 import { Textarea } from "@anlg/ui/components/ui/textarea";
 
+import { FolderPathLabel } from "~/shared/ui/folder-path-label";
+
 const INSTRUCTIONS_SOFT_LIMIT = 4000;
 const AUTOSAVE_MS = 800;
 
@@ -95,12 +97,13 @@ export function CoachInstructionsSection({
                 key={path}
                 className="flex items-center justify-between gap-4"
               >
-                <span className="text-label truncate">{path}</span>
+                <FolderPathLabel path={path} className="text-label" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   aria-label={t`Remove ${path}`}
+                  className="shrink-0"
                   disabled={busy}
                   onClick={() => onRemoveKnowledge(path)}
                 >

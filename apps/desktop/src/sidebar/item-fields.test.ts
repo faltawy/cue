@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseSessionTagNames, resolveSidebarItemMeta } from "./item-fields";
+import {
+  formatSidebarItemTags,
+  parseSessionTagNames,
+  resolveSidebarItemMeta,
+} from "./item-fields";
 
 describe("parseSessionTagNames", () => {
   it("trims, dedupes, and sorts JSON tag names", () => {
@@ -47,5 +51,18 @@ describe("resolveSidebarItemMeta", () => {
         groupBy,
       }),
     ).toEqual({ folder, tags });
+  });
+});
+
+describe("formatSidebarItemTags", () => {
+  it("shows the first tags and counts the rest instead of cutting them off", () => {
+    expect(
+      formatSidebarItemTags(["design", "q4", "urgent", "legal", "emea"]),
+    ).toEqual({ text: "#design #q4", overflow: 3 });
+    expect(formatSidebarItemTags(["design"])).toEqual({
+      text: "#design",
+      overflow: 0,
+    });
+    expect(formatSidebarItemTags([])).toEqual({ text: "", overflow: 0 });
   });
 });
