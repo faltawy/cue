@@ -186,6 +186,12 @@ describe("sessionEnv", () => {
     expect(env).not.toHaveProperty("ANARLOG_COACH_APP_TOKEN");
   });
 
+  test("never hands the coach server's own launch secret to Claude Code", () => {
+    const env = sessionEnv({ PATH: "/bin", ANARLOG_COACH_TOKEN: "launch-secret" });
+    expect(env).toMatchObject({ PATH: "/bin" });
+    expect(env).not.toHaveProperty("ANARLOG_COACH_TOKEN");
+  });
+
   test("keeps the key when requests are routed to another endpoint", () => {
     const env = sessionEnv({ ANTHROPIC_BASE_URL: "http://gateway", ANTHROPIC_API_KEY: "sk-test" });
     expect(env).toMatchObject({ ANTHROPIC_BASE_URL: "http://gateway", ANTHROPIC_API_KEY: "sk-test" });

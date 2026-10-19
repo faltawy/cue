@@ -40,7 +40,10 @@ function fakeDeps(response: () => Response | Promise<Response>) {
     return response();
   });
   const deps: ClaudeCodeDeps = {
-    endpoint: async () => "http://127.0.0.1:5151",
+    endpoint: async () => ({
+      url: "http://127.0.0.1:5151",
+      token: "launch-secret",
+    }),
     fetch,
   };
   return { deps, fetch };
@@ -77,6 +80,9 @@ describe("createClaudeCodeModel", () => {
     expect(await result.text).toBe("Hello, Sara");
     expect((await result.usage).outputTokens).toBe(4);
     expect(fetch.mock.calls[0]?.[0]).toBe("http://127.0.0.1:5151/llm");
+    expect(
+      new Headers(fetch.mock.calls[0]?.[1]?.headers).get("authorization"),
+    ).toBe("Bearer launch-secret");
     expect(sentBody(fetch)).toEqual({
       model: "haiku",
       system: "Be brief.",

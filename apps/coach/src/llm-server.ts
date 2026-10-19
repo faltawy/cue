@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 
+import { createAccess, randomToken, secure, TOKEN_ENV } from "./access";
 import { llmResponse } from "./llm";
 
 const { values } = parseArgs({
@@ -16,14 +17,20 @@ if (values["exit-with-stdin"]) {
   process.stdin.resume();
 }
 
+const port = Number(values.port);
+const launchToken = process.env[TOKEN_ENV];
+delete process.env[TOKEN_ENV];
+if (!launchToken) console.error(`[llm] no ${TOKEN_ENV} set; every request will be refused`);
+const access = createAccess(launchToken || randomToken(), port);
+
 const server = Bun.serve({
   hostname: "127.0.0.1",
-  port: Number(values.port),
+  port,
   idleTimeout: 0,
-  routes: {
+  routes: secure(access, {
     "/health": () => new Response("ok"),
     "/llm": { POST: (request) => llmResponse(request, values.claude) },
-  },
+  }),
 });
 
 console.error(`[llm] http://${server.hostname}:${server.port}`);

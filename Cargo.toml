@@ -293,6 +293,7 @@ objc2-quartz-core = "0.3.2"
 objc2-security = "0.3.2"
 security-framework = "3.7"
 
+hmac = "0.13"
 same-file = "1.0.6"
 sha2 = "0.11"
 

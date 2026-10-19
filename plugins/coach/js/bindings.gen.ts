@@ -6,7 +6,7 @@
 
 
 export const commands = {
-async llmEndpoint() : Promise<Result<string, string>> {
+async llmEndpoint() : Promise<Result<Endpoint, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:coach|llm_endpoint") };
 } catch (e) {
@@ -93,6 +93,7 @@ async addKnowledge(folder: boolean) : Promise<Result<string | null, string>> {
 export type ClaudeConnector = { name: string; id: string; url: string; allow_changes?: boolean }
 export type ClaudeModel = "sonnet" | "opus" | "haiku"
 export type CoachSettings = { project: string | null; model: ClaudeModel; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
+export type Endpoint = { url: string; token: string }
 export type FoundConnector = { name: string; id: string; url: string }
 export type McpAuth = { kind: "none" } | { kind: "bearer" } | { kind: "basic"; username: string } | { kind: "header"; name: string }
 export type McpAuthState = "ready" | "needs_secret"

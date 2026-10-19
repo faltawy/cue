@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   type ClaudeModel,
   commands as coachCommands,
+  type Endpoint,
 } from "@anlg/plugin-coach";
 
 import { providerFetch } from "./provider-fetch";
@@ -53,7 +54,7 @@ const eventSchema = z.discriminatedUnion("type", [
 type ClaudeEvent = z.infer<typeof eventSchema>;
 
 export type ClaudeCodeDeps = {
-  endpoint: () => Promise<string>;
+  endpoint: () => Promise<Endpoint>;
   fetch: typeof fetch;
 };
 
@@ -193,10 +194,14 @@ export function createClaudeCodeModel(
 ): LanguageModelV3 {
   const doStream = async (options: CallOptions): Promise<StreamResult> => {
     const request = buildClaudeRequest(modelId, options);
-    const url = `${await deps.endpoint()}/llm`;
+    const endpoint = await deps.endpoint();
+    const url = `${endpoint.url}/llm`;
     const response = await deps.fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${endpoint.token}`,
+      },
       body: JSON.stringify(request),
       signal: options.abortSignal,
     });

@@ -25,7 +25,7 @@ function ExternalLink({ href, children }: { href?: string; children?: ReactNode 
 }
 
 export type ImageSource =
-  | { kind: "local"; src: string; open: string }
+  | { kind: "local"; src: string; path: string }
   | { kind: "remote"; src: string; host: string }
   | { kind: "blocked" };
 
@@ -51,8 +51,8 @@ export function imageSource(src: string | undefined): ImageSource {
       return { kind: "blocked" };
     }
   }
-  const route = `/file?path=${encodeURIComponent(decodedPath(value))}`;
-  return { kind: "local", src: route, open: `${location.origin}${route}` };
+  const path = decodedPath(value);
+  return { kind: "local", src: `/file?path=${encodeURIComponent(path)}`, path };
 }
 
 function ImageNote({ text }: { text: string }) {
@@ -96,7 +96,11 @@ function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
       <button
         type="button"
         aria-label={`Open ${name} full size`}
-        onClick={() => void post("/open", { url: source.kind === "local" ? source.open : source.src })}
+        onClick={() =>
+          void (source.kind === "local"
+            ? post("/open-image", { path: source.path })
+            : post("/open", { url: source.src }))
+        }
         className="max-w-full rounded-lg"
       >
         <img

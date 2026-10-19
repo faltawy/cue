@@ -5,7 +5,13 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
-use crate::{Error, Result};
+use crate::{Error, Result, access};
+
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+pub struct Endpoint {
+    pub url: String,
+    pub token: String,
+}
 
 const BUN_ENV: &str = "ANARLOG_COACH_BUN";
 const SERVER_ENV: &str = "ANARLOG_COACH_SERVER";
@@ -163,11 +169,14 @@ pub struct Sidecar {
     stdin: Option<ChildStdin>,
     pub port: u16,
     pub key: String,
+    pub token: String,
 }
 
 impl Sidecar {
     pub fn spawn(mut command: Command, port: u16, key: String) -> Result<Self> {
+        let token = access::new_token();
         let mut child = command
+            .env(access::TOKEN_ENV, &token)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -181,7 +190,15 @@ impl Sidecar {
             stdin,
             port,
             key,
+            token,
         })
+    }
+
+    pub fn endpoint(&self) -> Endpoint {
+        Endpoint {
+            url: self.base_url(),
+            token: self.token.clone(),
+        }
     }
 
     pub fn base_url(&self) -> String {
@@ -464,6 +481,28 @@ mod tests {
 
         assert!(matches!(error, Error::Exited(status) if status.code() == Some(3)));
         assert!(started.elapsed() < Duration::from_secs(5));
+    }
+
+    #[test]
+    fn each_sidecar_gets_its_own_launch_secret_through_the_environment() {
+        let dir = tempfile::tempdir().unwrap();
+        let seen = dir.path().join("token");
+        let script = format!(
+            "printf %s \"${}\" > '{}'",
+            access::TOKEN_ENV,
+            seen.display()
+        );
+        let mut first = Sidecar::spawn(sh(&script), free_port().unwrap(), "test".into()).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while first.is_running() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert_eq!(std::fs::read_to_string(&seen).unwrap(), first.token);
+        assert_eq!(first.token.len(), 64);
+
+        let second = Sidecar::spawn(sh("true"), free_port().unwrap(), "test".into()).unwrap();
+        assert_ne!(second.token, first.token);
+        assert_eq!(second.endpoint().token, second.token);
     }
 
     #[test]

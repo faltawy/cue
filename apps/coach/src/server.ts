@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
 import { type AppBridge, appBridgeFromEnv, type CoachEdit, type MeetingProject } from "./app-bridge";
+import { createAccess, loginUrl, randomToken, TOKEN_ENV, withAccess } from "./access";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { type ChatStore, loadChats, type OpenReason, planChat, remember, saveChats } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt, isNothing } from "./checkin";
@@ -586,6 +587,10 @@ async function jsonBody(request: Request): Promise<Record<string, unknown>> {
   }
 }
 
+function projectImage(requested: string) {
+  return resolveImageFile(requested, project.path, readRoots({ ...options, project: project.path }));
+}
+
 function blockItemRef(body: Record<string, unknown>): BlockItemRef | null {
   const id = typeof body.block_id === "string" ? body.block_id : "";
   const index = typeof body.index === "number" && Number.isInteger(body.index) ? body.index : -1;
@@ -595,12 +600,16 @@ function blockItemRef(body: Record<string, unknown>): BlockItemRef | null {
   return index < size ? { id, index } : null;
 }
 
+const port = Number(values.port);
+const launchToken = process.env[TOKEN_ENV];
+delete process.env[TOKEN_ENV];
+const access = createAccess(launchToken || randomToken(), port);
+
 const server = Bun.serve({
   hostname: "127.0.0.1",
-  port: Number(values.port),
+  port,
   idleTimeout: 0,
-  routes: {
-    "/": page,
+  routes: withAccess(access, page, {
     "/events": () => {
       let controller: ReadableStreamDefaultController<string>;
       const stream = new ReadableStream<string>({
@@ -706,11 +715,18 @@ const server = Bun.serve({
     },
     "/file": {
       GET: (request) => {
-        const requested = new URL(request.url).searchParams.get("path") ?? "";
-        const roots = readRoots({ ...options, project: project.path });
-        const image = resolveImageFile(requested, project.path, roots);
+        const image = projectImage(new URL(request.url).searchParams.get("path") ?? "");
         if (!image.ok) return new Response(image.reason, { status: image.status });
         return new Response(Bun.file(image.file), { headers: imageHeaders(image.type) });
+      },
+    },
+    "/open-image": {
+      POST: async (request) => {
+        const body = await jsonBody(request);
+        const image = projectImage(typeof body.path === "string" ? body.path : "");
+        if (!image.ok) return new Response(image.reason, { status: image.status });
+        Bun.spawn(["open", "--", image.file], { stdout: "ignore", stderr: "ignore" });
+        return new Response(null, { status: 204 });
       },
     },
     "/sign-in": {
@@ -777,7 +793,8 @@ const server = Bun.serve({
         return new Response(null, { status: 204 });
       },
     },
-  },
+  }),
 });
 
 console.error(`[coach] http://${server.hostname}:${server.port} · project ${options.project}`);
+if (!launchToken) console.error(`[coach] no ${TOKEN_ENV} set; sign in once at ${loginUrl(access)}`);

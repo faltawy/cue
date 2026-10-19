@@ -24,15 +24,15 @@ describe("images in answers", () => {
     expect(view.getByText("Sign-up flow, step 3", { selector: "figcaption, span" })).toBeTruthy();
   });
 
-  test("clicking an image opens it full size through the coach's open path", () => {
+  test("clicking a project image asks the coach to open the file itself, since a browser has no coach session", () => {
     const opened = mock((_url: string, _init?: RequestInit) => Promise.resolve(new Response(null, { status: 204 })));
     globalThis.fetch = opened as unknown as typeof fetch;
     const view = answer("![Architecture](/work/northwind/docs/arch.png)");
     fireEvent.click(view.getByRole("button", { name: "Open Architecture full size" }));
     expect(opened).toHaveBeenCalledTimes(1);
     const [url, init] = opened.mock.calls[0] ?? [];
-    expect(url).toBe("/open");
-    expect(JSON.parse(String(init?.body))).toEqual({ url: "http://127.0.0.1:4747/file?path=%2Fwork%2Fnorthwind%2Fdocs%2Farch.png" });
+    expect(url).toBe("/open-image");
+    expect(JSON.parse(String(init?.body))).toEqual({ path: "/work/northwind/docs/arch.png" });
   });
 
   test("a web image is not fetched until asked for", () => {

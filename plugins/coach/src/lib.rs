@@ -1,3 +1,4 @@
+mod access;
 mod auth;
 mod bridge;
 mod commands;
@@ -23,6 +24,7 @@ pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
 pub use error::{Error, Result};
 use mcp::ResolvedServer;
 pub use probe::McpProbe;
+pub use process::Endpoint;
 use process::{Launch, Sidecar};
 pub use settings::{ClaudeConnector, ClaudeModel, CoachSettings, FoundConnector, McpServer};
 
@@ -222,7 +224,7 @@ impl Coach {
         Ok(serde_json::from_slice(&output.stdout)?)
     }
 
-    pub fn llm_endpoint(&self) -> Result<String> {
+    pub fn llm_endpoint(&self) -> Result<Endpoint> {
         let state = self.app.state::<CoachState>();
         ensure(&state.llm, process::LLM_KEY.to_string(), |port| {
             process::sidecar_command(process::llm_args(port))
@@ -249,22 +251,22 @@ fn ensure(
     slot: &Mutex<Option<Sidecar>>,
     key: String,
     command: impl FnOnce(u16) -> Result<Command>,
-) -> Result<String> {
+) -> Result<Endpoint> {
     let mut slot = lock(slot)?;
     if let Some(sidecar) = slot.as_mut()
         && sidecar.key == key
         && sidecar.is_running()
     {
-        return Ok(sidecar.base_url());
+        return Ok(sidecar.endpoint());
     }
     slot.take();
 
     let port = process::free_port()?;
     let mut sidecar = Sidecar::spawn(command(port)?, port, key)?;
     sidecar.wait_ready(START_TIMEOUT)?;
-    let url = sidecar.base_url();
+    let endpoint = sidecar.endpoint();
     *slot = Some(sidecar);
-    Ok(url)
+    Ok(endpoint)
 }
 
 fn http_client() -> Result<reqwest::Client> {
@@ -338,7 +340,7 @@ fn coach_launch(
     })
 }
 
-fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -> Result<String> {
+fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -> Result<Endpoint> {
     let servers = resolve_servers(app, settings);
     let key = coach_launch(state, settings, &servers, 0, None, None)?.key();
     let bridge = app_bridge(app, state)?;
@@ -375,8 +377,8 @@ fn restart_running_coach(app: &AppHandle, settings: &CoachSettings) -> Result<()
     if !running || settings.project_dir().is_none() {
         return Ok(());
     }
-    let url = ensure_coach(app, &state, settings)?;
-    window::reload(app, &url)
+    let endpoint = ensure_coach(app, &state, settings)?;
+    window::reload(app, &endpoint)
 }
 
 fn open(app: &AppHandle, choose: bool) -> Result<()> {
@@ -395,8 +397,8 @@ fn open(app: &AppHandle, choose: bool) -> Result<()> {
         settings::save(&app.path().app_config_dir()?, &current)?;
     }
 
-    let url = ensure_coach(app, &state, &current)?;
-    window::show(app, &url)
+    let endpoint = ensure_coach(app, &state, &current)?;
+    window::show(app, &endpoint)
 }
 
 fn pick_folder(app: &AppHandle, title: &str) -> Result<Option<PathBuf>> {

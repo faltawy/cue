@@ -1,6 +1,6 @@
 use tauri::{AppHandle, LogicalPosition, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
-use crate::{Error, Result};
+use crate::{Endpoint, Error, Result, access};
 
 pub const LABEL: &str = "coach";
 const WIDTH: f64 = 440.0;
@@ -20,32 +20,33 @@ pub fn hide(app: &AppHandle) -> Result<()> {
     Ok(())
 }
 
-fn page_url(base_url: &str) -> Result<tauri::Url> {
-    format!("{base_url}/")
-        .parse()
+fn parse(url: &str) -> Result<tauri::Url> {
+    url.parse()
         .map_err(|error| Error::Other(format!("{error}")))
 }
 
-pub fn reload(app: &AppHandle, base_url: &str) -> Result<()> {
+fn login(endpoint: &Endpoint) -> Result<tauri::Url> {
+    parse(&access::login_url(&endpoint.url, &endpoint.token))
+}
+
+pub fn reload(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
     if let Some(window) = app.get_webview_window(LABEL) {
-        window.navigate(page_url(base_url)?)?;
+        window.navigate(login(endpoint)?)?;
     }
     Ok(())
 }
 
-pub fn show(app: &AppHandle, base_url: &str) -> Result<()> {
-    let url = page_url(base_url)?;
-
+pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
     if let Some(window) = app.get_webview_window(LABEL) {
-        if window.url()? != url {
-            window.navigate(url)?;
+        if window.url()?.origin() != parse(&endpoint.url)?.origin() {
+            window.navigate(login(endpoint)?)?;
         }
         window.show()?;
         window.set_focus()?;
         return Ok(());
     }
 
-    let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::External(url))
+    let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::External(login(endpoint)?))
         .title("Coach")
         .inner_size(WIDTH, HEIGHT)
         .min_inner_size(360.0, 420.0)

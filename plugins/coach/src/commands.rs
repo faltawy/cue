@@ -1,5 +1,5 @@
 use crate::{
-    Coach, CoachPluginExt, CoachSettings, FoundConnector, McpProbe, McpSecretInput,
+    Coach, CoachPluginExt, CoachSettings, Endpoint, FoundConnector, McpProbe, McpSecretInput,
     McpServerStatus, Result,
 };
 
@@ -15,7 +15,7 @@ async fn blocking<T: Send + 'static>(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn llm_endpoint(app: tauri::AppHandle) -> std::result::Result<String, String> {
+pub async fn llm_endpoint(app: tauri::AppHandle) -> std::result::Result<Endpoint, String> {
     blocking(app, Coach::llm_endpoint).await
 }
 
