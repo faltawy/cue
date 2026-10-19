@@ -1,4 +1,5 @@
-import { memo, type ReactNode } from "react";
+import { ImageIcon, ImageOff } from "lucide-react";
+import { memo, type ReactNode, useState } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -23,7 +24,99 @@ function ExternalLink({ href, children }: { href?: string; children?: ReactNode 
   );
 }
 
-const COMPONENTS: Components = { a: ExternalLink };
+export type ImageSource =
+  | { kind: "local"; src: string; open: string }
+  | { kind: "remote"; src: string; host: string }
+  | { kind: "blocked" };
+
+const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+function decodedPath(value: string): string {
+  try {
+    return decodeURI(value);
+  } catch {
+    return value;
+  }
+}
+
+export function imageSource(src: string | undefined): ImageSource {
+  const value = (src ?? "").trim();
+  if (!value || value.startsWith("//")) return { kind: "blocked" };
+  if (SCHEME.test(value)) {
+    if (!/^https:\/\//i.test(value)) return { kind: "blocked" };
+    try {
+      const url = new URL(value);
+      return { kind: "remote", src: url.href, host: url.hostname.replace(/^www\./, "") };
+    } catch {
+      return { kind: "blocked" };
+    }
+  }
+  const route = `/file?path=${encodeURIComponent(decodedPath(value))}`;
+  return { kind: "local", src: route, open: `${location.origin}${route}` };
+}
+
+function ImageNote({ text }: { text: string }) {
+  return (
+    <span className="my-1 flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+      <ImageOff aria-hidden className="size-3.5 shrink-0" />
+      <span dir="auto" className="min-w-0 [overflow-wrap:anywhere]">
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
+  const source = imageSource(src);
+  const [allowed, setAllowed] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const caption = alt?.trim() ?? "";
+  const name = caption || "image";
+  if (source.kind === "blocked") return <ImageNote text={`${caption ? `${caption}: ` : ""}image link blocked`} />;
+  if (source.kind === "remote" && !allowed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAllowed(true)}
+        aria-label={`Image from ${source.host}${caption ? `, ${caption}` : ""}. Load`}
+        title={source.src}
+        className="my-1 flex max-w-full items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-start text-[12.5px] text-muted-foreground transition-colors duration-100 hover:bg-muted"
+      >
+        <ImageIcon aria-hidden className="size-3.5 shrink-0" />
+        <span className="min-w-0 truncate">
+          Image from <bdi>{source.host}</bdi>
+        </span>
+        <span className="shrink-0 font-medium text-foreground">Load</span>
+      </button>
+    );
+  }
+  if (failed) return <ImageNote text={`Couldn't load ${caption || "this image"}`} />;
+  return (
+    <span className="my-2 flex max-w-full flex-col items-start gap-1">
+      <button
+        type="button"
+        aria-label={`Open ${name} full size`}
+        onClick={() => void post("/open", { url: source.kind === "local" ? source.open : source.src })}
+        className="max-w-full rounded-lg"
+      >
+        <img
+          src={source.src}
+          alt={name}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="block max-h-[360px] max-w-full min-h-6 min-w-6 rounded-lg border border-border object-contain"
+        />
+      </button>
+      {caption && (
+        <span dir="auto" className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">
+          {caption}
+        </span>
+      )}
+    </span>
+  );
+}
+
+const COMPONENTS: Components = { a: ExternalLink, img: AnswerImage };
 
 function count(text: string, marker: string): number {
   return text.split(marker).length - 1;

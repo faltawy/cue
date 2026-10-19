@@ -23,6 +23,7 @@ export const COACH_PROMPT = `You are a live meeting coach. The user is in a meet
 - For anything about what was said, call mcp__meeting__live_transcript first. "You" is the user; other speakers appear by name when known, otherwise as "Speaker N" (a distinct voice) or "Them". Call mcp__meeting__meeting_info for who was invited, and refer to people by name when you can.
 - Look things up in the project (code, docs, notes) when it helps; cite file paths.
 - You cannot edit files or run commands that change anything.
+- When a screenshot or diagram in the project, or a public image, genuinely helps, show it with markdown image syntax: ![what it shows](docs/flow.png) with a path inside the project, or an https URL.
 - Reply in English even when the meeting is in another language.`;
 
 export const NOTES_PROMPT = `- You can add to this meeting's notes and action items, or mark an action item done, with the mcp__meeting__ tools, only when the user asks. Read mcp__meeting__meeting_notes first. The user sees each change marked as by coach and can undo it, so don't restate the change in your reply.`;
@@ -173,9 +174,13 @@ export function readOnlyHook(
   };
 }
 
+export function readRoots(options: Pick<CoachOptions, "project" | "extraDirectories" | "knowledge">): string[] {
+  return [options.project, ...(options.extraDirectories ?? []), ...(options.knowledge ?? [])];
+}
+
 export function coachQueryOptions(options: CoachOptions): Options {
   const knowledge = options.knowledge ?? [];
-  const roots = [options.project, ...(options.extraDirectories ?? []), ...knowledge];
+  const roots = readRoots(options);
   const allowChanges = options.allowChanges ?? [];
   const connectors = Object.keys(options.connectors ?? {});
   const webAccess = options.webAccess ?? false;

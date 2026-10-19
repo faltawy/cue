@@ -8,6 +8,7 @@ import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { type ChatStore, loadChats, type OpenReason, planChat, remember, saveChats } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt, isNothing } from "./checkin";
 import { coachError, StderrTail } from "./errors";
+import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
 import { type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrapUpActions } from "./meeting-state";
 import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from "./nudge";
@@ -28,7 +29,7 @@ import {
   type WrapUpView,
 } from "./protocol";
 import { QuestionBroker } from "./questions";
-import { type CoachSession, startCoach } from "./session";
+import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
 import { type LiveTranscript, readLiveTranscript, readMeetingInfo, readSelfName } from "./transcript";
 import { runTriage } from "./triage";
@@ -701,6 +702,15 @@ const server = Bun.serve({
         if (!/^https?:\/\//i.test(url)) return new Response("Only web links can be opened.", { status: 400 });
         Bun.spawn(["open", url], { stdout: "ignore", stderr: "ignore" });
         return new Response(null, { status: 204 });
+      },
+    },
+    "/file": {
+      GET: (request) => {
+        const requested = new URL(request.url).searchParams.get("path") ?? "";
+        const roots = readRoots({ ...options, project: project.path });
+        const image = resolveImageFile(requested, project.path, roots);
+        if (!image.ok) return new Response(image.reason, { status: image.status });
+        return new Response(Bun.file(image.file), { headers: imageHeaders(image.type) });
       },
     },
     "/sign-in": {

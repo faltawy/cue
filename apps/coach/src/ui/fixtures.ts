@@ -162,6 +162,13 @@ const rich: CoachEvent[] = [
   },
   { type: "text", delta: chartAnswer },
   { type: "done", seconds: 5.2, ok: true, silent: false, interrupted: false },
+  { type: "user", kind: "ask", text: "Show me where Bcc sits in the email flow" },
+  {
+    type: "text",
+    delta:
+      "Bcc is added right before the message leaves the inbox:\n\n![Outbound email flow](docs/email-flow.png)\n\nSara's CRM vendor shows the same step on their site:\n\n![Northwind CRM dropbox setup](https://cdn.northwind.example.com/help/dropbox-setup.png)",
+  },
+  { type: "done", seconds: 3.8, ok: true, silent: false, interrupted: false },
   { type: "user", kind: "ask", text: "What did we promise so far?" },
   { type: "tool", id: "r1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
   { type: "tool_result", id: "r1", ok: true, output: "…", durationMs: 410 },
