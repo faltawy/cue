@@ -145,9 +145,10 @@ function inClassContext(node) {
 }
 
 // docs/design/cue.md as a lint: raw palette colours, off-scale text sizes,
-// shadows outside floating layers, blur, painted gradients and radii off the
-// 4/6/8/12/full scale. Warn-only until the screens are restyled; count with
-// `pnpm exec oxlint -A all -W anlg/cue-design apps/desktop/src packages/ui/src`.
+// shadows outside floating layers, blur, painted gradients, radii off the
+// 4/6/8/12/full scale, physical left/right and per-element focus rings.
+// Enforced as an error; documented exceptions live in ALLOWED in
+// scripts/cue-design-classes.mjs.
 const cueDesign = {
   meta: {
     type: "suggestion",

@@ -27,7 +27,7 @@
         "packages/ui/src/**/*.{ts,tsx}"
       ],
       "rules": {
-        "anlg/cue-design": "warn"
+        "anlg/cue-design": "error"
       }
     }
   ]

@@ -31,9 +31,43 @@ test("flags each off-scale class with its category, through variants", () => {
   );
 });
 
+test("flags text-sm/text-xs and physical sides, but not centring", () => {
+  assert.deepEqual(
+    categories(
+      "text-sm md:text-xs pl-2 -mr-1 hover:right-0 text-left border-l-2 border-r scroll-pl-4 left-1/2",
+    ),
+    [
+      "text-size text-sm",
+      "text-size md:text-xs",
+      "direction pl-2",
+      "direction -mr-1",
+      "direction hover:right-0",
+      "direction text-left",
+      "direction border-l-2",
+      "direction border-r",
+      "direction scroll-pl-4",
+    ],
+  );
+  assert.deepEqual(
+    categories(
+      "ps-2 -me-1 end-0 start-1/2 text-start border-s-2 border-e px-2 mx-auto left-1/2",
+    ),
+    [],
+  );
+});
+
+test("flags per-element focus rings but not other rings", () => {
+  assert.deepEqual(
+    categories(
+      "focus-visible:ring-2 focus:ring-ring ring-1 ring-border data-[state=on]:ring-1",
+    ),
+    ["focus focus-visible:ring-2", "focus focus:ring-ring"],
+  );
+});
+
 test("passes the scale: tokens, type roles, steps and logical sides", () => {
   const onScale =
-    "bg-background text-muted-foreground text-tertiary-foreground border-input bg-live text-ui text-sm text-caption rounded-sm rounded-md rounded-lg rounded-xl rounded-full rounded-none rounded-s-lg rounded-ee-md rounded-t-lg shadow-none top-2 text-start";
+    "bg-background text-muted-foreground text-tertiary-foreground border-input bg-live text-ui text-body text-label text-caption rounded-sm rounded-md rounded-lg rounded-xl rounded-full rounded-none rounded-s-lg rounded-ee-md rounded-t-lg shadow-none top-2 text-start";
   assert.deepEqual(categories(onScale), []);
   // Positive control: the same string with one raw colour is caught.
   assert.deepEqual(categories(`${onScale} bg-neutral-900`), [

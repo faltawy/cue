@@ -9,8 +9,16 @@ const COLOR_UTILITIES =
 const RAW_COLOR = new RegExp(
   `^(?:${COLOR_UTILITIES})-(?:(?:${PALETTE})-\\d{2,3}|white|black|\\[(?:#|rgb|hsl|oklch|color)[^\\]]*\\])(?:/.+)?$`,
 );
+// `text-sm`/`text-xs` are out too: body and label are the one 14px and 12px
+// styles (cue.md §2), so there is a single line height per size.
 const TEXT_SIZE =
-  /^text-(?:\[\d*\.?\d+(?:px|rem|em)\]|base|lg|xl|[2-9]xl)(?:\/.+)?$/;
+  /^text-(?:\[\d*\.?\d+(?:px|rem|em)\]|xs|sm|base|lg|xl|[2-9]xl)(?:\/.+)?$/;
+// Physical sides (cue.md §2 RTL): padding, margin, inset, text alignment and
+// borders use the logical start/end forms. `left-1/2` stays: centring with
+// `-translate-x-1/2` is direction-neutral.
+const DIRECTION =
+  /^(?:(?:p|m|scroll-p|scroll-m)[lr]-.+|(?:left|right)-.+|text-(?:left|right)|border-[lr](?:-.+)?)$/;
+const CENTRED = new Set(["left-1/2", "right-1/2"]);
 const SHADOW = /^(?:shadow|drop-shadow)(?:-.+)?$/;
 const BLUR = /^(?:backdrop-blur|backdrop-saturate|blur)(?:-.+)?$/;
 const GRADIENT =
@@ -41,15 +49,50 @@ const FLOATING_SHADOWS = new Set(["shadow-md", "shadow-lg", "shadow-2xl"]);
 
 // Documented exceptions (cue.md §2–§4): file suffix -> allowed tokens.
 const ALLOWED = {
+  // Switch thumb: the one white fill and the one small shadow.
   "packages/ui/src/components/ui/switch.tsx": ["bg-white", "shadow-sm"],
+  // Kbd keeps the coach's 10.5px.
   "packages/ui/src/components/ui/kbd.tsx": ["text-[10.5px]"],
+  // OS-native Windows close button.
   "apps/desktop/src/main/windows-window-controls.tsx": [
     "hover:text-white",
     "hover:bg-[#c42b1c]",
   ],
+  // App icon preview mirrors the macOS icon mask (22.5% of the tile).
   "apps/desktop/src/settings/appearance/app-icon.tsx": ["rounded-[18px]"],
+  // Streaming summary heading matches the editor H1 (editor prose scale).
   "apps/desktop/src/session/components/note-input/enhanced/streaming.tsx": [
     "text-[1.5rem]",
+  ],
+  // macOS traffic lights in the theme preview.
+  "apps/desktop/src/settings/appearance/theme.tsx": [
+    "bg-[#ff5f57]",
+    "bg-[#febc2e]",
+    "bg-[#28c840]",
+  ],
+  // White camera glyph on the bg-scrim photo overlay.
+  "apps/desktop/src/contacts/contact-avatar.tsx": ["text-white"],
+  // Emoji glyph size (not text) and the check on a colour swatch.
+  "apps/desktop/src/templates/template-icon-picker.tsx": [
+    "text-lg",
+    "text-white",
+  ],
+  // Window chrome beside the macOS traffic lights: the lights stay on the
+  // physical left whatever the UI language, so these offsets do too.
+  "apps/desktop/src/main/body.tsx": ["left-0", "left-1"],
+  "apps/desktop/src/changelog/index.tsx": [
+    "pl-[80px]",
+    "left-0",
+    "left-[28px]",
+    "right-[70px]",
+  ],
+  // The macOS traffic lights stay on the physical left whatever the UI
+  // language, so their gutter is physical too.
+  "apps/desktop/src/shared/hooks/useWindowControlsGutter.ts": [
+    "pl-[calc(76px_/_var(--anlg-zoom,1))]",
+    "left-[calc(76px_/_var(--anlg-zoom,1)_+_28px)]",
+    "pl-[calc(76px_/_var(--anlg-zoom,1)_+_32px)]",
+    "pl-[calc(76px_/_var(--anlg-zoom,1)_+_80px)]",
   ],
 };
 
@@ -77,7 +120,8 @@ function radiusFinding(base) {
   }
   if (side && PHYSICAL_SIDES.has(side)) return true;
   if (size === undefined) return true; // bare `rounded`
-  return !RADIUS_STEPS.has(size);
+  // `inherit` follows the parent's radius, which is itself on the scale.
+  return !RADIUS_STEPS.has(size) && size !== "[inherit]";
 }
 
 function category(base, file) {
@@ -91,6 +135,7 @@ function category(base, file) {
     return floating && FLOATING_SHADOWS.has(base) ? null : "shadow";
   }
   if (base.startsWith("rounded") && radiusFinding(base)) return "radius";
+  if (DIRECTION.test(base) && !CENTRED.has(base)) return "direction";
   return null;
 }
 
@@ -102,6 +147,14 @@ export function findViolations(classString, file = "") {
   const findings = [];
   for (const token of classString.split(/\s+/)) {
     if (!token || allowed?.includes(token)) continue;
+    // Focus is the one global outline (cue.md §6), never a per-element ring.
+    if (
+      /(?:^|:)focus(?:-visible)?:/.test(token) &&
+      /^ring/.test(baseClass(token))
+    ) {
+      findings.push({ category: "focus", token });
+      continue;
+    }
     const found = category(baseClass(token), file);
     if (found) findings.push({ category: found, token });
   }
