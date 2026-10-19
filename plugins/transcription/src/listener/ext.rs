@@ -15,6 +15,17 @@ fn capture_snapshot_from_result<E: std::fmt::Debug>(
     })
 }
 
+// Unknown counts as capturing: an app update must never restart mid-recording.
+fn capturing<E: std::fmt::Debug>(state: Result<CaptureState, E>) -> bool {
+    match state {
+        Ok(state) => state != CaptureState::Inactive,
+        Err(error) => {
+            tracing::warn!(?error, "capture_state_unavailable");
+            true
+        }
+    }
+}
+
 async fn active_source() -> Option<ActorRef<SourceMsg>> {
     let root: ActorRef<RootMsg> = registry::where_is(RootActor::name())?.into();
     let snapshot = call_t!(root, RootMsg::GetSnapshot, 100).ok()?;
@@ -85,6 +96,15 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Listener<'a, R, M> {
         } else {
             CaptureState::Inactive
         }
+    }
+
+    #[tracing::instrument(skip_all)]
+    pub async fn is_capturing(&self) -> bool {
+        let Some(cell) = registry::where_is(RootActor::name()) else {
+            return false;
+        };
+        let actor: ActorRef<RootMsg> = cell.into();
+        capturing(call_t!(actor, RootMsg::GetState, 100).map(CaptureState::from))
     }
 
     #[tracing::instrument(skip_all)]
@@ -338,6 +358,14 @@ mod tests {
         root_task.await.unwrap();
         previous_task.await.unwrap();
         next_task.await.unwrap();
+    }
+
+    #[test]
+    fn an_unanswered_capture_state_counts_as_capturing() {
+        assert!(!capturing::<&str>(Ok(CaptureState::Inactive)));
+        assert!(capturing::<&str>(Ok(CaptureState::Active)));
+        assert!(capturing::<&str>(Ok(CaptureState::Finalizing)));
+        assert!(capturing::<&str>(Err("timed out")));
     }
 
     #[test]

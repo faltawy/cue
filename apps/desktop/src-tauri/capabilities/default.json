@@ -35,6 +35,7 @@
     "windows:default",
     "tracing:default",
     "anlg-tray:default",
+    "updater2:default",
     "bedrock:default",
     "deeplink2:default",
     "store:default",

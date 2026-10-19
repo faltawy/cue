@@ -60,6 +60,25 @@ fn create_audio_provider(_bundle_id: &str) -> std::sync::Arc<dyn anlg_audio_actu
     std::sync::Arc::new(anlg_audio_actual::ActualAudio)
 }
 
+fn update_busy_reason(
+    app: tauri::AppHandle,
+) -> std::pin::Pin<
+    Box<dyn std::future::Future<Output = Option<tauri_plugin_updater2::BusyReason>> + Send>,
+> {
+    Box::pin(async move {
+        use tauri_plugin_coach::CoachPluginExt;
+        use tauri_plugin_transcription::ListenerPluginExt;
+
+        if app.listener().is_capturing().await {
+            return Some(tauri_plugin_updater2::BusyReason::Recording);
+        }
+        if app.coach().is_answering().await {
+            return Some(tauri_plugin_updater2::BusyReason::CoachAnswering);
+        }
+        None
+    })
+}
+
 pub fn main() {
     // A process-wide Tokio runtime shared by Tauri plugins and db-sync.
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -188,6 +207,10 @@ pub fn main() {
         .plugin(tauri_plugin_store2::init());
 
     builder = builder
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_updater2::init(std::sync::Arc::new(
+            update_busy_reason,
+        )))
         .plugin(tauri_plugin_coach::init(db::desktop_db_path(&identifier)))
         .plugin(tauri_plugin_tray::init())
         .plugin(tauri_plugin_settings::init())
