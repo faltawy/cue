@@ -8,7 +8,14 @@ export type CoachError = {
   title: string;
   message: string;
   detail: string | null;
+  action?: "new_chat";
 };
+
+export const GAVE_UP = {
+  title: "The coach stopped",
+  message: "It failed to restart several times in a row. Start a new chat to try again.",
+  action: "new_chat",
+} satisfies Partial<CoachError>;
 
 const KIND_SIGNATURES: Array<{ kind: CoachErrorKind; pattern: RegExp }> = [
   { kind: "auth", pattern: /\binvalid x-api-key\b/i },

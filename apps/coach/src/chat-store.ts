@@ -89,7 +89,7 @@ export function planChat(input: {
 }): ChatPlan {
   const { reason, meeting, project, current } = input;
   if (reason === "recover") {
-    const same = current.claudeSessionId !== null && current.project === project;
+    const same = current.project === project;
     return {
       store: input.store,
       resume: same ? current.claudeSessionId : null,

@@ -58,6 +58,20 @@ describe("planChat", () => {
     expect(planChat({ reason: "startup", store: plan.store, meeting: live, project: "/work/northwind", current }).resume).toBeNull();
   });
 
+  test("recovering without a resumable session starts fresh but keeps what the user already sees", () => {
+    const plan = planChat({
+      reason: "recover",
+      store,
+      meeting: live,
+      project: "/work/northwind",
+      current: { ...current, claudeSessionId: null },
+    });
+    expect(plan.resume).toBeNull();
+    expect(plan.history).toBe(asked);
+    const moved = planChat({ reason: "recover", store, meeting: live, project: "/work/elsewhere", current });
+    expect(moved).toEqual({ store, resume: null, history: [] });
+  });
+
   test("recovering from a crash continues the current chat, not the stored one", () => {
     const plan = planChat({ reason: "recover", store, meeting: live, project: "/work/northwind", current });
     expect(plan.resume).toBe("claude-live");

@@ -1,6 +1,6 @@
 // Timeline structure (stick-to-bottom log, jump-to-latest, per-turn footer) adapted from
 // Catamorphic's packages/registry/src/chat-timeline (Apache-2.0, see NOTICE).
-import { AlertCircle, ArrowDown, Check, ChevronRight, Copy, Info, ListChecks, ListPlus, LogIn, NotebookPen, RotateCcw } from "lucide-react";
+import { AlertCircle, ArrowDown, Check, ChevronRight, Copy, Info, ListChecks, ListPlus, LogIn, NotebookPen, RotateCcw, SquarePen } from "lucide-react";
 import { memo, type ReactNode, useEffect, useId, useState } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
@@ -14,6 +14,7 @@ import { Steps } from "./steps";
 
 export type TimelineActions = BlockActions & {
   retry(turn: Turn): void;
+  newChat(): void;
   copy(text: string): Promise<boolean>;
   signIn(): void;
 };
@@ -164,6 +165,8 @@ const ItemView = memo(function ItemView({
       return (
         <ErrorCard
           error={item.error}
+          count={item.count}
+          onNewChat={actions.newChat}
           onRetry={canRetry && lastAsk ? () => actions.retry(lastAsk) : undefined}
           onSignIn={actions.signIn}
         />
@@ -418,17 +421,22 @@ export function EditRow({ edit, undoable, onUndo }: { edit: EditView; undoable: 
 
 export function ErrorCard({
   error,
+  count = 1,
   onRetry,
   onSignIn,
+  onNewChat,
 }: {
   error: CoachError;
+  count?: number;
   onRetry?: () => void;
   onSignIn?: () => void;
+  onNewChat?: () => void;
 }) {
   const auth = error.kind === "auth";
   const [signingIn, setSigningIn] = useState(false);
   const signIn = auth && !signingIn ? onSignIn : undefined;
-  const retry = auth && !signingIn ? undefined : onRetry;
+  const newChat = error.action === "new_chat" ? onNewChat : undefined;
+  const retry = (auth && !signingIn) || newChat ? undefined : onRetry;
   const [open, setOpen] = useState(false);
   const regionId = useId();
   return (
@@ -440,11 +448,14 @@ export function ErrorCard({
       <div className="flex items-start gap-2">
         <AlertCircle aria-hidden className="mt-[2px] size-4 shrink-0 text-destructive" />
         <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-medium">{error.title}</p>
+          <p className="text-[13.5px] font-medium">
+            {error.title}
+            {count > 1 && <span className="ms-1.5 font-normal text-muted-foreground tabular-nums">{count} times</span>}
+          </p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             {auth && signingIn ? "Finish signing in, then try again." : <InlineCode text={error.message} />}
           </p>
-          {(signIn || retry || error.detail) && (
+          {(signIn || newChat || retry || error.detail) && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {signIn && (
                 <Button
@@ -456,6 +467,12 @@ export function ErrorCard({
                 >
                   <LogIn aria-hidden className="size-3.5" />
                   Sign in again
+                </Button>
+              )}
+              {newChat && (
+                <Button tone="primary" onClick={newChat}>
+                  <SquarePen aria-hidden className="size-3.5" />
+                  New chat
                 </Button>
               )}
               {retry && (

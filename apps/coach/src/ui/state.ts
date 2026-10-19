@@ -52,7 +52,7 @@ export type Turn = {
 export type Item =
   | Turn
   | { kind: "edit"; key: string; edit: EditView }
-  | { kind: "error"; key: string; error: CoachError }
+  | { kind: "error"; key: string; error: CoachError; count: number }
   | { kind: "notice"; key: string; text: string }
   | { kind: "divider"; key: string; text: string };
 
@@ -191,6 +191,10 @@ function newTurn(keyValue: string, ask: TurnKind, prompt: string, status: TurnSt
   };
 }
 
+function sameError(a: CoachError, b: CoachError): boolean {
+  return a.kind === b.kind && a.title === b.title && a.message === b.message && a.action === b.action;
+}
+
 function applyEvent(state: CoachState, event: CoachEvent): CoachState {
   switch (event.type) {
     case "status":
@@ -292,8 +296,12 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
     case "usage":
       return { ...state, usage: event.usage };
     case "error": {
+      const last = state.items.at(-1);
+      if (last?.kind === "error" && sameError(last.error, event.error)) {
+        return { ...state, items: [...state.items.slice(0, -1), { ...last, error: event.error, count: last.count + 1 }] };
+      }
       const [errorKey, serial] = key(state, "error");
-      return { ...state, serial, items: [...state.items, { kind: "error", key: errorKey, error: event.error }] };
+      return { ...state, serial, items: [...state.items, { kind: "error", key: errorKey, error: event.error, count: 1 }] };
     }
     case "notice": {
       const [noticeKey, serial] = key(state, "notice");

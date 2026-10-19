@@ -50,7 +50,7 @@ describe("TurnTracker", () => {
     expect(tracker.handle(toolResult("t1", [{ type: "text", text: "# Northwind\n" }]))).toEqual([
       { type: "tool_result", id: "t1", ok: true, output: "# Northwind", durationMs: 1_250 },
     ]);
-    expect(tracker.sessionId).toBe("claude-1");
+    expect(tracker.resumable).toBeNull();
   });
 
   test("a failed tool reports its error; long output is clipped", () => {
@@ -103,6 +103,21 @@ describe("TurnTracker", () => {
       ok: true,
       error: null,
     });
+  });
+
+  test("a session becomes resumable only once a turn in it has run, never from its start-up messages alone", () => {
+    const tracker = new TurnTracker();
+    tracker.handle({ type: "system", subtype: "init", session_id: "never-written" });
+    expect(tracker.resumable).toBeNull();
+    tracker.finishTurn(
+      result("error_during_execution", { errors: ["No conversation found with session ID: x"], session_id: "never-written" }),
+      { interrupted: false, stderr: "" },
+    );
+    expect(tracker.resumable).toBeNull();
+    tracker.finishTurn(result("success", { result: "fine", session_id: "claude-2" }), { interrupted: false, stderr: "" });
+    expect(tracker.resumable).toBe("claude-2");
+    tracker.finishTurn(result("error_during_execution", { errors: ["aborted"], session_id: "claude-3" }), { interrupted: true, stderr: "" });
+    expect(tracker.resumable).toBe("claude-3");
   });
 });
 

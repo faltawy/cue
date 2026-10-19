@@ -177,6 +177,7 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
   const timelineActions = useMemo<TimelineActions>(
     () => ({
       retry,
+      newChat: () => void api.newChat(),
       undo: (id) => void api.undo(id),
       copy: copyText,
       signIn: () => void api.signIn(),

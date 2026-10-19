@@ -6,9 +6,9 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { type AppBridge, appBridgeFromEnv, type CoachEdit, type MeetingProject } from "./app-bridge";
 import { createAccess, loginUrl, randomToken, TOKEN_ENV, withAccess } from "./access";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
-import { type ChatStore, loadChats, type OpenReason, planChat, remember, saveChats } from "./chat-store";
+import { type ChatStore, forget, loadChats, type OpenReason, planChat, remember, saveChats } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
-import { coachError, StderrTail } from "./errors";
+import { coachError, GAVE_UP, StderrTail } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
 import { type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrapUpActions } from "./meeting-state";
@@ -33,6 +33,7 @@ import {
 import { QuestionBroker } from "./questions";
 import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
+import { Supervisor } from "./supervisor";
 import { talkStats } from "./talk-time";
 import { type LiveTranscript, readLiveTranscript, readMeetingInfo, readSelfName } from "./transcript";
 import { runTriage } from "./triage";
@@ -82,7 +83,6 @@ let coach: CoachSession | null = null;
 let tracker = new TurnTracker();
 let interrupter: Interrupter | null = null;
 const stderr = new StderrTail();
-let generation = 0;
 let chatSessionId: string | undefined;
 let project = defaultProject;
 let attached: MeetingPointer | null = null;
@@ -96,7 +96,6 @@ const addingBlockItems = new Set<string>();
 let store: ChatStore = loadChats(stateFile);
 let history: CoachEvent[] = [];
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
-let recoveries = 0;
 
 let busy = false;
 let askedAt = 0;
@@ -142,9 +141,13 @@ function feed(event: CoachEvent) {
 function persistNow() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = null;
-  const claudeSessionId = tracker.sessionId;
+  const claudeSessionId = tracker.resumable;
   if (!chatSessionId || !claudeSessionId) return;
   store = remember(store, chatSessionId, { claudeSessionId, project: project.path, history, updatedAt: Date.now() });
+  saveStore();
+}
+
+function saveStore() {
   try {
     saveChats(stateFile, store);
   } catch (error) {
@@ -307,38 +310,34 @@ function settleTurn(input: { ok: boolean; interrupted: boolean; silent?: boolean
   persistNow();
 }
 
-let aborting = false;
-
-function pump(session: CoachSession, mine: number) {
-  void (async () => {
-    let failure: unknown = null;
-    try {
-      for await (const message of session.messages) {
-        if (mine !== generation) return;
-        handle(message);
-      }
-    } catch (error) {
-      failure = error;
-    }
-    if (mine !== generation) return;
-    const ours = aborting;
-    aborting = false;
-    if (ours) {
-      if (busy) settleTurn({ ok: false, interrupted: true });
-    } else {
-      const message = failure === null ? "Claude Code exited unexpectedly." : errorText(failure);
-      console.error("[coach] the Claude session stopped", { _e: message });
-      feed({ type: "error", error: coachError({ message, stderr: stderr.take() }) });
-      if (busy) settleTurn({ ok: false, interrupted: false });
-    }
-    if (recoveries < 2) {
-      recoveries += 1;
-      enqueue(() => openChat("recover"));
-    } else {
-      notice("The coach stopped. Start a new chat to try again.");
-    }
-  })();
-}
+const supervisor = new Supervisor<SDKMessage>({
+  handle,
+  ended: (ours) => {
+    coach?.close();
+    coach = null;
+    if (busy) settleTurn({ ok: false, interrupted: ours });
+  },
+  failed: (message) => {
+    console.error("[coach] the Claude session stopped", { _e: message });
+    feed({ type: "error", error: coachError({ message, stderr: stderr.take() }) });
+  },
+  gaveUp: (message) => {
+    console.error("[coach] the Claude session keeps stopping; not restarting it", { _e: message });
+    feed({ type: "error", error: { ...coachError({ message, stderr: stderr.take() }), ...GAVE_UP } });
+  },
+  forget: (id) => {
+    console.error("[coach] Claude Code has no conversation to resume; starting a fresh one", { claudeSessionId: id });
+    tracker.resumable = null;
+    if (!chatSessionId) return;
+    store = forget(store, chatSessionId);
+    saveStore();
+  },
+  restart: () => enqueue(() => openChat("recover")),
+  schedule: (run, delayMs) => {
+    const timer = setTimeout(run, delayMs);
+    return () => clearTimeout(timer);
+  },
+});
 
 function editHooks(bridge: AppBridge) {
   return {
@@ -360,15 +359,17 @@ function rememberEdits(events: readonly CoachEvent[]) {
 async function openChat(reason: OpenReason) {
   const sessionId = attached?.sessionId;
   const nextProject = reason === "recover" ? project : await projectFor(sessionId);
-  if (reason !== "recover") persistNow();
+  if (reason !== "recover") {
+    persistNow();
+    supervisor.reset();
+  }
   const plan = planChat({
     reason,
     store,
     meeting: attached,
     project: nextProject.path,
-    current: { claudeSessionId: tracker.sessionId, project: project.path, history },
+    current: { claudeSessionId: tracker.resumable, project: project.path, history },
   });
-  const mine = ++generation;
   coach?.close();
   questions.dismissAll("The chat was closed.");
   store = plan.store;
@@ -377,7 +378,7 @@ async function openChat(reason: OpenReason) {
   history = plan.history;
   rememberEdits(history);
   tracker = new TurnTracker();
-  tracker.sessionId = plan.resume;
+  tracker.resumable = plan.resume;
   const session = startCoach({
     ...options,
     project: project.path,
@@ -393,7 +394,7 @@ async function openChat(reason: OpenReason) {
   interrupter = createInterrupter({
     interrupt: () => session.interrupt(),
     abort: () => {
-      aborting = true;
+      supervisor.aborting();
       session.abort();
     },
   });
@@ -409,7 +410,7 @@ async function openChat(reason: OpenReason) {
   if (reason === "recover" || plan.resume) for (const event of history) broadcast(event);
   if (reason !== "startup" && wrapUp) broadcast({ type: "wrapup", wrapUp });
   broadcast(status());
-  pump(session, mine);
+  supervisor.watch(session, plan.resume);
 }
 
 function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt: string, images: AskImage[] = []) {
@@ -543,7 +544,7 @@ function handle(message: SDKMessage) {
     const interrupted = interrupter?.pending ?? false;
     interrupter?.settled();
     const outcome = tracker.finishTurn(message, { interrupted, stderr: stderr.take() });
-    recoveries = 0;
+    if (outcome.ok) supervisor.reset();
     if (outcome.sources.length > 0) feed({ type: "sources", sources: outcome.sources });
     if (outcome.usage) {
       feed({ type: "usage", usage: outcome.usage });

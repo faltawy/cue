@@ -139,6 +139,7 @@ export type ResultLike = UsageSource & {
   is_error: boolean;
   result?: string;
   errors?: string[];
+  session_id?: string;
 };
 
 export type TurnOutcome = {
@@ -153,7 +154,7 @@ function blocks(value: unknown): Record<string, unknown>[] {
 }
 
 export class TurnTracker {
-  sessionId: string | null = null;
+  resumable: string | null = null;
   private starts = new Map<string, number>();
   private hookResults = new Map<string, string | null>();
   private lastMainUsage: unknown = undefined;
@@ -178,7 +179,6 @@ export class TurnTracker {
 
   handle(raw: unknown): CoachEvent[] {
     const message = asRecord(raw);
-    if (str(message.session_id)) this.sessionId = str(message.session_id);
     if (message.parent_tool_use_id !== null) return [];
     switch (message.type) {
       case "stream_event": {
@@ -230,6 +230,7 @@ export class TurnTracker {
   finishTurn(result: ResultLike, input: { interrupted: boolean; stderr: string }): TurnOutcome {
     const usage = turnUsage({ result, lastMainUsage: this.lastMainUsage });
     const ok = result.subtype === "success" && !result.is_error;
+    if ((ok || input.interrupted) && result.session_id) this.resumable = result.session_id;
     const sources = pickSources(this.found, this.answer);
     this.starts.clear();
     this.hookResults.clear();
