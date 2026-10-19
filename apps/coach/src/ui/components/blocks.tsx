@@ -40,9 +40,9 @@ export function ActionsBlock({
       <h3 className="mb-1 flex items-baseline gap-1.5 text-[12px] font-medium text-muted-foreground">
         Action items
         {done > 0 && (
-          <span className="font-normal tabular-nums">
+          <bdi className="font-normal tabular-nums">
             {done} of {block.items.length} done
-          </span>
+          </bdi>
         )}
       </h3>
       <ul className="flex flex-col">
@@ -105,27 +105,35 @@ function ActionRow({
       >
         {item.checked && <Check aria-hidden className="size-2.5" />}
       </button>
-      <p
-        dir="auto"
-        className={cx(
-          "min-w-0 flex-1 text-[13.5px] leading-[1.45] [overflow-wrap:anywhere]",
-          item.checked && "text-muted-foreground line-through decoration-muted-foreground/60",
-        )}
-      >
-        {item.owner && <span className="font-medium">{item.owner}:</span>} {item.text}
-        {item.due && <span className="text-muted-foreground"> · {item.due}</span>}
-      </p>
-      {added ? (
-        <span className="-my-0.5 flex h-6 shrink-0 items-center gap-0.5 text-[11.5px] text-muted-foreground">
-          <Check aria-hidden className="size-3" />
-          <span>In notes</span>
-          {undoable && item.edit && (
-            <Button tone="ghost" className="ms-0.5 h-6 px-2" onClick={() => item.edit && onUndo(item.edit.id)}>
-              Undo
-            </Button>
+      <div className="min-w-0 flex-1">
+        <p
+          dir="auto"
+          className={cx(
+            "text-[13.5px] leading-[1.45] [overflow-wrap:anywhere]",
+            item.checked && "text-muted-foreground line-through decoration-muted-foreground/60",
           )}
-        </span>
-      ) : (
+        >
+          {item.owner && <span className="font-medium">{item.owner}:</span>} {item.text}
+          {item.due && (
+            <>
+              {" "}
+              <span className="text-muted-foreground">·{" "}{item.due}</span>
+            </>
+          )}
+        </p>
+        {added && (
+          <p className="-mb-1 flex h-6 items-center gap-1 text-[11.5px] text-muted-foreground">
+            <Check aria-hidden className="size-3 shrink-0" />
+            In notes
+            {undoable && item.edit && (
+              <Button tone="ghost" className="h-6 px-1.5" onClick={() => item.edit && onUndo(item.edit.id)}>
+                Undo
+              </Button>
+            )}
+          </p>
+        )}
+      </div>
+      {!added &&
         canAdd && (
           <IconButton
             label={pending ? "Adding to note…" : "Add to note"}
@@ -141,8 +149,7 @@ function ActionRow({
           >
             <ListPlus aria-hidden className="size-3.5" />
           </IconButton>
-        )
-      )}
+        )}
     </li>
   );
 }
@@ -155,8 +162,9 @@ export function Replies({ options, onReply }: { options: readonly string[]; onRe
           key={index}
           type="button"
           dir="auto"
+          title={option}
           onClick={() => onReply(option)}
-          className="max-w-full rounded-full border border-border px-2.5 py-1 text-start text-[12px] leading-[1.35] text-muted-foreground [overflow-wrap:anywhere] transition-colors duration-100 hover:bg-muted hover:text-foreground"
+          className="max-w-full min-w-0 truncate rounded-full border border-border px-2.5 py-1 text-[12px] text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground"
         >
           {option}
         </button>
@@ -203,7 +211,7 @@ export function ImageThumbs({ images, className }: { images: readonly ImageThumb
           width={image.width}
           height={image.height}
           alt={`Attached image ${index + 1}`}
-          className="h-16 w-auto max-w-[160px] rounded-md border border-border object-cover"
+          className="h-16 w-auto min-w-12 max-w-[160px] rounded-md border border-border object-cover"
         />
       ))}
     </div>

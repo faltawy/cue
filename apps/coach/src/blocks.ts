@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ACTION_ITEMS_MAX = 30;
 export const ACTION_TEXT_MAX = 300;
-export const REPLY_TEXT_MAX = 80;
+export const REPLY_TEXT_MAX = 60;
 
 const line = (max: number) => z.string().trim().min(1).max(max);
 

@@ -114,6 +114,9 @@ describe("tool copy", () => {
     ["Glob", { pattern: "**/*.ts" }, "Searched files"],
     ["Bash", { command: "git log --oneline -5\nmore" }, "Ran git log --oneline -5"],
     ["mcp__clients__log_promise", {}, "clients · log promise"],
+    ["WebSearch", { query: "Northwind CTO Bcc" }, "Searched the web for “Northwind CTO Bcc”"],
+    ["WebFetch", { url: "https://www.northwind.example.com/about", prompt: "Who is the CTO?" }, "Read northwind.example.com"],
+    ["WebFetch", { url: "not a url" }, "Read a web page"],
   ] as const)("%s", (name, input, label) => {
     expect(toolLabels(name, input).done).toBe(label);
   });

@@ -21,6 +21,14 @@ function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max).trimEnd()}…` : text;
 }
 
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 function humanize(name: string): string {
   return name.replaceAll("_", " ");
 }
@@ -53,6 +61,16 @@ export function toolLabels(name: string, input: Record<string, unknown>): ToolLa
       return label("Undid its last edit", "Undoing its last edit");
     case "mcp__meeting__show":
       return label("Showed a list", "Preparing a list");
+    case "WebSearch": {
+      const query = clip(str(input.query), 40);
+      return query
+        ? label(`Searched the web for “${query}”`, `Searching the web for “${query}”`)
+        : label("Searched the web", "Searching the web");
+    }
+    case "WebFetch": {
+      const host = hostOf(str(input.url));
+      return host ? label(`Read ${host}`, `Reading ${host}`) : label("Read a web page", "Reading a web page");
+    }
     case "Read":
       return file ? label(`Read ${file}`, `Reading ${file}`) : label("Read a file", "Reading a file");
     case "Grep":

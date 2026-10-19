@@ -79,7 +79,7 @@ describe("a checklist under an answer", () => {
     const rows = within(block).getAllByTestId("action-item");
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.querySelector("p")?.textContent)).toEqual([
-      "You: send the Bcc setup steps · today",
+      "You: send the Bcc setup steps · today",
       "Sara: confirm the CRM dropbox address",
     ]);
 
