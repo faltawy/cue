@@ -8,7 +8,7 @@
 //        [--themes light,dark] [--rtl] [--base http://localhost:1422]
 //        [--out /tmp/cue-redesign]
 //
-// Files are named b-<scene>-<tag>-<theme>.png (and -rtl-<theme> with --rtl).
+// Files are named b-<scene>[-<tag>]-<theme>.png (and -rtl-<theme> with --rtl).
 // Every shot starts from a freshly seeded database.
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -24,7 +24,7 @@ const positional = args.filter(
   (arg, index) => !arg.startsWith("--") && !args[index - 1]?.startsWith("--"),
 );
 const only = positional[0]?.split(",");
-const tag = option("tag", "after");
+const tag = option("tag", "");
 const base = option("base", "http://localhost:1422");
 const out = option("out", "/tmp/cue-redesign");
 const themes = option("themes", "light,dark").split(",");
@@ -302,7 +302,10 @@ try {
             scene,
             theme,
             direction,
-            join(out, `b-${scene.name}-${tag}-${variant}.png`),
+            join(
+              out,
+              `${["b", scene.name, tag, variant].filter(Boolean).join("-")}.png`,
+            ),
           );
         } catch (error) {
           failed++;

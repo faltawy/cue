@@ -44,7 +44,7 @@ const PEOPLE = [
   {
     id: "human-leila",
     name: "Leila Haddad",
-    email: "nedal@open.cx",
+    email: "leila@open.cx",
     title: "Customer success",
     org: "org-open",
   },
