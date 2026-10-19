@@ -12,7 +12,7 @@ function block(css: string, opener: string): Record<string, string> {
   const start = css.indexOf(opener);
   if (start === -1) throw new Error(`missing ${opener}`);
   const body = css.slice(start + opener.length, css.indexOf("}", start));
-  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
+  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(([, name, value = ""]) => [name, value.trim()]));
 }
 
 const coach = {
