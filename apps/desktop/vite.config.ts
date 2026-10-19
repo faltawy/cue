@@ -4,7 +4,7 @@ import { lingui, linguiTransformerBabelPreset } from "@lingui/vite-plugin";
 import babel from "@rolldown/plugin-babel";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, type Plugin, type UserConfig } from "vite";
 
 import { relayShim } from "@anlg/plugin-relay/vite";
 
@@ -15,6 +15,7 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [
+    devGallery(),
     relayShim(),
     changelog(),
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
@@ -50,6 +51,24 @@ export default defineConfig(() => ({
   },
   ...tauri,
 }));
+
+// The shared-component gallery (src/dev/gallery) at /dev/gallery. Dev server
+// only: the production build keeps index.html as its single entry.
+function devGallery(): Plugin {
+  return {
+    name: "cue-dev-gallery",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const [path, query] = (req.url ?? "").split("?");
+        if (path === "/dev/gallery" || path === "/dev/gallery/") {
+          req.url = `/src/dev/gallery/index.html${query ? `?${query}` : ""}`;
+        }
+        next();
+      });
+    },
+  };
+}
 
 // https://v2.tauri.app/start/frontend/vite/#update-vite-configuration
 const tauri: UserConfig = {
