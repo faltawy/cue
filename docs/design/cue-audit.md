@@ -93,7 +93,7 @@ These are ordered by blast radius, counted as the number of desktop files import
 8. **`components/ui/badge.tsx`** (8 files): L8 → `inline-flex h-5 items-center gap-1 rounded-sm border border-border px-1.5 text-label font-medium text-muted-foreground`. Delete `default`/`destructive`/`secondary` fills and the `success` (`bg-green-500 text-white`) variant. L58: drop Lisse.
 9. **`components/ui/switch.tsx`** (3 files, every settings toggle): L8 track → `h-5 w-9 rounded-full p-0.5` with `bg-foreground/45`, `bg-warm-strong dark:bg-warm` and no `border-2`. L24 thumb → `size-4 rounded-full bg-white shadow-sm translate-x-4` (`rtl:-translate-x-4`). Delete the `sm` and `lg` sizes.
 10. **`components/ui/kbd.tsx`** (3 files plus `shortcut-hint`): L8–10 → coach Kbd: `rounded-sm border border-border bg-background px-1 text-[10.5px] leading-[1.5] font-medium text-muted-foreground tabular-nums`, `font-sans` and no shadow.
-11. **`components/avatar.tsx`**: L78 Lisse 8px squircle → `rounded-full`. **Owner call:** avatars become circles, matching the island and coach dots.
+11. **`components/avatar.tsx`**: L78 Lisse 8px squircle → `rounded-full`. **Owner call:** avatars become circles, matching the coach dots.
 12. **`components/ui/command.tsx`** (3 files): L18 `rounded-[18px]` → `rounded-lg`. L47 input `h-10 rounded-full` → `h-11 text-body` with no radius (coach palette). L121 item → the menu item. L138 shortcut → `<Kbd>`.
 13. **`components/ui/checkbox.tsx`**: L15 `h-4 w-4 rounded-xs border-primary shadow-xs` → `size-3.5 rounded-sm border-input`, with checked state `border-primary bg-primary`.
 14. **`components/ui/card.tsx`**: L14–15 `rounded-lg bg-background border shadow-xs` → drop the shadow. L70 `text-neutral-500` → `text-muted-foreground`.
@@ -526,22 +526,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 
 #### `main/windows-window-controls.tsx`
 - L101: `hover:text-white` `hover:bg-[#c42b1c]` → keep — OS-native Windows close button colour
-
-### meeting-float/
-
-#### `meeting-float/overlay/bar.tsx`
-- L310: `text-[12px]` → `text-label`
-- L338: `rounded-[10px]` → `rounded-lg` — off-scale radius; `text-[11px]` → `text-caption`
-- L370: `text-white` → `text-foreground` — overlay root in a .dark scope; `text-[10px]` → `text-caption`
-- L375: `text-white` → `text-foreground` — overlay root in a .dark scope; `rounded-[11px]` → `rounded-lg` — bubble (coach user bubble); `text-[13px]` → `text-ui`
-
-#### `meeting-float/overlay/dictation.tsx`
-- L24: `text-[15px]` → `text-title font-normal` — island caption size
-
-#### `meeting-float/overlay/live-caption.tsx`
-- L134: `text-white` → `text-foreground` — overlay root in a .dark scope; `text-[16px]` → `text-title font-medium` — island caption: 15/22 medium
-- L178: `bg-white/25` → `bg-foreground/25` — overlay root in a .dark scope; `rounded-full` → keep rounded-full — dot/avatar/track: becomes a true circle once the 6px remap is deleted
-- L186: `text-white/90` → `text-foreground` — overlay root in a .dark scope; `rounded-full` → `rounded-md` — control; `text-[11px]` → `text-caption`
 
 ### onboarding/
 
@@ -989,7 +973,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 - `templates/template-sidebar.tsx`: L461 `text-left`→`text-start`, L495 `text-left`→`text-start`, L569 `text-left`→`text-start`
 - `folders/folder-editor.tsx`: L101 `pr-1`→`pe-1`, L101 `pl-3`→`ps-3`, L249 `right-1.5`→`end-1.5`
 - `folders/sidebar.tsx`: L138 `text-left`→`text-start`
-- `meeting-float/overlay/bar.tsx`: L368 `text-left`→`text-start`
 - `main/body.tsx`: L409 `pr-1`→`pe-1`, L415 `pl-2`→`ps-2`, L447 `left-1`→`start-1`, L453 `pr-1`→`pe-1`, L459 `pl-2`→`ps-2`, L479 `left-0`→`start-0`, L489 `pl-2`→`ps-2`
 - `main/sidebar-timeline-chrome.tsx`: L164 `right-1`→`end-1`
 - `main/windows-title-bar.tsx`: L82 `pl-2`→`ps-2`, L121 `ml-2`→`ms-2`
@@ -1036,7 +1019,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 - `editor-bridge/app-link-view.tsx`: L261 `weight="bold"`
 - `templates/auto-form.tsx`: L164 `weight="bold"`
 - `templates/template-form.tsx`: L245 `weight="bold"`
-- `meeting-float/overlay/bar.tsx`: L173 `weight="bold"`, L175 `weight="bold"`, L232 `size={9}`, L236 `size={20}`, L345 `size={10}`, L345 `weight="bold"`
 - `main/sidebar-timeline-chrome.tsx`: L115 `size={15}`, L122 `size={15}`
 - `onboarding/shared.tsx`: L68 `weight="bold"`
 - `session/components/note-input/transcript/renderer/segment-header.tsx`: L38 `weight="bold"`
@@ -1078,9 +1060,8 @@ Capture each item twice per theme, at a 1280×800 window with system text size a
 | 17 | Folders | Sidebar → Folders → a folder → edit | cover card, remove button, folder materials |
 | 18 | Toasts | Delete a note (undo toast); trigger any app toast | `rounded-lg shadow-lg`, gauge bar |
 | 19 | Onboarding | Reset onboarding (devtools ⋯ → onboarding) | welcome hero (blur/gradient veils), permissions rows, calendar step, primary buttons |
-| 20 | Meeting overlay / live caption | Start a meeting with the floating bar and live captions on | `.dark`-scoped tokens, caption 15/22, bubble radius |
-| 21 | Devtools bar | Dev build: collapsed strip, expanded bar, scan panel, hint | tokens in `.dark` scope, channel dot |
-| 22 | Lock, long-load and error screens; version history; conflict banner; changelog; task view | Lock via the app lock setting; version history from the note ⋯; the banner by editing one note in two windows; changelog from About; a task resource link | icon discs, `text-title`, banner card, page titles |
-| 23 | RTL pass | Set the app language to Arabic; repeat 1, 2, 5, 9 and 14 | logical paddings, chevrons, mask fades |
+| 20 | Devtools bar | Dev build: collapsed strip, expanded bar, scan panel, hint | tokens in `.dark` scope, channel dot |
+| 21 | Lock, long-load and error screens; version history; conflict banner; changelog; task view | Lock via the app lock setting; version history from the note ⋯; the banner by editing one note in two windows; changelog from About; a task resource link | icon discs, `text-title`, banner card, page titles |
+| 22 | RTL pass | Set the app language to Arabic; repeat 1, 2, 5, 9 and 14 | logical paddings, chevrons, mask fades |
 
 Keep the before shots under `docs/design/screens/before/<#>-<light|dark>.png` and the after shots under `after/`, so they can be compared side by side.

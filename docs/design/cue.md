@@ -1,6 +1,6 @@
 # Cue design spec
 
-The coach panel (`apps/coach/src/ui`) is the reference. The meeting island (`plugins/windows/swift-lib/src/FloatingBarView.swift`) is a second, native reference for motion, the live dot and contrast. Every value here comes from one of those two, with its source cited. Rules marked **(ext)** are extrapolated in the coach's spirit for patterns the coach doesn't have, and the owner should review them. Exact fixes are listed in `cue-audit.md`.
+The coach panel (`apps/coach/src/ui`) is the reference. Values taken from it cite their source. Rules marked **(ext)** are extrapolated in the coach's spirit for patterns the coach doesn't have, and the owner should review them. Exact fixes are listed in `cue-audit.md`.
 
 ## 1. Corners
 
@@ -18,7 +18,7 @@ The coach panel (`apps/coach/src/ui`) is the reference. The meeting island (`plu
 
 ## 2. Type
 
-Font: `Inter`, then `IBM Plex Sans Arabic`, then `system-ui`. Only weights 400, 500 and 600 are allowed, so drop the 700 import and `font-bold`. Set `font-feature-settings: "cv11","ss01"` and `-webkit-font-smoothing: antialiased` on `body` (coach `styles.css`). Inter is loaded as static cuts with no optical-size axis, so sizes of 20px and above get `-0.01em` tracking instead. Use `tabular-nums` on every timer, duration, count, timestamp and size (coach header elapsed time, island `monospacedDigit()`).
+Font: `Inter`, then `IBM Plex Sans Arabic`, then `system-ui`. Only weights 400, 500 and 600 are allowed, so drop the 700 import and `font-bold`. Set `font-feature-settings: "cv11","ss01"` and `-webkit-font-smoothing: antialiased` on `body` (coach `styles.css`). Inter is loaded as static cuts with no optical-size axis, so sizes of 20px and above get `-0.01em` tracking instead. Use `tabular-nums` on every timer, duration, count, timestamp and size (coach header elapsed time).
 
 Add these to `@theme` as `--text-<role>` with `--line-height` and, where needed, `--font-weight` and `--letter-spacing`:
 
@@ -82,7 +82,7 @@ Add these to `@theme` as `--text-<role>` with `--line-height` and, where needed,
 
   The switch thumb may use `shadow-sm` **(ext)**. Nothing else gets a shadow: no shadows on cards, buttons, inputs, kbd or rows, and no `shadow-[...]`.
 - Scrim: `bg-scrim`, with `--scrim` set to `oklch(0 0 0 / .25)` light and `/ .45` dark. This matches coach `bg-black/25 dark:bg-black/45`. Replace `bg-black/80`.
-- No `backdrop-blur`, `blur-*` or `backdrop-saturate`. Native window material (the island's `.ultraThickMaterial`) is the only blur.
+- No `backdrop-blur`, `blur-*` or `backdrop-saturate`. Native window material is the only blur.
 - No painted gradients: no `bg-linear-*`, `from-/via-/to-` or shimmer sweeps. Edge fades are masks and are allowed: `scroll-fade-y`, `.coach-fade-y`, `mask-image`.
 - The app icon tile is flat. `apps/desktop/src-tauri/icons/src/cue-*.svg` currently fill the tile with `linearGradient#tile` (`#2c2c2c`→`#121212`) and stroke it with `#edge`. Use one fill (`#1c1c1c`) and a 2px flat `#fff` stroke at `.08` instead.
 
@@ -91,8 +91,8 @@ Add these to `@theme` as `--text-<role>` with `--line-height` and, where needed,
 - Greys come only from tokens: `foreground`, `muted-foreground`, `tertiary-foreground`, `background`, `card`, `popover`, `muted`, `accent`, `border`, `input`, `sidebar*`. Hover and selected fills go one step darker than their surface: `bg-muted` on background, `bg-sidebar-accent` on the sidebar.
 - **Amber** (`--warm`, `--warm-strong`, `--warm-glow`) is the only accent. It may appear in:
   - coach marks (`border-s-2 border-warm`)
-  - the coach entry icon (island lightbulb)
-  - warning icons (island triangle)
+  - the coach entry icon
+  - warning icons
   - the focus outline
   - the switch on-state
   - `::selection` (`bg-warm-glow`)
@@ -137,7 +137,7 @@ Buttons are copied from coach `primitives.tsx:52`. The base is `inline-flex item
 | primary | `bg-primary text-primary-foreground hover:opacity-90 active:opacity-80 disabled:opacity-40` |
 | secondary (coach "outline") | `border border-border bg-background text-foreground hover:bg-muted active:bg-accent disabled:opacity-50` |
 | ghost | `text-muted-foreground hover:bg-muted hover:text-foreground active:bg-accent disabled:opacity-40` |
-| destructive (coach "danger"; island Stop) | `border border-destructive/40 text-destructive hover:bg-destructive/10`. A filled form, `bg-destructive text-destructive-foreground`, is only for the final confirm in a destructive dialog. |
+| destructive (coach "danger") | `border border-destructive/40 text-destructive hover:bg-destructive/10`. A filled form, `bg-destructive text-destructive-foreground`, is only for the final confirm in a destructive dialog. |
 | icon | `size-7 rounded-md` plus the ghost classes, always wrapped in a Tooltip (label + shortcut). The round form `size-7 rounded-full bg-primary text-primary-foreground` is only for send and play. |
 
 - **Focus:** one global rule, `:focus-visible { outline: 2px solid var(--warm-strong); outline-offset: 2px; border-radius: var(--radius-sm) }` (coach `styles.css`, exactly; elements with their own radius keep it). Delete the per-component `focus-visible:ring-*` classes. Text fields use `focus-visible:outline-none focus:border-foreground` instead (coach composer border cue).
@@ -170,21 +170,21 @@ Buttons are copied from coach `primitives.tsx:52`. The base is `inline-flex item
 - **Avatar:** flat circle, initials in one of the six `--speaker-N` hues on that hue mixed 14% into the background (`in oklab`, so the hue holds). No gradients or dithering; a photo replaces both.
 - **Header** (coach `header.tsx:113`): `flex h-11 items-center gap-2 border-b border-border px-3`. Title `<bdi dir="auto" class="truncate text-strong">`; the subtitle is `text-label text-muted-foreground tabular-nums`, baseline-aligned with `gap-1.5`.
 - **Loading:** working text uses `.coach-sheen`. Placeholders use `.coach-skeleton` (`bg-muted rounded-sm`, opacity .55↔1 over 0.9s). Spinners only appear inside buttons, at `size-3.5`.
-- **Live dot:** `size-2 rounded-full bg-live coach-live-dot`, a 2s ring pulse. The island breathes at 0.9s, 1→0.45.
+- **Live dot:** `size-2 rounded-full bg-live coach-live-dot`, a 2s ring pulse.
 
 ## 7. Motion
 
 | What | Value | Source |
 |---|---|---|
-| hover/press colour | `duration-100`, ease-out | coach `Button`; island 0.1s |
+| hover/press colour | `duration-100`, ease-out | coach `Button` |
 | borders, chevrons, reveals | `duration-150` | coach strip chevron, composer border |
 | enter (menu, popover, toast, dialog, cards) | `.coach-enter`: 200ms `cubic-bezier(0.2,0,0,1)` (`--ease-standard`), opacity 0→1 and translate 4px→0. Replace Radix `zoom-in-95` and `slide-in-from-*`. | coach |
-| exit | opacity only, 100ms ease-in | island removal 0.1s |
-| layout and size | spring `{ type:"spring", visualDuration:0.35, bounce:0.15 }` | island response .35, damping .85 |
+| exit | opacity only, 100ms ease-in | spec |
+| layout and size | spring `{ type:"spring", visualDuration:0.35, bounce:0.15 }` | spec |
 | tooltip | 500ms delay, 100ms fade | coach |
 
 - No scale-from-25, blur, wiggle or shimmer transitions.
-- **Reduce motion:** keep the global kill switch in `globals.css`. Springs and translates become a 150ms opacity fade (island). Sheen, caret, skeleton, live pulse and enter animations stop (coach `@media (prefers-reduced-motion)`). The live dot stays solid.
+- **Reduce motion:** keep the global kill switch in `globals.css`. Springs and translates become a 150ms opacity fade. Sheen, caret, skeleton, live pulse and enter animations stop (coach `@media (prefers-reduced-motion)`). The live dot stays solid.
 
 ## 8. Enforcement
 
