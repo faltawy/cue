@@ -9,6 +9,7 @@ mod tray_quit_completely;
 mod tray_settings;
 mod tray_show_events;
 mod tray_start;
+mod tray_stop;
 mod tray_version;
 
 pub use app_info::AppInfo;
@@ -22,6 +23,7 @@ pub use tray_quit_completely::{TrayQuitCompletely, quit_completely};
 pub use tray_settings::TraySettings;
 pub use tray_show_events::TrayShowEvents;
 pub use tray_start::TrayStart;
+pub use tray_stop::TrayStop;
 pub use tray_version::TrayVersion;
 
 use tauri::{AppHandle, Result, menu::MenuItemKind};
@@ -35,7 +37,7 @@ pub trait MenuItemHandler {
 
 macro_rules! menu_items {
     ($($variant:ident => $item:ty),* $(,)?) => {
-        #[derive(Debug, Clone, Copy)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         pub enum AnlgMenuItem {
             $($variant),*
         }
@@ -66,6 +68,12 @@ macro_rules! menu_items {
                     $(AnlgMenuItem::$variant => <$item>::handle(app)),*
                 }
             }
+
+            pub(crate) fn build(self, app: &AppHandle<tauri::Wry>) -> Result<MenuItemKind<tauri::Wry>> {
+                match self {
+                    $(AnlgMenuItem::$variant => <$item>::build(app)),*
+                }
+            }
         }
     };
 }
@@ -73,6 +81,7 @@ macro_rules! menu_items {
 menu_items! {
     TrayOpen => TrayOpen,
     TrayStart => TrayStart,
+    TrayStop => TrayStop,
     TraySettings => TraySettings,
     TrayCoach => TrayCoach,
     TrayCoachProject => TrayCoachProject,

@@ -35,6 +35,11 @@ async setTrayRecordingTitle(title: string | null) : Promise<Result<null, string>
 /** user-defined events **/
 
 
+export const events = __makeEvents__<{
+trayStopRecording: TrayStopRecording
+}>({
+trayStopRecording: "plugin:anlg-tray:tray-stop-recording"
+})
 
 /** user-defined constants **/
 
@@ -43,6 +48,7 @@ async setTrayRecordingTitle(title: string | null) : Promise<Result<null, string>
 /** user-defined types **/
 
 export type TrayScheduleEvent = { id: string; title: string; meetingLink: string | null; startsAtMs: number; endsAtMs: number | null; dayStartMs: number; previousDayStartMs: number; timeLabel: string }
+export type TrayStopRecording = Record<string, never>
 
 /** tauri-specta globals **/
 

@@ -46,7 +46,6 @@ impl ListenerRuntime for TauriRuntime {
         use tauri_plugin_tray::TrayPluginExt;
         match &event {
             anlg_transcription_core::listener::SessionLifecycleEvent::Active { error, .. } => {
-                let _ = self.app.tray().set_start_disabled(true);
                 let _ = self.app.tray().set_degraded(error.is_some());
                 let _ = self.app.tray().set_recording(true);
             }
@@ -56,11 +55,9 @@ impl ListenerRuntime for TauriRuntime {
                     match current_root_state().await {
                         RootState::Active => {}
                         RootState::Finalizing => {
-                            let _ = app.tray().set_start_disabled(false);
                             let _ = app.tray().set_recording(false);
                         }
                         RootState::Inactive => {
-                            let _ = app.tray().set_start_disabled(false);
                             let _ = app.tray().set_recording(false);
                             let _ = app.tray().set_degraded(false);
                         }

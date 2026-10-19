@@ -272,6 +272,32 @@ pub fn main() {
             }
 
             {
+                use tauri_plugin_transcription::ListenerPluginExt;
+                use tauri_specta::Event;
+                let stop_handle = app_handle.clone();
+                tauri_plugin_tray::TrayStopRecording::listen(&app_handle, move |_| {
+                    let app = stop_handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        let session_id = match app.listener().get_capture_snapshot().await {
+                            Ok(snapshot) => snapshot.active_session_id,
+                            Err(error) => {
+                                tracing::warn!(%error, "failed to read capture before tray stop");
+                                None
+                            }
+                        };
+                        let Some(session_id) = session_id else {
+                            return;
+                        };
+                        // Give the main webview the first chance to stop so its
+                        // post-stop work runs; this only stops if it didn't.
+                        tokio::time::sleep(std::time::Duration::from_millis(1_500)).await;
+                        tauri_plugin_transcription::stop_capture_for_session(&app, &session_id)
+                            .await;
+                    });
+                });
+            }
+
+            {
                 use tauri_plugin_coach::CoachPluginExt;
                 use tauri_specta::Event;
                 let coach = app_handle.clone();

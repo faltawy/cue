@@ -33,18 +33,3 @@ impl MenuItemHandler for TrayStart {
         }
     }
 }
-
-impl TrayStart {
-    pub fn build_with_disabled(
-        app: &AppHandle<tauri::Wry>,
-        disabled: bool,
-    ) -> Result<MenuItem<tauri::Wry>> {
-        MenuItem::with_id(
-            app,
-            Self::ID,
-            "Start a new meeting",
-            !disabled,
-            None::<&str>,
-        )
-    }
-}

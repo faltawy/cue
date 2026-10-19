@@ -1,6 +1,9 @@
 import { useStore } from "zustand";
 
-import { commands as trayCommands } from "@anlg/plugin-tray";
+import {
+  commands as trayCommands,
+  events as trayEvents,
+} from "@anlg/plugin-tray";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { useSession } from "~/session/queries";
@@ -36,6 +39,27 @@ export function TrayRecordingSync() {
   const title = getTrayRecordingTitle(
     resolveLiveSessionTitle(liveTitle, session?.title),
   );
+
+  useMountEffect(() => {
+    let cancelled = false;
+    let unlisten: (() => void) | undefined;
+    void trayEvents.trayStopRecording
+      .listen(() => {
+        const state = listenerStore.getState();
+        if (state.live.status === "active") state.stop();
+      })
+      .then((nextUnlisten) => {
+        if (cancelled) nextUnlisten();
+        else unlisten = nextUnlisten;
+      })
+      .catch((error) => {
+        console.error("[tray] failed to listen for stop requests", error);
+      });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  });
 
   return (
     <TrayRecordingPublisher

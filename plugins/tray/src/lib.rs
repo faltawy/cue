@@ -1,10 +1,12 @@
 mod commands;
+mod events;
 mod ext;
 mod macos_position;
 mod menu_items;
 mod schedule;
 mod tray_icon;
 
+pub use events::*;
 pub use ext::*;
 pub use menu_items::{AnlgMenuItem, handle_agenda_menu_event, quit_completely};
 
@@ -15,12 +17,17 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 
     tauri::plugin::Builder::<tauri::Wry>::new(PLUGIN_NAME)
         .invoke_handler(specta_builder.invoke_handler())
+        .setup(move |app, _api| {
+            specta_builder.mount_events(app);
+            Ok(())
+        })
         .build()
 }
 
 fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .plugin_name(PLUGIN_NAME)
+        .events(tauri_specta::collect_events![events::TrayStopRecording])
         .commands(tauri_specta::collect_commands![
             commands::set_tray_icon_visible,
             commands::set_tray_schedule,

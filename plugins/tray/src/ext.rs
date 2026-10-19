@@ -25,10 +25,7 @@ use crate::{
 
 #[cfg(target_os = "macos")]
 use crate::menu_items::{AppInfo, AppNew, TrayQuit};
-use crate::menu_items::{
-    MenuItemHandler, TrayCoach, TrayCoachProject, TrayHide, TrayOpen, TrayQuitCompletely,
-    TraySettings, TrayShowEvents, TrayStart, TrayVersion, build_agenda_item,
-};
+use crate::menu_items::{MenuItemHandler, TraySettings, build_agenda_item};
 use tauri_plugin_store2::Store2PluginExt;
 
 const TRAY_ID: &str = "anlg-tray";
@@ -36,7 +33,6 @@ const TRAY_ID: &str = "anlg-tray";
 static IS_RECORDING: AtomicBool = AtomicBool::new(false);
 static IS_DEGRADED: AtomicBool = AtomicBool::new(false);
 static SHOW_EVENTS: AtomicBool = AtomicBool::new(true);
-static START_DISABLED: AtomicBool = AtomicBool::new(false);
 static ANIMATION_TASK: Mutex<Option<JoinHandle<()>>> = Mutex::new(None);
 static SCHEDULE: Mutex<Vec<TrayScheduleEvent>> = Mutex::new(Vec::new());
 static SCHEDULE_TASK: Mutex<Option<JoinHandle<()>>> = Mutex::new(None);
@@ -346,23 +342,12 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
             }
         }
 
-        menu.append(&TrayShowEvents::build(app)?)?;
-        menu.append(&PredefinedMenuItem::separator(app)?)?;
-
-        menu.append(&TrayOpen::build(app)?)?;
-        menu.append(&TrayStart::build_with_disabled(
-            app,
-            START_DISABLED.load(Ordering::SeqCst),
-        )?)?;
-        menu.append(&TraySettings::build(app)?)?;
-        menu.append(&PredefinedMenuItem::separator(app)?)?;
-        menu.append(&TrayCoach::build(app)?)?;
-        menu.append(&TrayCoachProject::build(app)?)?;
-        menu.append(&PredefinedMenuItem::separator(app)?)?;
-        menu.append(&TrayVersion::build(app)?)?;
-        menu.append(&PredefinedMenuItem::separator(app)?)?;
-        menu.append(&TrayHide::build(app)?)?;
-        menu.append(&TrayQuitCompletely::build(app)?)?;
+        for item in tray_menu_items(IS_RECORDING.load(Ordering::SeqCst)) {
+            match item {
+                Some(item) => menu.append(&item.build(app)?)?,
+                None => menu.append(&PredefinedMenuItem::separator(app)?)?,
+            }
+        }
 
         Ok(menu)
     }
@@ -457,6 +442,7 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
         Self::refresh_menu_bar_title(app)?;
         Self::refresh_icon(app)?;
         Self::restart_schedule_task(app);
+        Self::mark_menu_dirty();
         Ok(())
     }
 
@@ -523,12 +509,6 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
 
         tray.set_icon_with_as_template(Some(state.to_image()?), true)?;
 
-        Ok(())
-    }
-
-    pub fn set_start_disabled(&self, disabled: bool) -> Result<()> {
-        START_DISABLED.store(disabled, Ordering::SeqCst);
-        Self::mark_menu_dirty();
         Ok(())
     }
 }
@@ -635,5 +615,43 @@ mod thread_tests {
         )
         .unwrap_err();
         assert!(matches!(error, tauri::Error::FailedToReceiveMessage));
+    }
+}
+
+/// The tray menu from top to bottom after the agenda; `None` is a separator.
+fn tray_menu_items(recording: bool) -> Vec<Option<crate::AnlgMenuItem>> {
+    use crate::AnlgMenuItem::*;
+    vec![
+        Some(TrayShowEvents),
+        None,
+        Some(TrayOpen),
+        Some(if recording { TrayStop } else { TrayStart }),
+        Some(TraySettings),
+        None,
+        Some(TrayCoach),
+        Some(TrayCoachProject),
+        None,
+        Some(TrayVersion),
+        None,
+        Some(TrayHide),
+        Some(TrayQuitCompletely),
+    ]
+}
+
+#[cfg(test)]
+mod menu_tests {
+    use super::tray_menu_items;
+    use crate::AnlgMenuItem;
+
+    #[test]
+    fn recording_menu_offers_stop_and_the_coach_instead_of_start() {
+        let recording = tray_menu_items(true);
+        assert!(recording.contains(&Some(AnlgMenuItem::TrayStop)));
+        assert!(recording.contains(&Some(AnlgMenuItem::TrayCoach)));
+        assert!(!recording.contains(&Some(AnlgMenuItem::TrayStart)));
+
+        let idle = tray_menu_items(false);
+        assert!(idle.contains(&Some(AnlgMenuItem::TrayStart)));
+        assert!(!idle.contains(&Some(AnlgMenuItem::TrayStop)));
     }
 }
