@@ -11,7 +11,7 @@ import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { coachError, GAVE_UP, StderrTail } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
-import { type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrapUpActions } from "./meeting-state";
+import { isAnswering, type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrapUpActions } from "./meeting-state";
 import { moveText } from "./move";
 import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from "./nudge";
 import { NO_SPEND, spendOf } from "./pricing";
@@ -636,6 +636,7 @@ const server = Bun.serve({
         headers: { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" },
       });
     },
+    "/busy": () => Response.json({ busy: isAnswering(busy, wrapUp) }),
     "/ask": {
       POST: async (request) => {
         const body = await jsonBody(request);

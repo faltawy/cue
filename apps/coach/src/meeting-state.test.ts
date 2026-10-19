@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { type MeetingPointer, meetingChange, stripView, wrapUpActions } from "./meeting-state";
+import { isAnswering, type MeetingPointer, meetingChange, stripView, wrapUpActions } from "./meeting-state";
 
 const live: MeetingPointer = { sessionId: "acme", transcriptId: "t1", live: true };
 const ended: MeetingPointer = { ...live, live: false };
@@ -76,5 +76,13 @@ describe("wrapUpActions", () => {
     const empty = wrapUpActions({ ...ready, commitments: 0 });
     expect(empty.addActionItems.enabled).toBe(false);
     expect(empty.logToClients.enabled).toBe(false);
+  });
+});
+
+describe("isAnswering", () => {
+  test("a running turn or a running wrap-up keeps the app from restarting", () => {
+    expect(isAnswering(true, null)).toBe(true);
+    expect(isAnswering(false, { state: "running", title: "Acme sync" })).toBe(true);
+    expect(isAnswering(false, null)).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 mod access;
 mod auth;
 mod bridge;
+mod busy;
 mod commands;
 mod edits;
 mod error;
@@ -230,6 +231,29 @@ impl Coach {
         ensure(&state.llm, process::LLM_KEY.to_string(), |port| {
             process::sidecar_command(process::llm_args(port))
         })
+    }
+
+    pub async fn is_answering(&self) -> bool {
+        let endpoint = {
+            let state = self.app.state::<CoachState>();
+            let Ok(mut slot) = lock(&state.coach) else {
+                return true;
+            };
+            let Some(sidecar) = slot.as_mut() else {
+                return false;
+            };
+            if !sidecar.is_running() {
+                return false;
+            }
+            sidecar.endpoint()
+        };
+        match http_client() {
+            Ok(client) => busy::answering(&client, &endpoint).await,
+            Err(error) => {
+                tracing::warn!(%error, "coach_busy_probe_failed");
+                true
+            }
+        }
     }
 }
 

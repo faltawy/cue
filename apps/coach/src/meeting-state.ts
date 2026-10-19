@@ -1,3 +1,5 @@
+import type { WrapUpView } from "./protocol";
+
 export type MeetingPointer = { sessionId: string; transcriptId: string; live: boolean };
 
 export type MeetingChange = { newChat: boolean; wrapUp: boolean };
@@ -65,4 +67,8 @@ export function wrapUpActions(options: {
     logToClients = { enabled: nothing === null, hint: nothing };
   }
   return { addActionItems, logToClients };
+}
+
+export function isAnswering(busy: boolean, wrapUp: WrapUpView | null): boolean {
+  return busy || wrapUp?.state === "running";
 }
