@@ -53,7 +53,7 @@ export function SpendLimitInput({
 
   return (
     <div className="flex w-full flex-col items-end gap-1">
-      <InputGroup className="bg-card h-9 shadow-none">
+      <InputGroup>
         <InputGroupAddon>$</InputGroupAddon>
         <InputGroupInput
           {...labelProps}

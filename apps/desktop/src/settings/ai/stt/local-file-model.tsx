@@ -86,7 +86,7 @@ export function LocalFileModel({
   const isPending = chooseModel.isPending || clearModel.isPending;
 
   return (
-    <div className="border-input bg-background flex h-8 min-w-0 items-center gap-2 rounded-md border px-2.5 text-start">
+    <div className="border-input flex h-8 min-w-0 items-center gap-2 rounded-md border px-2.5 text-start">
       <button
         type="button"
         className="flex min-w-0 flex-1 items-center gap-2 text-start"

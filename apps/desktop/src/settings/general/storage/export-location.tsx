@@ -48,50 +48,48 @@ export function ExportLocationRow() {
 
   return (
     <div>
-      <div className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
-        <button
-          type="button"
-          className="hover:bg-muted/40 flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-start transition-colors"
-          disabled={settings.isLoading || !!settings.error || !path}
-          onClick={() => {
-            if (path) void openerCommands.openPath(path, null);
-          }}
-        >
-          <FolderSimple className="text-muted-foreground size-4 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-ui font-medium">
-              <Trans>Export location</Trans>
-            </p>
-            <p
-              className="text-muted-foreground text-label truncate"
-              title={path}
-            >
-              {displayPath(path, home)}
-            </p>
-          </div>
-        </button>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-ui font-medium">
+            <Trans>Export location</Trans>
+          </p>
+          <p className="text-muted-foreground text-label mt-0.5">
+            <Trans>
+              Save PDF, text, Markdown, and Org exports to this folder.
+            </Trans>
+          </p>
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground text-label mt-1 flex max-w-full min-w-0 items-center gap-1 rounded-sm text-start transition-colors duration-100"
+            disabled={settings.isLoading || !!settings.error || !path}
+            title={path}
+            onClick={() => {
+              if (path) void openerCommands.openPath(path, null);
+            }}
+          >
+            <FolderSimple className="size-3 shrink-0" />
+            <span className="truncate">{displayPath(path, home)}</span>
+          </button>
+        </div>
         <Button
           type="button"
           variant="outline"
-          className="h-9 w-full justify-center"
+          className="shrink-0"
           disabled={disabled}
           onClick={() => changeMutation.mutate("choose")}
         >
           {changeMutation.isPending && (
-            <CircleNotch className="size-4 animate-spin" aria-hidden="true" />
+            <CircleNotch className="animate-spin" aria-hidden="true" />
           )}
           <Trans>Choose folder</Trans>
         </Button>
       </div>
-      <p className="text-muted-foreground text-label px-2">
-        <Trans>Save PDF, text, Markdown, and Org exports to this folder.</Trans>
-      </p>
       {directory && (
         <Button
           type="button"
           variant="link"
           size="sm"
-          className="px-2"
+          className="mt-1"
           disabled={disabled}
           onClick={() => changeMutation.mutate("reset")}
         >
@@ -99,7 +97,7 @@ export function ExportLocationRow() {
         </Button>
       )}
       {(settings.error || downloads.error || changeMutation.error) && (
-        <p role="alert" className="text-label text-destructive mt-1 px-2">
+        <p role="alert" className="text-label text-destructive mt-1">
           <Trans>Could not update the export folder</Trans>
         </p>
       )}

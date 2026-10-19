@@ -24,7 +24,7 @@ export function ConfigureProviders() {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="border-border divide-border divide-y overflow-hidden rounded-lg border">
       <div className="flex items-center gap-3">
         <h3 className="text-title">
           <Trans>Configure Providers</Trans>
@@ -34,7 +34,7 @@ export function ConfigureProviders() {
       <Accordion
         type="single"
         collapsible
-        className="flex flex-col gap-3"
+        className="border-border divide-border divide-y overflow-hidden rounded-lg border"
         value={accordionValue}
         onValueChange={setAccordionValue}
       >

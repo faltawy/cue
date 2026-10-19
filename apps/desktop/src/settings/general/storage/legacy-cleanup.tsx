@@ -139,19 +139,19 @@ export function LegacyMigrationCleanupRow() {
 
   return (
     <>
-      <div className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
-        <div className="text-body flex min-w-0 items-start gap-1.5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="text-ui flex min-w-0 flex-1 items-start gap-1.5">
           {statusCopy.state === "loading" && (
-            <CircleNotch className="text-muted-foreground mt-0.5 size-4 shrink-0 animate-spin" />
+            <CircleNotch className="text-muted-foreground mt-0.5 size-3.5 shrink-0 animate-spin" />
           )}
           {statusCopy.state === "success" && (
-            <CheckCircle className="text-success mt-0.5 size-4 shrink-0" />
+            <CheckCircle className="text-success mt-0.5 size-3.5 shrink-0" />
           )}
           {statusCopy.state === "warning" && (
-            <Warning className="text-warm-strong mt-0.5 size-4 shrink-0" />
+            <Warning className="text-warm-strong mt-0.5 size-3.5 shrink-0" />
           )}
           {statusCopy.state === "unavailable" && (
-            <Info className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <Info className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
           )}
           <div className="min-w-0">
             <p className="font-medium">{statusCopy.label}</p>
@@ -165,14 +165,14 @@ export function LegacyMigrationCleanupRow() {
         {status && !status.migrationReady && (
           <Button
             variant="outline"
-            className="h-9 w-full justify-center"
+            className="shrink-0"
             onClick={() => retryMutation.mutate()}
             disabled={retryMutation.isPending}
           >
             {retryMutation.isPending ? (
-              <CircleNotch className="size-4 animate-spin" aria-hidden="true" />
+              <CircleNotch className="animate-spin" aria-hidden="true" />
             ) : (
-              <ArrowCounterClockwise className="size-4" aria-hidden="true" />
+              <ArrowCounterClockwise aria-hidden="true" />
             )}
             {t`Retry`}
           </Button>
@@ -180,10 +180,10 @@ export function LegacyMigrationCleanupRow() {
         {status?.migrationVerified && status.available && (
           <Button
             variant="destructive"
-            className="h-9 w-full justify-center"
+            className="shrink-0"
             onClick={() => setConfirmationOpen(true)}
           >
-            <Trash className="size-4" aria-hidden="true" />
+            <Trash aria-hidden="true" />
             <Trans>Clean Up</Trans>
           </Button>
         )}

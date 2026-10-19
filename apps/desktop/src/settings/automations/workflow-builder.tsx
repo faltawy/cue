@@ -216,7 +216,7 @@ function WorkflowCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-border bg-card flex items-start gap-3 rounded-xl border p-4">
+    <div className="border-border bg-background flex items-start gap-3 rounded-lg border p-3">
       <span
         className={cn([
           "text-label mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full font-semibold",

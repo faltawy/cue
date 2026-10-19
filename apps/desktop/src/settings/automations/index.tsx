@@ -61,7 +61,7 @@ export function TabContentAutomations() {
   return (
     <StandardContentWrapper>
       <SettingsHydrationBoundary>
-        <div className="bg-card dark:bg-accent flex w-full flex-1 flex-col overflow-hidden">
+        <div className="bg-card flex w-full flex-1 flex-col overflow-hidden">
           <AutomationsContent />
         </div>
       </SettingsHydrationBoundary>
@@ -94,8 +94,8 @@ export function AutomationsContent() {
 
 function AutomationsOverview() {
   return (
-    <div className="scroll-fade-y scrollbar-hide h-full w-full flex-1 overflow-y-auto px-6 pt-3 pb-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="scroll-fade-y scrollbar-hide h-full w-full flex-1 overflow-y-auto px-6 pt-6 pb-10">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <SettingsPageTitle title={<Trans>Automations</Trans>} />
           <p className="text-muted-foreground text-ui max-w-2xl">
@@ -175,8 +175,8 @@ function AutomationDetailsLayout({
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
       <AutomationDetailHeader icon={icon} title={title} actions={actions} />
-      <div className="scroll-fade-y scrollbar-hide min-h-0 w-full flex-1 overflow-y-auto px-6 pt-3 pb-8">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="scroll-fade-y scrollbar-hide min-h-0 w-full flex-1 overflow-y-auto px-6 pt-3 pb-10">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           {description && (
             <p className="text-muted-foreground text-ui max-w-2xl">
               {description}
@@ -462,7 +462,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
         <div className="flex flex-col gap-2 p-5">
           {starter.steps.map((step, index) => (
             <div key={`${step.kind}-${step.title}`}>
-              <div className="border-border bg-card flex items-start gap-3 rounded-xl border p-4">
+              <div className="border-border bg-background flex items-start gap-3 rounded-lg border p-3">
                 <span
                   className={cn([
                     "text-label mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full font-semibold",

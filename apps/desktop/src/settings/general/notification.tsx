@@ -309,7 +309,6 @@ export function NotificationSettingsView() {
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  size="sm"
                                   disabled={notificationsDisabled}
                                   onClick={() =>
                                     previewCompletionSound(
@@ -443,7 +442,7 @@ export function NotificationSettingsView() {
                                     tabIndex={0}
                                     aria-expanded={searchOpen}
                                     className={cn([
-                                      "border-input bg-background focus-within:border-foreground flex min-h-8 w-full cursor-text flex-wrap items-center gap-1 rounded-md border px-1.5 py-1",
+                                      "border-input focus-within:border-foreground flex min-h-8 w-full cursor-text flex-wrap items-center gap-1 rounded-md border px-1.5 py-1",
                                     ])}
                                     onKeyDown={(event) => {
                                       if (

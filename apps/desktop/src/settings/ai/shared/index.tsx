@@ -424,10 +424,7 @@ export function ProviderCard({
     <AccordionItem
       disabled={config.disabled}
       value={config.id}
-      className={cn([
-        "bg-background rounded-lg border",
-        isReady ? "border-border border-solid" : "border-dashed",
-      ])}
+      className="border-b-0"
     >
       <SettingsAlertToast
         id={`provider-keychain-access:${providerType}:${config.id}`}
@@ -447,7 +444,7 @@ export function ProviderCard({
       />
       <AccordionTrigger
         className={cn([
-          "gap-2 px-4 capitalize hover:no-underline",
+          "gap-2 px-3 capitalize hover:no-underline",
           config.disabled && "text-muted-foreground cursor-not-allowed",
         ])}
       >
@@ -455,9 +452,15 @@ export function ProviderCard({
           <ProviderIconSlot>{config.icon}</ProviderIconSlot>
           <span>{config.displayName}</span>
           {config.badge && <ProviderBadge badge={config.badge} />}
+          {isReady && (
+            <span className="text-muted-foreground text-label inline-flex items-center gap-1.5 font-normal normal-case">
+              <span aria-hidden className="bg-success size-1.5 rounded-full" />
+              <Trans>Ready</Trans>
+            </span>
+          )}
         </div>
       </AccordionTrigger>
-      <AccordionContent className={cn(["px-4"])}>
+      <AccordionContent className="px-3">
         {providerContext}
         {hasStoredConfig &&
           usesDeferredProviderAuthentication(providerType, config.id) && (
@@ -700,7 +703,7 @@ function FormField({
   return (
     <div className="flex flex-col gap-2">
       <label className="text-label block font-medium">{label}</label>
-      <InputGroup className="bg-card">
+      <InputGroup>
         <InputGroupInput
           name={field.name}
           type={type}

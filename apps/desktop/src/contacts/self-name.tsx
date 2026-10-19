@@ -57,8 +57,8 @@ export function YourName() {
 
   return (
     <div className="flex items-center justify-between gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="your-name" className="text-body font-medium">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <label htmlFor="your-name" className="text-ui font-medium">
           <Trans>Your name</Trans>
         </label>
         <p className="text-muted-foreground text-label">
@@ -67,7 +67,7 @@ export function YourName() {
       </div>
       <Input
         id="your-name"
-        className="w-56"
+        className="h-8 w-48 shrink-0"
         placeholder={t`You`}
         disabled={!self}
         value={draft ?? saved}

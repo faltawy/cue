@@ -70,7 +70,7 @@ function SettingsView({ tab }: { tab: Extract<Tab, { type: "settings" }> }) {
   return (
     <div
       data-settings-content
-      className="bg-card dark:bg-accent flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
+      className="bg-card flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
     >
       <div className="relative min-h-0 w-full min-w-0 flex-1 overflow-hidden">
         <div
@@ -78,7 +78,7 @@ function SettingsView({ tab }: { tab: Extract<Tab, { type: "settings" }> }) {
             "scroll-fade-y scrollbar-hide h-full min-h-0 w-full min-w-0 overflow-x-hidden overflow-y-auto px-6 pt-6 pb-10",
           ])}
         >
-          {renderContent()}
+          <div className="mx-auto w-full max-w-3xl">{renderContent()}</div>
         </div>
       </div>
     </div>
