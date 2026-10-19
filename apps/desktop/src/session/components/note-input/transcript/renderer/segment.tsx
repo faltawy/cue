@@ -129,7 +129,7 @@ export const SegmentRenderer = memo(
         data-transcript-selected={selected ? "true" : undefined}
         dir={segmentDirection}
         className={cn([
-          "rounded-lg px-2 transition-colors",
+          "-mx-2 rounded-lg px-2 transition-colors",
           selectMode ? "cursor-pointer" : null,
           "data-[transcript-selected=true]:bg-primary/10 data-[transcript-selected=true]:ring-primary/30 data-[transcript-selected=true]:ring-1 data-[transcript-selected=true]:ring-inset",
         ])}

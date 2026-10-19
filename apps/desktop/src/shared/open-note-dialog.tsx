@@ -485,7 +485,7 @@ function CommandRow({
       ])}
     >
       <CommandIcon className="text-muted-foreground group-data-[selected=true]:text-foreground size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate text-start [unicode-bidi:plaintext]">
+      <span className="min-w-0 flex-1 truncate [text-align:match-parent] [unicode-bidi:plaintext]">
         {command.label}
       </span>
       {command.shortcut ? (

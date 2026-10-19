@@ -240,8 +240,8 @@ describe("SpeakerAssignPopover", () => {
     );
 
     const trigger = screen.getByRole("button", { name: "Speaker 2" });
-    expect(trigger.className).toContain("rounded-full");
-    expect(trigger.className).toContain("pe-2");
+    expect(trigger.className).toContain("rounded-sm");
+    expect(trigger.className).toContain("pe-1");
     expect(trigger.className).toContain("hover:underline");
     expect(trigger.className).toContain("focus-visible:underline");
     expect(trigger.className).not.toContain("hover:bg-accent");
@@ -259,18 +259,17 @@ describe("SpeakerAssignPopover", () => {
     );
     expect(searchInput.parentElement?.className).toContain("h-8");
     expect(searchInput.parentElement?.parentElement?.className).toContain(
-      "py-1",
+      "pb-1",
     );
     const footer = screen.getByRole("button", {
       name: "Confirm",
     }).parentElement;
-    expect(footer?.className).toContain("py-1");
+    expect(footer?.className).toContain("pt-1");
     expect(footer?.className).not.toContain("pb-3");
     const list = screen.getByRole("button", {
       name: "Create new speaker",
     }).parentElement;
     expect(list?.className).toContain("py-1");
-    expect(list?.className).toContain("pb-3");
     const aliceOption = screen.getByRole("button", { name: "Alice" });
     expect(aliceOption.querySelector("img")?.getAttribute("src")).toBe(
       "data:image/jpeg;base64,alice",

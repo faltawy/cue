@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@anlg/ui/components/ui/popover";
+import { ROW_HOVER } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import {
@@ -391,9 +392,7 @@ export function TemplatePickerPopover({
           <div className="flex flex-col">
             <div className="border-border border-b py-1">
               <div
-                className={cn([
-                  "flex h-8 items-center gap-2 rounded-md px-2.5",
-                ])}
+                className={cn(["flex h-8 items-center gap-2 rounded-md px-3"])}
               >
                 <MagnifyingGlass className="text-muted-foreground size-3.5" />
                 <input
@@ -404,7 +403,7 @@ export function TemplatePickerPopover({
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={handleSearchInputKeyDown}
                   placeholder={t`Search templates...`}
-                  className="placeholder:text-muted-foreground text-body flex-1 bg-transparent focus:outline-hidden"
+                  className="placeholder:text-tertiary-foreground text-ui flex-1 bg-transparent focus:outline-hidden focus-visible:outline-none"
                 />
                 {search && (
                   <button
@@ -467,7 +466,7 @@ export function TemplatePickerPopover({
                           );
                         })
                       ) : (
-                        <div className="text-muted-foreground text-body px-2 py-3">
+                        <div className="text-muted-foreground text-ui px-2 py-3">
                           {section.emptyMessage}
                         </div>
                       )}
@@ -481,12 +480,12 @@ export function TemplatePickerPopover({
           <button
             onClick={handleSeeAllTemplates}
             className={cn([
-              "text-label flex w-full items-center justify-center gap-1 px-3 py-1.5 font-medium",
-              "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
+              "border-border text-label flex h-8 w-full items-center justify-center gap-1 border-t px-3",
+              "text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-100",
             ])}
           >
             {t`See all templates`}
-            <CaretRight className="h-3.5 w-3.5" />
+            <CaretRight className="size-3 rtl:rotate-180" />
           </button>
         </div>
       </PopoverContent>
@@ -591,18 +590,22 @@ function TemplateResultButton({
   return (
     <div
       className={cn([
-        "hover:bg-accent focus-within:bg-muted h-8 w-full rounded-md px-2.5",
+        "focus-within:bg-foreground/[0.06] h-7 w-full rounded-md px-2 transition-colors duration-100",
+        ROW_HOVER,
         "flex items-center gap-1.5",
       ])}
     >
       <button
         ref={buttonRef}
-        className="flex min-w-0 flex-1 items-center gap-1.5 text-start focus:outline-hidden"
+        className="flex min-w-0 flex-1 items-center gap-2 text-start focus:outline-hidden focus-visible:outline-none"
         onClick={onClick}
         onKeyDown={onKeyDown}
       >
-        <TemplateIconGlyph icon={icon} className="text-body size-4" />
-        <span className="text-foreground text-body min-w-0 truncate font-medium">
+        <TemplateIconGlyph
+          icon={icon}
+          className="text-muted-foreground text-ui size-3.5"
+        />
+        <span className="text-foreground text-ui min-w-0 truncate">
           {title}
         </span>
         {isFavorite ? (
@@ -623,7 +626,7 @@ function TemplateResultButton({
             onRegenerate();
           }}
           className={cn([
-            "text-muted-foreground hover:text-foreground text-caption inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 font-medium",
+            "text-muted-foreground hover:text-foreground text-label inline-flex shrink-0 items-center gap-1 rounded-sm px-1 py-0.5",
             isRegenerating ? "cursor-not-allowed opacity-70" : "cursor-pointer",
           ])}
         >

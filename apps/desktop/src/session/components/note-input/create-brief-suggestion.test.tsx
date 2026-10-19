@@ -21,7 +21,7 @@ describe("CreateBriefSuggestion", () => {
     const button = screen.getByRole("button", {
       name: "Create a brief to prepare this meeting",
     });
-    expect(button.className).toContain("-ml-2");
+    expect(button.className).toContain("-ms-2");
     expect(button.className).toContain("h-8");
     expect(button.className).toContain("mb-6");
     expect(button.className).toContain("text-muted-foreground");

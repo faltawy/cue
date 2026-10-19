@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
 import { Input } from "@anlg/ui/components/ui/input";
+import { fieldClassName } from "@anlg/ui/components/ui/input";
 import { cn } from "@anlg/utils";
 
 type SectionDraft = TemplateSection & { key: string };
@@ -211,7 +212,6 @@ function SectionItem({
   dragControls: ReturnType<typeof useDragControls>;
 }) {
   const { t } = useLingui();
-  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <div className="group bg-card relative">
@@ -281,7 +281,7 @@ function SectionItem({
           value={item.title}
           onChange={(e) => onChange({ ...item, title: e.target.value })}
           placeholder={t`Untitled`}
-          className="placeholder:text-muted-foreground/60 border-0 bg-transparent p-0 font-medium shadow-none"
+          className="placeholder:text-tertiary-foreground/60 border-0 bg-transparent p-0 font-medium shadow-none"
         />
 
         <textarea
@@ -289,16 +289,10 @@ function SectionItem({
           value={item.description}
           onChange={(e) => onChange({ ...item, description: e.target.value })}
           placeholder={t`Template content with Jinja2: {{ variable }}, {% if condition %}`}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
           className={cn([
-            "text-body min-h-[100px] w-full resize-y rounded-xl border p-3 transition-colors",
-            "focus-visible:outline-hidden",
-            disabled
-              ? "bg-muted"
-              : isFocused
-                ? "border-foreground/40 ring-foreground/10 ring-2"
-                : "border-input",
+            fieldClassName,
+            "text-body min-h-24 resize-y rounded-lg px-3 pt-2.5 pb-2 leading-[1.5]",
+            disabled && "bg-muted",
           ])}
         />
       </div>

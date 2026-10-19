@@ -435,7 +435,7 @@ function ContactSummarySection({
         )}
       </div>
 
-      <div className="border-border bg-muted rounded-lg border p-4">
+      <div className="border-border rounded-lg border px-3 py-2.5">
         {hasFacts ? (
           <ul className="text-foreground text-body leading-reading list-disc space-y-2 ps-5">
             {summary.facts.map((fact) => (
@@ -474,7 +474,7 @@ function ContactSummarySection({
             </Button>
           </div>
         ) : (
-          <p className="text-muted-foreground text-body leading-reading">
+          <p className="text-muted-foreground text-ui">
             <Trans>
               AI-generated summary of all interactions and notes with this
               contact will appear here. This will synthesize key discussion
@@ -860,7 +860,7 @@ function OrganizationControl({
               }}
               onKeyDown={handleKeyDown}
               placeholder={t`Search or add company`}
-              className="placeholder:text-muted-foreground text-body w-full bg-transparent focus:outline-hidden"
+              className="placeholder:text-tertiary-foreground text-body w-full bg-transparent focus:outline-hidden"
             />
           </div>
 

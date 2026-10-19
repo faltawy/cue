@@ -127,7 +127,9 @@ export function EventChip({
               className="w-[2.5px] shrink-0 self-stretch rounded-full"
               style={{ backgroundColor: color }}
             />
-            <span className="truncate">{title}</span>
+            <span className="truncate [text-align:match-parent] [unicode-bidi:plaintext]">
+              {title}
+            </span>
             {startedAt && (
               <span className="text-muted-foreground ms-auto shrink-0 tabular-nums">
                 {startedAt}

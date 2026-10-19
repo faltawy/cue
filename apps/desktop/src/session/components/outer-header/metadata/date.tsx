@@ -2,7 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 
-import { Check, Pencil, X } from "@anlg/ui/components/icons";
+import { Check, PencilSimple, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import { Input } from "@anlg/ui/components/ui/input";
 import { toast } from "@anlg/ui/components/ui/toast";
@@ -46,7 +46,7 @@ export function DateEditor({ sessionId }: { sessionId: string }) {
           onClick={() => setIsEditing(true)}
           aria-label={t`Edit date`}
         >
-          <Pencil />
+          <PencilSimple />
         </Button>
       </div>
     );

@@ -44,11 +44,11 @@ describe("TranscriptEmptyState", () => {
 
     expect(screen.getByRole("alert")).not.toBeNull();
     expect(screen.getByText("Transcription failed").className).toContain(
-      "text-base",
+      "text-title",
     );
     expect(
       screen.getByText("The transcription provider timed out.").className,
-    ).toContain("text-body");
+    ).toContain("text-ui");
 
     fireEvent.click(screen.getByRole("button", { name: "Re-transcribe" }));
     expect(onRetranscribe).toHaveBeenCalledTimes(1);

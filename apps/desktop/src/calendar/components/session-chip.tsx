@@ -88,7 +88,9 @@ export function SessionChip({
           onContextMenu={showContextMenu}
         >
           <div className="border-border w-[4px] shrink-0 self-stretch rounded-full border bg-transparent" />
-          <span className="truncate">{title}</span>
+          <span className="truncate [text-align:match-parent] [unicode-bidi:plaintext]">
+            {title}
+          </span>
           {createdAt && (
             <span className="text-muted-foreground ms-auto shrink-0 tabular-nums">
               {createdAt}
@@ -129,7 +131,7 @@ function SessionPopoverContent({
   return (
     <div className="flex flex-col gap-3 p-4">
       <div className="text-foreground text-title">{session.title}</div>
-      <div className="bg-accent h-px" />
+      <div className="bg-border h-px" />
       {createdAt && (
         <div className="text-muted-foreground text-body">{createdAt}</div>
       )}

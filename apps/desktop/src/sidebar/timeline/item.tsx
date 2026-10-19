@@ -247,7 +247,7 @@ const ItemBase = memo(function ItemBase({
             ) : null}
             <div
               className={cn(
-                "text-ui pointer-events-none min-w-0 truncate text-start [unicode-bidi:plaintext]",
+                "text-ui pointer-events-none min-w-0 truncate [text-align:match-parent] [unicode-bidi:plaintext]",
                 ignored && "line-through",
                 !title && "text-muted-foreground",
               )}

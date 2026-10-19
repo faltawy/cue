@@ -80,7 +80,7 @@ export function TimelineBuckets({
               className={cn([
                 "sticky z-20",
                 bucketHeaderTopClassName,
-                "bg-background ps-3 pe-1 pt-1 pb-1",
+                "bg-background ps-2.5 pe-1 pt-2 pb-1",
               ])}
             >
               <div className="text-muted-foreground text-label font-medium">

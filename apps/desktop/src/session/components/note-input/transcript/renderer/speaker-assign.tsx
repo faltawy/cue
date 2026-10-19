@@ -10,6 +10,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@anlg/ui/components/ui/popover";
+import {
+  ROW_HOVER,
+  ROW_SELECTED,
+  rowClassName,
+} from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { preserveScrollPosition } from "./viewport-hooks";
@@ -124,7 +129,7 @@ export function SpeakerAssignPopover({
         align="start"
         sideOffset={8}
         collisionPadding={16}
-        className="w-80"
+        className="w-72 p-1"
       >
         <SpeakerParticipantPicker
           sessionId={sessionId}
@@ -501,17 +506,14 @@ export function SpeakerParticipantPicker({
   return (
     <div className="flex max-h-[min(var(--radix-popover-content-available-height,calc(100vh-1rem)),28rem)] min-h-0 flex-col gap-1 overflow-hidden">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div className="border-border border-b py-1">
-          <div className="flex h-8 items-center gap-2 px-3">
-            <MagnifyingGlass
-              size={16}
-              className="text-muted-foreground shrink-0"
-            />
+        <div className="border-border border-b pb-1">
+          <div className="flex h-8 items-center gap-2 px-2">
+            <MagnifyingGlass className="text-muted-foreground size-3.5 shrink-0" />
             <input
               ref={searchInputRef}
               autoFocus
               type="search"
-              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent outline-hidden"
+              className="placeholder:text-tertiary-foreground text-ui min-w-0 flex-1 bg-transparent outline-hidden focus-visible:outline-none"
               placeholder={t`Select or type to add speaker`}
               value={query}
               onChange={(e) => {
@@ -521,11 +523,11 @@ export function SpeakerParticipantPicker({
             />
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-auto">
-          <div className="py-1 pb-3">
+        <div className="scroll-fade-y min-h-0 flex-1 overflow-auto">
+          <div className="py-1">
             {groups.map((group) => (
               <div key={group.title}>
-                <div className="text-muted-foreground text-caption px-3 pt-2 pb-1 font-medium uppercase">
+                <div className="text-muted-foreground text-caption px-2 pt-2 pb-1 font-medium tracking-wide uppercase">
                   {group.title === "Participants" ? (
                     <Trans>Participants</Trans>
                   ) : (
@@ -546,7 +548,7 @@ export function SpeakerParticipantPicker({
             {createOption && (
               <div>
                 {!hasPeopleGroup && (
-                  <div className="text-muted-foreground text-caption px-3 pt-2 pb-1 font-medium uppercase">
+                  <div className="text-muted-foreground text-caption px-2 pt-2 pb-1 font-medium tracking-wide uppercase">
                     <Trans>People</Trans>
                   </div>
                 )}
@@ -559,7 +561,7 @@ export function SpeakerParticipantPicker({
             )}
 
             {!createOption && groups.length === 0 && (
-              <p className="text-muted-foreground text-label px-3 py-2">
+              <p className="text-muted-foreground text-ui px-2 py-1.5">
                 {query.trim() ? (
                   <Trans>No matching people</Trans>
                 ) : (
@@ -571,24 +573,24 @@ export function SpeakerParticipantPicker({
             {!query.trim() && (
               <button
                 type="button"
-                className="hover:bg-accent text-body flex w-full items-center gap-2 px-3 py-1.5 text-start"
+                className={rowClassName()}
                 onClick={() => searchInputRef.current?.focus()}
               >
-                <Plus className="size-4" />
+                <Plus />
                 <Trans>Create new speaker</Trans>
               </button>
             )}
           </div>
         </div>
       </div>
-      <div className="flex shrink-0 items-center justify-end gap-3 py-1 ps-2">
+      <div className="border-border flex shrink-0 items-center justify-end gap-3 border-t ps-2 pt-1">
         {showAssignmentScope && (
           <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
             <Checkbox
               checked={applyToAllMatching}
               onCheckedChange={(value) => setApplyToAllMatching(value === true)}
             />
-            <span className="text-muted-foreground text-body whitespace-nowrap">
+            <span className="text-muted-foreground text-ui whitespace-nowrap">
               <Trans>Apply to all</Trans>
             </span>
           </label>
@@ -630,21 +632,21 @@ function ParticipantOptionButton({
       type="button"
       aria-pressed={selected}
       className={cn([
-        "text-body flex w-full items-center gap-2 px-3 py-1.5 text-start",
-        selected ? "bg-accent text-accent-foreground" : "hover:bg-accent",
+        "text-ui flex w-full items-center gap-2 rounded-md px-2 py-1 text-start transition-colors duration-100",
+        selected ? ROW_SELECTED : ROW_HOVER,
       ])}
       onClick={() => onSelect(option)}
     >
       {option.isCreateOption ? (
-        <span className="bg-muted text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full border">
+        <span className="bg-muted text-muted-foreground flex size-6 shrink-0 items-center justify-center rounded-full">
           <Plus className="size-3.5" aria-hidden="true" />
         </span>
       ) : option.avatarDataUrl ? (
-        <ContactImage src={option.avatarDataUrl} size={28} />
+        <ContactImage src={option.avatarDataUrl} size={24} />
       ) : (
         <ContactFacehash
           name={option.name || option.email || option.id}
-          size={28}
+          size={24}
         />
       )}
       <span className="min-w-0 flex-1">

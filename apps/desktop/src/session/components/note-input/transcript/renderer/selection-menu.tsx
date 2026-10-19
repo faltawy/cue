@@ -22,7 +22,7 @@ import { createPortal } from "react-dom";
 import {
   ArrowsMerge,
   Copy,
-  Pencil,
+  PencilSimple,
   Play,
   Trash,
   UserSwitch,
@@ -431,7 +431,7 @@ function SelectionFloatingMenu({
                   onEdit(selection);
                 }}
               >
-                <Pencil className="size-3.5 shrink-0" />
+                <PencilSimple className="size-3.5 shrink-0" />
                 <Trans>Edit</Trans>
               </button>
             )}

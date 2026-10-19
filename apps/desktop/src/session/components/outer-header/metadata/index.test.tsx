@@ -81,17 +81,17 @@ describe("Metadata controls", () => {
     expect(content?.className.split(/\s+/) ?? []).toContain("w-72");
   });
 
-  it("renders date edit action buttons as circles", () => {
+  it("renders date edit actions as standard icon buttons", () => {
     render(<DateEditor sessionId="session-1" />);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit date" }));
 
     expect(
       screen.getByRole("button", { name: "Cancel date edit" }).className,
-    ).toContain("rounded-full");
+    ).toContain("size-7");
     expect(
       screen.getByRole("button", { name: "Save date" }).className,
-    ).toContain("rounded-full");
+    ).toContain("size-7");
   });
 
   it("keeps date edit actions available in the narrow panel", () => {

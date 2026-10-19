@@ -96,13 +96,13 @@ export function DayCell({
       className={cn([
         "border-e-border border-b-border border-e border-b",
         "flex min-w-0 flex-col p-1.5 select-none",
-        (day.getDay() === 0 || day.getDay() === 6) && "bg-muted",
+        (day.getDay() === 0 || day.getDay() === 6) && "bg-foreground/[0.025]",
       ])}
     >
       <div className="flex shrink-0 justify-end">
         <div
           className={cn([
-            "text-body mb-1 flex h-7 w-7 items-center justify-center rounded-full font-medium",
+            "text-ui mb-1 flex size-6 items-center justify-center rounded-full font-medium tabular-nums",
             today && "bg-foreground text-background",
             !today && !isCurrentMonth && "text-muted-foreground/70",
             !today &&

@@ -132,7 +132,7 @@ export function OrganizationDetailsColumn({
                       return (
                         <div
                           key={human.id}
-                          className="border-border bg-background hover:bg-muted cursor-pointer rounded-lg border p-4 transition-colors duration-100"
+                          className="border-border hover:bg-muted cursor-pointer rounded-lg border p-3 transition-colors duration-100"
                           onClick={() => onPersonClick?.(human.id)}
                         >
                           <div className="flex flex-col items-center gap-3 text-center">

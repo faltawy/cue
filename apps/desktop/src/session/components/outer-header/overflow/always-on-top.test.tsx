@@ -50,7 +50,7 @@ describe("AlwaysOnTop", () => {
     // isAlwaysOnTop still resolves false (Linux misreport).
     const second = render(<AlwaysOnTop />);
     const item = await enabledItem();
-    expect(second.container.querySelector(".ml-auto")).not.toBeNull();
+    expect(second.container.querySelector(".ms-auto")).not.toBeNull();
 
     fireEvent.click(item);
     expect(setAlwaysOnTopMock).toHaveBeenCalledWith(false);
