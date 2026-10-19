@@ -2,13 +2,6 @@
 
 Cue is based on [Anarlog](https://github.com/fastrepl/anarlog) by Fastrepl, Inc. Everything in this repository is under the [MIT License](LICENSE), unless a nearer license or third-party notice says otherwise. The Fastrepl copyright notice in `LICENSE` must be kept in all copies and substantial portions.
 
-| Path         | License                                                                                         |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| `apps/coach` | MIT, plus code adapted from Catamorphic under Apache-2.0; see [`apps/coach/NOTICE`](apps/coach/NOTICE) |
-| Everything else | [MIT License](LICENSE)                                                                       |
-
-The nearest license or notice file controls.
-
 ## Third-party provenance
 
 Before third-party code or assets are incorporated:

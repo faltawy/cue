@@ -1,5 +1,3 @@
-// Adapted from Catamorphic's packages/claude-code/src/usage.ts (Apache-2.0, see NOTICE).
-
 export type TurnUsage = {
   model: string | null;
   inputTokens: number;

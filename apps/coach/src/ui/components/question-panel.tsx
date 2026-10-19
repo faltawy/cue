@@ -1,5 +1,3 @@
-// Option list and keyboard behaviour adapted from Catamorphic's
-// packages/registry/src/agent-question-panel (Apache-2.0, see NOTICE).
 import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 

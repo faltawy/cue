@@ -1,4 +1,3 @@
-// Tool lifecycle mapping adapted from Catamorphic's packages/claude-code/src/transcript.ts (Apache-2.0, see NOTICE).
 import path from "node:path";
 
 import { type CoachError, coachError } from "./errors";

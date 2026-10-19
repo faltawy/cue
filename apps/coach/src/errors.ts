@@ -1,4 +1,3 @@
-// Classification adapted from Catamorphic's packages/claude-code/src/errors.ts (Apache-2.0, see NOTICE).
 import type { SDKAssistantMessageError } from "@anthropic-ai/claude-agent-sdk";
 
 export type CoachErrorKind = "auth" | "rate_limit" | "network" | "other";

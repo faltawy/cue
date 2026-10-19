@@ -1,5 +1,3 @@
-// Parsing and answer shaping adapted from Catamorphic's packages/claude-code/src/questions.ts (Apache-2.0, see NOTICE).
-
 export type QuestionOption = { label: string; description: string };
 
 export type Question = {

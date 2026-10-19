@@ -1,5 +1,3 @@
-// Interrupt with a grace period, then abort, as Catamorphic's packages/claude-code/src/adapter.ts does (Apache-2.0, see NOTICE).
-
 export const INTERRUPT_GRACE_MS = 5_000;
 
 type Timer = { cancel(): void };

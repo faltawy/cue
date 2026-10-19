@@ -3,7 +3,7 @@
 Cue is a macOS meeting notepad with a live coach, forked from Anarlog. It is a pnpm and Rust workspace. Read the nearest `AGENTS.md` before changing a component.
 
 - `apps/desktop/`: Tauri 2 with React, TypeScript, Vite, and Tailwind. Zustand owns UI state; TanStack Query/Form own queries, mutations, and forms. The Rust host is `apps/desktop/src-tauri` (package `desktop`).
-- `apps/coach/`: the coach, a Bun sidecar outside the pnpm workspace (own `bun.lock`). `bun run build:sidecar` compiles it, and copies the Claude Code runtime, into `apps/desktop/src-tauri/binaries/`. `plugins/coach/` launches it and owns its settings. `apps/coach/NOTICE` (Catamorphic, Apache-2.0) must ship with it.
+- `apps/coach/`: the coach, a Bun sidecar outside the pnpm workspace (own `bun.lock`). `bun run build:sidecar` compiles it, and copies the Claude Code runtime, into `apps/desktop/src-tauri/binaries/`. `plugins/coach/` launches it and owns its settings.
 - `crates/db-app/`: canonical SQLite schema and migrations. `db-core` owns runtime initialization, `db-migrate` owns migration execution, and `plugins/db/` exposes the transport. React consumes these through `packages/db-runtime`, `packages/db-react`, and `packages/db-tauri`; `packages/db` is the Drizzle adapter.
 - `docs/design/`: the Cue design spec (`cue.md`) and its audit of the app.
 

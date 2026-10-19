@@ -1,5 +1,3 @@
-// Timeline structure (stick-to-bottom log, jump-to-latest, per-turn footer) adapted from
-// Catamorphic's packages/registry/src/chat-timeline (Apache-2.0, see NOTICE).
 import {
   AlertCircle,
   ArrowDown,
