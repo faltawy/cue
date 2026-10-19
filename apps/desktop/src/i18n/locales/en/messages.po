@@ -29,10 +29,41 @@ msgstr "(default)"
 msgid "(Unavailable — using current default)"
 msgstr "(Unavailable — using current default)"
 
+#. placeholder {0}: comments.length
+#. placeholder {0}: issue.comments
+#: src/task/resource-view.tsx
+msgid "{0, plural, one {# comment} other {# comments}}"
+msgstr "{0, plural, one {# comment} other {# comments}}"
+
+#. placeholder {0}: peopleInOrg.length
+#: src/contacts/organization-details.tsx
+msgid "{0, plural, one {# member} other {# members}}"
+msgstr "{0, plural, one {# member} other {# members}}"
+
 #. placeholder {0}: group.sessionIds.length
 #: src/sidebar/toast/undo-delete-toast.tsx
-msgid "{0} {noteLabel} deleted"
-msgstr "{0} {noteLabel} deleted"
+msgid "{0, plural, one {# note deleted} other {# notes deleted}}"
+msgstr "{0, plural, one {# note deleted} other {# notes deleted}}"
+
+#. placeholder {0}: tagLine.overflow
+#: src/sidebar/timeline/item.tsx
+msgid "{0, plural, one {+#} other {+#}}"
+msgstr "{0, plural, one {+#} other {+#}}"
+
+#. placeholder {0}: duplicatesWithData.length
+#: src/contacts/details.tsx
+msgid "{0, plural, one {Another contact with the same name or email exists. Merge to consolidate all related notes and information.} other {# contacts with the same name or email exist. Merge to consolidate all related notes and information.}}"
+msgstr "{0, plural, one {Another contact with the same name or email exists. Merge to consolidate all related notes and information.} other {# contacts with the same name or email exist. Merge to consolidate all related notes and information.}}"
+
+#. placeholder {0}: activeDownloads.length
+#: src/sidebar/toast/registry.tsx
+msgid "{0, plural, one {Downloading # model} other {Downloading # models}}"
+msgstr "{0, plural, one {Downloading # model} other {Downloading # models}}"
+
+#. placeholder {0}: duplicatesWithData.length
+#: src/contacts/details.tsx
+msgid "{0, plural, one {Duplicate Contact Found} other {Duplicate Contacts Found}}"
+msgstr "{0, plural, one {Duplicate Contact Found} other {Duplicate Contacts Found}}"
 
 #. placeholder {0}: auth.name
 #: src/settings/claude/tools.tsx
@@ -69,6 +100,22 @@ msgstr "{model} can't transcribe all selected languages together. Try another mo
 #: src/sidebar/timeline/utils/index.ts
 msgid "{months} months ago"
 msgstr "{months} months ago"
+
+#: src/calendar/components/day-cell.tsx
+msgid "{overflow, plural, one {+# more} other {+# more}}"
+msgstr "{overflow, plural, one {+# more} other {+# more}}"
+
+#: src/sidebar/timeline/index.tsx
+msgid "{pendingDeleteCount, plural, one {Delete # selected note?} other {Delete # selected notes?}}"
+msgstr "{pendingDeleteCount, plural, one {Delete # selected note?} other {Delete # selected notes?}}"
+
+#: src/settings/ai/stt/select.tsx
+msgid "{remainingCount, plural, one {# more} other {# more}}"
+msgstr "{remainingCount, plural, one {# more} other {# more}}"
+
+#: src/sidebar/timeline/index.tsx
+msgid "{sessionCount, plural, one {Delete Selected (#)} other {Delete Selected (#)}}"
+msgstr "{sessionCount, plural, one {Delete Selected (#)} other {Delete Selected (#)}}"
 
 #: src/sidebar/toast/undo-delete-toast.tsx
 msgid "{title} deleted"
@@ -726,16 +773,8 @@ msgid "Combine metadata, summary, notes, and transcript."
 msgstr "Combine metadata, summary, notes, and transcript."
 
 #: src/task/resource-view.tsx
-msgid "comment"
-msgstr "comment"
-
-#: src/task/resource-view.tsx
 msgid "commented on"
 msgstr "commented on"
-
-#: src/task/resource-view.tsx
-msgid "comments"
-msgstr "comments"
 
 #: src/contacts/details.tsx
 msgid "Company"
@@ -787,6 +826,7 @@ msgstr "Continue"
 msgid "Copied"
 msgstr "Copied"
 
+#: src/session/components/note-input/header-transcript.tsx
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 msgid "Copy"
 msgstr "Copy"
@@ -963,14 +1003,6 @@ msgstr "Default language for transcription and AI responses."
 msgid "Delete"
 msgstr "Delete"
 
-#: src/sidebar/timeline/index.tsx
-msgid "Delete {pendingDeleteCount} selected notes?"
-msgstr "Delete {pendingDeleteCount} selected notes?"
-
-#: src/sidebar/timeline/index.tsx
-msgid "Delete 1 selected note?"
-msgstr "Delete 1 selected note?"
-
 #: src/sidebar/timeline/item.tsx
 msgid "Delete All Recurring Events"
 msgstr "Delete All Recurring Events"
@@ -996,9 +1028,9 @@ msgstr "Delete model"
 msgid "Delete Note"
 msgstr "Delete Note"
 
-#: src/sidebar/timeline/index.tsx
-msgid "Delete Selected ({sessionCount})"
-msgstr "Delete Selected ({sessionCount})"
+#: src/session/components/note-input/header-transcript.tsx
+msgid "Delete recording"
+msgstr "Delete recording"
 
 #: src/sidebar/timeline/item.tsx
 msgid "Delete This Event"
@@ -1055,14 +1087,13 @@ msgstr "Disconnect"
 msgid "Don't save"
 msgstr "Don't save"
 
+#: src/session/components/note-input/header-transcript.tsx
+msgid "Done editing"
+msgstr "Done editing"
+
 #: src/settings/ai/stt/select.tsx
 msgid "Download"
 msgstr "Download"
-
-#. placeholder {0}: activeDownloads.length
-#: src/sidebar/toast/registry.tsx
-msgid "Downloading {0} models"
-msgstr "Downloading {0} models"
 
 #: src/sidebar/toast/registry.tsx
 msgid "Downloading {downloadingModel}"
@@ -1108,6 +1139,14 @@ msgstr "Edit"
 #: src/session/components/outer-header/metadata/date.tsx
 msgid "Edit date"
 msgstr "Edit date"
+
+#: src/session/components/note-input/header-transcript.tsx
+msgid "Edit transcript"
+msgstr "Edit transcript"
+
+#: src/session/components/note-input/header-transcript.tsx
+msgid "Editing"
+msgstr "Editing"
 
 #: src/contacts/details.tsx
 msgid "Email"
@@ -1684,14 +1723,6 @@ msgstr "Meeting info"
 msgid "Meetings"
 msgstr "Meetings"
 
-#: src/contacts/organization-details.tsx
-msgid "member"
-msgstr "member"
-
-#: src/contacts/organization-details.tsx
-msgid "members"
-msgstr "members"
-
 #: src/session/components/outer-header/overflow/export-modal.tsx
 #: src/settings/automations/markdown-export-options.tsx
 msgid "Memo"
@@ -2020,17 +2051,9 @@ msgstr "No transcript available"
 msgid "Not connected"
 msgstr "Not connected"
 
-#: src/sidebar/toast/undo-delete-toast.tsx
-msgid "note"
-msgstr "note"
-
 #: src/lock/screen.tsx
 msgid "Note is Locked"
 msgstr "Note is Locked"
-
-#: src/sidebar/toast/undo-delete-toast.tsx
-msgid "notes"
-msgstr "notes"
 
 #: src/contacts/details.tsx
 #: src/shared/open-note-dialog.tsx
@@ -2293,6 +2316,7 @@ msgstr "Preview"
 msgid "Previous match"
 msgstr "Previous match"
 
+#: src/session/components/note-input/header-transcript.tsx
 #: src/session/components/note-input/transcript/screens/empty.tsx
 msgid "Re-transcribe"
 msgstr "Re-transcribe"
@@ -2492,6 +2516,10 @@ msgstr "Restart App"
 #: src/session/components/version-history-dialog.tsx
 msgid "Restore"
 msgstr "Restore"
+
+#: src/session/components/note-input/header-transcript.tsx
+msgid "Resume listening"
+msgstr "Resume listening"
 
 #: src/session/components/note-input/enhanced/enhance-error.tsx
 #: src/settings/general/storage/legacy-cleanup.tsx
@@ -3114,10 +3142,10 @@ msgid "This note was edited on another device at the same time. The later edit w
 msgstr "This note was edited on another device at the same time. The later edit was kept."
 
 #. placeholder {0}: status.fileCount
-#. placeholder {1}: formatBytes(status.totalBytes)
+#. placeholder {1}: formatBytes(status.totalBytes, i18n.locale)
 #: src/settings/general/storage/legacy-cleanup.tsx
-msgid "This will remove {0} legacy files and free {1}. Your app data will not be affected because the migration to SQLite is complete."
-msgstr "This will remove {0} legacy files and free {1}. Your app data will not be affected because the migration to SQLite is complete."
+msgid "This will remove {0, plural, one {# legacy file} other {# legacy files}} and free {1}. Your app data will not be affected because the migration to SQLite is complete."
+msgstr "This will remove {0, plural, one {# legacy file} other {# legacy files}} and free {1}. Your app data will not be affected because the migration to SQLite is complete."
 
 #: src/settings/todo/index.tsx
 msgid "Ticket"
