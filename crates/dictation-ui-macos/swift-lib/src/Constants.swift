@@ -6,8 +6,14 @@ enum OverlayLayout {
   static let shadowPadding: CGFloat = 12
   static let cornerRadius: CGFloat = 15
   static let bottomInset: CGFloat = 48
-  static var containerWidth: CGFloat { panelWidth + shadowPadding * 2 }
-  static var containerHeight: CGFloat { panelHeight + shadowPadding * 2 }
+  /// The live preview sits above the pill, growing upward to three lines.
+  static let previewWidth: CGFloat = 360
+  static let previewMaxHeight: CGFloat = 76
+  static let previewGap: CGFloat = 8
+  static var containerWidth: CGFloat { previewWidth + shadowPadding * 2 }
+  static var containerHeight: CGFloat {
+    previewMaxHeight + previewGap + panelHeight + shadowPadding * 2
+  }
   static let contentPaddingH: CGFloat = 12
   static let iconBarsGap: CGFloat = 10
   static let iconSize: CGFloat = 12

@@ -60,6 +60,17 @@ pub(crate) async fn update_amplitude<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+pub(crate) async fn set_preview<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    preview: String,
+) -> Result<(), String> {
+    app.dictation()
+        .set_preview(preview)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub(crate) async fn start_recording<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     microphone_device: Option<String>,

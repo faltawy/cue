@@ -38,6 +38,14 @@ async updateAmplitude(amplitude: number) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async setPreview(preview: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:dictation|set_preview", { preview }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async startRecording(microphoneDevice: string | null, owner: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:dictation|start_recording", { microphoneDevice, owner }) };

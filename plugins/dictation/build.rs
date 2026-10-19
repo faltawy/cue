@@ -3,6 +3,7 @@ const COMMANDS: &[&str] = &[
     "hide",
     "set_phase",
     "update_amplitude",
+    "set_preview",
     "start_recording",
     "start_system_recording",
     "stop_recording",

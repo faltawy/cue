@@ -4,6 +4,19 @@ struct OverlayView: View {
   @ObservedObject var model: OverlayViewModel
 
   var body: some View {
+    VStack(spacing: OverlayLayout.previewGap) {
+      if !model.preview.isEmpty {
+        PreviewText(text: model.preview)
+      }
+      pill
+    }
+    .padding(OverlayLayout.shadowPadding)
+    .frame(
+      width: OverlayLayout.containerWidth, height: OverlayLayout.containerHeight,
+      alignment: .bottom)
+  }
+
+  private var pill: some View {
     HStack(spacing: OverlayLayout.iconBarsGap) {
       Image(systemName: iconName)
         .font(.system(size: OverlayLayout.iconSize, weight: .semibold))
@@ -34,7 +47,8 @@ struct OverlayView: View {
     )
     .shadow(color: glowColor.opacity(Double(model.amplitude) * 0.5), radius: 10, y: 0)
     .shadow(color: .black.opacity(0.38), radius: 8, y: 4)
-    .padding(OverlayLayout.shadowPadding)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(model.phase == .recording ? "Dictation listening" : "Finishing dictation")
   }
 
   private var iconName: String {
@@ -61,6 +75,33 @@ struct OverlayView: View {
   private var barsWidth: CGFloat {
     CGFloat(OverlayLayout.barCount) * OverlayLayout.barWidth
       + CGFloat(max(OverlayLayout.barCount - 1, 0)) * OverlayLayout.barSpacing
+  }
+}
+
+/// The words heard so far; once they pass three lines the oldest scroll off the top.
+private struct PreviewText: View {
+  let text: String
+
+  var body: some View {
+    Text(text)
+      .font(.system(size: 13))
+      .foregroundStyle(Color.white)
+      .lineSpacing(3)
+      .lineLimit(3)
+      .truncationMode(.head)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 12)
+      .padding(.vertical, 8)
+      .fixedSize(horizontal: false, vertical: true)
+      .background(
+        RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(white: 0.1))
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .strokeBorder(Color.white.opacity(0.09), lineWidth: 0.5)
+      )
+      .shadow(color: .black.opacity(0.38), radius: 8, y: 4)
+      .accessibilityAddTraits(.updatesFrequently)
   }
 }
 

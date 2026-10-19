@@ -8,4 +8,5 @@ enum Phase: String, Codable {
 struct DictationStatePayload: Codable {
   let phase: Phase
   let amplitude: Float
+  let preview: String
 }

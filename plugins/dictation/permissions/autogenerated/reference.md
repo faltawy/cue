@@ -8,6 +8,7 @@ Default permissions for the plugin
 - `allow-hide`
 - `allow-set-phase`
 - `allow-update-amplitude`
+- `allow-set-preview`
 - `allow-start-recording`
 - `allow-start-system-recording`
 - `allow-stop-recording`
@@ -177,6 +178,32 @@ Enables the set_phase command without any pre-configured scope.
 <td>
 
 Denies the set_phase command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`dictation:allow-set-preview`
+
+</td>
+<td>
+
+Enables the set_preview command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`dictation:deny-set-preview`
+
+</td>
+<td>
+
+Denies the set_preview command without any pre-configured scope.
 
 </td>
 </tr>

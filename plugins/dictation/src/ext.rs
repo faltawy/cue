@@ -21,6 +21,10 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Dictation<'a, R, M> {
     pub fn update_amplitude(&self, amplitude: f32) -> Result<(), Error> {
         self.manager.state::<Handler>().update_amplitude(amplitude)
     }
+
+    pub fn set_preview(&self, preview: String) -> Result<(), Error> {
+        self.manager.state::<Handler>().set_preview(preview)
+    }
 }
 
 pub trait DictationPluginExt<R: tauri::Runtime> {

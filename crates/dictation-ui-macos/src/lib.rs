@@ -30,6 +30,7 @@ pub enum Phase {
 pub struct DictationState {
     pub phase: Phase,
     pub amplitude: f32,
+    pub preview: String,
 }
 
 pub fn show() {

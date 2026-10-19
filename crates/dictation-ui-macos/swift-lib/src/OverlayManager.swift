@@ -42,6 +42,7 @@ final class OverlayManager {
     DispatchQueue.main.async { [weak self] in
       guard let self else { return }
       self.model.phase = state.phase
+      if self.model.preview != state.preview { self.model.preview = state.preview }
       let target = max(0, min(1, state.amplitude))
       let current = self.model.amplitude
       let lerped = current + Float(OverlayTiming.amplitudeLerp) * (target - current)
