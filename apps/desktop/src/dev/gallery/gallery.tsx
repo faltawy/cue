@@ -616,11 +616,15 @@ function ComponentsScene() {
           {[16, 20, 24, 28, 32, 40].map((size) => (
             <Avatar key={size} seed="Ömer Faruk" size={size} />
           ))}
-          {["Ahmad Falta", "Sara Lindqvist", "Nedal", "يوسف أحمد", "Mia Chen"].map(
-            (name) => (
-              <Avatar key={name} seed={name} size={28} />
-            ),
-          )}
+          {[
+            "Ahmad Falta",
+            "Sara Lindqvist",
+            "Nedal",
+            "يوسف أحمد",
+            "Mia Chen",
+          ].map((name) => (
+            <Avatar key={name} seed={name} size={28} />
+          ))}
         </Row>
         <Row label="card">
           <Card className="w-72 px-3 pt-2.5 pb-3">

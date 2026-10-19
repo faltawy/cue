@@ -194,7 +194,7 @@ function DictionaryTermRow({
 
   if (editValue !== null) {
     return (
-      <div className="flex min-h-12 items-center gap-2 py-2 pe-3 ps-4">
+      <div className="flex min-h-12 items-center gap-2 py-2 ps-4 pe-3">
         <Input
           autoFocus
           className="h-8 min-w-0 flex-1"
@@ -239,7 +239,7 @@ function DictionaryTermRow({
   }
 
   return (
-    <div className="group flex min-h-12 items-center justify-between gap-3 py-3 pe-3 ps-4">
+    <div className="group flex min-h-12 items-center justify-between gap-3 py-3 ps-4 pe-3">
       <span className="text-body">{term}</span>
       <div className="flex items-center">
         <Button

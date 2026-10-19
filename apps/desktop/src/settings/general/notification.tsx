@@ -364,7 +364,7 @@ export function NotificationSettingsView() {
 
                   {field.state.value && !notificationsDisabled && (
                     <div
-                      className={cn(["border-muted ms-3 border-s-2 pt-2 ps-4"])}
+                      className={cn(["border-muted ms-3 border-s-2 ps-4 pt-2"])}
                     >
                       <form.Field name="mic_active_threshold">
                         {(thresholdField) => (
@@ -557,7 +557,7 @@ export function NotificationSettingsView() {
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-4 pt-4 pb-2">
                 <div className="border-muted min-w-0 flex-1 border-t" />
-                <span className="text-muted-foreground shrink-0 text-label font-medium">
+                <span className="text-muted-foreground text-label shrink-0 font-medium">
                   <Trans>For enabled notifications</Trans>
                 </span>
                 <div className="border-muted min-w-0 flex-1 border-t" />

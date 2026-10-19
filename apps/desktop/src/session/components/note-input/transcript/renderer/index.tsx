@@ -526,7 +526,7 @@ export function TranscriptViewer({
           <div
             data-transcript-scroll-controls
             className={cn([
-              "group/scroll-controls absolute top-1/2 end-1 z-40 flex -translate-y-1/2 flex-col overflow-hidden",
+              "group/scroll-controls absolute end-1 top-1/2 z-40 flex -translate-y-1/2 flex-col overflow-hidden",
               "text-tertiary-foreground rounded-md border border-transparent bg-transparent",
               "transition-[background-color,border-color,color] duration-150",
               "hover:border-border hover:bg-background hover:text-foreground",

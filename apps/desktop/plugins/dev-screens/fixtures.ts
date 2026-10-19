@@ -2,8 +2,17 @@
 // full command name; a function receives the invoke arguments.
 const seen = new Set<string>();
 
-type Word = { id: string; text: string; start_ms: number; end_ms: number; channel: number };
-type Assignment = { human_id: string; scope: { kind: string; word_ids?: string[] } };
+type Word = {
+  id: string;
+  text: string;
+  start_ms: number;
+  end_ms: number;
+  channel: number;
+};
+type Assignment = {
+  human_id: string;
+  scope: { kind: string; word_ids?: string[] };
+};
 type RenderRequest = {
   transcripts: { words: Word[]; assignments: Assignment[] }[];
   humans: { human_id: string; name: string }[];
@@ -22,7 +31,11 @@ function renderTranscript({ params: request }: { params: RenderRequest }) {
       for (const id of assignment.scope.word_ids ?? [])
         byWord.set(id, assignment.human_id);
     let human = "";
-    let current: { words: Record<string, unknown>[]; human: string; channel: string } | null = null;
+    let current: {
+      words: Record<string, unknown>[];
+      human: string;
+      channel: string;
+    } | null = null;
     for (const word of transcript.words) {
       human = byWord.get(word.id) ?? human;
       const channel = CHANNELS[word.channel] ?? "MixedCapture";
@@ -30,7 +43,11 @@ function renderTranscript({ params: request }: { params: RenderRequest }) {
         current = { words: [], human, channel };
         segments.push({
           id: `segment-${segments.length}`,
-          key: { channel, speaker_index: null, speaker_human_id: human || null },
+          key: {
+            channel,
+            speaker_index: null,
+            speaker_human_id: human || null,
+          },
           speaker_label: names.get(human) ?? "Speaker",
           words: current.words,
         });
@@ -44,7 +61,10 @@ function renderTranscript({ params: request }: { params: RenderRequest }) {
       ...segment,
       start_ms: words[0]?.start_ms ?? 0,
       end_ms: words.at(-1)?.end_ms ?? 0,
-      text: words.map((w) => w.text).join("").trim(),
+      text: words
+        .map((w) => w.text)
+        .join("")
+        .trim(),
     };
   });
 }
@@ -95,7 +115,9 @@ export function fixture(cmd: string, args: Record<string, unknown>): unknown {
   if (cmd.includes("|list_") || cmd.startsWith("list_")) return [];
   if (!seen.has(cmd)) {
     seen.add(cmd);
-    console.info(`[screens] unhandled ${cmd} ${JSON.stringify(args).slice(0, 160)}`);
+    console.info(
+      `[screens] unhandled ${cmd} ${JSON.stringify(args).slice(0, 160)}`,
+    );
   }
   return null;
 }

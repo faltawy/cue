@@ -57,7 +57,7 @@ function PermissionRow({
         </div>
         <p className="text-muted-foreground text-label">{description}</p>
         {error && (
-          <p role="alert" className="mt-1 text-label text-destructive">
+          <p role="alert" className="text-label text-destructive mt-1">
             {error}
           </p>
         )}
@@ -70,7 +70,7 @@ function PermissionRow({
         className={cn([
           "size-8",
           isAuthorized &&
-            "text-success hover:bg-transparent hover:text-success",
+            "text-success hover:text-success hover:bg-transparent",
         ])}
         aria-label={
           assisted || isAuthorized || isDenied
@@ -97,7 +97,7 @@ function PermissionGroup({
 }) {
   return (
     <div>
-      <h3 className="mb-3 text-title">{title}</h3>
+      <h3 className="text-title mb-3">{title}</h3>
       <div className="flex flex-col gap-4">{children}</div>
     </div>
   );

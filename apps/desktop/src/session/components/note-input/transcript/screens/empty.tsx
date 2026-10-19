@@ -41,9 +41,7 @@ export function TranscriptEmptyState({
         />
         <div className="mb-4 flex max-w-[340px] flex-col gap-1">
           <p className="text-title">{t`Transcription failed`}</p>
-          <p className="text-muted-foreground text-ui text-balance">
-            {error}
-          </p>
+          <p className="text-muted-foreground text-ui text-balance">{error}</p>
         </div>
         {onRetranscribe && (
           <Button size="sm" onClick={onRetranscribe}>
@@ -70,17 +68,13 @@ export function TranscriptEmptyState({
               : t`Generating transcript...`}
           </p>
           {hasProgress && (
-            <p className="text-muted-foreground mt-1 text-ui text-balance tabular-nums">
+            <p className="text-muted-foreground text-ui mt-1 text-balance tabular-nums">
               {t`${Math.round((percentage ?? 0) * 100)}% complete`}
             </p>
           )}
         </div>
         {onStopTranscription && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onStopTranscription}
-          >
+          <Button variant="outline" size="sm" onClick={onStopTranscription}>
             <Square className="size-3.5" />
             {t`Stop transcription`}
           </Button>
@@ -91,10 +85,7 @@ export function TranscriptEmptyState({
 
   return (
     <div className="flex h-full min-h-[400px] flex-col items-center justify-center px-6 text-center">
-      <Waveform
-        aria-hidden
-        className="text-muted-foreground mb-3 size-4"
-      />
+      <Waveform aria-hidden className="text-muted-foreground mb-3 size-4" />
       <div className="mb-4 flex max-w-[340px] flex-col gap-1">
         <p className="text-title">
           {hasAudio ? t`Audio available` : t`No transcript available`}

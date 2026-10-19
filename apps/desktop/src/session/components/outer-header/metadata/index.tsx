@@ -144,7 +144,7 @@ export function EventDisplay({
 
       {shouldShowLocation && (
         <>
-          <div className="text-muted-foreground flex items-center gap-2 text-body">
+          <div className="text-muted-foreground text-body flex items-center gap-2">
             <MapPin size={16} className="text-muted-foreground shrink-0" />
             <span className="min-w-0 break-words">{event.location}</span>
           </div>
@@ -154,7 +154,7 @@ export function EventDisplay({
       {event.meetingLink && (
         <>
           <div className="flex items-center justify-between gap-2">
-            <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-body">
+            <div className="text-muted-foreground text-body flex min-w-0 items-center gap-2">
               <VideoCamera
                 size={16}
                 className="text-muted-foreground shrink-0"

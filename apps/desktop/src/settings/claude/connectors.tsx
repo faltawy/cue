@@ -115,7 +115,7 @@ export function ClaudeConnectorsGroup({
                     </p>
                   )}
                 </div>
-                <label className="text-muted-foreground flex items-center gap-2 text-label">
+                <label className="text-muted-foreground text-label flex items-center gap-2">
                   <Trans>On</Trans>
                   <Switch
                     aria-label={t`Use ${row.name}`}
@@ -124,7 +124,7 @@ export function ClaudeConnectorsGroup({
                     onCheckedChange={(on) => turn(row, on)}
                   />
                 </label>
-                <label className="text-muted-foreground flex items-center gap-2 text-label">
+                <label className="text-muted-foreground text-label flex items-center gap-2">
                   <Trans>Allow changes</Trans>
                   <Switch
                     aria-label={t`Allow ${row.name} to make changes`}

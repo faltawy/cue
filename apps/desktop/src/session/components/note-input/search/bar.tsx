@@ -213,7 +213,7 @@ export function SearchBar({
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
           placeholder={t`Search...`}
-          className="placeholder:text-muted-foreground h-full min-w-0 flex-1 bg-transparent text-label focus:outline-hidden"
+          className="placeholder:text-muted-foreground text-label h-full min-w-0 flex-1 bg-transparent focus:outline-hidden"
         />
         <div className="flex items-center gap-0.5">
           <ToggleButton
@@ -304,7 +304,7 @@ export function SearchBar({
             onChange={(e) => setReplaceQuery(e.target.value)}
             onKeyDown={handleReplaceKeyDown}
             placeholder={t`Replace with...`}
-            className="placeholder:text-muted-foreground h-full min-w-0 flex-1 bg-transparent text-label focus:outline-hidden"
+            className="placeholder:text-muted-foreground text-label h-full min-w-0 flex-1 bg-transparent focus:outline-hidden"
           />
           <div className="flex items-center gap-0.5">
             <IconButton

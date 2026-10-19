@@ -20,12 +20,48 @@ function today(hour: number, minute = 0) {
 }
 
 const PEOPLE = [
-  { id: SELF_ID, name: "Ahmad Falta", email: "ahmad@open.cx", title: "Engineer", org: "org-open" },
-  { id: "human-omer", name: "Ömer Aydın", email: "omer@lumen.example", title: "Head of Product", org: "org-lumen" },
-  { id: "human-sara", name: "Sara Lindqvist", email: "sara@northwind.example", title: "Operations lead", org: "org-northwind" },
-  { id: "human-leila", name: "Leila Haddad", email: "nedal@open.cx", title: "Customer success", org: "org-open" },
-  { id: "human-mia", name: "Mia Chen", email: "mia@northwind.example", title: "Design engineer", org: "org-northwind" },
-  { id: "human-yousef", name: "يوسف أحمد", email: "yousef@lumen.example", title: "مدير العمليات", org: "org-lumen" },
+  {
+    id: SELF_ID,
+    name: "Ahmad Falta",
+    email: "ahmad@open.cx",
+    title: "Engineer",
+    org: "org-open",
+  },
+  {
+    id: "human-omer",
+    name: "Ömer Aydın",
+    email: "omer@lumen.example",
+    title: "Head of Product",
+    org: "org-lumen",
+  },
+  {
+    id: "human-sara",
+    name: "Sara Lindqvist",
+    email: "sara@northwind.example",
+    title: "Operations lead",
+    org: "org-northwind",
+  },
+  {
+    id: "human-leila",
+    name: "Leila Haddad",
+    email: "nedal@open.cx",
+    title: "Customer success",
+    org: "org-open",
+  },
+  {
+    id: "human-mia",
+    name: "Mia Chen",
+    email: "mia@northwind.example",
+    title: "Design engineer",
+    org: "org-northwind",
+  },
+  {
+    id: "human-yousef",
+    name: "يوسف أحمد",
+    email: "yousef@lumen.example",
+    title: "مدير العمليات",
+    org: "org-lumen",
+  },
 ] as const;
 
 const ORGANIZATIONS = [
@@ -147,7 +183,8 @@ const SESSIONS: Seeded[] = [
   },
   {
     id: "session-roadmap",
-    title: "Roadmap planning for the next two quarters with the whole product group",
+    title:
+      "Roadmap planning for the next two quarters with the whole product group",
     offset: -9 * DAY,
     people: [SELF_ID, "human-leila", "human-omer"],
   },
@@ -155,7 +192,10 @@ const SESSIONS: Seeded[] = [
 
 const TRANSCRIPT: [string, string][] = [
   [SELF_ID, "Thanks for making the time. Shall we start with pricing?"],
-  ["human-omer", "Yes. The pricing page still shows the old seat tiers, so the team is confused."],
+  [
+    "human-omer",
+    "Yes. The pricing page still shows the old seat tiers, so the team is confused.",
+  ],
   [SELF_ID, "Fair. We will move you to the annual plan from November."],
   ["human-yousef", "ممتاز، وهل نحتفظ برقم واتساب الحالي حتى ننتهي من النقل؟"],
   ["human-leila", "Yes, the shared number stays until the migration is done."],
@@ -163,7 +203,11 @@ const TRANSCRIPT: [string, string][] = [
   [SELF_ID, "It is. I will send you the setup steps today."],
 ];
 
-function insertTranscript(db: DatabaseSync, sessionId: string, startedAt: number) {
+function insertTranscript(
+  db: DatabaseSync,
+  sessionId: string,
+  startedAt: number,
+) {
   const words: unknown[] = [];
   const hints: unknown[] = [];
   let ms = 0;
@@ -184,7 +228,11 @@ function insertTranscript(db: DatabaseSync, sessionId: string, startedAt: number
       id: `${ids[0]}:user_speaker_assignment`,
       word_id: ids[0],
       type: "user_speaker_assignment",
-      value: JSON.stringify({ human_id: speaker, scope: "segment", word_ids: ids }),
+      value: JSON.stringify({
+        human_id: speaker,
+        scope: "segment",
+        word_ids: ids,
+      }),
     });
     ms += 1_400;
   });
@@ -214,7 +262,17 @@ export function seed(db: DatabaseSync) {
   for (const person of PEOPLE)
     db.prepare(
       `INSERT INTO humans (id, workspace_id, owner_user_id, organization_id, name, email, job_title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(person.id, WORKSPACE, SELF_ID, person.org, person.name, person.email, person.title, now, now);
+    ).run(
+      person.id,
+      WORKSPACE,
+      SELF_ID,
+      person.org,
+      person.name,
+      person.email,
+      person.title,
+      now,
+      now,
+    );
   for (const path of FOLDERS)
     db.prepare(
       `INSERT INTO folders (id, workspace_id, path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
@@ -240,17 +298,39 @@ export function seed(db: DatabaseSync) {
     db.prepare(
       `INSERT INTO session_documents (id, workspace_id, session_id, kind, title, body_format, body, created_at, updated_at)
        VALUES (?, ?, ?, 'note', '', 'prosemirror_json', ?, ?, ?)`,
-    ).run(session.id, WORKSPACE, session.id, JSON.stringify(session.note ?? doc(paragraph(""))), created, created);
+    ).run(
+      session.id,
+      WORKSPACE,
+      session.id,
+      JSON.stringify(session.note ?? doc(paragraph(""))),
+      created,
+      created,
+    );
     if (session.summary)
       db.prepare(
         `INSERT INTO session_documents (id, workspace_id, session_id, kind, template_id, title, body_format, body, sort_order, created_at, updated_at)
          VALUES (?, ?, ?, 'summary', '', 'Summary', 'prosemirror_json', ?, 0, ?, ?)`,
-      ).run(`summary-${session.id}`, WORKSPACE, session.id, JSON.stringify(session.summary), created, created);
+      ).run(
+        `summary-${session.id}`,
+        WORKSPACE,
+        session.id,
+        JSON.stringify(session.summary),
+        created,
+        created,
+      );
     session.people.forEach((human, index) => {
       db.prepare(
         `INSERT INTO session_participants (id, workspace_id, owner_user_id, session_id, human_id, role, source, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, 'attendee', 'manual', ?, ?)`,
-      ).run(`participant-${session.id}-${index}`, WORKSPACE, SELF_ID, session.id, human, created, created);
+      ).run(
+        `participant-${session.id}-${index}`,
+        WORKSPACE,
+        SELF_ID,
+        session.id,
+        human,
+        created,
+        created,
+      );
     });
     if (session.transcript)
       insertTranscript(db, session.id, Date.now() + session.offset);
@@ -271,7 +351,15 @@ export function seed(db: DatabaseSync) {
     db.prepare(
       `INSERT INTO events (id, tracking_id_event, calendar_id, title, started_at, ended_at, meeting_link, provider, participants_json, created_at, updated_at)
        VALUES (?, ?, 'calendar-work', ?, ?, ?, 'https://meet.google.com/abc-defg-hij', 'apple', '[]', ?, ?)`,
-    ).run(id, id, title, start.toISOString(), new Date(start.getTime() + minutes * 60_000).toISOString(), now, now);
+    ).run(
+      id,
+      id,
+      title,
+      start.toISOString(),
+      new Date(start.getTime() + minutes * 60_000).toISOString(),
+      now,
+      now,
+    );
 
   const settings: Record<string, unknown> = {
     cloudsync_workspace_binding: { workspace_id: WORKSPACE },

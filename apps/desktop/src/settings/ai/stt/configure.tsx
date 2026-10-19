@@ -50,7 +50,7 @@ export function ConfigureProviders() {
         ))}
       </Accordion>
       {providers.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-body">
+        <p className="text-muted-foreground text-body py-8 text-center">
           <Trans>No providers found.</Trans>
         </p>
       ) : null}

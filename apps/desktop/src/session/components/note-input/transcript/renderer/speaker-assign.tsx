@@ -511,7 +511,7 @@ export function SpeakerParticipantPicker({
               ref={searchInputRef}
               autoFocus
               type="search"
-              className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-body outline-hidden"
+              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent outline-hidden"
               placeholder={t`Select or type to add speaker`}
               value={query}
               onChange={(e) => {
@@ -525,7 +525,7 @@ export function SpeakerParticipantPicker({
           <div className="py-1 pb-3">
             {groups.map((group) => (
               <div key={group.title}>
-                <div className="text-muted-foreground px-3 pt-2 pb-1 text-caption font-medium uppercase">
+                <div className="text-muted-foreground text-caption px-3 pt-2 pb-1 font-medium uppercase">
                   {group.title === "Participants" ? (
                     <Trans>Participants</Trans>
                   ) : (
@@ -546,7 +546,7 @@ export function SpeakerParticipantPicker({
             {createOption && (
               <div>
                 {!hasPeopleGroup && (
-                  <div className="text-muted-foreground px-3 pt-2 pb-1 text-caption font-medium uppercase">
+                  <div className="text-muted-foreground text-caption px-3 pt-2 pb-1 font-medium uppercase">
                     <Trans>People</Trans>
                   </div>
                 )}
@@ -559,7 +559,7 @@ export function SpeakerParticipantPicker({
             )}
 
             {!createOption && groups.length === 0 && (
-              <p className="text-muted-foreground px-3 py-2 text-label">
+              <p className="text-muted-foreground text-label px-3 py-2">
                 {query.trim() ? (
                   <Trans>No matching people</Trans>
                 ) : (
@@ -571,7 +571,7 @@ export function SpeakerParticipantPicker({
             {!query.trim() && (
               <button
                 type="button"
-                className="hover:bg-accent flex w-full items-center gap-2 px-3 py-1.5 text-start text-body"
+                className="hover:bg-accent text-body flex w-full items-center gap-2 px-3 py-1.5 text-start"
                 onClick={() => searchInputRef.current?.focus()}
               >
                 <Plus className="size-4" />
@@ -595,9 +595,7 @@ export function SpeakerParticipantPicker({
         )}
         <button
           type="button"
-          className={cn([
-            buttonVariants({ size: "sm" }),
-          ])}
+          className={cn([buttonVariants({ size: "sm" })])}
           disabled={!selectedOption || assigning}
           onClick={handleConfirm}
         >
@@ -632,7 +630,7 @@ function ParticipantOptionButton({
       type="button"
       aria-pressed={selected}
       className={cn([
-        "flex w-full items-center gap-2 px-3 py-1.5 text-start text-body",
+        "text-body flex w-full items-center gap-2 px-3 py-1.5 text-start",
         selected ? "bg-accent text-accent-foreground" : "hover:bg-accent",
       ])}
       onClick={() => onSelect(option)}
@@ -654,7 +652,7 @@ function ParticipantOptionButton({
           {option.isCreateOption ? t`Add "${option.name}"` : option.name}
         </span>
         {option.email && (
-          <span className="text-muted-foreground block truncate text-label">
+          <span className="text-muted-foreground text-label block truncate">
             {option.email}
           </span>
         )}

@@ -99,11 +99,11 @@ export function LocalFileModel({
         ) : (
           <FolderOpen className="size-4 shrink-0" />
         )}
-        <span className="min-w-0 flex-1 truncate text-body">
+        <span className="text-body min-w-0 flex-1 truncate">
           {filename || <Trans>Choose a .bin model</Trans>}
         </span>
         {modelInfo.data ? (
-          <span className="text-muted-foreground shrink-0 text-caption">
+          <span className="text-muted-foreground text-caption shrink-0">
             {formatModelSize(modelInfo.data.sizeBytes)} · GGML ·{" "}
             <Trans>After recording</Trans>
           </span>
@@ -125,7 +125,7 @@ export function LocalFileModel({
         <CircleNotch className="text-muted-foreground size-4 shrink-0 animate-spin" />
       ) : null}
       {modelPath && healthStatus === "success" ? (
-        <Check className="size-4 shrink-0 text-success" />
+        <Check className="text-success size-4 shrink-0" />
       ) : null}
     </div>
   );

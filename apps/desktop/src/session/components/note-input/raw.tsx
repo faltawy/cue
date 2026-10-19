@@ -489,7 +489,7 @@ function TemplateSection({
 
   return (
     <>
-      <p className="text-muted-foreground flex h-8 items-center text-label">
+      <p className="text-muted-foreground text-label flex h-8 items-center">
         {label}
       </p>
       {templates.map((template) => (
@@ -502,8 +502,11 @@ function TemplateSection({
             "text-muted-foreground hover:text-foreground focus-visible:text-foreground transition-colors focus-visible:outline-hidden",
           ])}
         >
-          <TemplateIconGlyph icon={template.icon} className="size-4 text-body" />
-          <span className="min-w-0 truncate text-body font-medium">
+          <TemplateIconGlyph
+            icon={template.icon}
+            className="text-body size-4"
+          />
+          <span className="text-body min-w-0 truncate font-medium">
             {template.title || t`Untitled`}
           </span>
         </button>

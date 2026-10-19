@@ -480,7 +480,7 @@ function ServerRow({
     <li className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-ui font-medium">
+          <div className="text-ui flex items-center gap-2 font-medium">
             {server.name}
             {state && (
               <Badge tone={state === "ready" ? "success" : "destructive"}>
@@ -488,7 +488,7 @@ function ServerRow({
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground truncate text-label">
+          <p className="text-muted-foreground text-label truncate">
             {server.url} · {authLabels[auth.kind]}
           </p>
         </div>
@@ -504,7 +504,7 @@ function ServerRow({
             <Trans>Secret</Trans>
           </Button>
         )}
-        <label className="text-muted-foreground flex items-center gap-2 text-label">
+        <label className="text-muted-foreground text-label flex items-center gap-2">
           <Trans>On</Trans>
           <Switch
             aria-label={t`Use ${server.name}`}
@@ -513,7 +513,7 @@ function ServerRow({
             onCheckedChange={(enabled) => onUpdate({ enabled })}
           />
         </label>
-        <label className="text-muted-foreground flex items-center gap-2 text-label">
+        <label className="text-muted-foreground text-label flex items-center gap-2">
           <Trans>Allow changes</Trans>
           <Switch
             aria-label={t`Allow ${server.name} to make changes`}

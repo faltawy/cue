@@ -13,12 +13,12 @@ export function CreateBriefSuggestion({ onCreate }: { onCreate: () => void }) {
       aria-label={label}
       onClick={onCreate}
       className={cn([
-        "hover:bg-accent focus-visible:bg-accent pointer-events-auto mb-6 -ms-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-start",
+        "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 mb-6 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-start",
         "text-muted-foreground hover:text-foreground focus-visible:text-foreground transition-colors focus-visible:outline-hidden",
       ])}
     >
       <Sparkle aria-hidden className="size-4 shrink-0" />
-      <span className="min-w-0 truncate text-body font-medium">{label}</span>
+      <span className="text-body min-w-0 truncate font-medium">{label}</span>
     </button>
   );
 }

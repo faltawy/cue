@@ -139,7 +139,9 @@ async function shot(scene, theme, direction, file) {
   if (direction === "rtl") await setting("ai_language", "ar");
   for (const statement of scene.sql ?? []) await sql(statement);
 
-  const { targetId } = await send("Target.createTarget", { url: "about:blank" });
+  const { targetId } = await send("Target.createTarget", {
+    url: "about:blank",
+  });
   const { sessionId } = await send("Target.attachToTarget", {
     targetId,
     flatten: true,

@@ -51,19 +51,19 @@ export function CoachInstructionsSection({
         <Textarea
           aria-label={t`Coach instructions`}
           placeholder={t`e.g. I'm the CTO of Northwind. Prefer short answers. Never promise dates.`}
-          className="min-h-[120px] font-mono text-label"
+          className="text-label min-h-[120px] font-mono"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={() => {
             if (draft !== instructions) onSaveInstructions(draft);
           }}
         />
-        <div className="flex justify-between gap-4 text-label">
+        <div className="text-label flex justify-between gap-4">
           {tooLong && (
             <span className="text-destructive">
               <Trans>
-                These are sent with every message, so long instructions use
-                more of your Claude plan.
+                These are sent with every message, so long instructions use more
+                of your Claude plan.
               </Trans>
             </span>
           )}
@@ -84,8 +84,8 @@ export function CoachInstructionsSection({
         </h3>
         <p className="text-muted-foreground text-label">
           <Trans>
-            Files and folders the coach can read when they're relevant. They
-            are read on demand, not sent with every message.
+            Files and folders the coach can read when they're relevant. They are
+            read on demand, not sent with every message.
           </Trans>
         </p>
         {knowledge.length > 0 && (
@@ -95,7 +95,7 @@ export function CoachInstructionsSection({
                 key={path}
                 className="flex items-center justify-between gap-4"
               >
-                <span className="truncate text-label">{path}</span>
+                <span className="text-label truncate">{path}</span>
                 <Button
                   type="button"
                   variant="ghost"

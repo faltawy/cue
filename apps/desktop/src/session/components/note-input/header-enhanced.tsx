@@ -121,7 +121,7 @@ function HeaderViewEnhancedInactive({
       {isGenerating ? (
         <Spinner size={16} className="shrink-0" />
       ) : templateIcon ? (
-        <TemplateIconGlyph icon={templateIcon} className="size-4 text-body" />
+        <TemplateIconGlyph icon={templateIcon} className="text-body size-4" />
       ) : (
         <Sparkle className="size-4" />
       )}
@@ -265,11 +265,11 @@ function HeaderViewEnhancedActive({
       {isGenerating ? (
         <Spinner size={16} className="shrink-0" />
       ) : templateIcon ? (
-        <TemplateIconGlyph icon={templateIcon} className="size-4 text-body" />
+        <TemplateIconGlyph icon={templateIcon} className="text-body size-4" />
       ) : (
         <Sparkle className="size-4" />
       )}
-      <span className="min-w-0 truncate text-label font-medium @max-[480px]:sr-only">
+      <span className="text-label min-w-0 truncate font-medium @max-[480px]:sr-only">
         {viewTitle}
       </span>
       <CaretDown className="size-3.5" />

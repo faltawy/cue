@@ -38,7 +38,7 @@ export function ProviderSearch({
         }}
         placeholder={t`Search providers...`}
         aria-label={t`Search providers`}
-        className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-body focus:outline-hidden [&::-webkit-search-cancel-button]:hidden"
+        className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden [&::-webkit-search-cancel-button]:hidden"
       />
       {value ? (
         <button

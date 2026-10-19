@@ -231,14 +231,14 @@ function SettingsSectionContent({
           </form.Subscribe>
 
           <div>
-            <h2 className="mb-4 text-title">
+            <h2 className="text-title mb-4">
               <Trans>Coach</Trans>
             </h2>
             <CoachShortcut />
           </div>
 
           <div>
-            <h2 className="mb-4 text-title">
+            <h2 className="text-title mb-4">
               <Trans>Meeting island</Trans>
             </h2>
             <div className="flex flex-col gap-4">
@@ -248,7 +248,7 @@ function SettingsSectionContent({
           </div>
 
           <div>
-            <h2 className="mb-4 text-title">
+            <h2 className="text-title mb-4">
               <Trans>Language &amp; Region</Trans>
             </h2>
             <div className="flex flex-col gap-6">
@@ -271,7 +271,7 @@ function SettingsSectionContent({
                     />
                   )}
                 </form.Field>
-                <div className="border-muted ms-3 flex flex-col gap-4 border-s-2 pt-2 ps-4">
+                <div className="border-muted ms-3 flex flex-col gap-4 border-s-2 ps-4 pt-2">
                   <form.Field name="summary_use_main_language">
                     {(field) => (
                       <SettingSwitchRow
@@ -360,7 +360,7 @@ function SettingsSectionContent({
           </form.Subscribe>
 
           <div>
-            <h2 className="mb-4 text-title">
+            <h2 className="text-title mb-4">
               <Trans>Audio</Trans>
             </h2>
             <AudioSettingsView

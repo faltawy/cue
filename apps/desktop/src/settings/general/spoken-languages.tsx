@@ -116,7 +116,7 @@ export function SpokenLanguagesView({
       <h3 className="text-ui font-medium">
         <Trans>Additional spoken languages</Trans>
       </h3>
-      <p className="text-muted-foreground mb-3 text-label">
+      <p className="text-muted-foreground text-label mb-3">
         <Trans>
           Used for transcription and automatic summary language detection.
         </Trans>
@@ -131,10 +131,7 @@ export function SpokenLanguagesView({
           }
         >
           {selectedLanguageCodes.map((code) => (
-            <Badge
-              key={code}
-              className="gap-1 pe-1"
-            >
+            <Badge key={code} className="gap-1 pe-1">
               {getBaseLanguageDisplayName(code, i18n.locale)}
               <Button
                 type="button"
@@ -187,7 +184,7 @@ export function SpokenLanguagesView({
             role="listbox"
             className={cn([
               floatingSurfaceClassName,
-              "absolute top-full end-0 start-0 z-10 mt-1 flex max-h-60 w-full flex-col overflow-y-auto p-1",
+              "absolute start-0 end-0 top-full z-10 mt-1 flex max-h-60 w-full flex-col overflow-y-auto p-1",
             ])}
           >
             {filteredLanguages.length > 0 ? (

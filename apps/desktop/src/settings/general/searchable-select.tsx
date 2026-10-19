@@ -120,7 +120,7 @@ export function SearchableSelect({
             onValueChange={setQuery}
           />
           <CommandEmpty>
-            <div className="text-muted-foreground px-2 py-1.5 text-body">
+            <div className="text-muted-foreground text-body px-2 py-1.5">
               {emptyMessage ?? t`No results found.`}
             </div>
           </CommandEmpty>
@@ -142,7 +142,7 @@ export function SearchableSelect({
                 >
                   <span className="flex-1 truncate">{option.label}</span>
                   {option.detail && (
-                    <span className="text-muted-foreground shrink-0 text-caption tabular-nums">
+                    <span className="text-muted-foreground text-caption shrink-0 tabular-nums">
                       {option.detail}
                     </span>
                   )}

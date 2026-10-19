@@ -208,9 +208,7 @@ export function MultiSelectionBar({
         <button
           type="button"
           disabled={!canMerge || deleteMutation.isPending}
-          className={cn([
-            buttonVariants({ size: "sm", variant: "ghost" }),
-          ])}
+          className={cn([buttonVariants({ size: "sm", variant: "ghost" })])}
           onClick={() => void handleMerge()}
         >
           <ArrowsMerge className="size-3.5" />

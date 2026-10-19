@@ -20,7 +20,7 @@ export function MarkdownExportOptionsConfig({
   return (
     <div className="mt-4 flex flex-col gap-4">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-label font-medium">
+        <legend className="text-label mb-2 font-medium">
           <Trans>Include</Trans>
         </legend>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -34,7 +34,7 @@ export function MarkdownExportOptionsConfig({
           ).map(([key, label]) => (
             <label
               key={key}
-              className="flex cursor-pointer items-center gap-1.5 text-label"
+              className="text-label flex cursor-pointer items-center gap-1.5"
             >
               <input
                 type="checkbox"
@@ -63,7 +63,7 @@ export function MarkdownExportOptionsConfig({
           value={options.filename}
           placeholder="{date} {title}.md"
           aria-describedby={helpId}
-          className="h-8 text-label"
+          className="text-label h-8"
           onChange={(event) =>
             onChange({ ...options, filename: event.target.value })
           }
@@ -71,7 +71,7 @@ export function MarkdownExportOptionsConfig({
         <p id={helpId} className="text-muted-foreground text-label">
           <Trans>Leave blank to use the meeting date and title.</Trans>
         </p>
-        <dl className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-label">
+        <dl className="text-muted-foreground text-label flex flex-wrap gap-x-4 gap-y-1">
           <div className="flex items-center gap-1.5">
             <dt>
               <code>{"{title}"}</code>
@@ -91,7 +91,7 @@ export function MarkdownExportOptionsConfig({
         </dl>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="flex cursor-pointer items-center gap-1.5 text-label">
+        <label className="text-label flex cursor-pointer items-center gap-1.5">
           <input
             type="checkbox"
             className="accent-primary"

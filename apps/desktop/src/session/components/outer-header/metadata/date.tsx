@@ -35,7 +35,9 @@ export function DateEditor({ sessionId }: { sessionId: string }) {
     return (
       <div className="flex h-7 items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-muted-foreground text-ui tabular-nums">{noteDate}</div>
+          <div className="text-muted-foreground text-ui tabular-nums">
+            {noteDate}
+          </div>
         </div>
         <Button
           type="button"

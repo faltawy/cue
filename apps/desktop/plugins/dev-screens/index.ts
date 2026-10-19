@@ -29,7 +29,9 @@ function migrate(db: DatabaseSync) {
       "utf8",
     );
     // Triggers the Rust side installs at runtime are absent here.
-    db.exec(sql.replace(/DROP TRIGGER (?!IF EXISTS)/g, "DROP TRIGGER IF EXISTS "));
+    db.exec(
+      sql.replace(/DROP TRIGGER (?!IF EXISTS)/g, "DROP TRIGGER IF EXISTS "),
+    );
   }
 }
 
@@ -173,7 +175,8 @@ export function devScreens(): Plugin {
         try {
           res.end(JSON.stringify({ ok: true, ...handle(db, cmd, args ?? {}) }));
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            error instanceof Error ? error.message : String(error);
           console.warn(`[screens] ${cmd} failed: ${message}`);
           res.end(JSON.stringify({ ok: false, payload: message }));
         }

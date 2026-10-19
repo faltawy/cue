@@ -275,7 +275,7 @@ export function SelectProviderAndModel() {
             </SelectTrigger>
             <SelectContent>
               {providerOptions.length === 0 && (
-                <div className="text-muted-foreground px-2 py-3 text-center text-body">
+                <div className="text-muted-foreground text-body px-2 py-3 text-center">
                   <Trans>No providers found.</Trans>
                 </div>
               )}
@@ -346,7 +346,7 @@ export function SelectProviderAndModel() {
                   ) : undefined}
                 </SelectValue>
                 {pendingSelection && (
-                  <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-caption">
+                  <span className="text-muted-foreground text-caption flex shrink-0 items-center gap-1">
                     <CircleNotch className="size-3 animate-spin" />
                     {pendingDownload && !pendingDownload.isStarting ? (
                       formatDownloadProgress(pendingDownload.progress)
@@ -372,7 +372,7 @@ export function SelectProviderAndModel() {
                   return (
                     <span key={model.id}>
                       {categoryLabel && (
-                        <div className="text-muted-foreground px-2 pt-1.5 pb-1 text-caption font-medium tracking-wide uppercase">
+                        <div className="text-muted-foreground text-caption px-2 pt-1.5 pb-1 font-medium tracking-wide uppercase">
                           {categoryLabel}
                         </div>
                       )}
@@ -491,7 +491,7 @@ function TranscriptionLanguageWarningToastLifecycle({
     toast.warning(description, {
       id: TRANSCRIPTION_LANGUAGE_WARNING_TOAST_ID,
       duration: Infinity,
-      icon: <Warning className="size-4 shrink-0 text-warm-strong" />,
+      icon: <Warning className="text-warm-strong size-4 shrink-0" />,
       action: {
         label: actionLabel,
         onClick: () => {
@@ -859,7 +859,7 @@ function ModelSelectItem({
         title={label}
         className="min-w-0 flex-1"
       />
-      <div className="flex shrink-0 items-center gap-2 text-caption">
+      <div className="text-caption flex shrink-0 items-center gap-2">
         <LocalModelBackendBadge model={model.id} />
         {isDeprecated && <DeprecatedBadge />}
         {model.mode !== "realtime" && <ModelModeBadge mode={model.mode} />}
@@ -932,7 +932,7 @@ function ModelSelectItem({
           type="button"
           className={cn([
             buttonVariants({ size: "sm", variant: "outline" }),
-            "absolute top-1/2 end-1 h-6 -translate-y-1/2 px-2",
+            "absolute end-1 top-1/2 h-6 -translate-y-1/2 px-2",
             "pointer-events-none opacity-0",
             "group-hover:pointer-events-auto group-hover:opacity-100",
             "group-focus-within:pointer-events-auto group-focus-within:opacity-100",
@@ -970,7 +970,7 @@ function DeprecatedBadge() {
   return (
     <span
       className={cn([
-        "border-border text-muted-foreground inline-flex h-5 shrink-0 items-center rounded-sm border px-1.5 text-caption font-medium",
+        "border-border text-muted-foreground text-caption inline-flex h-5 shrink-0 items-center rounded-sm border px-1.5 font-medium",
       ])}
     >
       <Trans>Deprecated</Trans>
@@ -990,14 +990,14 @@ function ModelModeBadge({ mode }: { mode?: ModelEntry["mode"] }) {
       <TooltipTrigger asChild>
         <span
           className={cn([
-            "border-border inline-flex h-5 shrink-0 cursor-help items-center rounded-sm border px-1.5 text-caption font-medium",
+            "border-border text-caption inline-flex h-5 shrink-0 cursor-help items-center rounded-sm border px-1.5 font-medium",
             isRealtime ? "text-foreground" : "text-muted-foreground",
           ])}
         >
           {isRealtime ? <Trans>Live</Trans> : <Trans>After recording</Trans>}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-64 text-label">
+      <TooltipContent side="top" className="text-label max-w-64">
         {isRealtime ? (
           <Trans>Can transcribe while the meeting is happening.</Trans>
         ) : (
@@ -1057,7 +1057,7 @@ function LocalModelDropdownActions({ model }: { model: LocalModel }) {
     <div
       data-model-actions-pending={deleteModel.isPending || undefined}
       className={cn([
-        "absolute top-0 end-0 bottom-0 flex items-center justify-end gap-0.5 rounded-e-md pe-1 ps-6",
+        "absolute end-0 top-0 bottom-0 flex items-center justify-end gap-0.5 rounded-e-md ps-6 pe-1",
         "pointer-events-none opacity-0 transition-opacity duration-150",
         "group-hover/model-row:pointer-events-auto group-hover/model-row:opacity-100",
         "group-focus-within/model-row:pointer-events-auto group-focus-within/model-row:opacity-100",

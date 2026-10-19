@@ -152,7 +152,7 @@ export const SegmentRenderer = memo(
           <div
             data-transcript-segment-content
             className={cn([
-              "overflow-wrap-anywhere mt-1.5 text-body leading-reading wrap-break-word",
+              "overflow-wrap-anywhere text-body leading-reading mt-1.5 wrap-break-word",
               selectMode ? "select-none" : "select-text-deep",
             ])}
           >
@@ -336,7 +336,7 @@ const EditableSegmentText = memo(function EditableSegmentText({
         spellCheck
         dir="auto"
         className={cn([
-          "overflow-wrap-anywhere mt-1.5 rounded-md text-body leading-reading wrap-break-word outline-hidden",
+          "overflow-wrap-anywhere text-body leading-reading mt-1.5 rounded-md wrap-break-word outline-hidden",
           "select-text-deep",
         ])}
         onBlur={handleBlur}
@@ -347,7 +347,7 @@ const EditableSegmentText = memo(function EditableSegmentText({
       {speakerChange && (
         <div
           data-transcript-split-preview
-          className="mt-1.5 text-body leading-reading wrap-break-word"
+          className="text-body leading-reading mt-1.5 wrap-break-word"
         >
           {speakerChange.text.slice(0, speakerChange.offset).trim()}
           <PopoverAnchor asChild>

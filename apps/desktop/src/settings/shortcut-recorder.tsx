@@ -136,7 +136,7 @@ export function ShortcutRecorder({
               {shortcut.split("+").map((key) => (
                 <kbd
                   key={key}
-                  className="bg-muted rounded-sm border px-1.5 py-0.5 font-sans text-label"
+                  className="bg-muted text-label rounded-sm border px-1.5 py-0.5 font-sans"
                 >
                   {labels[key] ?? key.replace(/^(Key|Digit)/, "")}
                 </kbd>

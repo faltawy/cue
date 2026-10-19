@@ -461,7 +461,7 @@ export function ProviderCard({
         {providerContext}
         {hasStoredConfig &&
           usesDeferredProviderAuthentication(providerType, config.id) && (
-            <p className="text-muted-foreground mb-3 text-label">
+            <p className="text-muted-foreground text-label mb-3">
               <Trans>Saved</Trans> · <Trans>Not connected</Trans>
             </p>
           )}
@@ -491,7 +491,7 @@ export function ProviderCard({
             </form.Field>
           )}
           {config.links && (
-            <div className="flex items-center gap-4 text-label">
+            <div className="text-label flex items-center gap-4">
               {config.links.download && (
                 <a
                   href={config.links.download.url}
@@ -529,7 +529,7 @@ export function ProviderCard({
           )}
           {showAdvanced ? (
             <details>
-              <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-label hover:underline">
+              <summary className="text-muted-foreground hover:text-foreground text-label cursor-pointer hover:underline">
                 <Trans>Advanced</Trans>
               </summary>
               <div className="mt-2 flex flex-col gap-4">
@@ -578,7 +578,7 @@ function ProviderBadge({ badge }: { badge: string }) {
   const badgeNode = (
     <span
       className={cn([
-        "border-border text-muted-foreground inline-flex h-5 items-center rounded-sm border px-1.5 text-caption font-medium normal-case",
+        "border-border text-muted-foreground text-caption inline-flex h-5 items-center rounded-sm border px-1.5 font-medium normal-case",
         isAfterRecording && "cursor-help",
       ])}
     >
@@ -593,7 +593,7 @@ function ProviderBadge({ badge }: { badge: string }) {
   return (
     <Tooltip delayDuration={100}>
       <TooltipTrigger asChild>{badgeNode}</TooltipTrigger>
-      <TooltipContent side="top" className="max-w-64 text-label">
+      <TooltipContent side="top" className="text-label max-w-64">
         <Trans>
           Runs after the recording finishes, not during the meeting.
         </Trans>
@@ -654,7 +654,7 @@ export function StyledStreamdown({
     <Streamdown
       icons={streamdownIcons}
       components={streamdownComponents}
-      className={cn(["mt-1 text-body", className])}
+      className={cn(["text-body mt-1", className])}
       isAnimating={false}
     >
       {children}
@@ -699,7 +699,7 @@ function FormField({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="block text-label font-medium">{label}</label>
+      <label className="text-label block font-medium">{label}</label>
       <InputGroup className="bg-card">
         <InputGroupInput
           name={field.name}
@@ -711,7 +711,7 @@ function FormField({
         />
       </InputGroup>
       {errorMessage && (
-        <p className="text-destructive flex items-center gap-1.5 text-label">
+        <p className="text-destructive text-label flex items-center gap-1.5">
           <WarningCircle className="size-3.5 shrink-0" aria-hidden="true" />
           <span>{errorMessage}</span>
         </p>

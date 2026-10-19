@@ -36,7 +36,10 @@ export function SettingRow({
           {title}
         </h3>
         {description && (
-          <p id={descriptionId} className="text-muted-foreground text-label mt-0.5">
+          <p
+            id={descriptionId}
+            className="text-muted-foreground text-label mt-0.5"
+          >
             {description}
           </p>
         )}

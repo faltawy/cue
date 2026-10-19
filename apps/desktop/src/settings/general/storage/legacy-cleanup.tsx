@@ -140,15 +140,15 @@ export function LegacyMigrationCleanupRow() {
   return (
     <>
       <div className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
-        <div className="flex min-w-0 items-start gap-1.5 text-body">
+        <div className="text-body flex min-w-0 items-start gap-1.5">
           {statusCopy.state === "loading" && (
             <CircleNotch className="text-muted-foreground mt-0.5 size-4 shrink-0 animate-spin" />
           )}
           {statusCopy.state === "success" && (
-            <CheckCircle className="mt-0.5 size-4 shrink-0 text-success" />
+            <CheckCircle className="text-success mt-0.5 size-4 shrink-0" />
           )}
           {statusCopy.state === "warning" && (
-            <Warning className="mt-0.5 size-4 shrink-0 text-warm-strong" />
+            <Warning className="text-warm-strong mt-0.5 size-4 shrink-0" />
           )}
           {statusCopy.state === "unavailable" && (
             <Info className="text-muted-foreground mt-0.5 size-4 shrink-0" />
@@ -156,7 +156,7 @@ export function LegacyMigrationCleanupRow() {
           <div className="min-w-0">
             <p className="font-medium">{statusCopy.label}</p>
             {statusCopy.description && (
-              <p className="text-muted-foreground mt-0.5 text-label break-words">
+              <p className="text-muted-foreground text-label mt-0.5 break-words">
                 {statusCopy.description}
               </p>
             )}

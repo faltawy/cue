@@ -147,12 +147,12 @@ function AutomationDetailHeader({
   actions: React.ReactNode;
 }) {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between gap-3 pe-1 ps-3">
+    <header className="flex h-12 shrink-0 items-center justify-between gap-3 ps-3 pe-1">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center">
           {icon}
         </span>
-        <h2 className="min-w-0 truncate text-body font-semibold">{title}</h2>
+        <h2 className="text-body min-w-0 truncate font-semibold">{title}</h2>
       </div>
       {actions}
     </header>
@@ -384,10 +384,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Lightning className="text-muted-foreground size-4" />
-              <h3
-                id="automation-draft-title"
-                className="text-strong truncate"
-              >
+              <h3 id="automation-draft-title" className="text-strong truncate">
                 {starter.title}
               </h3>
               {isEnabled ? (
@@ -400,7 +397,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground mt-1 text-label">
+            <p className="text-muted-foreground text-label mt-1">
               <Trans>Steps run from top to bottom.</Trans>
             </p>
           </div>
@@ -468,7 +465,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
               <div className="border-border bg-card flex items-start gap-3 rounded-xl border p-4">
                 <span
                   className={cn([
-                    "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-label font-semibold",
+                    "text-label mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full font-semibold",
                     step.kind === "ai"
                       ? "bg-accent text-foreground"
                       : step.kind === "trigger"
@@ -491,7 +488,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                       )}
                     </Badge>
                   </span>
-                  <span className="text-muted-foreground mt-1 block text-label leading-relaxed">
+                  <span className="text-muted-foreground text-label mt-1 block leading-relaxed">
                     {step.detail}
                   </span>
                 </span>
@@ -518,7 +515,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                 <h4 className="text-label font-semibold">
                   <Trans>Expected output</Trans>
                 </h4>
-                <p className="text-muted-foreground mt-1 text-label leading-relaxed">
+                <p className="text-muted-foreground text-label mt-1 leading-relaxed">
                   {starter.preview}
                 </p>
               </div>

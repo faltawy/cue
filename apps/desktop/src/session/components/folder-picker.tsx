@@ -190,7 +190,7 @@ export function FolderPickerContent({
           className="h-8 py-0"
         />
         <CommandList className="p-1">
-          <CommandEmpty className="text-muted-foreground px-2.5 py-2 text-start text-body">
+          <CommandEmpty className="text-muted-foreground text-body px-2.5 py-2 text-start">
             {trimmedQuery
               ? normalizedQuery === null
                 ? t`Enter a valid folder name.`
@@ -240,7 +240,7 @@ export function FolderPickerContent({
         type="button"
         onClick={handleSeeAllFolders}
         className={cn([
-          "flex w-full items-center justify-center gap-1 px-3 py-1.5 text-label font-medium",
+          "text-label flex w-full items-center justify-center gap-1 px-3 py-1.5 font-medium",
           "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
         ])}
       >

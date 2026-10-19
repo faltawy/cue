@@ -9,7 +9,9 @@ import { cn } from "@anlg/utils";
 export const ROW_HOVER = "hover:bg-foreground/[0.04]";
 export const ROW_SELECTED = "bg-foreground/[0.08] text-foreground font-medium";
 
-export function rowClassName({ selected = false }: { selected?: boolean } = {}) {
+export function rowClassName({
+  selected = false,
+}: { selected?: boolean } = {}) {
   return cn([
     "text-ui flex h-7 w-full min-w-0 items-center gap-2 rounded-md px-2 text-start select-none",
     "transition-[background-color,color] duration-100 focus-visible:-outline-offset-2",
@@ -29,18 +31,23 @@ const ListRow = React.forwardRef<
     asChild?: boolean;
     selected?: boolean;
   }
->(({ className, asChild = false, selected, type = "button", ...props }, ref) => {
-  const Comp = asChild ? Slot : "button";
-  return (
-    <Comp
-      ref={ref}
-      type={asChild ? undefined : type}
-      aria-current={selected || undefined}
-      className={cn([rowClassName({ selected }), className])}
-      {...props}
-    />
-  );
-});
+>(
+  (
+    { className, asChild = false, selected, type = "button", ...props },
+    ref,
+  ) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        ref={ref}
+        type={asChild ? undefined : type}
+        aria-current={selected || undefined}
+        className={cn([rowClassName({ selected }), className])}
+        {...props}
+      />
+    );
+  },
+);
 ListRow.displayName = "ListRow";
 
 export { ListRow };

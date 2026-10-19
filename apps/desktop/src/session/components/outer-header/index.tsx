@@ -244,7 +244,7 @@ function HeaderMeetingAction({
       return {
         label: t`Stop`,
         title: t`Stop listening`,
-        icon: <Square className="size-3 text-destructive" />,
+        icon: <Square className="text-destructive size-3" />,
         onClick: stopListening,
       };
     }
@@ -275,7 +275,7 @@ function HeaderMeetingAction({
     sessionMode !== "finalizing";
 
   return (
-    <div className="relative me-1 ms-1 flex min-w-0 shrink-0 items-center">
+    <div className="relative ms-1 me-1 flex min-w-0 shrink-0 items-center">
       <Button
         type="button"
         size="sm"

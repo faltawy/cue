@@ -154,7 +154,7 @@ export function SettingsDictation() {
                       : t`Setting up dictation…`}
             </p>
             {status.error && (
-              <p className="text-destructive mt-2 text-body" role="alert">
+              <p className="text-destructive text-body mt-2" role="alert">
                 {status.error}
               </p>
             )}
@@ -180,7 +180,7 @@ export function SettingsDictation() {
             )}
           </div>
         )}
-        <label className="flex flex-col gap-2 text-body">
+        <label className="text-body flex flex-col gap-2">
           <span>
             <Trans>Try dictation</Trans>
           </span>
@@ -201,7 +201,7 @@ export function SettingsDictation() {
             <h3 className="text-ui font-medium">
               <Trans>Last dictation</Trans>
             </h3>
-            <p className="border-border rounded-lg border p-4 text-body whitespace-pre-wrap">
+            <p className="border-border text-body rounded-lg border p-4 whitespace-pre-wrap">
               {status.lastTranscript}
             </p>
             <Button

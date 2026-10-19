@@ -395,7 +395,7 @@ const TitleInputInner = memo(
           className={cn([
             "group/title-input relative grid w-fit max-w-full grid-cols-[minmax(0,1fr)] items-center overflow-hidden",
             variant === "breadcrumb"
-              ? "h-5 text-body leading-5"
+              ? "text-body h-5 leading-5"
               : "text-page-title h-8",
           ])}
         >
@@ -450,7 +450,7 @@ const TitleInputInner = memo(
               "border-none bg-transparent focus:outline-hidden",
               "placeholder:text-muted-foreground text-start",
               variant === "breadcrumb"
-                ? "text-foreground h-5 appearance-none p-0 text-ui focus:underline"
+                ? "text-foreground text-ui h-5 appearance-none p-0 focus:underline"
                 : "text-page-title",
               variant === "breadcrumb" &&
                 (isTitleFocused

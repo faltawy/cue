@@ -61,7 +61,7 @@ export function StreamingView({
       <div
         role="status"
         aria-live="polite"
-        className="text-muted-foreground flex flex-col gap-0.5 pb-2 text-body"
+        className="text-muted-foreground text-body flex flex-col gap-0.5 pb-2"
       >
         <p className="coach-sheen leading-5">
           {isReasoning ? (
@@ -70,10 +70,10 @@ export function StreamingView({
             <Trans>Analyzing structure...</Trans>
           )}
         </p>
-        <p className="flex items-start gap-1.5 ps-4 text-label leading-5">
+        <p className="text-label flex items-start gap-1.5 ps-4 leading-5">
           <span
             aria-hidden="true"
-            className="border-muted-foreground/60 mt-[5px] h-2 w-2 shrink-0 rounded-es-sm border-b border-s"
+            className="border-muted-foreground/60 mt-[5px] h-2 w-2 shrink-0 rounded-es-sm border-s border-b"
           />
           <span>
             {isReasoning ? (

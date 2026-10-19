@@ -404,7 +404,7 @@ export function TemplatePickerPopover({
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={handleSearchInputKeyDown}
                   placeholder={t`Search templates...`}
-                  className="placeholder:text-muted-foreground flex-1 bg-transparent text-body focus:outline-hidden"
+                  className="placeholder:text-muted-foreground text-body flex-1 bg-transparent focus:outline-hidden"
                 />
                 {search && (
                   <button
@@ -467,7 +467,7 @@ export function TemplatePickerPopover({
                           );
                         })
                       ) : (
-                        <div className="text-muted-foreground px-2 py-3 text-body">
+                        <div className="text-muted-foreground text-body px-2 py-3">
                           {section.emptyMessage}
                         </div>
                       )}
@@ -481,7 +481,7 @@ export function TemplatePickerPopover({
           <button
             onClick={handleSeeAllTemplates}
             className={cn([
-              "flex w-full items-center justify-center gap-1 px-3 py-1.5 text-label font-medium",
+              "text-label flex w-full items-center justify-center gap-1 px-3 py-1.5 font-medium",
               "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
             ])}
           >
@@ -601,8 +601,8 @@ function TemplateResultButton({
         onClick={onClick}
         onKeyDown={onKeyDown}
       >
-        <TemplateIconGlyph icon={icon} className="size-4 text-body" />
-        <span className="text-foreground min-w-0 truncate text-body font-medium">
+        <TemplateIconGlyph icon={icon} className="text-body size-4" />
+        <span className="text-foreground text-body min-w-0 truncate font-medium">
           {title}
         </span>
         {isFavorite ? (
@@ -623,7 +623,7 @@ function TemplateResultButton({
             onRegenerate();
           }}
           className={cn([
-            "text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-caption font-medium",
+            "text-muted-foreground hover:text-foreground text-caption inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 font-medium",
             isRegenerating ? "cursor-not-allowed opacity-70" : "cursor-pointer",
           ])}
         >

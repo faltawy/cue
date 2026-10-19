@@ -68,7 +68,7 @@ export function IconHeaderView({
               : "max-w-40 min-w-10 gap-1.5 @max-[480px]:max-w-10 @max-[480px]:gap-0"
             : null,
           hoverLabel
-            ? "after:hidden after:min-w-0 after:truncate after:text-label after:font-medium after:content-[attr(data-hover-label)] hover:after:block"
+            ? "after:text-label after:hidden after:min-w-0 after:truncate after:font-medium after:content-[attr(data-hover-label)] hover:after:block"
             : null,
           className,
         ]),
@@ -78,7 +78,7 @@ export function IconHeaderView({
       {isActive && (
         <span
           className={cn([
-            "min-w-0 truncate text-label font-medium @max-[480px]:sr-only",
+            "text-label min-w-0 truncate font-medium @max-[480px]:sr-only",
             hoverLabel ? "group-hover/header-view:hidden" : null,
           ])}
         >

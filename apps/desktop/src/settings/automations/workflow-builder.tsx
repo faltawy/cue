@@ -64,7 +64,7 @@ export function WorkflowBuilder({
           <div className="flex items-center gap-2">
             <h3
               id="workflow-builder-title"
-              className="truncate text-body font-semibold"
+              className="text-body truncate font-semibold"
             >
               <Trans>Workflow</Trans>
             </h3>
@@ -78,7 +78,7 @@ export function WorkflowBuilder({
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground mt-1 text-label">
+          <p className="text-muted-foreground text-label mt-1">
             <Trans>Add a trigger, then stack actions like Zapier.</Trans>
           </p>
         </div>
@@ -96,7 +96,7 @@ export function WorkflowBuilder({
               update({ trigger: value as WorkflowTrigger })
             }
           >
-            <SelectTrigger className="h-8 w-full max-w-xs text-label">
+            <SelectTrigger className="text-label h-8 w-full max-w-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -182,7 +182,7 @@ function AddWorkflowStep({ onAdd }: { onAdd: () => void }) {
         <p className="text-ui font-medium">
           <Trans>Add an action</Trans>
         </p>
-        <p className="text-muted-foreground mt-1 text-label">
+        <p className="text-muted-foreground text-label mt-1">
           <Trans>Stack another destination. Steps run top to bottom.</Trans>
         </p>
       </div>
@@ -219,7 +219,7 @@ function WorkflowCard({
     <div className="border-border bg-card flex items-start gap-3 rounded-xl border p-4">
       <span
         className={cn([
-          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-label font-semibold",
+          "text-label mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full font-semibold",
           kind === "trigger"
             ? "bg-warm/20 text-foreground"
             : "bg-muted text-muted-foreground",

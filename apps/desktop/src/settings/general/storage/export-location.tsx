@@ -62,7 +62,10 @@ export function ExportLocationRow() {
             <p className="text-ui font-medium">
               <Trans>Export location</Trans>
             </p>
-            <p className="text-muted-foreground truncate text-label" title={path}>
+            <p
+              className="text-muted-foreground text-label truncate"
+              title={path}
+            >
               {displayPath(path, home)}
             </p>
           </div>
@@ -80,7 +83,7 @@ export function ExportLocationRow() {
           <Trans>Choose folder</Trans>
         </Button>
       </div>
-      <p className="text-muted-foreground px-2 text-label">
+      <p className="text-muted-foreground text-label px-2">
         <Trans>Save PDF, text, Markdown, and Org exports to this folder.</Trans>
       </p>
       {directory && (
@@ -96,7 +99,7 @@ export function ExportLocationRow() {
         </Button>
       )}
       {(settings.error || downloads.error || changeMutation.error) && (
-        <p role="alert" className="mt-1 px-2 text-label text-destructive">
+        <p role="alert" className="text-label text-destructive mt-1 px-2">
           <Trans>Could not update the export folder</Trans>
         </p>
       )}

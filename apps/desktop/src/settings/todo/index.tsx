@@ -28,7 +28,7 @@ export function SettingsTodo() {
           >
             <div className="group hover:bg-accent grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-md">
               <AccordionHeader className="min-w-0">
-                <AccordionTriggerPrimitive className="flex w-full min-w-0 items-center gap-2 py-3 text-start text-ui font-medium transition-all hover:no-underline">
+                <AccordionTriggerPrimitive className="text-ui flex w-full min-w-0 items-center gap-2 py-3 text-start font-medium transition-all hover:no-underline">
                   {provider.icon}
                   <span>{provider.displayName}</span>
                 </AccordionTriggerPrimitive>
