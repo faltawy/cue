@@ -1,3 +1,5 @@
+import { findViolations } from "./scripts/cue-design-classes.mjs";
+
 const awaitTauriCommands = {
   meta: {
     type: "suggestion",
@@ -117,6 +119,68 @@ const noRawTinybase = {
   },
 };
 
+const CLASS_CALLEES = new Set(["cn", "cva", "clsx", "twMerge", "cx"]);
+const CLASS_NAME = /class/i;
+
+function inClassContext(node) {
+  for (let current = node.parent; current; current = current.parent) {
+    switch (current.type) {
+      case "JSXAttribute":
+        return CLASS_NAME.test(current.name?.name ?? "");
+      case "CallExpression":
+        if (CLASS_CALLEES.has(current.callee?.name)) return true;
+        break;
+      case "VariableDeclarator":
+        return CLASS_NAME.test(current.id?.name ?? "");
+      case "Property":
+        if (CLASS_NAME.test(current.key?.name ?? current.key?.value ?? ""))
+          return true;
+        break;
+      case "FunctionDeclaration":
+      case "Program":
+        return false;
+    }
+  }
+  return false;
+}
+
+// docs/design/cue.md as a lint: raw palette colours, off-scale text sizes,
+// shadows outside floating layers, blur, painted gradients and radii off the
+// 4/6/8/12/full scale. Warn-only until the screens are restyled; count with
+// `pnpm exec oxlint -A all -W anlg/cue-design apps/desktop/src packages/ui/src`.
+const cueDesign = {
+  meta: {
+    type: "suggestion",
+    docs: { description: "Keep class names on the Cue design scale" },
+    messages: {
+      offScale:
+        "{{category}}: `{{token}}` is off the Cue design scale (docs/design/cue.md).",
+    },
+  },
+  create(context) {
+    const file = context.filename ?? context.getFilename();
+    if (/\.test\.[jt]sx?$/.test(file)) return {};
+    const check = (node, text) => {
+      if (!text || !inClassContext(node)) return;
+      for (const { category, token } of findViolations(text, file)) {
+        context.report({
+          node,
+          messageId: "offScale",
+          data: { category, token },
+        });
+      }
+    };
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value?.cooked);
+      },
+    };
+  },
+};
+
 const plugin = {
   meta: {
     name: "anlg",
@@ -125,6 +189,7 @@ const plugin = {
   rules: {
     "await-tauri-commands": awaitTauriCommands,
     "no-raw-tinybase": noRawTinybase,
+    "cue-design": cueDesign,
   },
 };
 

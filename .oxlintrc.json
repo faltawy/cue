@@ -20,6 +20,15 @@
       "rules": {
         "anlg/no-raw-tinybase": "error"
       }
+    },
+    {
+      "files": [
+        "apps/desktop/src/**/*.{ts,tsx}",
+        "packages/ui/src/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "anlg/cue-design": "warn"
+      }
     }
   ]
 }
