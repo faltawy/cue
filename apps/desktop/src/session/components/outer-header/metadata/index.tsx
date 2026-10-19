@@ -21,7 +21,7 @@ export function MetadataPopoverContent({ sessionId }: { sessionId: string }) {
 
 export function MetadataPanelContent({ sessionId }: { sessionId: string }) {
   return (
-    <div className="scrollbar-hide max-h-[80vh] min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain">
+    <div className="scrollbar-hide scroll-fade-y max-h-[80vh] min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain">
       <ContentInner sessionId={sessionId} />
     </div>
   );

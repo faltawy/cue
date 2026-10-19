@@ -67,23 +67,28 @@ export function ParticipantDropdown({
             onClick={() => onSelect(option)}
             onMouseEnter={() => onHover(index)}
           >
-            <span className="flex w-full items-center justify-between">
+            <span className="flex w-full min-w-0 items-center justify-between gap-2">
               {option.isNew ? (
-                <span>
+                <span className="min-w-0 truncate">
                   Add "<span className="font-medium">{option.name}</span>"
                 </span>
               ) : (
-                <span className="flex items-center gap-2">
-                  <span className="font-medium">{option.name}</span>
+                <span
+                  title={option.name}
+                  className="flex min-w-0 items-center gap-2"
+                >
+                  <span className="min-w-0 truncate font-medium [unicode-bidi:plaintext]">
+                    {option.name}
+                  </span>
                   {option.jobTitle && (
-                    <span className="text-muted-foreground text-label">
+                    <span className="text-muted-foreground text-label min-w-0 truncate">
                       {option.jobTitle}
                     </span>
                   )}
                 </span>
               )}
               {selectedIndex === index && (
-                <ArrowElbowDownLeft className="text-muted-foreground size-3" />
+                <ArrowElbowDownLeft className="text-muted-foreground size-3 shrink-0" />
               )}
             </span>
           </button>

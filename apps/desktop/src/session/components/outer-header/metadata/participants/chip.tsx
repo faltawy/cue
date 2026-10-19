@@ -65,12 +65,17 @@ export function ParticipantChip({
   return (
     <Badge
       className={cn([
-        "hover:bg-muted hover:text-foreground relative flex cursor-pointer items-center gap-1 overflow-hidden",
+        "hover:bg-muted hover:text-foreground relative flex max-w-full min-w-0 cursor-pointer items-center gap-1 overflow-hidden",
         isEnhancing && "coach-skeleton",
       ])}
       onClick={handleClick}
     >
-      <span className="relative">{displayName}</span>
+      <span
+        title={displayName}
+        className="relative min-w-0 truncate [unicode-bidi:plaintext]"
+      >
+        {displayName}
+      </span>
       {canEnhance && (
         <EnhanceContactButton
           isEnhancing={isEnhancing}
@@ -87,7 +92,7 @@ export function ParticipantChip({
         type="button"
         variant="ghost"
         size="sm"
-        className="relative ms-0.5 size-3 p-0 hover:bg-transparent"
+        className="relative ms-0.5 size-3 shrink-0 p-0 hover:bg-transparent"
         onClick={(e) => {
           e.stopPropagation();
           handleRemove();
@@ -119,7 +124,7 @@ function EnhanceContactButton({
           variant="ghost"
           size="sm"
           aria-label={t`Enhance contact ${label}`}
-          className="text-muted-foreground hover:text-foreground relative ms-0.5 h-3.5 w-3.5 p-0 hover:bg-transparent"
+          className="text-muted-foreground hover:text-foreground relative ms-0.5 h-3.5 w-3.5 shrink-0 p-0 hover:bg-transparent"
           disabled={isDisabled}
           onClick={(e) => {
             e.stopPropagation();
