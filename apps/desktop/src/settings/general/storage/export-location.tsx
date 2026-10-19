@@ -51,7 +51,7 @@ export function ExportLocationRow() {
       <div className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3">
         <button
           type="button"
-          className="hover:bg-muted/40 flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors"
+          className="hover:bg-muted/40 flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 text-start transition-colors"
           disabled={settings.isLoading || !!settings.error || !path}
           onClick={() => {
             if (path) void openerCommands.openPath(path, null);
@@ -59,10 +59,10 @@ export function ExportLocationRow() {
         >
           <FolderSimple className="text-muted-foreground size-4 shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm font-medium">
+            <p className="text-ui font-medium">
               <Trans>Export location</Trans>
             </p>
-            <p className="text-muted-foreground truncate text-xs" title={path}>
+            <p className="text-muted-foreground truncate text-label" title={path}>
               {displayPath(path, home)}
             </p>
           </div>
@@ -80,7 +80,7 @@ export function ExportLocationRow() {
           <Trans>Choose folder</Trans>
         </Button>
       </div>
-      <p className="text-muted-foreground px-2 text-xs">
+      <p className="text-muted-foreground px-2 text-label">
         <Trans>Save PDF, text, Markdown, and Org exports to this folder.</Trans>
       </p>
       {directory && (
@@ -96,7 +96,7 @@ export function ExportLocationRow() {
         </Button>
       )}
       {(settings.error || downloads.error || changeMutation.error) && (
-        <p role="alert" className="mt-1 px-2 text-xs text-red-500">
+        <p role="alert" className="mt-1 px-2 text-label text-destructive">
           <Trans>Could not update the export folder</Trans>
         </p>
       )}

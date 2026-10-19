@@ -1052,7 +1052,7 @@ const _PROVIDERS = [
       <ProviderBrandImage
         src="/assets/soniox-black.png"
         alt="Soniox"
-        className="scale-[var(--soniox-icon-scale,1)] rounded-xs"
+        className="scale-[var(--soniox-icon-scale,1)] rounded-sm"
       />
     ),
     baseUrl: "https://api.soniox.com",
@@ -1079,7 +1079,7 @@ const _PROVIDERS = [
         src="/assets/model-icons/meta-logo.svg"
         alt="Meta Muse"
         preserveColor
-        className="rounded-xs"
+        className="rounded-sm"
       />
     ),
     baseUrl: "https://api.meta.ai/v1",
@@ -1170,7 +1170,7 @@ const _PROVIDERS = [
       <ProviderBrandImage
         src="/assets/aquavoice-black.png"
         alt="AquaVoice"
-        className="rounded-xs"
+        className="rounded-sm"
       />
     ),
     baseUrl: "https://api.aquavoice.com/v1",

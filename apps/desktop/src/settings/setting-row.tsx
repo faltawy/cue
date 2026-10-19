@@ -3,7 +3,7 @@ import { type ReactNode, useId } from "react";
 import { Switch } from "@anlg/ui/components/ui/switch";
 import { cn } from "@anlg/utils";
 
-export const SETTING_CONTROL_CLASS = "bg-card h-9 w-full shadow-none";
+export const SETTING_CONTROL_CLASS = "h-8 w-full";
 
 export function SettingRow({
   title,
@@ -32,11 +32,11 @@ export function SettingRow({
       ])}
     >
       <div className="min-w-0 flex-1">
-        <h3 id={titleId} className="mb-1 text-sm font-medium">
+        <h3 id={titleId} className="text-ui font-medium">
           {title}
         </h3>
         {description && (
-          <p id={descriptionId} className="text-muted-foreground text-xs">
+          <p id={descriptionId} className="text-muted-foreground text-label mt-0.5">
             {description}
           </p>
         )}

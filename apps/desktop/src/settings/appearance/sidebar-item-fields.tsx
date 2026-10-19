@@ -13,10 +13,10 @@ export function SidebarItemFieldsSettings() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h3 className="text-[15px] font-semibold">
+        <h3 className="text-title">
           <Trans>Notes list</Trans>
         </h3>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-muted-foreground text-ui mt-1">
           <Trans>Choose extra fields to show on each note.</Trans>
         </p>
       </div>

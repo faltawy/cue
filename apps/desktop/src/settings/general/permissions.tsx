@@ -49,15 +49,15 @@ function PermissionRow({
         <div
           className={cn([
             "mb-1 flex items-center gap-2",
-            !isAuthorized && "text-red-500",
+            !isAuthorized && "text-destructive",
           ])}
         >
           {!isAuthorized && <WarningCircle className="size-4" />}
-          <h3 className="text-sm font-medium">{title}</h3>
+          <h3 className="text-ui font-medium">{title}</h3>
         </div>
-        <p className="text-muted-foreground text-xs">{description}</p>
+        <p className="text-muted-foreground text-label">{description}</p>
         {error && (
-          <p role="alert" className="mt-1 text-xs text-red-500">
+          <p role="alert" className="mt-1 text-label text-destructive">
             {error}
           </p>
         )}
@@ -70,7 +70,7 @@ function PermissionRow({
         className={cn([
           "size-8",
           isAuthorized &&
-            "text-green-600 hover:bg-transparent hover:text-green-600",
+            "text-success hover:bg-transparent hover:text-success",
         ])}
         aria-label={
           assisted || isAuthorized || isDenied
@@ -97,7 +97,7 @@ function PermissionGroup({
 }) {
   return (
     <div>
-      <h3 className="mb-3 text-[15px] font-semibold">{title}</h3>
+      <h3 className="mb-3 text-title">{title}</h3>
       <div className="flex flex-col gap-4">{children}</div>
     </div>
   );

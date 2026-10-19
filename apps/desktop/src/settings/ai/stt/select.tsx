@@ -21,6 +21,7 @@ import {
   Trash,
   Warning,
 } from "@anlg/ui/components/icons";
+import { buttonVariants } from "@anlg/ui/components/ui/button";
 import { Input } from "@anlg/ui/components/ui/input";
 import {
   Select,
@@ -263,18 +264,18 @@ export function SelectProviderAndModel() {
         <TranscriptionLanguageWarningToast />
       )}
 
-      <h3 className="text-[15px] font-semibold">
+      <h3 className="text-title">
         <Trans>Model being used</Trans>
       </h3>
       <div className="flex flex-row items-center gap-4">
         <div className="min-w-0 flex-2" data-stt-provider-selector>
           <Select value={visibleProvider} onValueChange={handleProviderChange}>
-            <SelectTrigger className="bg-card rounded-[18px] shadow-none">
+            <SelectTrigger>
               <SelectValue placeholder={t`Select a provider`} />
             </SelectTrigger>
             <SelectContent>
               {providerOptions.length === 0 && (
-                <div className="text-muted-foreground px-2 py-3 text-center text-sm">
+                <div className="text-muted-foreground px-2 py-3 text-center text-body">
                   <Trans>No providers found.</Trans>
                 </div>
               )}
@@ -297,7 +298,7 @@ export function SelectProviderAndModel() {
                         <span>{provider.displayName}</span>
                       </div>
                       {"description" in provider && provider.description ? (
-                        <span className="text-muted-foreground text-[11px]">
+                        <span className="text-muted-foreground text-caption">
                           {provider.description}
                         </span>
                       ) : null}
@@ -320,7 +321,7 @@ export function SelectProviderAndModel() {
             <Input
               value={displayedSttModel || ""}
               onChange={(event) => handleModelChange(event.target.value)}
-              className="text-xs"
+              className="text-label"
               placeholder={t`Enter a model identifier`}
             />
           </div>
@@ -333,7 +334,7 @@ export function SelectProviderAndModel() {
             >
               <SelectTrigger
                 className={cn([
-                  "bg-card rounded-[18px] text-left shadow-none",
+                  "text-start",
                   "[&>span]:!flex [&>span]:w-full [&>span]:min-w-0 [&>span]:items-center [&>span]:justify-start [&>span]:gap-2 [&>span]:overflow-visible [&>span]:[-webkit-line-clamp:unset]",
                   (isConfigured || pendingSelection) &&
                     "[&>svg:last-child]:hidden",
@@ -345,7 +346,7 @@ export function SelectProviderAndModel() {
                   ) : undefined}
                 </SelectValue>
                 {pendingSelection && (
-                  <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-[11px]">
+                  <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-caption">
                     <CircleNotch className="size-3 animate-spin" />
                     {pendingDownload && !pendingDownload.isStarting ? (
                       formatDownloadProgress(pendingDownload.progress)
@@ -356,7 +357,7 @@ export function SelectProviderAndModel() {
                 )}
                 {isConfigured && <HealthStatusIndicator />}
                 {isConfigured && health.status === "success" && (
-                  <Check className="-mr-1 h-4 w-4 shrink-0 text-green-600" />
+                  <Check className="text-success size-3.5 shrink-0" />
                 )}
               </SelectTrigger>
               <SelectContent align="end">
@@ -371,7 +372,7 @@ export function SelectProviderAndModel() {
                   return (
                     <span key={model.id}>
                       {categoryLabel && (
-                        <div className="text-muted-foreground px-2 pt-2 pb-1 text-[11px] font-medium tracking-wide uppercase">
+                        <div className="text-muted-foreground px-2 pt-1.5 pb-1 text-caption font-medium tracking-wide uppercase">
                           {categoryLabel}
                         </div>
                       )}
@@ -490,7 +491,7 @@ function TranscriptionLanguageWarningToastLifecycle({
     toast.warning(description, {
       id: TRANSCRIPTION_LANGUAGE_WARNING_TOAST_ID,
       duration: Infinity,
-      icon: <Warning className="size-4 shrink-0 text-amber-500" />,
+      icon: <Warning className="size-4 shrink-0 text-warm-strong" />,
       action: {
         label: actionLabel,
         onClick: () => {
@@ -848,7 +849,7 @@ function ModelSelectItem({
         "flex min-w-0 flex-1 items-center justify-between gap-3",
         !model.isDownloaded &&
           !isDownloading &&
-          "group-focus-within:pr-16 group-hover:pr-16",
+          "group-focus-within:pe-16 group-hover:pe-16",
         "transition-[padding] duration-150",
       ])}
     >
@@ -858,7 +859,7 @@ function ModelSelectItem({
         title={label}
         className="min-w-0 flex-1"
       />
-      <div className="flex shrink-0 items-center gap-2 text-[11px]">
+      <div className="flex shrink-0 items-center gap-2 text-caption">
         <LocalModelBackendBadge model={model.id} />
         {isDeprecated && <DeprecatedBadge />}
         {model.mode !== "realtime" && <ModelModeBadge mode={model.mode} />}
@@ -873,14 +874,14 @@ function ModelSelectItem({
 
   if (model.isDownloaded) {
     return (
-      <div className="group/model-row relative overflow-hidden rounded-full has-[[data-model-actions-pending]]:[&>*:first-child>span:first-child]:opacity-0">
+      <div className="group/model-row relative overflow-hidden rounded-md has-[[data-model-actions-pending]]:[&>*:first-child>span:first-child]:opacity-0">
         <SelectItem
           key={model.id}
           value={model.id}
           className={cn([
-            "group-hover/model-row:bg-accent group-hover/model-row:text-accent-foreground",
+            "group-hover/model-row:bg-muted",
             showLocalActions &&
-              "pr-20 group-focus-within/model-row:[&>span:first-child]:opacity-0 group-hover/model-row:[&>span:first-child]:opacity-0",
+              "pe-20 group-focus-within/model-row:[&>span:first-child]:opacity-0 group-hover/model-row:[&>span:first-child]:opacity-0",
             isDeprecated && "text-muted-foreground focus:text-muted-foreground",
           ])}
         >
@@ -906,9 +907,9 @@ function ModelSelectItem({
     <div
       className={cn([
         "relative flex items-center justify-between",
-        "rounded-full px-2 py-1.5 text-sm outline-hidden",
+        "text-ui h-7 rounded-md px-2 outline-hidden",
         "cursor-pointer select-none",
-        "hover:bg-accent hover:text-accent-foreground",
+        "hover:bg-muted",
         "group",
       ])}
     >
@@ -916,9 +917,7 @@ function ModelSelectItem({
       {isDownloading ? (
         <span
           className={cn([
-            "rounded-full px-2 py-0.5 text-[11px] font-medium",
-            "flex items-center gap-1",
-            "from-muted to-accent text-muted-foreground bg-linear-to-t",
+            "text-muted-foreground text-caption flex items-center gap-1 tabular-nums",
           ])}
         >
           <CircleNotch className="size-3 animate-spin" />
@@ -932,12 +931,12 @@ function ModelSelectItem({
         <button
           type="button"
           className={cn([
-            "rounded-full px-2 text-[11px] font-medium",
-            "pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 opacity-0",
+            buttonVariants({ size: "sm", variant: "outline" }),
+            "absolute top-1/2 end-1 h-6 -translate-y-1/2 px-2",
+            "pointer-events-none opacity-0",
             "group-hover:pointer-events-auto group-hover:opacity-100",
             "group-focus-within:pointer-events-auto group-focus-within:opacity-100",
             "transition-opacity duration-150",
-            "from-muted to-accent text-foreground bg-linear-to-t py-0.5 shadow-xs hover:shadow-md",
           ])}
           onClick={handleAction}
         >
@@ -971,8 +970,7 @@ function DeprecatedBadge() {
   return (
     <span
       className={cn([
-        "shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
-        "bg-muted text-muted-foreground",
+        "border-border text-muted-foreground inline-flex h-5 shrink-0 items-center rounded-sm border px-1.5 text-caption font-medium",
       ])}
     >
       <Trans>Deprecated</Trans>
@@ -992,16 +990,14 @@ function ModelModeBadge({ mode }: { mode?: ModelEntry["mode"] }) {
       <TooltipTrigger asChild>
         <span
           className={cn([
-            "shrink-0 cursor-help rounded-md px-1.5 py-0.5 text-[11px] font-medium",
-            isRealtime
-              ? "bg-foreground/10 text-foreground"
-              : "bg-muted text-muted-foreground",
+            "border-border inline-flex h-5 shrink-0 cursor-help items-center rounded-sm border px-1.5 text-caption font-medium",
+            isRealtime ? "text-foreground" : "text-muted-foreground",
           ])}
         >
           {isRealtime ? <Trans>Live</Trans> : <Trans>After recording</Trans>}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-64 text-xs">
+      <TooltipContent side="top" className="max-w-64 text-label">
         {isRealtime ? (
           <Trans>Can transcribe while the meeting is happening.</Trans>
         ) : (
@@ -1061,7 +1057,7 @@ function LocalModelDropdownActions({ model }: { model: LocalModel }) {
     <div
       data-model-actions-pending={deleteModel.isPending || undefined}
       className={cn([
-        "absolute top-0 right-0 bottom-0 flex items-center justify-end gap-1 rounded-r-full pl-6",
+        "absolute top-0 end-0 bottom-0 flex items-center justify-end gap-0.5 rounded-e-md pe-1 ps-6",
         "pointer-events-none opacity-0 transition-opacity duration-150",
         "group-hover/model-row:pointer-events-auto group-hover/model-row:opacity-100",
         "group-focus-within/model-row:pointer-events-auto group-focus-within/model-row:opacity-100",
@@ -1072,8 +1068,8 @@ function LocalModelDropdownActions({ model }: { model: LocalModel }) {
         type="button"
         aria-label={t`Show in Finder`}
         className={cn([
-          "flex size-6 items-center justify-center rounded-full",
-          "text-muted-foreground hover:text-foreground",
+          "flex size-6 items-center justify-center rounded-md",
+          "text-muted-foreground hover:bg-background hover:text-foreground",
         ])}
         onPointerDown={stopSelect}
         onClick={(event) => {
@@ -1088,8 +1084,8 @@ function LocalModelDropdownActions({ model }: { model: LocalModel }) {
         aria-label={t`Delete model`}
         disabled={deleteModel.isPending}
         className={cn([
-          "flex size-6 items-center justify-center rounded-full",
-          "text-red-500 hover:text-red-600",
+          "flex size-6 items-center justify-center rounded-md",
+          "text-destructive hover:bg-destructive/10",
           "disabled:opacity-70",
         ])}
         onPointerDown={stopSelect}

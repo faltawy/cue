@@ -20,7 +20,7 @@ export function MarkdownExportOptionsConfig({
   return (
     <div className="mt-4 flex flex-col gap-4">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-xs font-medium">
+        <legend className="mb-2 text-label font-medium">
           <Trans>Include</Trans>
         </legend>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -34,7 +34,7 @@ export function MarkdownExportOptionsConfig({
           ).map(([key, label]) => (
             <label
               key={key}
-              className="flex cursor-pointer items-center gap-1.5 text-xs"
+              className="flex cursor-pointer items-center gap-1.5 text-label"
             >
               <input
                 type="checkbox"
@@ -49,13 +49,13 @@ export function MarkdownExportOptionsConfig({
           ))}
         </div>
         {!hasMarkdownExportContent(options) && (
-          <p role="alert" className="text-destructive text-xs">
+          <p role="alert" className="text-destructive text-label">
             <Trans>Choose at least one section to export.</Trans>
           </p>
         )}
       </fieldset>
       <div className="flex flex-col gap-2">
-        <label htmlFor={filenameId} className="text-xs font-medium">
+        <label htmlFor={filenameId} className="text-label font-medium">
           <Trans>Filename</Trans>
         </label>
         <Input
@@ -63,15 +63,15 @@ export function MarkdownExportOptionsConfig({
           value={options.filename}
           placeholder="{date} {title}.md"
           aria-describedby={helpId}
-          className="h-8 text-xs"
+          className="h-8 text-label"
           onChange={(event) =>
             onChange({ ...options, filename: event.target.value })
           }
         />
-        <p id={helpId} className="text-muted-foreground text-xs">
+        <p id={helpId} className="text-muted-foreground text-label">
           <Trans>Leave blank to use the meeting date and title.</Trans>
         </p>
-        <dl className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+        <dl className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-label">
           <div className="flex items-center gap-1.5">
             <dt>
               <code>{"{title}"}</code>
@@ -91,7 +91,7 @@ export function MarkdownExportOptionsConfig({
         </dl>
       </div>
       <div className="flex flex-col gap-2">
-        <label className="flex cursor-pointer items-center gap-1.5 text-xs">
+        <label className="flex cursor-pointer items-center gap-1.5 text-label">
           <input
             type="checkbox"
             className="accent-primary"

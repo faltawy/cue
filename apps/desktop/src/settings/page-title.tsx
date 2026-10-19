@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export function SettingsPageTitle({ title }: { title: ReactNode }) {
   return (
-    <h2 className="text-2xl leading-tight font-medium tracking-tight">
+    <h2 className="text-page-title">
       {title}
     </h2>
   );

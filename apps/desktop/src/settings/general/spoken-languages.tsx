@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { MagnifyingGlass, X } from "@anlg/ui/components/icons";
 import { Badge } from "@anlg/ui/components/ui/badge";
 import { Button } from "@anlg/ui/components/ui/button";
+import { floatingSurfaceClassName } from "@anlg/ui/components/ui/floating-content";
 import { cn } from "@anlg/utils";
 
 import {
@@ -112,10 +113,10 @@ export function SpokenLanguagesView({
 
   return (
     <div>
-      <h3 className="mb-1 text-sm font-medium">
+      <h3 className="text-ui font-medium">
         <Trans>Additional spoken languages</Trans>
       </h3>
-      <p className="text-muted-foreground mb-3 text-xs">
+      <p className="text-muted-foreground mb-3 text-label">
         <Trans>
           Used for transcription and automatic summary language detection.
         </Trans>
@@ -123,8 +124,7 @@ export function SpokenLanguagesView({
       <div className="relative">
         <div
           className={cn([
-            "border-border bg-card focus-within:border-border flex min-h-[38px] w-full flex-wrap items-center gap-1.5 rounded-2xl border px-2 py-1.5",
-            languageInputFocused && "border-border",
+            "border-input bg-background focus-within:border-foreground flex min-h-8 w-full flex-wrap items-center gap-1 rounded-md border px-1.5 py-1",
           ])}
           onClick={() =>
             document.getElementById("language-search-input")?.focus()
@@ -133,25 +133,25 @@ export function SpokenLanguagesView({
           {selectedLanguageCodes.map((code) => (
             <Badge
               key={code}
-              className="bg-muted flex items-center gap-1 px-2 py-0.5 text-xs"
+              className="gap-1 pe-1"
             >
               {getBaseLanguageDisplayName(code, i18n.locale)}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="ml-0.5 h-3 w-3 p-0 hover:bg-transparent"
+                className="hover:text-foreground size-3.5 p-0 hover:bg-transparent"
                 onClick={(e) => {
                   e.stopPropagation();
                   onChange(selectedLanguageCodes.filter((c) => c !== code));
                 }}
               >
-                <X className="h-2.5 w-2.5" />
+                <X className="size-3" />
               </Button>
             </Badge>
           ))}
           {selectedLanguageCodes.length === 0 && (
-            <MagnifyingGlass className="text-muted-foreground size-4 shrink-0" />
+            <MagnifyingGlass className="text-muted-foreground ms-1 size-3.5 shrink-0" />
           )}
           <input
             id="language-search-input"
@@ -177,7 +177,7 @@ export function SpokenLanguagesView({
             placeholder={
               selectedLanguageCodes.length === 0 ? t`Add language` : ""
             }
-            className="placeholder:text-muted-foreground min-w-[120px] flex-1 bg-transparent text-sm focus:outline-hidden"
+            className="placeholder:text-tertiary-foreground text-body min-w-[120px] flex-1 bg-transparent px-1 focus:outline-hidden focus-visible:outline-none"
           />
         </div>
 
@@ -185,7 +185,10 @@ export function SpokenLanguagesView({
           <div
             id="language-options"
             role="listbox"
-            className="border-border bg-card absolute top-full right-0 left-0 z-10 mt-1 flex max-h-60 w-full flex-col overflow-hidden overflow-y-auto rounded-2xl border shadow-md"
+            className={cn([
+              floatingSurfaceClassName,
+              "absolute top-full end-0 start-0 z-10 mt-1 flex max-h-60 w-full flex-col overflow-y-auto p-1",
+            ])}
           >
             {filteredLanguages.length > 0 ? (
               filteredLanguages.map((langCode, index) => (
@@ -203,19 +206,19 @@ export function SpokenLanguagesView({
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseEnter={() => setLanguageSelectedIndex(index)}
                   className={cn([
-                    "flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors",
+                    "text-ui flex h-7 w-full shrink-0 items-center justify-between rounded-md px-2 text-start",
                     languageSelectedIndex === index
-                      ? "bg-accent"
-                      : "hover:bg-accent",
+                      ? "bg-muted"
+                      : "hover:bg-muted",
                   ])}
                 >
-                  <span className="truncate font-medium">
+                  <span className="truncate">
                     {getBaseLanguageDisplayName(langCode, i18n.locale)}
                   </span>
                 </button>
               ))
             ) : (
-              <div className="text-muted-foreground px-3 py-2 text-center text-sm">
+              <div className="text-muted-foreground text-ui px-2 py-1.5">
                 <Trans>No matching languages found</Trans>
               </div>
             )}

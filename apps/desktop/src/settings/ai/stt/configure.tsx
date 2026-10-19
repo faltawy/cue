@@ -26,7 +26,7 @@ export function ConfigureProviders() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <h3 className="text-[15px] font-semibold">
+        <h3 className="text-title">
           <Trans>Configure Providers</Trans>
         </h3>
         <ProviderSearch value={search} onChange={setSearch} />
@@ -50,7 +50,7 @@ export function ConfigureProviders() {
         ))}
       </Accordion>
       {providers.length === 0 ? (
-        <p className="text-muted-foreground py-8 text-center text-sm">
+        <p className="text-muted-foreground py-8 text-center text-body">
           <Trans>No providers found.</Trans>
         </p>
       ) : null}

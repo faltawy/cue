@@ -264,10 +264,10 @@ export function CoachToolsSection({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[15px] font-semibold">
+        <h2 className="text-title">
           <Trans>Tools</Trans>
         </h2>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             MCP servers the coach can use in every meeting. Their tools only
             read unless you allow changes. Secrets stay in your Keychain.
@@ -301,7 +301,7 @@ export function CoachToolsSection({
 
       {found ? (
         <form className="flex flex-col gap-2" onSubmit={add}>
-          <p className="text-xs">
+          <p className="text-label">
             <span className="text-muted-foreground">{found.url.href}</span>
             {" · "}
             <FoundSummary probe={found.probe} />
@@ -398,7 +398,7 @@ export function CoachToolsSection({
       )}
 
       {message && (
-        <p role="alert" className="text-destructive text-xs">
+        <p role="alert" className="text-destructive text-label">
           {message}
         </p>
       )}
@@ -480,7 +480,7 @@ function ServerRow({
     <li className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-sm font-medium">
+          <div className="flex items-center gap-2 text-ui font-medium">
             {server.name}
             {state && (
               <Badge tone={state === "ready" ? "success" : "destructive"}>
@@ -488,7 +488,7 @@ function ServerRow({
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground truncate text-xs">
+          <p className="text-muted-foreground truncate text-label">
             {server.url} · {authLabels[auth.kind]}
           </p>
         </div>
@@ -504,7 +504,7 @@ function ServerRow({
             <Trans>Secret</Trans>
           </Button>
         )}
-        <label className="text-muted-foreground flex items-center gap-2 text-xs">
+        <label className="text-muted-foreground flex items-center gap-2 text-label">
           <Trans>On</Trans>
           <Switch
             aria-label={t`Use ${server.name}`}
@@ -513,7 +513,7 @@ function ServerRow({
             onCheckedChange={(enabled) => onUpdate({ enabled })}
           />
         </label>
-        <label className="text-muted-foreground flex items-center gap-2 text-xs">
+        <label className="text-muted-foreground flex items-center gap-2 text-label">
           <Trans>Allow changes</Trans>
           <Switch
             aria-label={t`Allow ${server.name} to make changes`}

@@ -94,7 +94,7 @@ export function SettingsClaude() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
         <SettingsPageTitle title={t`Claude`} />
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-body">
           <Trans>
             Summaries, titles, briefs and the coach run on Claude, using the
             Claude sign-in on this Mac. No API keys needed.
@@ -254,7 +254,7 @@ export function SettingsClaude() {
       )}
 
       {error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-destructive text-body">
           {error.message}
         </p>
       )}

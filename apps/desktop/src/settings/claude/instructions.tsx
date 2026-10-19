@@ -36,10 +36,10 @@ export function CoachInstructionsSection({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[15px] font-semibold">
+        <h2 className="text-title">
           <Trans>Coach instructions</Trans>
         </h2>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             What the coach should know about you and how to answer. Markdown is
             fine. Changes apply from the coach's next chat.
@@ -51,14 +51,14 @@ export function CoachInstructionsSection({
         <Textarea
           aria-label={t`Coach instructions`}
           placeholder={t`e.g. I'm the CTO of Northwind. Prefer short answers. Never promise dates.`}
-          className="min-h-[120px] font-mono text-xs"
+          className="min-h-[120px] font-mono text-label"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={() => {
             if (draft !== instructions) onSaveInstructions(draft);
           }}
         />
-        <div className="flex justify-between gap-4 text-xs">
+        <div className="flex justify-between gap-4 text-label">
           {tooLong && (
             <span className="text-destructive">
               <Trans>
@@ -69,7 +69,7 @@ export function CoachInstructionsSection({
           )}
           <span
             className={
-              tooLong ? "text-destructive" : "text-muted-foreground ml-auto"
+              tooLong ? "text-destructive" : "text-muted-foreground ms-auto"
             }
           >
             {draft.length.toLocaleString()} /{" "}
@@ -79,10 +79,10 @@ export function CoachInstructionsSection({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium">
+        <h3 className="text-ui font-medium">
           <Trans>Knowledge</Trans>
         </h3>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             Files and folders the coach can read when they're relevant. They
             are read on demand, not sent with every message.
@@ -95,7 +95,7 @@ export function CoachInstructionsSection({
                 key={path}
                 className="flex items-center justify-between gap-4"
               >
-                <span className="truncate text-xs">{path}</span>
+                <span className="truncate text-label">{path}</span>
                 <Button
                   type="button"
                   variant="ghost"

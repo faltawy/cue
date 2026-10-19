@@ -425,7 +425,7 @@ export function ProviderCard({
       disabled={config.disabled}
       value={config.id}
       className={cn([
-        "bg-muted rounded-[22px] border-2",
+        "bg-background rounded-lg border",
         isReady ? "border-border border-solid" : "border-dashed",
       ])}
     >
@@ -461,7 +461,7 @@ export function ProviderCard({
         {providerContext}
         {hasStoredConfig &&
           usesDeferredProviderAuthentication(providerType, config.id) && (
-            <p className="text-muted-foreground mb-3 text-xs">
+            <p className="text-muted-foreground mb-3 text-label">
               <Trans>Saved</Trans> · <Trans>Not connected</Trans>
             </p>
           )}
@@ -491,7 +491,7 @@ export function ProviderCard({
             </form.Field>
           )}
           {config.links && (
-            <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-4 text-label">
               {config.links.download && (
                 <a
                   href={config.links.download.url}
@@ -529,7 +529,7 @@ export function ProviderCard({
           )}
           {showAdvanced ? (
             <details>
-              <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs hover:underline">
+              <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-label hover:underline">
                 <Trans>Advanced</Trans>
               </summary>
               <div className="mt-2 flex flex-col gap-4">
@@ -557,13 +557,13 @@ export function ProviderCard({
             resetAction
           )}
           {clearProvider.error && (
-            <p className="text-destructive text-xs">
+            <p className="text-destructive text-label">
               {clearProvider.error.message}
             </p>
           )}
           {providerMutation.error &&
             !isKeychainAccessError(providerMutation.error) && (
-              <p className="text-destructive text-xs">
+              <p className="text-destructive text-label">
                 {providerMutation.error.message}
               </p>
             )}
@@ -578,10 +578,8 @@ function ProviderBadge({ badge }: { badge: string }) {
   const badgeNode = (
     <span
       className={cn([
-        "text-muted-foreground normal-case",
-        isAfterRecording
-          ? "bg-background/40 cursor-help rounded-md px-1.5 py-0.5 text-[11px] font-medium"
-          : "border-border rounded-full border px-2 text-xs font-normal",
+        "border-border text-muted-foreground inline-flex h-5 items-center rounded-sm border px-1.5 text-caption font-medium normal-case",
+        isAfterRecording && "cursor-help",
       ])}
     >
       {badge}
@@ -595,7 +593,7 @@ function ProviderBadge({ badge }: { badge: string }) {
   return (
     <Tooltip delayDuration={100}>
       <TooltipTrigger asChild>{badgeNode}</TooltipTrigger>
-      <TooltipContent side="top" className="max-w-64 text-xs">
+      <TooltipContent side="top" className="max-w-64 text-label">
         <Trans>
           Runs after the recording finishes, not during the meeting.
         </Trans>
@@ -607,14 +605,14 @@ function ProviderBadge({ badge }: { badge: string }) {
 const streamdownComponents = {
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => {
     return (
-      <ul className="relative mb-1 block list-disc pl-6">
+      <ul className="relative mb-1 block list-disc ps-6">
         {props.children as React.ReactNode}
       </ul>
     );
   },
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => {
     return (
-      <ol className="relative mb-1 block list-decimal pl-6">
+      <ol className="relative mb-1 block list-decimal ps-6">
         {props.children as React.ReactNode}
       </ol>
     );
@@ -656,7 +654,7 @@ export function StyledStreamdown({
     <Streamdown
       icons={streamdownIcons}
       components={streamdownComponents}
-      className={cn(["mt-1 text-sm", className])}
+      className={cn(["mt-1 text-body", className])}
       isAnimating={false}
     >
       {children}
@@ -701,7 +699,7 @@ function FormField({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="block text-xs font-medium">{label}</label>
+      <label className="block text-label font-medium">{label}</label>
       <InputGroup className="bg-card">
         <InputGroupInput
           name={field.name}
@@ -713,7 +711,7 @@ function FormField({
         />
       </InputGroup>
       {errorMessage && (
-        <p className="text-destructive flex items-center gap-1.5 text-xs">
+        <p className="text-destructive flex items-center gap-1.5 text-label">
           <WarningCircle className="size-3.5 shrink-0" aria-hidden="true" />
           <span>{errorMessage}</span>
         </p>

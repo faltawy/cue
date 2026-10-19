@@ -34,10 +34,10 @@ export function ThemeSelector() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h3 className="text-[15px] font-semibold">
+        <h3 className="text-title">
           <Trans>Theme</Trans>
         </h3>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-muted-foreground text-ui mt-1">
           <Trans>Choose how Cue looks on this device.</Trans>
         </p>
       </div>
@@ -56,10 +56,10 @@ export function ThemeSelector() {
               role="radio"
               aria-checked={selected}
               className={cn([
-                "group bg-background text-foreground focus-visible:ring-ring focus-visible:ring-offset-background relative cursor-pointer overflow-hidden rounded-2xl border text-left transition-[background-color,border-color,box-shadow,scale] duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98]",
+                "group bg-background text-foreground relative cursor-pointer overflow-hidden rounded-lg border text-start transition-colors duration-100",
                 selected
-                  ? "border-foreground/50 bg-accent/40 shadow-xs"
-                  : "border-border hover:border-foreground/30 hover:bg-accent/20",
+                  ? "border-foreground"
+                  : "border-border hover:border-input",
               ])}
               onClick={() => {
                 void applyThemePreference(option.value, appIcon);
@@ -67,23 +67,21 @@ export function ThemeSelector() {
               }}
             >
               <ThemePreview theme={option.value} />
-              <div className="border-border flex items-center gap-2 border-t p-3">
+              <div className="border-border flex items-center gap-2 border-t px-3 py-2">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{option.label}</div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-ui font-medium">{option.label}</div>
+                  <div className="text-muted-foreground text-label">
                     {option.description}
                   </div>
                 </div>
                 <span
                   aria-hidden="true"
                   className={cn([
-                    "bg-foreground text-background flex size-5 shrink-0 items-center justify-center rounded-full transition-[filter,opacity,scale] duration-150",
-                    selected
-                      ? "scale-100 opacity-100 blur-none"
-                      : "scale-25 opacity-0 blur-[4px]",
+                    "bg-primary text-primary-foreground flex size-4 shrink-0 items-center justify-center rounded-full transition-opacity duration-150",
+                    selected ? "opacity-100" : "opacity-0",
                   ])}
                 >
-                  <Check className="size-3" weight="bold" />
+                  <Check className="size-2.5" weight="bold" />
                 </span>
               </div>
             </button>
@@ -107,51 +105,28 @@ function ThemePreview({ theme }: { theme: ThemePreference }) {
   );
 }
 
+// Drawn with the real tokens inside a light or dark scope, so the preview
+// always matches the app. The traffic lights are macOS's own colours.
 function PreviewCanvas({ dark }: { dark: boolean }) {
   return (
     <div
       className={cn([
-        "absolute inset-0 flex flex-col p-3",
-        dark ? "bg-neutral-950 text-neutral-100" : "bg-white text-neutral-900",
+        dark ? "dark" : "light",
+        "bg-background text-foreground absolute inset-0 flex flex-col p-3",
       ])}
     >
       <div className="mb-3 flex gap-1">
-        <span className="size-1.5 rounded-full bg-red-400" />
-        <span className="size-1.5 rounded-full bg-amber-400" />
-        <span className="size-1.5 rounded-full bg-green-400" />
+        <span className="size-1.5 rounded-full bg-[#ff5f57]" />
+        <span className="size-1.5 rounded-full bg-[#febc2e]" />
+        <span className="size-1.5 rounded-full bg-[#28c840]" />
       </div>
       <div className="flex flex-1 gap-3">
-        <div
-          className={cn([
-            "w-1/4 rounded-md",
-            dark ? "bg-neutral-800" : "bg-neutral-100",
-          ])}
-        />
+        <div className="bg-sidebar w-1/4 rounded-md" />
         <div className="flex flex-1 flex-col gap-2 py-1">
-          <span
-            className={cn([
-              "h-1.5 w-10 rounded-full",
-              dark ? "bg-neutral-300" : "bg-neutral-700",
-            ])}
-          />
-          <span
-            className={cn([
-              "h-1 w-4/5 rounded-full",
-              dark ? "bg-neutral-700" : "bg-neutral-200",
-            ])}
-          />
-          <span
-            className={cn([
-              "h-1 w-3/5 rounded-full",
-              dark ? "bg-neutral-700" : "bg-neutral-200",
-            ])}
-          />
-          <span
-            className={cn([
-              "h-1 w-2/3 rounded-full",
-              dark ? "bg-neutral-700" : "bg-neutral-200",
-            ])}
-          />
+          <span className="bg-foreground/70 h-1.5 w-10 rounded-full" />
+          <span className="bg-border h-1 w-4/5 rounded-full" />
+          <span className="bg-border h-1 w-3/5 rounded-full" />
+          <span className="bg-border h-1 w-2/3 rounded-full" />
         </div>
       </div>
     </div>

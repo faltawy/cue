@@ -82,7 +82,7 @@ export function ShortcutRecorder({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-4">
-        <span id={`${id}-label`} className="text-sm font-medium">
+        <span id={`${id}-label`} className="text-ui font-medium">
           {label}
         </span>
         <Button
@@ -136,7 +136,7 @@ export function ShortcutRecorder({
               {shortcut.split("+").map((key) => (
                 <kbd
                   key={key}
-                  className="bg-muted rounded border px-1.5 py-0.5 font-sans text-xs"
+                  className="bg-muted rounded-sm border px-1.5 py-0.5 font-sans text-label"
                 >
                   {labels[key] ?? key.replace(/^(Key|Digit)/, "")}
                 </kbd>
@@ -146,12 +146,12 @@ export function ShortcutRecorder({
         </Button>
       </div>
       {recording && (
-        <p className="text-muted-foreground text-xs" aria-live="polite">
+        <p className="text-muted-foreground text-label" aria-live="polite">
           <Trans>Press the new keys. Esc cancels.</Trans>
         </p>
       )}
       {save.error && (
-        <p role="alert" className="text-destructive text-sm">
+        <p role="alert" className="text-destructive text-body">
           {save.error.message}
         </p>
       )}

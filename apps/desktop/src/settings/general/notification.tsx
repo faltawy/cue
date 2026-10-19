@@ -261,7 +261,7 @@ export function NotificationSettingsView() {
                   />
 
                   {field.state.value && (
-                    <div className={cn(["border-muted ml-3 border-l-2 pl-4"])}>
+                    <div className={cn(["border-muted ms-3 border-s-2 ps-4"])}>
                       <form.Field name="notification_completion_sound_name">
                         {(soundField) => (
                           <SettingRow
@@ -364,16 +364,16 @@ export function NotificationSettingsView() {
 
                   {field.state.value && !notificationsDisabled && (
                     <div
-                      className={cn(["border-muted ml-3 border-l-2 pt-2 pl-4"])}
+                      className={cn(["border-muted ms-3 border-s-2 pt-2 ps-4"])}
                     >
                       <form.Field name="mic_active_threshold">
                         {(thresholdField) => (
                           <div className="mb-4 flex items-center justify-between gap-4">
                             <div className="flex-1">
-                              <h4 className="text-sm font-medium">
+                              <h4 className="text-ui font-medium">
                                 <Trans>Detection delay</Trans>
                               </h4>
-                              <p className="text-muted-foreground text-xs">
+                              <p className="text-muted-foreground text-label">
                                 <Trans>
                                   Wait before treating microphone activity as a
                                   meeting.
@@ -403,10 +403,10 @@ export function NotificationSettingsView() {
                       </form.Field>
 
                       <div className="mb-3 flex flex-col gap-1">
-                        <h4 className="text-sm font-medium">
+                        <h4 className="text-ui font-medium">
                           <Trans>Exclude apps from detection</Trans>
                         </h4>
-                        <p className="text-muted-foreground text-xs">
+                        <p className="text-muted-foreground text-label">
                           <Trans>
                             Prevent selected apps from triggering meeting
                             detection.
@@ -443,8 +443,7 @@ export function NotificationSettingsView() {
                                     tabIndex={0}
                                     aria-expanded={searchOpen}
                                     className={cn([
-                                      "flex min-h-[38px] w-full cursor-text flex-wrap items-center gap-2 rounded-2xl border p-2",
-                                      "focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-hidden",
+                                      "border-input bg-background focus-within:border-foreground flex min-h-8 w-full cursor-text flex-wrap items-center gap-1 rounded-md border px-1.5 py-1",
                                     ])}
                                     onKeyDown={(event) => {
                                       if (
@@ -463,21 +462,14 @@ export function NotificationSettingsView() {
                                         return (
                                           <Badge
                                             key={bundleId}
-                                            className={cn([
-                                              "flex items-center gap-1 px-2 py-0.5 text-xs",
-                                              isDefault
-                                                ? [
-                                                    "bg-accent text-muted-foreground",
-                                                  ]
-                                                : ["bg-muted"],
-                                            ])}
+                                            className="gap-1 pe-1"
                                             title={
                                               isDefault ? "default" : undefined
                                             }
                                           >
                                             {bundleIdToName(bundleId)}
                                             {isDefault && (
-                                              <span className="text-[10px] opacity-70">
+                                              <span className="text-tertiary-foreground">
                                                 <Trans>(default)</Trans>
                                               </span>
                                             )}
@@ -485,7 +477,7 @@ export function NotificationSettingsView() {
                                               type="button"
                                               variant="ghost"
                                               size="sm"
-                                              className="ml-0.5 h-3 w-3 p-0 hover:bg-transparent"
+                                              className="hover:text-foreground size-3.5 p-0 hover:bg-transparent"
                                               onClick={(event) => {
                                                 event.stopPropagation();
                                                 handleToggleIgnoredApp(
@@ -495,13 +487,13 @@ export function NotificationSettingsView() {
                                                 );
                                               }}
                                             >
-                                              <X className="h-2.5 w-2.5" />
+                                              <X className="size-3" />
                                             </Button>
                                           </Badge>
                                         );
                                       },
                                     )}
-                                    <span className="text-muted-foreground text-sm">
+                                    <span className="text-tertiary-foreground text-body px-1">
                                       <Trans>Search installed apps...</Trans>
                                     </span>
                                   </div>
@@ -520,7 +512,7 @@ export function NotificationSettingsView() {
                                       onValueChange={setSearchQuery}
                                     />
                                     <CommandEmpty>
-                                      <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                                      <div className="text-muted-foreground text-ui px-2 py-1.5">
                                         <Trans>No apps found.</Trans>
                                       </div>
                                     </CommandEmpty>
@@ -565,7 +557,7 @@ export function NotificationSettingsView() {
             <div className="flex flex-col gap-6">
               <div className="flex items-center gap-4 pt-4 pb-2">
                 <div className="border-muted min-w-0 flex-1 border-t" />
-                <span className="text-muted-foreground shrink-0 text-xs font-medium">
+                <span className="text-muted-foreground shrink-0 text-label font-medium">
                   <Trans>For enabled notifications</Trans>
                 </span>
                 <div className="border-muted min-w-0 flex-1 border-t" />

@@ -48,10 +48,10 @@ export function AppIconSelector() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h3 className="text-[15px] font-semibold">
+        <h3 className="text-title">
           <Trans>App icon</Trans>
         </h3>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="text-muted-foreground text-ui mt-1">
           <Trans>Choose how Cue appears in the Dock.</Trans>
         </p>
       </div>
@@ -73,7 +73,6 @@ export function AppIconSelector() {
               aria-label={labels[option]}
               className={cn([
                 "group flex cursor-pointer flex-col items-center gap-2 rounded-lg p-1.5",
-                "focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
               ])}
               onClick={() => {
                 void applyAppIconPreference(option, theme);
@@ -82,7 +81,7 @@ export function AppIconSelector() {
             >
               <span
                 className={cn([
-                  "ring-offset-background flex size-16 items-center justify-center rounded-[18px] ring-2 ring-offset-2",
+                  "flex size-16 items-center justify-center rounded-[18px] ring-2",
                   "ease-standard transition-[box-shadow,transform] duration-150 group-active:scale-[0.97]",
                   selected
                     ? "ring-warm"
@@ -98,7 +97,7 @@ export function AppIconSelector() {
               </span>
               <span
                 className={cn([
-                  "text-xs",
+                  "text-label",
                   selected ? "text-foreground" : "text-muted-foreground",
                 ])}
               >

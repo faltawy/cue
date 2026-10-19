@@ -63,10 +63,10 @@ export function ClaudeConnectorsGroup({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-medium">
+        <h3 className="text-ui font-medium">
           <Trans>Claude connectors</Trans>
         </h3>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             Connectors on your Claude account. The coach only uses the ones you
             turn on, and only reads unless you allow changes.
@@ -75,17 +75,17 @@ export function ClaudeConnectorsGroup({
       </div>
 
       {found.isPending && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>Looking for connectors on your Claude account…</Trans>
         </p>
       )}
       {found.error && (
-        <p role="alert" className="text-destructive text-xs">
+        <p role="alert" className="text-destructive text-label">
           {found.error.message}
         </p>
       )}
       {found.isSuccess && rows.length === 0 && (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             No connectors found. Add them in Claude under Settings → Connectors.
           </Trans>
@@ -105,9 +105,9 @@ export function ClaudeConnectorsGroup({
                 className="flex items-center justify-between gap-4"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{row.name}</div>
+                  <div className="text-ui font-medium">{row.name}</div>
                   {isGmail && (
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-muted-foreground text-label">
                       <Trans>
                         Searches and reads mail. With changes allowed it can
                         write drafts. It never sends, deletes or labels mail.
@@ -115,7 +115,7 @@ export function ClaudeConnectorsGroup({
                     </p>
                   )}
                 </div>
-                <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                <label className="text-muted-foreground flex items-center gap-2 text-label">
                   <Trans>On</Trans>
                   <Switch
                     aria-label={t`Use ${row.name}`}
@@ -124,7 +124,7 @@ export function ClaudeConnectorsGroup({
                     onCheckedChange={(on) => turn(row, on)}
                   />
                 </label>
-                <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                <label className="text-muted-foreground flex items-center gap-2 text-label">
                   <Trans>Allow changes</Trans>
                   <Switch
                     aria-label={t`Allow ${row.name} to make changes`}

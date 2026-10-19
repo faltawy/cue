@@ -56,7 +56,7 @@ export function WorkflowBuilder({
 
   return (
     <section
-      className="border-border bg-background overflow-hidden rounded-2xl border"
+      className="border-border bg-background overflow-hidden rounded-lg border"
       aria-labelledby="workflow-builder-title"
     >
       <div className="border-border flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
@@ -64,7 +64,7 @@ export function WorkflowBuilder({
           <div className="flex items-center gap-2">
             <h3
               id="workflow-builder-title"
-              className="truncate text-sm font-semibold"
+              className="truncate text-body font-semibold"
             >
               <Trans>Workflow</Trans>
             </h3>
@@ -78,7 +78,7 @@ export function WorkflowBuilder({
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground mt-1 text-xs">
+          <p className="text-muted-foreground mt-1 text-label">
             <Trans>Add a trigger, then stack actions like Zapier.</Trans>
           </p>
         </div>
@@ -96,7 +96,7 @@ export function WorkflowBuilder({
               update({ trigger: value as WorkflowTrigger })
             }
           >
-            <SelectTrigger className="h-8 w-full max-w-xs text-xs">
+            <SelectTrigger className="h-8 w-full max-w-xs text-label">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -112,7 +112,7 @@ export function WorkflowBuilder({
 
         {workflow.steps.map((step, index) => (
           <div key={step.id}>
-            <div className="text-muted-foreground flex h-6 items-center pl-6">
+            <div className="text-muted-foreground flex h-6 items-center ps-6">
               <ArrowRight className="rotate-90" size={13} />
             </div>
             <WorkflowCard
@@ -122,7 +122,7 @@ export function WorkflowBuilder({
               ready={isWorkflowStepReady(step)}
               onRemove={() => removeStep(step.id)}
             >
-              <p className="text-xs font-medium">
+              <p className="text-label font-medium">
                 <Trans>Export the meeting as Markdown</Trans>
               </p>
               <div className="mt-3">
@@ -135,7 +135,7 @@ export function WorkflowBuilder({
           </div>
         ))}
 
-        <div className="text-muted-foreground flex h-6 items-center pl-6">
+        <div className="text-muted-foreground flex h-6 items-center ps-6">
           <ArrowRight className="rotate-90" size={13} />
         </div>
 
@@ -144,7 +144,7 @@ export function WorkflowBuilder({
 
       <div className="border-border border-t px-5 py-4">
         {!isWorkflowReady(workflow) ? (
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground text-label">
             <Trans>Add at least one configured action before enabling.</Trans>
           </p>
         ) : null}
@@ -179,10 +179,10 @@ function AddWorkflowStep({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="border-border bg-muted/20 flex items-center justify-between gap-3 rounded-xl border border-dashed p-4">
       <div>
-        <p className="text-sm font-medium">
+        <p className="text-ui font-medium">
           <Trans>Add an action</Trans>
         </p>
-        <p className="text-muted-foreground mt-1 text-xs">
+        <p className="text-muted-foreground mt-1 text-label">
           <Trans>Stack another destination. Steps run top to bottom.</Trans>
         </p>
       </div>
@@ -219,7 +219,7 @@ function WorkflowCard({
     <div className="border-border bg-card flex items-start gap-3 rounded-xl border p-4">
       <span
         className={cn([
-          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-label font-semibold",
           kind === "trigger"
             ? "bg-warm/20 text-foreground"
             : "bg-muted text-muted-foreground",
@@ -229,7 +229,7 @@ function WorkflowCard({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{title}</span>
+          <span className="text-ui font-medium">{title}</span>
           <Badge>{badge}</Badge>
           {!ready ? (
             <Badge>
@@ -241,7 +241,7 @@ function WorkflowCard({
               type="button"
               size="icon"
               variant="ghost"
-              className="text-muted-foreground ml-auto size-7"
+              className="text-muted-foreground ms-auto size-7"
               onClick={onRemove}
               aria-label="Remove step"
             >

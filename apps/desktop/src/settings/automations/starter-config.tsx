@@ -38,7 +38,7 @@ export function AutomationLastRunLine({
   return (
     <p
       className={cn([
-        "mt-3 truncate text-xs",
+        "mt-3 truncate text-label",
         lastRun.status === "error"
           ? "text-destructive"
           : "text-muted-foreground",
@@ -70,8 +70,8 @@ function ConfigRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
-        <h4 className="text-xs font-semibold">{title}</h4>
-        <p className="text-muted-foreground mt-1 truncate text-xs">{value}</p>
+        <h4 className="text-label font-semibold">{title}</h4>
+        <p className="text-muted-foreground mt-1 truncate text-label">{value}</p>
       </div>
       {children}
     </div>

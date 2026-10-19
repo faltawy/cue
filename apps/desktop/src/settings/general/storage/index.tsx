@@ -11,7 +11,7 @@ export function StorageSettingsView() {
 
   return (
     <div>
-      <h2 className="mb-4 text-[15px] font-semibold">
+      <h2 className="mb-4 text-title">
         <Trans>Storage</Trans>
       </h2>
       <div className="flex flex-col gap-3">

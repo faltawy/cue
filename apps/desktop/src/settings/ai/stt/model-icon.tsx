@@ -145,7 +145,7 @@ export function LocalModelLabel({
                 ])}
               />
             ) : (
-              <span className="text-[10px] leading-none font-semibold">
+              <span className="text-caption leading-none font-semibold">
                 {icon.label}
               </span>
             ))}
@@ -167,7 +167,7 @@ export function LocalModelBackendBadge({ model }: { model: string }) {
     <span
       title={badge.title}
       className={cn([
-        "inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-[10px] leading-none font-medium",
+        "inline-flex shrink-0 items-center rounded-md border px-1.5 py-0.5 text-caption leading-none font-medium",
         badge.className,
       ])}
     >

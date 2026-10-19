@@ -56,7 +56,7 @@ export function SettingsDictation() {
     <div className="flex flex-col gap-8">
       <SettingsPageTitle title={<Trans>Dictation</Trans>} />
       <div className="flex flex-col gap-6">
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-body">
           <Trans>
             Speak into the focused text field in your apps. Your transcript
             appears when you finish.
@@ -108,7 +108,7 @@ export function SettingsDictation() {
           checked={handsFree}
           onChange={setHandsFree}
         />
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             Press Escape to cancel. Dictation stops after five minutes and
             pauses while Cue records a meeting.
@@ -142,7 +142,7 @@ export function SettingsDictation() {
         </div>
         {enabled && (
           <div className="border-border rounded-lg border p-4" role="status">
-            <p className="text-sm">
+            <p className="text-body">
               {status.phase === "recording"
                 ? t`Listening…`
                 : status.phase === "transcribing"
@@ -154,7 +154,7 @@ export function SettingsDictation() {
                       : t`Setting up dictation…`}
             </p>
             {status.error && (
-              <p className="text-destructive mt-2 text-sm" role="alert">
+              <p className="text-destructive mt-2 text-body" role="alert">
                 {status.error}
               </p>
             )}
@@ -180,7 +180,7 @@ export function SettingsDictation() {
             )}
           </div>
         )}
-        <label className="flex flex-col gap-2 text-sm">
+        <label className="flex flex-col gap-2 text-body">
           <span>
             <Trans>Try dictation</Trans>
           </span>
@@ -188,7 +188,7 @@ export function SettingsDictation() {
             placeholder={t`Click here, then use your dictation shortcut.`}
           />
         </label>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>
             Dictation uses your microphone, transcription provider, languages,
             and dictionary. Temporary audio is deleted after transcription. Your
@@ -198,10 +198,10 @@ export function SettingsDictation() {
         </p>
         {status.lastTranscript && (
           <div className="flex flex-col gap-3">
-            <h3 className="text-sm font-medium">
+            <h3 className="text-ui font-medium">
               <Trans>Last dictation</Trans>
             </h3>
-            <p className="border-border rounded-lg border p-4 text-sm whitespace-pre-wrap">
+            <p className="border-border rounded-lg border p-4 text-body whitespace-pre-wrap">
               {status.lastTranscript}
             </p>
             <Button
@@ -217,7 +217,7 @@ export function SettingsDictation() {
               )}
             </Button>
             {copy.isError && (
-              <p role="alert" className="text-destructive text-sm">
+              <p role="alert" className="text-destructive text-body">
                 <Trans>
                   Could not copy the transcript. Select the text above to copy
                   it.

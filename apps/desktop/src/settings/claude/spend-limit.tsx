@@ -69,7 +69,7 @@ export function SpendLimitInput({
         />
       </InputGroup>
       {invalid && (
-        <p role="alert" className="text-destructive text-xs">
+        <p role="alert" className="text-destructive text-label">
           {t`Enter an amount from $0.01 to $100.`}
         </p>
       )}

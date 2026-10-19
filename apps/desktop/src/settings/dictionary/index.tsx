@@ -82,11 +82,11 @@ export function DictionarySettings({
         void form.handleSubmit();
       }}
     >
-      <InputGroup className="border-border bg-card has-[[data-slot=input-group-control]:focus-visible]:border-border rounded-full shadow-none has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+      <InputGroup>
         <form.Field name="term">
           {(field) => (
             <InputGroupInput
-              className="pr-4 pl-4"
+              className="ps-2.5"
               placeholder={t`Add names, jargon, or product terms to prefer`}
               value={field.state.value}
               onChange={(event) => field.handleChange(event.target.value)}
@@ -104,9 +104,8 @@ export function DictionarySettings({
               return (
                 <InputGroupButton
                   type="submit"
-                  variant="ghost"
+                  variant="default"
                   size="xs"
-                  className="rounded-full bg-black text-white hover:bg-black/90 hover:text-white dark:bg-white dark:text-black dark:hover:bg-white/90 dark:hover:text-black"
                   disabled={!canAdd}
                   aria-label={t`Add`}
                 >
@@ -129,12 +128,12 @@ export function DictionarySettings({
 
           if (normalizedTerms.length === 0) {
             return (
-              <div className="border-border bg-card flex min-h-40 flex-col items-center justify-center rounded-2xl border px-6 text-center">
-                <BookOpen className="text-muted-foreground mb-3 size-5" />
-                <p className="text-sm font-medium">
+              <div className="border-border flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed px-6 text-center">
+                <BookOpen className="text-muted-foreground mb-3 size-4" />
+                <p className="text-title">
                   <Trans>Your dictionary is empty</Trans>
                 </p>
-                <p className="text-muted-foreground mt-1 max-w-sm text-xs">
+                <p className="text-muted-foreground text-ui mt-1 max-w-[340px] text-balance">
                   <Trans>
                     Tip: Add teammate names, acronyms, company jargon, and
                     product terms.
@@ -146,14 +145,14 @@ export function DictionarySettings({
 
           if (visibleTerms.length === 0) {
             return hasSearch ? (
-              <p className="text-muted-foreground px-4 text-sm">
+              <p className="text-muted-foreground text-ui px-2.5">
                 <Trans>No match</Trans>
               </p>
             ) : null;
           }
 
           return (
-            <div className="border-border bg-card divide-border divide-y overflow-hidden rounded-2xl border">
+            <div className="border-border divide-border divide-y overflow-hidden rounded-lg border">
               {visibleTerms.map((term) => (
                 <DictionaryTermRow
                   key={term}
@@ -195,7 +194,7 @@ function DictionaryTermRow({
 
   if (editValue !== null) {
     return (
-      <div className="flex min-h-12 items-center gap-2 py-2 pr-3 pl-4">
+      <div className="flex min-h-12 items-center gap-2 py-2 pe-3 ps-4">
         <Input
           autoFocus
           className="h-8 min-w-0 flex-1"
@@ -240,8 +239,8 @@ function DictionaryTermRow({
   }
 
   return (
-    <div className="group flex min-h-12 items-center justify-between gap-3 py-3 pr-3 pl-4">
-      <span className="text-sm">{term}</span>
+    <div className="group flex min-h-12 items-center justify-between gap-3 py-3 pe-3 ps-4">
+      <span className="text-body">{term}</span>
       <div className="flex items-center">
         <Button
           type="button"

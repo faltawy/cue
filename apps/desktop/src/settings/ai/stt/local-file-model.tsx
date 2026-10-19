@@ -86,10 +86,10 @@ export function LocalFileModel({
   const isPending = chooseModel.isPending || clearModel.isPending;
 
   return (
-    <div className="border-input bg-card flex h-9 min-w-0 items-center gap-2 rounded-full border px-3 text-left shadow-none">
+    <div className="border-input bg-background flex h-8 min-w-0 items-center gap-2 rounded-md border px-2.5 text-start">
       <button
         type="button"
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        className="flex min-w-0 flex-1 items-center gap-2 text-start"
         title={modelPath || undefined}
         disabled={isPending}
         onClick={() => chooseModel.mutate()}
@@ -99,11 +99,11 @@ export function LocalFileModel({
         ) : (
           <FolderOpen className="size-4 shrink-0" />
         )}
-        <span className="min-w-0 flex-1 truncate text-sm">
+        <span className="min-w-0 flex-1 truncate text-body">
           {filename || <Trans>Choose a .bin model</Trans>}
         </span>
         {modelInfo.data ? (
-          <span className="text-muted-foreground shrink-0 text-[11px]">
+          <span className="text-muted-foreground shrink-0 text-caption">
             {formatModelSize(modelInfo.data.sizeBytes)} · GGML ·{" "}
             <Trans>After recording</Trans>
           </span>
@@ -114,7 +114,7 @@ export function LocalFileModel({
         <button
           type="button"
           aria-label={t`Clear selected model`}
-          className="text-muted-foreground hover:text-foreground flex size-6 shrink-0 items-center justify-center rounded-full"
+          className="text-muted-foreground hover:text-foreground flex size-6 shrink-0 items-center justify-center rounded-md"
           onClick={() => clearModel.mutate()}
         >
           <X className="size-3.5" />
@@ -125,7 +125,7 @@ export function LocalFileModel({
         <CircleNotch className="text-muted-foreground size-4 shrink-0 animate-spin" />
       ) : null}
       {modelPath && healthStatus === "success" ? (
-        <Check className="size-4 shrink-0 text-green-600" />
+        <Check className="size-4 shrink-0 text-success" />
       ) : null}
     </div>
   );

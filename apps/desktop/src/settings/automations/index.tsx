@@ -98,7 +98,7 @@ function AutomationsOverview() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <SettingsPageTitle title={<Trans>Automations</Trans>} />
-          <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
+          <p className="text-muted-foreground text-ui max-w-2xl">
             <Trans>
               Automate what happens before, during, or after meetings based on
               the conditions you choose.
@@ -106,14 +106,12 @@ function AutomationsOverview() {
           </p>
         </div>
 
-        <section className="border-border bg-muted/20 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-10 text-center">
-          <span className="bg-background border-border flex size-11 items-center justify-center rounded-2xl border">
-            <Lightning className="text-muted-foreground" size={20} />
-          </span>
-          <h3 className="mt-4 text-sm font-semibold">
+        <section className="border-border flex min-h-56 flex-col items-center justify-center rounded-lg border border-dashed px-6 py-10 text-center">
+          <Lightning className="text-muted-foreground size-4" />
+          <h3 className="text-title mt-3">
             <Trans>No automation draft yet</Trans>
           </h3>
-          <p className="text-muted-foreground mt-1 max-w-sm text-xs leading-relaxed">
+          <p className="text-muted-foreground text-ui mt-1 max-w-[340px] text-balance">
             <Trans>
               Choose a starter from the sidebar, or create a workflow and add
               steps like Zapier.
@@ -149,12 +147,12 @@ function AutomationDetailHeader({
   actions: React.ReactNode;
 }) {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between gap-3 pr-1 pl-3">
+    <header className="flex h-12 shrink-0 items-center justify-between gap-3 pe-1 ps-3">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center">
           {icon}
         </span>
-        <h2 className="min-w-0 truncate text-sm font-semibold">{title}</h2>
+        <h2 className="min-w-0 truncate text-body font-semibold">{title}</h2>
       </div>
       {actions}
     </header>
@@ -180,7 +178,7 @@ function AutomationDetailsLayout({
       <div className="scroll-fade-y scrollbar-hide min-h-0 w-full flex-1 overflow-y-auto px-6 pt-3 pb-8">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
           {description && (
-            <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
+            <p className="text-muted-foreground text-ui max-w-2xl">
               {description}
             </p>
           )}
@@ -379,16 +377,16 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
       }
     >
       <section
-        className="border-border bg-background overflow-hidden rounded-2xl border"
+        className="border-border bg-background overflow-hidden rounded-lg border"
         aria-labelledby="automation-draft-title"
       >
         <div className="border-border flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <Lightning className="text-primary" size={17} />
+              <Lightning className="text-muted-foreground size-4" />
               <h3
                 id="automation-draft-title"
-                className="truncate text-sm font-semibold"
+                className="text-strong truncate"
               >
                 {starter.title}
               </h3>
@@ -402,7 +400,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground mt-1 text-xs">
+            <p className="text-muted-foreground mt-1 text-label">
               <Trans>Steps run from top to bottom.</Trans>
             </p>
           </div>
@@ -470,7 +468,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
               <div className="border-border bg-card flex items-start gap-3 rounded-xl border p-4">
                 <span
                   className={cn([
-                    "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                    "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-label font-semibold",
                     step.kind === "ai"
                       ? "bg-accent text-foreground"
                       : step.kind === "trigger"
@@ -482,7 +480,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium">{step.title}</span>
+                    <span className="text-ui font-medium">{step.title}</span>
                     <Badge>
                       {step.kind === "ai" ? (
                         <Trans>AI step</Trans>
@@ -493,13 +491,13 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                       )}
                     </Badge>
                   </span>
-                  <span className="text-muted-foreground mt-1 block text-xs leading-relaxed">
+                  <span className="text-muted-foreground mt-1 block text-label leading-relaxed">
                     {step.detail}
                   </span>
                 </span>
               </div>
               {index < starter.steps.length - 1 ? (
-                <div className="text-muted-foreground flex h-6 items-center pl-6">
+                <div className="text-muted-foreground flex h-6 items-center ps-6">
                   <ArrowRight className="rotate-90" size={13} />
                 </div>
               ) : null}
@@ -517,10 +515,10 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
             <div className="flex items-start gap-3">
               <Eye className="text-muted-foreground mt-0.5" size={15} />
               <div>
-                <h4 className="text-xs font-semibold">
+                <h4 className="text-label font-semibold">
                   <Trans>Expected output</Trans>
                 </h4>
-                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                <p className="text-muted-foreground mt-1 text-label leading-relaxed">
                   {starter.preview}
                 </p>
               </div>

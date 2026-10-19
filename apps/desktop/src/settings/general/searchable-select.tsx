@@ -87,7 +87,7 @@ export function SearchableSelect({
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
           className={cn([
-            "bg-card justify-between px-3 font-normal shadow-none focus-visible:ring-0",
+            "bg-card justify-between px-3 font-normal shadow-none",
             className,
           ])}
         >
@@ -98,7 +98,7 @@ export function SearchableSelect({
                 : selectedOption.label
               : (placeholder ?? t`Select...`)}
           </span>
-          <CaretDown className="-mr-1 h-4 w-4 shrink-0 opacity-50" />
+          <CaretDown className="-me-1 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -120,7 +120,7 @@ export function SearchableSelect({
             onValueChange={setQuery}
           />
           <CommandEmpty>
-            <div className="text-muted-foreground px-2 py-1.5 text-sm">
+            <div className="text-muted-foreground px-2 py-1.5 text-body">
               {emptyMessage ?? t`No results found.`}
             </div>
           </CommandEmpty>
@@ -142,7 +142,7 @@ export function SearchableSelect({
                 >
                   <span className="flex-1 truncate">{option.label}</span>
                   {option.detail && (
-                    <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+                    <span className="text-muted-foreground shrink-0 text-caption tabular-nums">
                       {option.detail}
                     </span>
                   )}
