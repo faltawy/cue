@@ -142,3 +142,9 @@ export function resolveDisplayLocale(
 
   return supportedDisplayLocaleByLanguage.get(locale.language) ?? SOURCE_LOCALE;
 }
+
+const RTL_LANGUAGES = new Set(["ar", "fa", "he", "ps", "sd", "ur", "yi"]);
+
+export function localeDirection(locale: string): "ltr" | "rtl" {
+  return RTL_LANGUAGES.has(new Intl.Locale(locale).language) ? "rtl" : "ltr";
+}

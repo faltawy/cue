@@ -2,10 +2,11 @@ import { I18nProvider } from "@lingui/react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 
+import { DirectionProvider } from "@anlg/ui/components/ui/direction";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { createI18n } from "./catalogs";
-import { resolveDisplayLocale } from "./locales";
+import { localeDirection, resolveDisplayLocale } from "./locales";
 
 import { useConfigValue } from "~/shared/config";
 
@@ -22,17 +23,26 @@ export function AppI18nProvider({ children }: { children: ReactNode }) {
 
   if (!i18n) return null;
 
+  const dir = localeDirection(i18n.locale);
+
   return (
     <I18nProvider i18n={i18n}>
-      <DocumentLanguage key={i18n.locale} locale={i18n.locale} />
-      {children}
+      <DocumentLanguage key={i18n.locale} locale={i18n.locale} dir={dir} />
+      <DirectionProvider dir={dir}>{children}</DirectionProvider>
     </I18nProvider>
   );
 }
 
-function DocumentLanguage({ locale }: { locale: string }) {
+function DocumentLanguage({
+  locale,
+  dir,
+}: {
+  locale: string;
+  dir: "ltr" | "rtl";
+}) {
   useMountEffect(() => {
     document.documentElement.lang = locale;
+    document.documentElement.dir = dir;
   });
 
   return null;

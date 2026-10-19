@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 
+import { useDirection } from "@anlg/ui/components/ui/direction";
 import {
   type ImperativePanelHandle,
   ResizableHandle,
@@ -62,6 +63,7 @@ type LeftSidebarSizeStyle = CSSProperties & {
 
 export function ClassicMainBody() {
   const { leftsidebar } = useShell();
+  const dir = useDirection();
   const currentTab = useTabs((state) => state.currentTab);
   useClassicMainShortcuts();
   const [leftSidebarPanelConstraints, setLeftSidebarPanelConstraints] =
@@ -402,13 +404,13 @@ export function ClassicMainBody() {
       data-tauri-drag-region
       data-sidebar-timeline-header
       className={cn([
-        "flex min-h-9 shrink-0 items-start pr-1",
+        "flex min-h-9 shrink-0 items-start pe-1",
         showWindowControlsGutter
           ? [
               WINDOW_CONTROLS_GUTTER_CLASS,
               WINDOW_CONTROLS_ROW_PADDING_TOP_CLASS,
             ]
-          : "pt-[9px] pl-2",
+          : "ps-2 pt-[9px]",
       ])}
       onWheelCapture={handleSidebarTimelineHeaderWheel}
     >
@@ -445,13 +447,13 @@ export function ClassicMainBody() {
           <div
             data-tauri-drag-region
             className={cn([
-              "flex h-full min-w-0 items-start pr-1",
+              "flex h-full min-w-0 items-start pe-1",
               showWindowControlsGutter
                 ? [
                     WINDOW_CONTROLS_GUTTER_CLASS,
                     WINDOW_CONTROLS_ROW_PADDING_TOP_CLASS,
                   ]
-                : "pt-[9px] pl-2",
+                : "ps-2 pt-[9px]",
             ])}
           >
             <SidebarTimelineChromeWithUpcomingMeeting
@@ -480,7 +482,7 @@ export function ClassicMainBody() {
             data-tauri-drag-region
             className={cn([
               "flex h-full min-w-0 items-start pt-1",
-              showWindowControlsGutter ? WINDOW_CONTROLS_GUTTER_CLASS : "pl-2",
+              showWindowControlsGutter ? WINDOW_CONTROLS_GUTTER_CLASS : "ps-2",
             ])}
           />
         </div>
@@ -491,6 +493,8 @@ export function ClassicMainBody() {
             ? "classic-main-sidebar"
             : undefined
         }
+        // Panes keep their places (sidebar beside the traffic lights) in
+        // every language; their contents follow the app direction.
         dir="ltr"
         direction="horizontal"
         className="min-h-0 flex-1 overflow-hidden"
@@ -515,6 +519,7 @@ export function ClassicMainBody() {
               style={leftSidebarPanelStyle}
             >
               <div
+                dir={dir}
                 data-left-sidebar-panel-content
                 aria-hidden={!leftsidebar.expanded}
                 inert={!leftsidebar.expanded ? true : undefined}
@@ -562,6 +567,7 @@ export function ClassicMainBody() {
           }}
         >
           <div
+            dir={dir}
             data-main-content-panel
             className="relative h-full min-h-0 min-w-0 flex-1 overflow-auto"
             onClickCapture={mainAreaTopDrag.onClickCapture}

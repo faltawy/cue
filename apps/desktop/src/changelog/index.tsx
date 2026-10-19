@@ -33,7 +33,7 @@ export function TabContentChangelog({
   return (
     <StandardContentWrapper>
       <div className="flex h-full flex-col">
-        <div data-tauri-drag-region className="shrink-0 pr-1 pl-3">
+        <div data-tauri-drag-region className="shrink-0 ps-3 pe-1">
           <ChangelogHeader
             version={current}
             showSidebarTimelineHeaderGutter={showSidebarTimelineHeaderGutter}
@@ -120,6 +120,7 @@ function ChangelogHeader({
   const showWindowControlsGutter = useWindowControlsGutter();
   return (
     <div
+      dir="ltr"
       data-tauri-drag-region
       className={cn([
         "relative flex h-12 w-full items-center",
@@ -147,9 +148,9 @@ function ChangelogHeader({
       >
         <h1
           className={cn([
-            "text-foreground truncate text-xl font-semibold",
+            "text-foreground text-page-title truncate",
             showExpandedSidebarTimelineHeader || showSidebarTimelineHeaderGutter
-              ? "text-left"
+              ? "text-start"
               : "text-center",
           ])}
         >
@@ -157,7 +158,7 @@ function ChangelogHeader({
         </h1>
       </div>
 
-      <div className="relative z-10 ml-auto flex shrink-0 items-center gap-0 pr-1">
+      <div className="relative z-10 ms-auto flex shrink-0 items-center gap-0 pe-1">
         <Button
           size="icon"
           variant="ghost"
