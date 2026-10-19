@@ -70,8 +70,12 @@ export function LineQuote({ verb, line, copy }: { verb: MoveVerb; line: string; 
 
 export function MomentQuote({ moment }: { moment: Pick<Moment, "speaker" | "quote"> & { at?: string | null } }) {
   return (
-    <figure className="m-0 border-s-2 border-border ps-2.5 text-[12px] leading-[1.45] text-muted-foreground" data-testid="move-moment">
-      <blockquote dir="auto" title={moment.quote} className="line-clamp-2 [overflow-wrap:anywhere]">
+    <figure
+      dir="auto"
+      className="m-0 border-s-2 border-border ps-2.5 text-[12px] leading-[1.45] text-muted-foreground"
+      data-testid="move-moment"
+    >
+      <blockquote title={moment.quote} className="line-clamp-2 [overflow-wrap:anywhere]">
         {moment.quote}
       </blockquote>
       <figcaption className="mt-0.5 flex min-w-0 items-baseline gap-1">

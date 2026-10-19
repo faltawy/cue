@@ -97,7 +97,8 @@ describe("a coaching move", () => {
     expect(within(line).getByText(PUSHBACK.line).getAttribute("dir")).toBe("auto");
     expect(within(card).getByText("Don't discount before you know")).toBeTruthy();
     const moment = within(card).getByTestId("move-moment");
-    expect(within(moment).getByText("Honestly this is more than we budgeted.").getAttribute("dir")).toBe("auto");
+    expect(within(moment).getByText("Honestly this is more than we budgeted.")).toBeTruthy();
+    expect(moment.getAttribute("dir")).toBe("auto");
     expect(within(moment).getByText("Marco")).toBeTruthy();
     expect(within(moment).getByText("12:40")).toBeTruthy();
   });
