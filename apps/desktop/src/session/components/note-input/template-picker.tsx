@@ -395,7 +395,7 @@ export function TemplatePickerPopover({
                   "flex h-8 items-center gap-2 rounded-md px-2.5",
                 ])}
               >
-                <MagnifyingGlass className="text-muted-foreground h-4 w-4" />
+                <MagnifyingGlass className="text-muted-foreground size-3.5" />
                 <input
                   ref={searchInputRef}
                   autoFocus
@@ -404,12 +404,12 @@ export function TemplatePickerPopover({
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={handleSearchInputKeyDown}
                   placeholder={t`Search templates...`}
-                  className="placeholder:text-muted-foreground flex-1 bg-transparent text-sm focus:outline-hidden"
+                  className="placeholder:text-muted-foreground flex-1 bg-transparent text-body focus:outline-hidden"
                 />
                 {search && (
                   <button
                     onClick={() => setSearch("")}
-                    className="hover:bg-accent rounded-xs p-0.5"
+                    className="hover:bg-muted rounded-sm p-0.5"
                   >
                     <X className="text-muted-foreground h-3 w-3" />
                   </button>
@@ -417,7 +417,7 @@ export function TemplatePickerPopover({
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-b-[20px]">
+            <div className="relative overflow-hidden">
               <div
                 className={cn(["scroll-fade-y max-h-80 overflow-y-auto p-1"])}
               >
@@ -467,7 +467,7 @@ export function TemplatePickerPopover({
                           );
                         })
                       ) : (
-                        <div className="text-muted-foreground px-2 py-3 text-sm">
+                        <div className="text-muted-foreground px-2 py-3 text-body">
                           {section.emptyMessage}
                         </div>
                       )}
@@ -481,7 +481,7 @@ export function TemplatePickerPopover({
           <button
             onClick={handleSeeAllTemplates}
             className={cn([
-              "flex w-full items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium",
+              "flex w-full items-center justify-center gap-1 px-3 py-1.5 text-label font-medium",
               "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
             ])}
           >
@@ -554,7 +554,7 @@ function TemplateSection({
           {icon}
           <p
             className={cn([
-              "text-muted-foreground text-xs font-medium",
+              "text-muted-foreground text-label font-medium",
               uppercase && "uppercase",
             ])}
           >
@@ -597,16 +597,19 @@ function TemplateResultButton({
     >
       <button
         ref={buttonRef}
-        className="flex min-w-0 flex-1 items-center gap-1.5 text-left focus:outline-hidden"
+        className="flex min-w-0 flex-1 items-center gap-1.5 text-start focus:outline-hidden"
         onClick={onClick}
         onKeyDown={onKeyDown}
       >
-        <TemplateIconGlyph icon={icon} className="size-4 text-sm" />
-        <span className="text-foreground min-w-0 truncate text-sm font-medium">
+        <TemplateIconGlyph icon={icon} className="size-4 text-body" />
+        <span className="text-foreground min-w-0 truncate text-body font-medium">
           {title}
         </span>
         {isFavorite ? (
-          <Heart aria-hidden className="size-3.5 shrink-0 text-rose-500" />
+          <Heart
+            aria-hidden
+            className="text-foreground size-3.5 shrink-0 [&_path]:fill-current"
+          />
         ) : null}
       </button>
       {regenerateLabel && onRegenerate ? (
@@ -620,7 +623,7 @@ function TemplateResultButton({
             onRegenerate();
           }}
           className={cn([
-            "text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+            "text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-caption font-medium",
             isRegenerating ? "cursor-not-allowed opacity-70" : "cursor-pointer",
           ])}
         >

@@ -121,7 +121,7 @@ function HeaderViewEnhancedInactive({
       {isGenerating ? (
         <Spinner size={16} className="shrink-0" />
       ) : templateIcon ? (
-        <TemplateIconGlyph icon={templateIcon} className="size-4 text-sm" />
+        <TemplateIconGlyph icon={templateIcon} className="size-4 text-body" />
       ) : (
         <Sparkle className="size-4" />
       )}
@@ -257,25 +257,19 @@ function HeaderViewEnhancedActive({
           "max-w-56 min-w-[62px] gap-1.5 px-2 @max-[480px]:max-w-12 @max-[480px]:min-w-12 @max-[480px]:gap-0 @max-[480px]:px-1.5",
           isGenerating ? "cursor-not-allowed opacity-70" : "cursor-pointer",
           isError
-            ? [
-                "text-red-600 hover:bg-red-50 hover:text-red-700 focus-visible:bg-red-50",
-                "dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300 dark:focus-visible:bg-red-950/50",
-              ]
-            : [
-                "focus-visible:text-foreground focus-visible:bg-white",
-                "dark:focus-visible:text-primary dark:focus-visible:bg-white",
-              ],
+            ? "text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10"
+            : "focus-visible:text-foreground focus-visible:bg-muted",
         ]),
       )}
     >
       {isGenerating ? (
         <Spinner size={16} className="shrink-0" />
       ) : templateIcon ? (
-        <TemplateIconGlyph icon={templateIcon} className="size-4 text-sm" />
+        <TemplateIconGlyph icon={templateIcon} className="size-4 text-body" />
       ) : (
         <Sparkle className="size-4" />
       )}
-      <span className="min-w-0 truncate text-xs font-medium @max-[480px]:sr-only">
+      <span className="min-w-0 truncate text-label font-medium @max-[480px]:sr-only">
         {viewTitle}
       </span>
       <CaretDown className="size-3.5" />

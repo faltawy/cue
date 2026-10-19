@@ -285,8 +285,8 @@ function TabContentNoteInner({
               data-session-top-audio-player
               className="shrink-0 px-1 pt-1 pb-2"
             >
-              <div className="border-border/70 bg-card/80 overflow-hidden rounded-[22px] border">
-                <AudioPlayer.Timeline contentClassName="py-1.5 pr-3 pl-1" />
+              <div className="border-border bg-background overflow-hidden rounded-lg border">
+                <AudioPlayer.Timeline contentClassName="py-1.5 pe-3 ps-1" />
               </div>
             </div>
           ) : null}

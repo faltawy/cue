@@ -16,7 +16,7 @@ export function LiveTranscriptInterruptedNotice({
     <p
       role="status"
       className={cn([
-        "text-muted-foreground mx-auto max-w-md px-6 text-center text-sm leading-relaxed",
+        "text-muted-foreground mx-auto max-w-md px-6 text-center text-body leading-relaxed",
         className,
       ])}
     >

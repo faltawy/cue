@@ -29,9 +29,7 @@ export function SessionSurface({
           <div
             className={cn([
               "flex h-full min-h-0 flex-1 flex-col",
-              overlay
-                ? "origin-center scale-[1.03] blur-[22px] select-none"
-                : null,
+              overlay ? "invisible" : null,
             ])}
           >
             {header ? (

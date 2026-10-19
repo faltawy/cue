@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import type { EventParticipant } from "@anlg/store";
 import { MagnifyingGlass, Plus } from "@anlg/ui/components/icons";
+import { buttonVariants } from "@anlg/ui/components/ui/button";
 import { Checkbox } from "@anlg/ui/components/ui/checkbox";
 import {
   Popover,
@@ -101,7 +102,7 @@ export function SpeakerAssignPopover({
           type="button"
           data-transcript-speaker-assign
           className={cn([
-            "text-muted-foreground -my-0.5 inline-flex cursor-pointer items-center gap-1.5 rounded-full py-0.5 pe-2 font-semibold",
+            "text-muted-foreground -my-0.5 inline-flex cursor-pointer items-center gap-1.5 rounded-sm py-0.5 pe-1 font-medium",
             "hover:text-foreground focus-visible:text-foreground underline-offset-2 hover:underline focus-visible:underline",
             open ? "text-foreground underline" : null,
             className,
@@ -510,7 +511,7 @@ export function SpeakerParticipantPicker({
               ref={searchInputRef}
               autoFocus
               type="search"
-              className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm outline-hidden"
+              className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-body outline-hidden"
               placeholder={t`Select or type to add speaker`}
               value={query}
               onChange={(e) => {
@@ -524,7 +525,7 @@ export function SpeakerParticipantPicker({
           <div className="py-1 pb-3">
             {groups.map((group) => (
               <div key={group.title}>
-                <div className="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium uppercase">
+                <div className="text-muted-foreground px-3 pt-2 pb-1 text-caption font-medium uppercase">
                   {group.title === "Participants" ? (
                     <Trans>Participants</Trans>
                   ) : (
@@ -545,7 +546,7 @@ export function SpeakerParticipantPicker({
             {createOption && (
               <div>
                 {!hasPeopleGroup && (
-                  <div className="text-muted-foreground px-3 pt-2 pb-1 text-[11px] font-medium uppercase">
+                  <div className="text-muted-foreground px-3 pt-2 pb-1 text-caption font-medium uppercase">
                     <Trans>People</Trans>
                   </div>
                 )}
@@ -558,7 +559,7 @@ export function SpeakerParticipantPicker({
             )}
 
             {!createOption && groups.length === 0 && (
-              <p className="text-muted-foreground px-3 py-2 text-xs">
+              <p className="text-muted-foreground px-3 py-2 text-label">
                 {query.trim() ? (
                   <Trans>No matching people</Trans>
                 ) : (
@@ -570,7 +571,7 @@ export function SpeakerParticipantPicker({
             {!query.trim() && (
               <button
                 type="button"
-                className="hover:bg-accent flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+                className="hover:bg-accent flex w-full items-center gap-2 px-3 py-1.5 text-start text-body"
                 onClick={() => searchInputRef.current?.focus()}
               >
                 <Plus className="size-4" />
@@ -580,14 +581,14 @@ export function SpeakerParticipantPicker({
           </div>
         </div>
       </div>
-      <div className="flex shrink-0 items-center justify-end gap-3 py-1 pl-2">
+      <div className="flex shrink-0 items-center justify-end gap-3 py-1 ps-2">
         {showAssignmentScope && (
           <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2">
             <Checkbox
               checked={applyToAllMatching}
               onCheckedChange={(value) => setApplyToAllMatching(value === true)}
             />
-            <span className="text-muted-foreground text-sm whitespace-nowrap">
+            <span className="text-muted-foreground text-body whitespace-nowrap">
               <Trans>Apply to all</Trans>
             </span>
           </label>
@@ -595,9 +596,7 @@ export function SpeakerParticipantPicker({
         <button
           type="button"
           className={cn([
-            "bg-primary text-primary-foreground h-8 rounded-full px-3 text-xs font-medium",
-            "hover:bg-primary/90",
-            "disabled:pointer-events-none disabled:opacity-50",
+            buttonVariants({ size: "sm" }),
           ])}
           disabled={!selectedOption || assigning}
           onClick={handleConfirm}
@@ -633,7 +632,7 @@ function ParticipantOptionButton({
       type="button"
       aria-pressed={selected}
       className={cn([
-        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm",
+        "flex w-full items-center gap-2 px-3 py-1.5 text-start text-body",
         selected ? "bg-accent text-accent-foreground" : "hover:bg-accent",
       ])}
       onClick={() => onSelect(option)}
@@ -655,7 +654,7 @@ function ParticipantOptionButton({
           {option.isCreateOption ? t`Add "${option.name}"` : option.name}
         </span>
         {option.email && (
-          <span className="text-muted-foreground block truncate text-xs">
+          <span className="text-muted-foreground block truncate text-label">
             {option.email}
           </span>
         )}

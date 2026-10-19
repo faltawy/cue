@@ -48,7 +48,7 @@ describe("TranscriptEmptyState", () => {
     );
     expect(
       screen.getByText("The transcription provider timed out.").className,
-    ).toContain("text-sm");
+    ).toContain("text-body");
 
     fireEvent.click(screen.getByRole("button", { name: "Re-transcribe" }));
     expect(onRetranscribe).toHaveBeenCalledTimes(1);

@@ -66,7 +66,7 @@ export function VersionHistoryDialog({
         className="flex max-h-[min(560px,calc(100vh-80px))] w-full max-w-lg flex-col gap-4 overflow-hidden"
       >
         <DialogHeader>
-          <DialogTitle className="text-base">
+          <DialogTitle>
             <Trans>Version history</Trans>
           </DialogTitle>
           <DialogDescription>
@@ -75,11 +75,11 @@ export function VersionHistoryDialog({
         </DialogHeader>
 
         {entries.length === 0 ? (
-          <p className="text-muted-foreground py-6 text-center text-xs">
+          <p className="text-muted-foreground text-ui py-6 text-center">
             <Trans>No earlier versions yet.</Trans>
           </p>
         ) : (
-          <ol className="divide-border/60 scrollbar-soft min-h-0 flex-1 divide-y overflow-y-auto">
+          <ol className="divide-border scrollbar-soft min-h-0 flex-1 divide-y overflow-y-auto">
             {entries.map((entry) => {
               const preview = previewFromBody(entry.body, entry.bodyFormat);
               return (
@@ -88,8 +88,8 @@ export function VersionHistoryDialog({
                   className="flex items-start justify-between gap-3 py-3"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-medium">{entry.label}</p>
-                    <p className="text-muted-foreground mt-0.5 text-[11px]">
+                    <p className="text-ui font-medium">{entry.label}</p>
+                    <p className="text-muted-foreground text-caption mt-0.5 tabular-nums">
                       {entry.at > 0
                         ? formatDistanceToNow(new Date(entry.at), {
                             addSuffix: true,
@@ -98,7 +98,7 @@ export function VersionHistoryDialog({
                     </p>
                     <p
                       className={cn([
-                        "text-muted-foreground mt-1 text-xs leading-5",
+                        "text-muted-foreground text-label mt-1",
                         "line-clamp-3 break-words",
                       ])}
                     >
@@ -126,7 +126,7 @@ export function VersionHistoryDialog({
         )}
 
         {restoreMutation.error && (
-          <p className="text-xs text-red-500">
+          <p className="text-label text-destructive">
             {restoreMutation.error.message}
           </p>
         )}

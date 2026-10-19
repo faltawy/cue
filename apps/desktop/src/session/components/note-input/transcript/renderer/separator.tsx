@@ -5,7 +5,7 @@ export function TranscriptSeparator() {
     <div
       className={cn([
         "flex items-center gap-3",
-        "text-muted-foreground text-xs font-normal",
+        "text-muted-foreground text-label font-normal",
       ])}
     >
       <div className="border-border/40 flex-1 border-t" />

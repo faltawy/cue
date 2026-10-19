@@ -85,8 +85,8 @@ export const TitleInput = forwardRef<
             className={cn([
               "text-muted-foreground animate-pulse",
               variant === "breadcrumb"
-                ? "text-sm leading-5"
-                : "text-xl font-semibold",
+                ? "text-body leading-5"
+                : "text-page-title",
             ])}
           >
             <Trans>Generating title...</Trans>
@@ -108,8 +108,8 @@ export const TitleInput = forwardRef<
             className={cn([
               "animate-reveal-left whitespace-nowrap",
               variant === "breadcrumb"
-                ? "text-sm leading-5"
-                : "text-xl font-semibold",
+                ? "text-body leading-5"
+                : "text-page-title",
             ])}
           >
             {generatedTitle}
@@ -395,8 +395,8 @@ const TitleInputInner = memo(
           className={cn([
             "group/title-input relative grid w-fit max-w-full grid-cols-[minmax(0,1fr)] items-center overflow-hidden",
             variant === "breadcrumb"
-              ? "h-5 text-sm leading-5"
-              : "h-8 text-xl font-semibold",
+              ? "h-5 text-body leading-5"
+              : "text-page-title h-8",
           ])}
         >
           <span
@@ -450,8 +450,8 @@ const TitleInputInner = memo(
               "border-none bg-transparent focus:outline-hidden",
               "placeholder:text-muted-foreground text-start",
               variant === "breadcrumb"
-                ? "h-5 appearance-none p-0 text-sm leading-5 text-neutral-700 focus:underline dark:text-white"
-                : "text-xl font-semibold",
+                ? "text-foreground h-5 appearance-none p-0 text-ui focus:underline"
+                : "text-page-title",
               variant === "breadcrumb" &&
                 (isTitleFocused
                   ? "overflow-x-auto whitespace-nowrap"
@@ -469,8 +469,8 @@ const TitleInputInner = memo(
                 className={cn([
                   "group-hover/title-input:animate-title-hover-scroll whitespace-nowrap group-hover/title-input:will-change-transform",
                   variant === "breadcrumb"
-                    ? "text-sm leading-5"
-                    : "text-xl font-semibold",
+                    ? "text-body leading-5"
+                    : "text-page-title",
                 ])}
               >
                 {title}

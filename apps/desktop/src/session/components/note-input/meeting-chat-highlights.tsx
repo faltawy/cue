@@ -21,7 +21,7 @@ export function MeetingChatHighlights({ sessionId }: { sessionId: string }) {
       className="border-border/70 bg-muted/30 mx-auto mt-4 mb-6 w-full max-w-3xl rounded-xl border px-3 py-2.5"
       onClick={(event) => event.stopPropagation()}
     >
-      <h2 className="text-muted-foreground mb-2 text-xs font-medium">
+      <h2 className="text-muted-foreground mb-2 text-label font-medium">
         {t`Meeting chat`}
       </h2>
       <div className="flex flex-col gap-2">
@@ -46,8 +46,8 @@ function MeetingChatRow({ record }: { record: MeetingChatRecord }) {
     .join(" · ");
 
   return (
-    <div className="text-foreground text-sm leading-5">
-      <div className="text-muted-foreground text-xs">
+    <div className="text-foreground text-body leading-5">
+      <div className="text-muted-foreground text-label">
         {platform}
         {metadata ? ` · ${metadata}` : null}
       </div>

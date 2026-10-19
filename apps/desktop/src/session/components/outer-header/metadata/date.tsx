@@ -35,17 +35,16 @@ export function DateEditor({ sessionId }: { sessionId: string }) {
     return (
       <div className="flex h-7 items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-muted-foreground text-sm">{noteDate}</div>
+          <div className="text-muted-foreground text-ui tabular-nums">{noteDate}</div>
         </div>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="text-muted-foreground hover:bg-accent hover:text-foreground size-7 rounded-full"
           onClick={() => setIsEditing(true)}
           aria-label={t`Edit date`}
         >
-          <Pencil size={16} />
+          <Pencil />
         </Button>
       </div>
     );
@@ -130,7 +129,7 @@ function EditableDateForm({
             <Input
               autoFocus
               type="datetime-local"
-              className="h-7 w-full min-w-0 border-0 px-0 py-0 shadow-none focus-visible:ring-0"
+              className="h-7 w-full min-w-0 border-0 px-0 py-0"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onKeyDown={(e) => {
@@ -152,11 +151,11 @@ function EditableDateForm({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground size-7 shrink-0 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-300"
+                  className="shrink-0"
                   onClick={onCancel}
                   aria-label={t`Cancel date edit`}
                 >
-                  <X size={16} />
+                  <X />
                 </Button>
               )}
 
@@ -166,12 +165,12 @@ function EditableDateForm({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="text-muted-foreground size-7 shrink-0 rounded-full hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/50 dark:hover:text-green-300"
+                    className="shrink-0"
                     onClick={() => void form.handleSubmit()}
                     disabled={!canSubmit}
                     aria-label={t`Save date`}
                   >
-                    <Check size={16} />
+                    <Check />
                   </Button>
                 )}
               </form.Subscribe>
@@ -183,7 +182,7 @@ function EditableDateForm({
       <form.Field name="createdAt">
         {(field) =>
           field.state.meta.errors[0] ? (
-            <div className="text-xs text-red-600">
+            <div className="text-label text-destructive">
               {field.state.meta.errors[0]}
             </div>
           ) : null

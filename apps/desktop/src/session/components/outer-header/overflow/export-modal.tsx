@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
+import { Radio } from "@anlg/ui/components/ui/radio";
 
 import { formatDate, formatDuration } from "./export-utils";
 
@@ -415,12 +416,10 @@ export function ExportModal({
                 key={f}
                 className="text-ui flex cursor-pointer items-center gap-1.5"
               >
-                <input
-                  type="radio"
+                <Radio
                   name="export-format"
                   checked={format === f}
                   onChange={() => setFormat(f)}
-                  className="accent-primary size-3.5"
                 />
                 {f === "md"
                   ? "Markdown"

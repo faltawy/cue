@@ -45,7 +45,7 @@ export function AlwaysOnTop() {
       <span>
         <Trans>Always on Top</Trans>
       </span>
-      {enabled && <Check className="ml-auto" />}
+      {enabled && <Check className="ms-auto" />}
     </DropdownMenuItem>
   );
 }

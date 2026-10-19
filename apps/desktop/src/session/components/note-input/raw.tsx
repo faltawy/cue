@@ -462,12 +462,12 @@ function TemplateEmptyState({
         type="button"
         onClick={handleCreateTemplate}
         className={cn([
-          "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ml-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-left",
+          "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-start",
           "text-muted-foreground hover:text-foreground focus-visible:text-foreground transition-colors focus-visible:outline-hidden",
         ])}
       >
         <Plus aria-hidden className="size-4" />
-        <span className="text-sm font-medium">{t`New template`}</span>
+        <span className="text-body font-medium">{t`New template`}</span>
       </button>
     </>
   );
@@ -489,7 +489,7 @@ function TemplateSection({
 
   return (
     <>
-      <p className="text-muted-foreground flex h-8 items-center text-xs">
+      <p className="text-muted-foreground flex h-8 items-center text-label">
         {label}
       </p>
       {templates.map((template) => (
@@ -498,12 +498,12 @@ function TemplateSection({
           type="button"
           onClick={() => onApply(template)}
           className={cn([
-            "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ml-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-left",
+            "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-start",
             "text-muted-foreground hover:text-foreground focus-visible:text-foreground transition-colors focus-visible:outline-hidden",
           ])}
         >
-          <TemplateIconGlyph icon={template.icon} className="size-4 text-sm" />
-          <span className="min-w-0 truncate text-sm font-medium">
+          <TemplateIconGlyph icon={template.icon} className="size-4 text-body" />
+          <span className="min-w-0 truncate text-body font-medium">
             {template.title || t`Untitled`}
           </span>
         </button>

@@ -135,7 +135,7 @@ export function ParticipantInput({ sessionId }: { sessionId: string }) {
         {pendingParticipants.map((pending) => (
           <Badge
             key={pending.key}
-            className="bg-foreground/10 flex items-center gap-1 px-2 py-0.5 text-xs opacity-60"
+            className="bg-foreground/10 flex items-center gap-1 px-2 py-0.5 text-label opacity-60"
           >
             <span>{pending.name}</span>
             <CircleNotch className="size-2.5 animate-spin" aria-hidden="true" />
@@ -145,7 +145,7 @@ export function ParticipantInput({ sessionId }: { sessionId: string }) {
         <input
           ref={inputRef}
           type="text"
-          className="placeholder:text-muted-foreground min-w-[120px] flex-1 bg-transparent text-sm outline-hidden"
+          className="placeholder:text-muted-foreground min-w-[120px] flex-1 bg-transparent text-body outline-hidden"
           placeholder={placeholder}
           value={inputValue}
           onChange={(e) => handleInputChange(e.target.value)}

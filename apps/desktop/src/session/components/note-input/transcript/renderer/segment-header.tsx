@@ -21,7 +21,7 @@ export function SegmentHeader({
   selected?: boolean;
 }) {
   const { selectMode } = useTranscriptSelectionState();
-  const headerClassName = cn(["relative py-1", "text-xs", "flex items-center gap-2"]);
+  const headerClassName = cn(["relative py-1", "text-label", "flex items-center gap-2"]);
 
   return (
     <div className={headerClassName}>

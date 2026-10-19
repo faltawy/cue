@@ -136,15 +136,15 @@ export function EventDisplay({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="text-foreground min-w-0 text-base font-medium break-words">
+      <div className="text-foreground text-strong min-w-0 font-medium break-words">
         {event.title || "Untitled Event"}
       </div>
 
-      <div className="bg-accent h-px" />
+      <div className="bg-border h-px" />
 
       {shouldShowLocation && (
         <>
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <div className="text-muted-foreground flex items-center gap-2 text-body">
             <MapPin size={16} className="text-muted-foreground shrink-0" />
             <span className="min-w-0 break-words">{event.location}</span>
           </div>
@@ -154,7 +154,7 @@ export function EventDisplay({
       {event.meetingLink && (
         <>
           <div className="flex items-center justify-between gap-2">
-            <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-sm">
+            <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-body">
               <VideoCamera
                 size={16}
                 className="text-muted-foreground shrink-0"
@@ -176,7 +176,7 @@ export function EventDisplay({
       )}
 
       {event.startedAt && (
-        <div className="text-muted-foreground text-sm">
+        <div className="text-muted-foreground text-body">
           {formatEventDateTime()}
         </div>
       )}
@@ -185,8 +185,8 @@ export function EventDisplay({
 
       {event.description && (
         <>
-          <div className="bg-accent h-px" />
-          <div className="select-text-deep text-muted-foreground text-sm break-words whitespace-pre-wrap">
+          <div className="bg-border h-px" />
+          <div className="select-text-deep text-muted-foreground text-body break-words whitespace-pre-wrap">
             {renderDescriptionWithLinks(event.description)}
           </div>
         </>

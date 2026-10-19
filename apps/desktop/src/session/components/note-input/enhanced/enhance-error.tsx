@@ -38,15 +38,12 @@ export function EnhanceError({
       role="alert"
       className="flex h-full min-h-[400px] flex-col items-center justify-center px-6 text-center"
     >
-      <WarningCircle
-        aria-hidden
-        className="text-muted-foreground mb-5 size-9 stroke-[1.5]"
-      />
-      <div className="mb-6 flex max-w-md flex-col gap-2">
-        <p className="text-base font-medium">
+      <WarningCircle aria-hidden className="text-destructive mb-3 size-4" />
+      <div className="mb-4 flex max-w-md flex-col gap-1">
+        <p className="text-title">
           <Trans>Summary generation failed</Trans>
         </p>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="text-muted-foreground text-ui text-balance">
           {error?.message || (
             <Trans>Something went wrong while generating the summary.</Trans>
           )}
@@ -57,7 +54,6 @@ export function EnhanceError({
         onClick={handleRetry}
         disabled={!model}
         size="sm"
-        className="gap-2"
         variant="default"
       >
         <ArrowsClockwise size={16} />
@@ -93,5 +89,5 @@ function ErrorSourceNote({ error }: { error: Error | undefined }) {
       break;
   }
 
-  return <p className="text-muted-foreground text-xs">{label}</p>;
+  return <p className="text-muted-foreground text-label">{label}</p>;
 }

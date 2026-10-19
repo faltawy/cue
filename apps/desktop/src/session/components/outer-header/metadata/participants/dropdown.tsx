@@ -1,6 +1,7 @@
 import { type CSSProperties, useEffect, useRef } from "react";
 
 import { ArrowElbowDownLeft } from "@anlg/ui/components/icons";
+import { floatingSurfaceClassName } from "@anlg/ui/components/ui/floating-content";
 import { cn } from "@anlg/utils";
 
 type DropdownOption = {
@@ -47,21 +48,21 @@ export function ParticipantDropdown({
     <div
       ref={floatingRef}
       style={floatingStyles}
-      className="bg-popover overflow-hidden rounded-md border shadow-md"
+      className={cn([floatingSurfaceClassName, "overflow-hidden p-1"])}
       onMouseDown={(event) => {
         event.preventDefault();
         event.stopPropagation();
       }}
     >
-      <div ref={listRef} className="max-h-50 overflow-auto py-1">
+      <div ref={listRef} className="max-h-50 overflow-auto">
         {options.map((option, index) => (
           <button
             key={option.id}
             type="button"
             tabIndex={-1}
             className={cn([
-              "w-full px-3 py-1.5 text-left text-sm",
-              selectedIndex === index ? "bg-muted" : "hover:bg-accent",
+              "text-ui flex h-7 w-full items-center rounded-md px-2 text-start",
+              selectedIndex === index ? "bg-muted" : "hover:bg-muted",
             ])}
             onClick={() => onSelect(option)}
             onMouseEnter={() => onHover(index)}
@@ -75,7 +76,7 @@ export function ParticipantDropdown({
                 <span className="flex items-center gap-2">
                   <span className="font-medium">{option.name}</span>
                   {option.jobTitle && (
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-muted-foreground text-label">
                       {option.jobTitle}
                     </span>
                   )}

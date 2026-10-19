@@ -28,6 +28,11 @@ import {
   UserSwitch,
   X,
 } from "@anlg/ui/components/icons";
+import { buttonVariants } from "@anlg/ui/components/ui/button";
+import {
+  floatingSurfaceClassName,
+  menuItemClassName,
+} from "@anlg/ui/components/ui/floating-content";
 import {
   Popover,
   PopoverContent,
@@ -52,14 +57,11 @@ import {
 import { useAutoCloser } from "~/shared/hooks/useAutoCloser";
 
 const MENU_CONTAINER_CLASSES = [
-  "pointer-events-auto",
-  "bg-card shadow-lg rounded-md border border-border p-1",
+  "pointer-events-auto p-1",
+  floatingSurfaceClassName,
 ];
 
-const MENU_BUTTON_CLASSES = [
-  "flex w-full items-center justify-start gap-2 px-2 py-1.5 text-left text-xs rounded-xs",
-  "hover:bg-accent transition-colors",
-];
+const MENU_BUTTON_CLASSES = [menuItemClassName, "w-full hover:bg-muted"];
 
 export type TranscriptContextMenuRequest = {
   id: string;
@@ -165,8 +167,8 @@ export function MultiSelectionBar({
   const bar = (
     <div
       className={cn([
-        "border-border bg-card flex items-center gap-2 rounded-full border p-1 pl-3 shadow-lg",
-        "text-xs",
+        floatingSurfaceClassName,
+        "text-ui flex items-center gap-1 p-1 ps-3",
         fabSelectionHost
           ? null
           : "absolute bottom-4 left-1/2 z-40 -translate-x-1/2",
@@ -183,7 +185,7 @@ export function MultiSelectionBar({
           <button
             type="button"
             disabled={deleteMutation.isPending}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 flex h-7 shrink-0 items-center rounded-full px-3 font-medium whitespace-nowrap"
+            className={buttonVariants({ size: "sm" })}
           >
             <Trans>Change speaker</Trans>
           </button>
@@ -207,8 +209,7 @@ export function MultiSelectionBar({
           type="button"
           disabled={!canMerge || deleteMutation.isPending}
           className={cn([
-            "hover:bg-accent flex h-7 items-center gap-1.5 rounded-full px-2 font-medium",
-            "disabled:pointer-events-none disabled:opacity-50",
+            buttonVariants({ size: "sm", variant: "ghost" }),
           ])}
           onClick={() => void handleMerge()}
         >
@@ -221,8 +222,8 @@ export function MultiSelectionBar({
           type="button"
           disabled={deleteMutation.isPending}
           className={cn([
-            "text-destructive hover:bg-destructive/10 flex h-7 items-center gap-1.5 rounded-full px-2 font-medium",
-            "disabled:pointer-events-none disabled:opacity-50",
+            buttonVariants({ size: "sm", variant: "ghost" }),
+            "text-destructive hover:bg-destructive/10 hover:text-destructive",
           ])}
           onClick={() => deleteMutation.mutate()}
         >
@@ -234,7 +235,7 @@ export function MultiSelectionBar({
         type="button"
         aria-label={t`Clear selection`}
         disabled={deleteMutation.isPending}
-        className="hover:bg-accent flex size-7 items-center justify-center rounded-full"
+        className={buttonVariants({ size: "icon", variant: "ghost" })}
         onClick={onClear}
       >
         <X className="size-3.5" />
@@ -422,7 +423,7 @@ function SelectionFloatingMenu({
           className={cn([MENU_CONTAINER_CLASSES, "min-w-40"])}
           onMouseDown={handleMouseDown}
         >
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col">
             {onEdit && (
               <button
                 type="button"

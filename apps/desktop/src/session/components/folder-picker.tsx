@@ -63,24 +63,24 @@ export function FolderPicker({
           }
           title={currentPath ? currentPath : t`Select folder`}
           className={cn([
-            "flex h-7 items-center rounded-full [&_svg]:size-4",
+            "flex h-7 items-center rounded-md [&_svg]:size-3.5",
             currentPath
               ? "max-w-36 min-w-0 gap-1 px-1.5 @max-[480px]:w-7 @max-[480px]:gap-0 @max-[480px]:px-0"
               : "w-7 justify-center",
-            "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-            open && "bg-accent text-foreground",
+            "text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-100",
+            open && "bg-muted text-foreground",
           ])}
         >
           {currentPath ? (
             <TemplateIconGlyph
               icon={resolvedFolderIcon(currentPath, folderIcons)}
-              className="size-4 shrink-0"
+              className="size-3.5 shrink-0"
             />
           ) : (
-            <Folder className="size-4 shrink-0" />
+            <Folder className="size-3.5 shrink-0" />
           )}
           {currentPath ? (
-            <span className="min-w-0 truncate text-xs text-neutral-600 @max-[480px]:sr-only dark:text-neutral-300">
+            <span className="text-label min-w-0 truncate @max-[480px]:sr-only">
               {currentPath}
             </span>
           ) : null}
@@ -190,7 +190,7 @@ export function FolderPickerContent({
           className="h-8 py-0"
         />
         <CommandList className="p-1">
-          <CommandEmpty className="text-muted-foreground px-2.5 py-2 text-left text-sm">
+          <CommandEmpty className="text-muted-foreground px-2.5 py-2 text-start text-body">
             {trimmedQuery
               ? normalizedQuery === null
                 ? t`Enter a valid folder name.`
@@ -240,7 +240,7 @@ export function FolderPickerContent({
         type="button"
         onClick={handleSeeAllFolders}
         className={cn([
-          "flex w-full items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium",
+          "flex w-full items-center justify-center gap-1 px-3 py-1.5 text-label font-medium",
           "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
         ])}
       >

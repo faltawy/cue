@@ -65,17 +65,11 @@ export function ParticipantChip({
   return (
     <Badge
       className={cn([
-        "bg-foreground/10 hover:bg-foreground/15 relative flex cursor-pointer items-center gap-1 overflow-hidden px-2 py-0.5 text-xs",
-        isEnhancing && "ring-ring/20 ring-1",
+        "hover:bg-muted hover:text-foreground relative flex cursor-pointer items-center gap-1 overflow-hidden",
+        isEnhancing && "coach-skeleton",
       ])}
       onClick={handleClick}
     >
-      {isEnhancing && (
-        <span
-          aria-hidden="true"
-          className="animate-shimmer pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/60 to-transparent"
-        />
-      )}
       <span className="relative">{displayName}</span>
       {canEnhance && (
         <EnhanceContactButton
@@ -93,13 +87,13 @@ export function ParticipantChip({
         type="button"
         variant="ghost"
         size="sm"
-        className="relative ml-0.5 h-3 w-3 p-0 hover:bg-transparent"
+        className="relative ms-0.5 size-3 p-0 hover:bg-transparent"
         onClick={(e) => {
           e.stopPropagation();
           handleRemove();
         }}
       >
-        <X className="h-2.5 w-2.5" />
+        <X className="size-3" />
       </Button>
     </Badge>
   );
@@ -125,7 +119,7 @@ function EnhanceContactButton({
           variant="ghost"
           size="sm"
           aria-label={t`Enhance contact ${label}`}
-          className="text-muted-foreground hover:text-foreground relative ml-0.5 h-3.5 w-3.5 p-0 hover:bg-transparent"
+          className="text-muted-foreground hover:text-foreground relative ms-0.5 h-3.5 w-3.5 p-0 hover:bg-transparent"
           disabled={isDisabled}
           onClick={(e) => {
             e.stopPropagation();

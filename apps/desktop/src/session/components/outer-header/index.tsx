@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { Headset, Square, VideoCamera } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
+import { tooltipSurfaceClassName } from "@anlg/ui/components/ui/tooltip";
 import { cn, parseEventInstant, safeParseDate } from "@anlg/utils";
 
 import { FolderPicker } from "../folder-picker";
@@ -76,12 +77,12 @@ export function OuterHeader({
         // sidebar toggle row (pt-[9px] + size-7).
         "h-12 pb-0.5",
         standaloneWindow &&
-          (showWindowControlsGutter ? WINDOW_CONTROLS_GUTTER_CLASS : "pl-2"),
-        !standaloneWindow && !showSidebarTimelineHeaderGutter && "pl-2",
+          (showWindowControlsGutter ? WINDOW_CONTROLS_GUTTER_CLASS : "ps-2"),
+        !standaloneWindow && !showSidebarTimelineHeaderGutter && "ps-2",
         showSidebarTimelineHeaderGutter &&
           (showWindowControlsGutter
             ? WINDOW_CONTROLS_GUTTER_PLUS_32_CLASS
-            : "pl-[32px]"),
+            : "ps-[32px]"),
       ])}
     >
       {viewSwitcher}
@@ -103,7 +104,7 @@ export function OuterHeader({
       />
       <div
         data-tauri-drag-region
-        className="relative z-10 flex shrink-0 items-center pr-1"
+        className="relative z-10 flex shrink-0 items-center pe-1"
       >
         {!showTitleInput && <FolderPicker sessionId={sessionId} align="end" />}
         <HeaderMeetingControl
@@ -243,7 +244,7 @@ function HeaderMeetingAction({
       return {
         label: t`Stop`,
         title: t`Stop listening`,
-        icon: <Square className="size-3 text-red-500" />,
+        icon: <Square className="size-3 text-destructive" />,
         onClick: stopListening,
       };
     }
@@ -267,7 +268,6 @@ function HeaderMeetingAction({
     };
   })();
   const disabled = sessionMode === "finalizing" || joiningMeeting;
-  const isPrimaryCta = sessionMode === "inactive";
   const showCountdown =
     Boolean(countdown.label) &&
     sessionMode !== "active" &&
@@ -275,7 +275,7 @@ function HeaderMeetingAction({
     sessionMode !== "finalizing";
 
   return (
-    <div className="relative mr-1 ml-1 flex min-w-0 shrink-0 items-center">
+    <div className="relative me-1 ms-1 flex min-w-0 shrink-0 items-center">
       <Button
         type="button"
         size="sm"
@@ -286,10 +286,7 @@ function HeaderMeetingAction({
         disabled={disabled}
         onClick={action.onClick}
         className={cn([
-          "max-w-56 shrink-0 gap-1.5 overflow-hidden border pr-2.5 pl-1.5 text-sm",
-          isPrimaryCta
-            ? "border-border text-foreground bg-transparent shadow-none"
-            : "border-border bg-card text-foreground",
+          "max-w-56 shrink-0 overflow-hidden ps-2",
           disabled && "cursor-default opacity-60",
         ])}
       >
@@ -299,14 +296,12 @@ function HeaderMeetingAction({
       {showCountdown ? (
         <div
           data-header-meeting-countdown
-          className="border-border bg-popover text-popover-foreground pointer-events-none absolute top-full left-1/2 z-20 mt-2 -translate-x-1/2 rounded-md border px-2.5 py-1 text-xs whitespace-nowrap tabular-nums shadow-sm"
+          className={cn([
+            tooltipSurfaceClassName,
+            "pointer-events-none absolute top-full left-1/2 z-20 mt-1.5 -translate-x-1/2 whitespace-nowrap tabular-nums",
+          ])}
         >
-          <span
-            data-header-meeting-countdown-tail
-            aria-hidden="true"
-            className="border-border bg-popover absolute -top-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 border-t border-l"
-          />
-          <span className="relative">{countdown.label}</span>
+          {countdown.label}
         </div>
       ) : null}
     </div>

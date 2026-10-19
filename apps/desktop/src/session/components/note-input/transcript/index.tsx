@@ -60,7 +60,7 @@ function TranscriptContent({
       {incompleteCapture && (
         <div
           role="status"
-          className="border-alert-border bg-alert text-foreground border-b px-4 py-2 text-sm"
+          className="border-alert-border bg-alert text-foreground border-b px-4 py-2 text-body"
         >
           <span className="font-medium">
             {incompleteCapture.audioDeletionFailed
