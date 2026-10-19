@@ -14,6 +14,7 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/pnpm_install
+      - uses: ./.github/actions/bun_install
       - run: pnpm -F ui build
       - run: pnpm -F desktop typecheck
       - run: pnpm -F desktop test
@@ -29,7 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/bun_install
-      - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun test
       - run: bun run build:sidecar
@@ -47,7 +47,10 @@ jobs:
       - uses: ./.github/actions/pnpm_install
       - uses: ./.github/actions/install_desktop_deps
       - uses: ./.github/actions/rust_install
-      - run: echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> $GITHUB_ENV
+      - uses: ./.github/actions/bun_install
+      - run: bun run build:sidecar
+        working-directory: apps/coach
+      - run: echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
       - run: cargo check --locked -p desktop --features dev
       - run: cargo test --locked -p tauri-plugin-coach
       - run: cargo test --locked -p cloudsync

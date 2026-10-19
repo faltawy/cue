@@ -1,3 +1,5 @@
+name: Install Rust
+description: Install the pinned toolchain and restore the cargo cache
 runs:
   using: "composite"
   steps:
@@ -15,3 +17,4 @@ runs:
       with:
         cache-targets: "true"
         prefix-key: v0-rust
+        cache-on-failure: "true"

@@ -1,4 +1,14 @@
+name: Install coach deps
+description: Set up Bun with a cache, then install apps/coach
 runs:
   using: "composite"
   steps:
     - uses: oven-sh/setup-bun@v2
+    - uses: actions/cache@v4
+      with:
+        path: ~/.bun/install/cache
+        key: bun-${{ runner.os }}-${{ hashFiles('apps/coach/bun.lock') }}
+        restore-keys: bun-${{ runner.os }}-
+    - run: bun install --frozen-lockfile
+      shell: bash
+      working-directory: apps/coach

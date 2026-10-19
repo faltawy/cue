@@ -1,8 +1,5 @@
-inputs:
-  target:
-    required: false
-    type: string
-
+name: Install desktop build deps
+description: Download the Metal toolchain on Xcode 26+
 runs:
   using: "composite"
   steps:
