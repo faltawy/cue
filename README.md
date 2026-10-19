@@ -39,4 +39,4 @@ cargo test -p tauri-plugin-coach
 
 ## Licence
 
-Cue is based on [Anarlog](https://github.com/fastrepl/anarlog) by Fastrepl, Inc., under the [MIT License](LICENSE). The coach includes code adapted from Catamorphic under Apache-2.0; see [`apps/coach/NOTICE`](apps/coach/NOTICE) and [LICENSING.md](LICENSING.md).
+Cue is based on [Anarlog](https://github.com/fastrepl/anarlog) by Fastrepl, Inc., under the [MIT License](LICENSE). See [LICENSING.md](LICENSING.md).
