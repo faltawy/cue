@@ -18,7 +18,13 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
     tauri::plugin::Builder::<tauri::Wry>::new(PLUGIN_NAME)
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app, _api| {
+            use tauri_specta::Event;
+
             specta_builder.mount_events(app);
+            let handle = app.clone();
+            tauri_plugin_updater2::UpdaterState::listen(app, move |_| {
+                let _ = handle.tray().refresh_menu();
+            });
             Ok(())
         })
         .build()

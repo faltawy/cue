@@ -52,6 +52,7 @@ vi.mock("./meeting-settings", () => ({
 }));
 vi.mock("./notification", () => ({ NotificationSettingsView: () => null }));
 vi.mock("./permissions", () => ({ Permissions: () => null }));
+vi.mock("./updates", () => ({ UpdateSettings: () => null }));
 vi.mock("./spoken-languages", () => ({ SpokenLanguagesView: () => null }));
 vi.mock("./storage", () => ({ StorageSettingsView: () => null }));
 vi.mock("./timezone", () => ({ TimezoneSelector: () => null }));

@@ -10,6 +10,7 @@ mod tray_settings;
 mod tray_show_events;
 mod tray_start;
 mod tray_stop;
+mod tray_update;
 mod tray_version;
 
 pub use app_info::AppInfo;
@@ -24,6 +25,7 @@ pub use tray_settings::TraySettings;
 pub use tray_show_events::TrayShowEvents;
 pub use tray_start::TrayStart;
 pub use tray_stop::TrayStop;
+pub use tray_update::TrayUpdate;
 pub use tray_version::TrayVersion;
 
 use tauri::{AppHandle, Result, menu::MenuItemKind};
@@ -90,6 +92,7 @@ menu_items! {
     TrayQuit => TrayQuit,
     TrayQuitCompletely => TrayQuitCompletely,
     TrayVersion => TrayVersion,
+    TrayUpdate => TrayUpdate,
     AppInfo => AppInfo,
     AppNew => AppNew,
 }

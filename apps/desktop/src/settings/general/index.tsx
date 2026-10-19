@@ -19,6 +19,7 @@ import { Permissions } from "./permissions";
 import { SpokenLanguagesView } from "./spoken-languages";
 import { StorageSettingsView } from "./storage";
 import { TimezoneSelector } from "./timezone";
+import { UpdateSettings } from "./updates";
 import { WeekStartSelector } from "./week-start";
 
 import { CoachShortcut } from "~/coach/shortcut";
@@ -297,6 +298,8 @@ function SettingsSectionContent({
           </div>
 
           <StorageSettingsView />
+
+          <UpdateSettings />
         </>
       )}
 

@@ -342,7 +342,10 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
             }
         }
 
-        for item in tray_menu_items(IS_RECORDING.load(Ordering::SeqCst)) {
+        for item in tray_menu_items(
+            IS_RECORDING.load(Ordering::SeqCst),
+            crate::menu_items::TrayUpdate::ready(app),
+        ) {
             match item {
                 Some(item) => menu.append(&item.build(app)?)?,
                 None => menu.append(&PredefinedMenuItem::separator(app)?)?,
@@ -619,9 +622,9 @@ mod thread_tests {
 }
 
 /// The tray menu from top to bottom after the agenda; `None` is a separator.
-fn tray_menu_items(recording: bool) -> Vec<Option<crate::AnlgMenuItem>> {
+fn tray_menu_items(recording: bool, update_ready: bool) -> Vec<Option<crate::AnlgMenuItem>> {
     use crate::AnlgMenuItem::*;
-    vec![
+    let mut items = vec![
         Some(TrayShowEvents),
         None,
         Some(TrayOpen),
@@ -635,7 +638,12 @@ fn tray_menu_items(recording: bool) -> Vec<Option<crate::AnlgMenuItem>> {
         None,
         Some(TrayHide),
         Some(TrayQuitCompletely),
-    ]
+    ];
+    if update_ready {
+        let version = items.iter().position(|item| *item == Some(TrayVersion));
+        items.insert(version.map_or(0, |index| index + 1), Some(TrayUpdate));
+    }
+    items
 }
 
 #[cfg(test)]
@@ -645,13 +653,20 @@ mod menu_tests {
 
     #[test]
     fn recording_menu_offers_stop_and_the_coach_instead_of_start() {
-        let recording = tray_menu_items(true);
+        let recording = tray_menu_items(true, false);
         assert!(recording.contains(&Some(AnlgMenuItem::TrayStop)));
         assert!(recording.contains(&Some(AnlgMenuItem::TrayCoach)));
         assert!(!recording.contains(&Some(AnlgMenuItem::TrayStart)));
 
-        let idle = tray_menu_items(false);
+        let idle = tray_menu_items(false, false);
         assert!(idle.contains(&Some(AnlgMenuItem::TrayStart)));
         assert!(!idle.contains(&Some(AnlgMenuItem::TrayStop)));
+    }
+
+    #[test]
+    fn restart_to_update_shows_only_once_an_update_is_ready() {
+        assert!(!tray_menu_items(false, false).contains(&Some(AnlgMenuItem::TrayUpdate)));
+        assert!(tray_menu_items(false, true).contains(&Some(AnlgMenuItem::TrayUpdate)));
+        assert!(tray_menu_items(true, true).contains(&Some(AnlgMenuItem::TrayUpdate)));
     }
 }
