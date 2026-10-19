@@ -1,3 +1,4 @@
+import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import {
   memo,
@@ -425,7 +426,10 @@ export const TimelineView = memo(function TimelineView({
         ? [
             {
               id: "delete-selected",
-              text: t`Delete Selected (${sessionCount})`,
+              text: plural(sessionCount, {
+                one: "Delete Selected (#)",
+                other: "Delete Selected (#)",
+              }),
               action: handleRequestDeleteSelected,
               accelerator: "Backspace",
               disabled: sessionCount === 0,
@@ -478,11 +482,10 @@ export const TimelineView = memo(function TimelineView({
         onOpenChange={(open) => {
           if (!open) setPendingDeleteSessionIds([]);
         }}
-        title={
-          pendingDeleteCount === 1
-            ? t`Delete 1 selected note?`
-            : t`Delete ${pendingDeleteCount} selected notes?`
-        }
+        title={plural(pendingDeleteCount, {
+          one: "Delete # selected note?",
+          other: "Delete # selected notes?",
+        })}
         description={t`You can undo this action for a short time.`}
         confirmLabel={t`Delete`}
         onConfirm={handleConfirmDeleteSelected}

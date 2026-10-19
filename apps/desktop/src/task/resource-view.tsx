@@ -1,4 +1,4 @@
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import { defaultRehypePlugins, Streamdown } from "streamdown";
 
@@ -121,9 +121,13 @@ export function ResourceView({ resource }: { resource: TaskResource }) {
                 })}
               </span>
               {issue.comments != null && issue.comments > 0 ? (
-                <span>
-                  · {issue.comments}{" "}
-                  {issue.comments === 1 ? t`comment` : t`comments`}
+                <span className="tabular-nums">
+                  ·{" "}
+                  <Plural
+                    value={issue.comments}
+                    one="# comment"
+                    other="# comments"
+                  />
                 </span>
               ) : null}
             </div>
@@ -191,9 +195,12 @@ export function ResourceView({ resource }: { resource: TaskResource }) {
             <div className="border-border mt-6 border-t pt-4">
               <div className="text-muted-foreground text-body mb-4 flex items-center gap-2 font-medium">
                 <Chat className="size-4" />
-                <span>
-                  {comments.length}{" "}
-                  {comments.length === 1 ? t`comment` : t`comments`}
+                <span className="tabular-nums">
+                  <Plural
+                    value={comments.length}
+                    one="# comment"
+                    other="# comments"
+                  />
                 </span>
               </div>
               <div className="space-y-4">

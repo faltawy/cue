@@ -1,4 +1,4 @@
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 
 import type { ServerStatus } from "@anlg/plugin-local-stt";
 
@@ -42,7 +42,10 @@ export function createToastRegistry({
   const downloadTitle =
     activeDownloads.length === 1 && downloadingModel
       ? t`Downloading ${downloadingModel}`
-      : t`Downloading ${activeDownloads.length} models`;
+      : plural(activeDownloads.length, {
+          one: "Downloading # model",
+          other: "Downloading # models",
+        });
 
   // order matters
   return [

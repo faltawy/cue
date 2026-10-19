@@ -1,3 +1,4 @@
+import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import {
   useMutation,
@@ -617,7 +618,9 @@ function formatLanguageList(languages: string[]) {
   const remainingCount = languages.length - visibleLanguages.length;
 
   if (remainingCount > 0) {
-    visibleLanguages.push(`${remainingCount} more`);
+    visibleLanguages.push(
+      plural(remainingCount, { one: "# more", other: "# more" }),
+    );
   }
 
   return visibleLanguages.join(", ");

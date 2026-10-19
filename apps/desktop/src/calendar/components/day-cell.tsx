@@ -1,3 +1,4 @@
+import { Plural } from "@lingui/react/macro";
 import { format } from "date-fns";
 import { useEffect, useRef, useState } from "react";
 
@@ -141,7 +142,7 @@ export function DayCell({
           <Popover>
             <PopoverTrigger asChild>
               <button className="text-muted-foreground hover:text-muted-foreground text-label shrink-0 cursor-pointer ps-1 text-start">
-                +{overflow} more
+                <Plural value={overflow} one="+# more" other="+# more" />
               </button>
             </PopoverTrigger>
             <PopoverContent
