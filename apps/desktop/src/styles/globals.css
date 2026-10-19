@@ -3,8 +3,8 @@
 @import "./scrollbar.utilities.css";
 
 @import "tailwindcss";
+@import "@anlg/design-system/theme.css";
 @import "./dark-theme.css";
-@import "../../../../packages/ui/src/styles/corners.css";
 @import "../../../../packages/ui/src/styles/scroll-fade.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -25,49 +25,11 @@
 @source "../../node_modules/streamdown/dist/index.js";
 @source "../../../../packages/changelog/src";
 @source "../../../../packages/editor/src";
+/* Regenerate the shared components' utilities here too, so they share one
+   cascade order with the app's (`px-2 ps-7` must resolve to `ps-7`). */
+@source "../../../../packages/ui/src";
 
 @theme {
-  --font-sans:
-    "Inter", "IBM Plex Sans Arabic", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  /* Capsule radii still read as pills/circles; remap to a control squircle. */
-  --radius-full: var(--radius);
-  --radius-pill: calc(infinity * 1px);
-
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warm: var(--warm);
-  --color-warm-foreground: var(--warm-foreground);
-  --color-alert: var(--alert);
-  --color-alert-foreground: var(--alert-foreground);
-  --color-alert-border: var(--alert-border);
-
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-
-  --kbd-press-shadow-outer: rgba(0, 0, 0, 0.1);
-  --kbd-press-shadow-inset: rgba(255, 255, 255, 0.8);
-  --selection-overlay: rgba(59, 130, 246, 0.3);
-
   --animate-shimmer: shimmer 2s infinite;
   --animate-logo-shimmer-sweep: logo-shimmer-sweep 2.4s ease-in-out infinite;
   --animate-reveal-left: reveal-left 0.5s ease-out forwards;
@@ -137,19 +99,12 @@
     }
   }
   @keyframes kbd-press {
-    0% {
-      transform: translateY(2px);
-      box-shadow: none;
-    }
+    0%,
     50% {
-      transform: translateY(2px);
-      box-shadow: none;
+      transform: translateY(1px);
     }
     100% {
       transform: translateY(0);
-      box-shadow:
-        0 1px 0 0 var(--kbd-press-shadow-outer),
-        inset 0 1px 0 0 var(--kbd-press-shadow-inset);
     }
   }
 }
@@ -270,17 +225,6 @@
   }
 }
 
-@layer components {
-  [data-settings-content] button,
-  [data-settings-content] button:hover,
-  [data-settings-content] [role="combobox"],
-  [data-settings-content] [role="combobox"]:hover,
-  [data-settings-content] [data-slot="select-trigger"],
-  [data-settings-content] [data-slot="select-trigger"]:hover {
-    box-shadow: none !important;
-  }
-}
-
 /* Search result highlighting styles — matches transcript's bg-warm/30 and bg-warm */
 .ProseMirror-search-match {
   background-color: color-mix(in oklch, var(--warm) 30%, transparent);
@@ -289,17 +233,8 @@
 
 .ProseMirror-active-search-match {
   background-color: var(--warm) !important;
-  color: black;
+  color: var(--warm-foreground);
   border-radius: 2px;
-}
-
-/*
- * Capsule radii still read as pills/circles even with corner-shape: squircle.
- * Keep this unlayered so it outranks Tailwind utilities from @anlg/ui.
- * Session view tabs opt out with .rounded-pill.
- */
-.rounded-full {
-  border-radius: var(--radius);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -311,9 +246,4 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-.rounded-pill {
-  border-radius: calc(infinity * 1px);
-  corner-shape: round;
 }

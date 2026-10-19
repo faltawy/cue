@@ -17,13 +17,13 @@ function SummaryTitleSpace({ title }: { title: string }) {
       className="pointer-events-none mb-4 flex min-h-[1.875rem] items-start"
     >
       {title ? (
-        <h1 className="text-foreground text-[1.5rem] leading-[1.875rem] font-bold">
+        <h1 className="text-foreground text-[1.5rem] leading-[1.875rem] font-semibold">
           {title}
         </h1>
       ) : (
         <span
           aria-hidden="true"
-          className="text-muted-foreground animate-pulse text-[1.5rem] leading-[1.875rem] font-bold opacity-60"
+          className="text-muted-foreground animate-pulse text-[1.5rem] leading-[1.875rem] font-semibold opacity-60"
         >
           <Trans>Generating title...</Trans>
         </span>

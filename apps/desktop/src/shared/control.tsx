@@ -143,7 +143,7 @@ export const NotFoundComponent: NotFoundRouteComponent = () => {
 
               <div className="flex flex-col gap-1.5">
                 <motion.span
-                  className="text-muted-foreground/70 block text-4xl font-bold"
+                  className="text-muted-foreground/70 block text-4xl font-semibold"
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{

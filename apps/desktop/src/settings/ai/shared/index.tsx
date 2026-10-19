@@ -581,7 +581,7 @@ function ProviderBadge({ badge }: { badge: string }) {
         "text-muted-foreground normal-case",
         isAfterRecording
           ? "bg-background/40 cursor-help rounded-md px-1.5 py-0.5 text-[11px] font-medium"
-          : "border-border rounded-full border px-2 text-xs font-light",
+          : "border-border rounded-full border px-2 text-xs font-normal",
       ])}
     >
       {badge}

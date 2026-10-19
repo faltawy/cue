@@ -1,10 +1,27 @@
 import { type ClassValue, clsx } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
-// `rounded-pill` is a custom radius token (`--radius-pill`); register it so it
-// conflicts with the built-in `rounded-*` classes instead of stacking with them.
+// The type roles (`text-ui`, `text-label`, ...) are font sizes from
+// `@anlg/design-system/theme.css`. Unregistered, tailwind-merge reads them as
+// text colours and drops them next to `text-muted-foreground`.
 const twMerge = extendTailwindMerge({
-  extend: { theme: { borderRadius: ["pill"] } },
+  extend: {
+    classGroups: {
+      "font-size": [
+        {
+          text: [
+            "caption",
+            "label",
+            "ui",
+            "strong",
+            "body",
+            "title",
+            "page-title",
+          ],
+        },
+      ],
+    },
+  },
 });
 
 /**
