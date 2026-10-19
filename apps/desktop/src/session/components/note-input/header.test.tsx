@@ -632,14 +632,25 @@ describe("SessionViewSwitcher", () => {
     }
   });
 
-  it("toggles transcript editing from the selected transcript tab", () => {
+  it("toggles transcript editing from the selected transcript tab's menu", async () => {
     const onTranscriptEditModeChange = vi.fn();
     const { handleTabChange, rerender } = renderSwitcher({
       currentTab: { type: "transcript" },
       onTranscriptEditModeChange,
     });
+    const openMenu = () =>
+      fireEvent.pointerDown(
+        screen.getByRole("button", { name: "Transcript" }),
+        {
+          button: 0,
+          ctrlKey: false,
+        },
+      );
 
-    fireEvent.click(screen.getByRole("button", { name: "Transcript" }));
+    openMenu();
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Edit transcript" }),
+    );
     expect(onTranscriptEditModeChange).toHaveBeenLastCalledWith(true);
 
     rerender(
@@ -652,7 +663,10 @@ describe("SessionViewSwitcher", () => {
         onTranscriptEditModeChange={onTranscriptEditModeChange}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Transcript" }));
+    openMenu();
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Done editing" }),
+    );
 
     expect(onTranscriptEditModeChange).toHaveBeenLastCalledWith(false);
     expect(handleTabChange).not.toHaveBeenCalled();

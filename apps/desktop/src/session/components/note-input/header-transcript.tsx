@@ -1,13 +1,28 @@
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useMemo } from "react";
 
-import { CheckCircle, PencilSimple } from "@anlg/ui/components/icons";
+import {
+  CaretDown,
+  CheckCircle,
+  PencilSimple,
+} from "@anlg/ui/components/icons";
 import { DancingSticks } from "@anlg/ui/components/ui/dancing-sticks";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@anlg/ui/components/ui/dropdown-menu";
 import { Spinner } from "@anlg/ui/components/ui/spinner";
 import { toast } from "@anlg/ui/components/ui/toast";
 import { cn } from "@anlg/utils";
 
-import { IconHeaderView, copyTextToClipboard } from "./header-shared";
+import {
+  IconHeaderView,
+  copyTextToClipboard,
+  iconHeaderViewClassName,
+} from "./header-shared";
 import { TranscriptAudioIcon } from "./header-transcript-icon";
 
 import * as AudioPlayer from "~/audio-player";
@@ -45,85 +60,45 @@ export function HeaderViewTranscript({
   onClick?: () => void;
   sessionId: string;
 }) {
-  const liveState = useTranscriptLiveViewState(sessionId);
+  const { t } = useLingui();
+  const { live } = useTranscriptLiveViewState(sessionId);
+  const icon = (
+    <TranscriptTabIcon live={live} isTranscribing={isTranscribing} />
+  );
 
   if (!isActive) {
     return (
-      <HeaderViewTranscriptButton
-        isActive={isActive}
-        isTranscribing={isTranscribing}
+      <IconHeaderView
+        isActive={false}
+        label={t`Transcript`}
+        icon={icon}
         onClick={onClick}
-        live={liveState.live}
+        className={live ? "group/transcript-live" : undefined}
       />
     );
   }
 
   return (
     <HeaderViewTranscriptActive
-      isActive={isActive}
-      isTranscribing={isTranscribing}
+      icon={icon}
       editMode={editMode}
       onEditModeChange={onEditModeChange}
       onClick={onClick}
       sessionId={sessionId}
-      live={liveState.live}
     />
   );
 }
 
-function HeaderViewTranscriptButton({
-  isActive,
-  isTranscribing,
-  onClick,
-  onContextMenu,
+function TranscriptTabIcon({
   live,
-  suffixIcon,
-  pressed,
+  isTranscribing,
 }: {
-  isActive: boolean;
+  live?: { amplitude: number; muted: boolean };
   isTranscribing: boolean;
-  onClick?: () => void;
-  onContextMenu?: React.MouseEventHandler<HTMLButtonElement>;
-  suffixIcon?: React.ReactNode;
-  pressed?: boolean;
-  live?: {
-    amplitude: number;
-    muted: boolean;
-  };
 }) {
-  const { t } = useLingui();
-
-  return (
-    <IconHeaderView
-      isActive={isActive}
-      label={t`Transcript`}
-      hoverLabel={undefined}
-      icon={
-        live ? (
-          <HeaderViewTranscriptLiveIcon live={live} />
-        ) : isTranscribing ? (
-          <Spinner size={16} className="shrink-0" />
-        ) : (
-          <TranscriptAudioIcon />
-        )
-      }
-      suffixIcon={suffixIcon}
-      pressed={pressed}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-      title={undefined}
-      className={cn([
-        live
-          ? [
-              "group/transcript-live",
-              isActive
-                ? "w-[98px] min-w-[98px] gap-1.5 px-2 @max-[480px]:w-10 @max-[480px]:min-w-10 @max-[480px]:gap-0"
-                : null,
-            ]
-          : null,
-      ])}
-    />
-  );
+  if (live) return <HeaderViewTranscriptLiveIcon live={live} />;
+  if (isTranscribing) return <Spinner size={16} className="shrink-0" />;
+  return <TranscriptAudioIcon />;
 }
 
 function HeaderViewTranscriptLiveIcon({
@@ -159,38 +134,27 @@ function useTranscriptLiveViewState(sessionId: string) {
     };
   });
   return {
-    live:
-      amplitude
-        ? {
-            amplitude: Math.min(
-              Math.hypot(amplitude.mic, amplitude.speaker),
-              1,
-            ),
-            muted,
-          }
-        : undefined,
+    live: amplitude
+      ? {
+          amplitude: Math.min(Math.hypot(amplitude.mic, amplitude.speaker), 1),
+          muted,
+        }
+      : undefined,
   };
 }
 
 function HeaderViewTranscriptActive({
-  isActive,
-  isTranscribing,
+  icon,
   editMode,
   onEditModeChange,
   onClick,
   sessionId,
-  live,
 }: {
-  isActive: boolean;
-  isTranscribing: boolean;
+  icon: React.ReactNode;
   editMode: boolean;
   onEditModeChange?: (editMode: boolean) => void;
   onClick?: () => void;
   sessionId: string;
-  live?: {
-    amplitude: number;
-    muted: boolean;
-  };
 }) {
   const regenerate = useRegenerateTranscript(sessionId);
   const startListening = useStartListeningWithBatchOverride(sessionId);
@@ -202,18 +166,16 @@ function HeaderViewTranscriptActive({
     deleteRecording,
     isDeletingRecording,
   } = AudioPlayer.useAudioPlayer();
+  const { t } = useLingui();
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
   const canEdit =
     sessionMode === "inactive" && hasTranscript && Boolean(onEditModeChange);
-  const handleClick = useCallback(() => {
-    if (canEdit) {
-      onEditModeChange?.(!editMode);
-      return;
-    }
-
-    onClick?.();
-  }, [canEdit, editMode, onClick, onEditModeChange]);
-  const canCopyTranscript = transcriptMetadata.some((t) => t.hasWords);
+  const handleToggleEdit = useCallback(() => {
+    onEditModeChange?.(!editMode);
+  }, [editMode, onEditModeChange]);
+  const canCopyTranscript = transcriptMetadata.some(
+    (metadata) => metadata.hasWords,
+  );
   const handleCopyTranscript = useCallback(async () => {
     try {
       const transcriptExportRequest =
@@ -254,7 +216,7 @@ function HeaderViewTranscriptActive({
     const items: MenuItemDef[] = [
       {
         id: `copy-transcript-${sessionId}`,
-        text: "Copy",
+        text: t`Copy`,
         action: () => {
           void handleCopyTranscript();
         },
@@ -265,7 +227,7 @@ function HeaderViewTranscriptActive({
     if (sessionMode === "inactive" || sessionMode === "running_batch") {
       items.push({
         id: `resume-listening-${sessionId}`,
-        text: "Resume listening",
+        text: t`Resume listening`,
         action: handleResumeListening,
       });
     }
@@ -273,7 +235,7 @@ function HeaderViewTranscriptActive({
     if (audioExistsResolved && sessionMode === "inactive" && audioExists) {
       items.push({
         id: `regenerate-transcript-${sessionId}`,
-        text: "Re-transcribe",
+        text: t`Re-transcribe`,
         action: () => {
           void regenerate();
         },
@@ -283,7 +245,7 @@ function HeaderViewTranscriptActive({
     if (audioExists) {
       items.push({
         id: `delete-recording-${sessionId}`,
-        text: "Delete recording",
+        text: t`Delete recording`,
         action: handleDeleteRecording,
         disabled: isDeletingRecording,
       });
@@ -301,26 +263,62 @@ function HeaderViewTranscriptActive({
     regenerate,
     sessionMode,
     sessionId,
+    t,
   ]);
   const showContextMenu = useNativeContextMenu(contextMenu);
 
+  // Like the summary tab, the selected tab opens its actions from a caret;
+  // the edit toggle lives in that menu rather than as an icon in the label.
   return (
-    <HeaderViewTranscriptButton
-      isActive={isActive}
-      isTranscribing={isTranscribing}
-      onClick={handleClick}
-      onContextMenu={showContextMenu}
-      live={live}
-      suffixIcon={
-        canEdit ? (
-          editMode ? (
-            <CheckCircle aria-hidden className="size-3.5" />
-          ) : (
-            <PencilSimple aria-hidden className="size-3.5" />
-          )
-        ) : undefined
-      }
-      pressed={canEdit ? editMode : undefined}
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          data-main-area-window-drag-region
+          data-tauri-drag-region="false"
+          type="button"
+          aria-label={t`Transcript`}
+          aria-current="page"
+          onClick={onClick}
+          onContextMenu={showContextMenu}
+          className={iconHeaderViewClassName(
+            true,
+            "tray",
+            cn([
+              "max-w-40 min-w-10 cursor-pointer gap-1.5 px-2 @max-[480px]:max-w-12 @max-[480px]:min-w-12 @max-[480px]:gap-0 @max-[480px]:px-1.5",
+              "focus-visible:bg-muted focus-visible:text-foreground",
+            ]),
+          )}
+        >
+          {icon}
+          <span className="text-label min-w-0 truncate font-medium @max-[480px]:sr-only">
+            {editMode ? t`Editing` : t`Transcript`}
+          </span>
+          <CaretDown aria-hidden className="size-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        {canEdit ? (
+          <>
+            <DropdownMenuItem onClick={handleToggleEdit}>
+              {editMode ? <CheckCircle /> : <PencilSimple />}
+              <span>{editMode ? t`Done editing` : t`Edit transcript`}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
+        {contextMenu.map((item) =>
+          "separator" in item ? null : (
+            <DropdownMenuItem
+              key={item.id}
+              destructive={item.id.startsWith("delete-recording")}
+              disabled={item.disabled}
+              onClick={() => void item.action?.()}
+            >
+              <span>{item.text}</span>
+            </DropdownMenuItem>
+          ),
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
