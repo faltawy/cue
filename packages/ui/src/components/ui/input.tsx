@@ -3,8 +3,17 @@ import * as React from "react";
 import { cn } from "@anlg/utils";
 
 // Text fields show focus with their border (coach composer), not an outline.
+// A field wrapper holding an icon and a bare <input> (search boxes).
+export const searchFieldClassName = cn([
+  "border-input focus-within:border-foreground flex h-8 min-w-0 items-center gap-2 rounded-md border bg-transparent px-2",
+  "transition-[border-color] duration-100",
+]);
+
+export const searchFieldInputClassName =
+  "placeholder:text-tertiary-foreground text-ui min-w-0 flex-1 bg-transparent focus:outline-hidden focus-visible:outline-none";
+
 export const fieldClassName = cn([
-  "border-input bg-background text-foreground w-full min-w-0 rounded-md border",
+  "border-input text-foreground w-full min-w-0 rounded-md border bg-transparent",
   "placeholder:text-tertiary-foreground caret-warm-strong",
   "focus:border-foreground transition-[border-color] duration-150 focus-visible:outline-none",
   "aria-invalid:border-destructive disabled:pointer-events-none disabled:opacity-50",

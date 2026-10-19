@@ -2,7 +2,6 @@ import { useLingui } from "@lingui/react/macro";
 import { useCallback, useMemo, useState } from "react";
 
 import { CaretDown, Check } from "@anlg/ui/components/icons";
-import { Button } from "@anlg/ui/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -16,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@anlg/ui/components/ui/popover";
+import { selectTriggerClassName } from "@anlg/ui/components/ui/select";
 import { cn } from "@anlg/utils";
 
 export interface SearchableSelectOption {
@@ -79,17 +79,14 @@ export function SearchableSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <button
           type="button"
-          variant="outline"
           role="combobox"
           aria-expanded={open}
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
-          className={cn([
-            "bg-card justify-between px-3 font-normal shadow-none",
-            className,
-          ])}
+          data-state={open ? "open" : "closed"}
+          className={cn([selectTriggerClassName, className])}
         >
           <span className="truncate">
             {selectedOption
@@ -98,8 +95,8 @@ export function SearchableSelect({
                 : selectedOption.label
               : (placeholder ?? t`Select...`)}
           </span>
-          <CaretDown className="-me-1 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+          <CaretDown className="text-muted-foreground size-3.5 shrink-0" />
+        </button>
       </PopoverTrigger>
       <PopoverContent
         align="start"
@@ -120,7 +117,7 @@ export function SearchableSelect({
             onValueChange={setQuery}
           />
           <CommandEmpty>
-            <div className="text-muted-foreground text-body px-2 py-1.5">
+            <div className="text-muted-foreground text-ui px-2 py-1.5">
               {emptyMessage ?? t`No results found.`}
             </div>
           </CommandEmpty>

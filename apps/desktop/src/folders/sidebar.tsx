@@ -1,7 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMemo, useState } from "react";
 
-import { MagnifyingGlass, Plus, X } from "@anlg/ui/components/icons";
+import { Plus } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
@@ -14,6 +14,7 @@ import { useFolderIcons, useFolderPaths } from "~/session/queries";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 import { FolderNameDialog } from "~/sidebar/folder-name-dialog";
+import { SidebarSearchField } from "~/sidebar/search-field";
 import { TemplateIconGlyph } from "~/templates/template-icon";
 
 export function FoldersSidebar() {
@@ -52,42 +53,11 @@ export function FoldersSidebar() {
           </Button>
         </CustomSidebarHeader>
 
-        <div className="pb-2">
-          <div
-            className={cn([
-              "border-border bg-accent/50 flex h-8 w-full shrink-0 items-center gap-2 rounded-lg border px-3",
-              "focus-within:bg-accent transition-colors",
-            ])}
-          >
-            <MagnifyingGlass className="text-muted-foreground h-4 w-4 shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  setSearch("");
-                }
-              }}
-              placeholder={t`Search folders...`}
-              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
-            />
-            {search ? (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className={cn([
-                  "h-4 w-4 shrink-0",
-                  "text-muted-foreground hover:text-muted-foreground",
-                  "transition-colors",
-                ])}
-                aria-label={t`Clear search`}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <SidebarSearchField
+          value={search}
+          onChange={setSearch}
+          placeholder={t`Search folders...`}
+        />
       </div>
 
       <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto pt-1">

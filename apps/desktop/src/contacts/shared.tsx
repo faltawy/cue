@@ -16,6 +16,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
+import {
+  searchFieldClassName,
+  searchFieldInputClassName,
+} from "@anlg/ui/components/ui/input";
+import { cn } from "@anlg/utils";
 
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 
@@ -139,8 +144,8 @@ export function ColumnHeader({
       </CustomSidebarHeader>
       {onSearchChange && (
         <div className="pb-2">
-          <div className="border-border bg-muted focus-within:bg-accent flex h-8 w-full items-center gap-2 rounded-lg border px-3 transition-colors">
-            <MagnifyingGlass className="text-muted-foreground h-4 w-4 shrink-0" />
+          <div className={cn([searchFieldClassName, "w-full"])}>
+            <MagnifyingGlass className="text-muted-foreground size-3.5 shrink-0" />
             <input
               ref={searchInputRef}
               type="text"
@@ -148,15 +153,15 @@ export function ColumnHeader({
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder={t`Search contacts...`}
-              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
+              className={searchFieldInputClassName}
             />
             {searchValue && (
               <button
                 onClick={() => onSearchChange("")}
-                className="text-muted-foreground hover:text-foreground h-4 w-4 shrink-0 transition-colors"
+                className="text-muted-foreground hover:text-foreground size-3.5 shrink-0 transition-colors duration-100"
                 aria-label={t`Clear search`}
               >
-                <X className="h-4 w-4" />
+                <X className="size-3.5" />
               </button>
             )}
           </div>

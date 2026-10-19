@@ -54,7 +54,7 @@ export function NewPersonForm({
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t`Add person`}
-            className="placeholder:text-muted-foreground text-body w-full bg-transparent focus:outline-hidden"
+            className="placeholder:text-tertiary-foreground text-body w-full bg-transparent focus:outline-hidden"
             autoFocus
           />
           {name.trim() && (

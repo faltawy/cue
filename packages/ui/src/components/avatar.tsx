@@ -31,7 +31,7 @@ export function Avatar({
     color: tint,
     backgroundColor: photo
       ? undefined
-      : `color-mix(in oklch, ${tint} 14%, var(--background))`,
+      : `color-mix(in oklab, ${tint} 14%, var(--background))`,
   } satisfies CSSProperties;
 
   return (

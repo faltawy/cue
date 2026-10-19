@@ -17,6 +17,14 @@ const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
 
+// Shared with other select-like triggers (searchable selects, comboboxes).
+export const selectTriggerClassName = cn([
+  "border-input text-body flex h-8 w-full items-center justify-between gap-2 rounded-md border bg-transparent ps-2.5 pe-2 text-start whitespace-nowrap",
+  "data-placeholder:text-tertiary-foreground transition-[border-color] duration-150",
+  "hover:border-foreground/60 data-[state=open]:border-foreground",
+  "disabled:pointer-events-none disabled:opacity-50 [&>span]:min-w-0 [&>span]:truncate",
+]);
+
 const SelectTrigger = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
@@ -24,13 +32,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     data-slot="select-trigger"
-    className={cn([
-      "border-input bg-background text-body flex h-8 w-full items-center justify-between gap-2 rounded-md border ps-2.5 pe-2 text-start whitespace-nowrap",
-      "data-placeholder:text-tertiary-foreground transition-[border-color] duration-150",
-      "hover:border-foreground/60 data-[state=open]:border-foreground",
-      "disabled:pointer-events-none disabled:opacity-50 [&>span]:min-w-0 [&>span]:truncate",
-      className,
-    ])}
+    className={cn([selectTriggerClassName, className])}
     {...props}
   >
     {children}

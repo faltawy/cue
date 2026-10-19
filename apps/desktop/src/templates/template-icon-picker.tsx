@@ -151,7 +151,7 @@ function SearchField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent outline-hidden"
+        className="placeholder:text-tertiary-foreground text-body min-w-0 flex-1 bg-transparent outline-hidden"
       />
       {value ? (
         <button

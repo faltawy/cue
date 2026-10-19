@@ -448,7 +448,7 @@ const TitleInputInner = memo(
             className={cn([
               "col-start-1 row-start-1 w-0 min-w-full transition-opacity duration-200",
               "border-none bg-transparent focus:outline-hidden",
-              "placeholder:text-muted-foreground text-start",
+              "placeholder:text-tertiary-foreground text-start",
               variant === "breadcrumb"
                 ? "text-foreground text-ui h-5 appearance-none p-0 focus:underline"
                 : "text-page-title",

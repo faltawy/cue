@@ -1,13 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  ArrowsDownUp,
-  MagnifyingGlass,
-  Plus,
-  Sparkle,
-  X,
-} from "@anlg/ui/components/icons";
+import { ArrowsDownUp, Plus, Sparkle } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -27,6 +21,7 @@ import { useConfigValue } from "~/shared/config";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
+import { SidebarSearchField } from "~/sidebar/search-field";
 import { type Tab } from "~/store/zustand/tabs";
 
 type SortOption = "alphabetical" | "reverse-alphabetical";
@@ -371,41 +366,11 @@ export function TemplatesSidebarContent({
           </Button>
         </CustomSidebarHeader>
 
-        <div className="pb-2">
-          <div
-            className={cn([
-              "border-border bg-accent/50 flex h-8 w-full shrink-0 items-center gap-2 rounded-lg border px-3",
-              "focus-within:bg-accent transition-colors",
-            ])}
-          >
-            <MagnifyingGlass className="text-muted-foreground h-4 w-4 shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setSearch("");
-                }
-              }}
-              placeholder={t`Search templates...`}
-              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className={cn([
-                  "h-4 w-4 shrink-0",
-                  "text-muted-foreground hover:text-muted-foreground",
-                  "transition-colors",
-                ])}
-                aria-label={t`Clear search`}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
+        <SidebarSearchField
+          value={search}
+          onChange={setSearch}
+          placeholder={t`Search templates...`}
+        />
       </div>
 
       <div

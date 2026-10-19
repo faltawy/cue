@@ -10,6 +10,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
+import {
+  searchFieldClassName,
+  searchFieldInputClassName,
+} from "@anlg/ui/components/ui/input";
+import { cn } from "@anlg/utils";
 
 import type { HumanSessionRecord } from "./queries";
 
@@ -65,7 +70,7 @@ export function RelatedNotesSection({
           </DropdownMenu>
         )}
 
-        <div className="border-border bg-muted/50 focus-within:bg-accent ms-auto flex h-8 w-52 max-w-[48%] items-center gap-2 rounded-lg border px-2.5 transition-colors">
+        <div className={cn([searchFieldClassName, "ms-auto w-52 max-w-[48%]"])}>
           <MagnifyingGlass className="text-muted-foreground size-3.5 shrink-0" />
           <input
             type="text"
@@ -75,7 +80,7 @@ export function RelatedNotesSection({
               if (event.key === "Escape") setSearch("");
             }}
             placeholder={t`Search...`}
-            className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
+            className={searchFieldInputClassName}
           />
           {search && (
             <button

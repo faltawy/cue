@@ -1,6 +1,11 @@
 import { useLingui } from "@lingui/react/macro";
 
 import { MagnifyingGlass, X } from "@anlg/ui/components/icons";
+import {
+  searchFieldClassName,
+  searchFieldInputClassName,
+} from "@anlg/ui/components/ui/input";
+import { cn } from "@anlg/utils";
 
 export function filterProviders<
   T extends { id: string; displayName: string; description?: string },
@@ -27,7 +32,7 @@ export function ProviderSearch({
   const { t } = useLingui();
 
   return (
-    <div className="border-border bg-muted/50 focus-within:bg-accent ms-auto flex h-8 w-56 max-w-[55%] items-center gap-2 rounded-lg border px-2.5 transition-colors">
+    <div className={cn([searchFieldClassName, "ms-auto w-56 max-w-[55%]"])}>
       <MagnifyingGlass className="text-muted-foreground size-3.5 shrink-0" />
       <input
         type="search"
@@ -38,7 +43,10 @@ export function ProviderSearch({
         }}
         placeholder={t`Search providers...`}
         aria-label={t`Search providers`}
-        className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden [&::-webkit-search-cancel-button]:hidden"
+        className={cn([
+          searchFieldInputClassName,
+          "[&::-webkit-search-cancel-button]:hidden",
+        ])}
       />
       {value ? (
         <button
