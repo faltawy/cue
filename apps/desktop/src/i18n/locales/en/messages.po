@@ -666,7 +666,7 @@ msgstr "Cleaning up..."
 #: src/folders/sidebar.tsx
 #: src/settings/ai/shared/provider-search.tsx
 #: src/sidebar/automations.tsx
-#: src/sidebar/settings.tsx
+#: src/sidebar/search-field.tsx
 #: src/templates/template-icon-picker.tsx
 #: src/templates/template-sidebar.tsx
 msgid "Clear search"
@@ -2333,6 +2333,7 @@ msgstr "Read meeting controls and visible chat"
 msgid "Read meeting controls and visible chat."
 msgstr "Read meeting controls and visible chat."
 
+#: src/settings/ai/shared/index.tsx
 #: src/settings/claude/tools.tsx
 #: src/settings/general/notification.tsx
 msgid "Ready"
