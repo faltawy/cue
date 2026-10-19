@@ -1,30 +1,32 @@
-import { NOTHING } from "./checkin";
+import { z } from "zod";
+
+import { isNothing, NOTHING } from "./checkin";
 import type { Hit, HitKind } from "./detect";
-import { runLlm } from "./llm";
+import { jsonOf, runLlm } from "./llm";
+import { type Moment, type Move, moveFields, QUOTE_MAX } from "./move";
 import { charTokens, estimateTokens, NO_SPEND, type Spend, spendOf } from "./pricing";
 import { INSTRUCTIONS_HEADING } from "./session";
-import { talkStats, talkSummary } from "./talk-time";
+import { type TalkStats, talkStats, talkSummary } from "./talk-time";
+import { formatTimestamp } from "./timestamp";
 import { renderLines, type TranscriptLine } from "./transcript";
 
 export const NUDGE_MODEL = "sonnet";
 export const NUDGE_WINDOW_MS = 3 * 60_000;
 
 export const NUDGE_SYSTEM = `You are the user's live meeting coach: you make them better in this meeting, not just better informed. They are mid-conversation and glance at your note between sentences. "You" in the transcript is the user; other speakers appear by name, as "Speaker N", or as "Them".
-A moment was just flagged. Find the single most useful move for the next 30 seconds:
-- a question or request aimed at the user: the answer or point to make, as a line they can say
+A moment was just flagged. Find the single most useful move for the next 30 seconds, and its tag:
+- open_question, a question or request aimed at the user: the answer or point to make, as a line they can say
 - pushback (price, a competitor, "we tried this before"): acknowledge it and ask what is behind it before defending or discounting
-- a buying signal: answer briefly, then move to a concrete next step (who decides, by when); a risk signal (a new decision maker, a budget review, stalling): get ahead of it
-- a vague commitment, theirs or the user's: pin who, what and by when, or get the next meeting on the calendar
-- the user promising a date, feature or discount they can't confirm, or giving something without getting something back: correct it now, gracefully, or trade instead
-- the user doing most of the talking (see the talk time), rambling or hedging: answer in one sentence, then hand the floor back with a question
-- a decision without an owner, or the agenda drifting: name the owner and the date, or park it
-- escalations: acknowledge the impact before any explanation, then give the next update time; feedback: the specific behaviour and its impact, then ask; interviews: probe "we" and vague claims for what the person did and how it was measured; executives: answer first, then one reason
-Shape, strictly, under 45 words in all:
-- line 1: the move, in under 10 words, in English
-- line 2: Say: "…" or Ask: "…", one or two sentences the user can say word for word, in the language the meeting is in, tied to what was just said
-- an optional line 3 of under 12 words, only when essential (what to avoid, or one fact they need)
-One move only: no alternatives, no "if you know…" branches, no second question, no Why: label, no bold, no preamble, no recap of the transcript.
-Never invent facts, prices, dates or causes, and never leave blanks like [date]: say only what the transcript or the user's instructions support. You may propose when the user will follow up ("by Friday"). When the answer is unknown, coach how to handle not knowing; if it needs the user's files, email or the web, line 3 says what to ask the coach.
+- buying_signal: answer briefly, then move to a concrete next step (who decides, by when); risk (a new decision maker, a budget review, stalling): get ahead of it
+- vague_promise, theirs or the user's: pin who, what and by when, or get the next meeting on the calendar
+- over_promise, the user promising a date, feature or discount they can't confirm, or giving_ground, giving something without getting something back: correct it now, gracefully, or trade instead
+- talk_time, the user doing most of the talking (see the talk time), rambling or hedging: answer in one sentence, then hand the floor back with a question
+- decision_owner, a decision without an owner, or agenda, the agenda drifting: name the owner and the date, or park it
+- escalations: acknowledge the impact before any explanation, then give the next update time; feedback: the specific behaviour and its impact, then ask; interviews: probe "we" and vague claims for what the person did and how it was measured; executives: answer first, then one reason; tag these with the closest tag
+Reply with only one JSON object, under 45 words of text in all:
+{"tag": "one of the tags above", "headline": "the move, in under 10 words, in English", "verb": "Say" or "Ask", "line": "one or two sentences the user can say word for word, in the language the meeting is in, tied to what was just said", "watch_out": "under 12 words, only when essential (what to avoid, or one fact they need); otherwise leave this key out"}
+One move only: no alternatives, no "if you know…" branches, no second question, no Why: label, no markdown, no preamble, no recap of the transcript.
+Never invent facts, prices, dates or causes, and never leave blanks like [date]: say only what the transcript or the user's instructions support. You may propose when the user will follow up ("by Friday"). When the answer is unknown, coach how to handle not knowing; if it needs the user's files, email or the web, watch_out says what to ask the coach.
 The user's own instructions below, if any, override this.
 If the user just answered or confirmed it well, someone else already gave a clear owner and date, or you have nothing better than what the user would do anyway, reply with exactly ${NOTHING} and nothing else.`;
 
@@ -144,7 +146,48 @@ ${notes.map((note) => `- ${note}`).join("\n")})
 ${prompt}`;
 }
 
-export type NudgeResult = { ok: true; text: string; spend: Spend } | { ok: false; error: string; spend: Spend };
+export const nudgeReplySchema = z.strictObject(moveFields);
+
+export type NudgeReply = z.infer<typeof nudgeReplySchema>;
+
+export type ParsedNudge = { kind: "nothing" } | { kind: "move"; reply: NudgeReply } | { kind: "malformed"; error: string };
+
+export function parseNudge(reply: string): ParsedNudge {
+  if (isNothing(reply) || reply.trim() === "") return { kind: "nothing" };
+  const json = jsonOf(reply);
+  const parsed = json.ok ? nudgeReplySchema.safeParse(json.value) : null;
+  if (parsed?.success) return { kind: "move", reply: parsed.data };
+  const error = parsed ? z.prettifyError(parsed.error) : json.ok ? "" : json.error;
+  console.error("[coach] nudge reply was not the expected JSON; dropping it", { _e: error, reply: reply.slice(0, 300) });
+  return { kind: "malformed", error };
+}
+
+function triggerMoment(input: NudgeInput): Moment | undefined {
+  const latest = input.hits.reduce<Hit | undefined>(
+    (found, hit) => (found && found.lineIndex >= hit.lineIndex ? found : hit),
+    undefined,
+  );
+  const line = latest ? input.lines[latest.lineIndex] : undefined;
+  const quote = latest?.text.trim() ?? "";
+  if (!line || !quote) return undefined;
+  return {
+    speaker: line.speaker,
+    quote: quote.length > QUOTE_MAX ? `${quote.slice(0, QUOTE_MAX - 1)}…` : quote,
+    at: formatTimestamp(line.start_ms),
+  };
+}
+
+export function nudgeMove(input: NudgeInput, reply: NudgeReply): { move: Move; talk: TalkStats | null } {
+  const moment = triggerMoment(input);
+  return {
+    move: { ...reply, ...(moment ? { moment } : {}) },
+    talk: reply.tag === "talk_time" ? talkStats(input.lines) : null,
+  };
+}
+
+export type NudgeResult =
+  | { ok: true; move: Move | null; talk: TalkStats | null; spend: Spend }
+  | { ok: false; error: string; spend: Spend };
 
 export async function runNudge(
   input: NudgeInput,
@@ -166,5 +209,7 @@ export async function runNudge(
     else if (event.type === "done") spend = spendOf(NUDGE_MODEL, event);
     else return { ok: false, error: event.message, spend };
   }
-  return { ok: true, text: text.trim(), spend };
+  const parsed = parseNudge(text);
+  if (parsed.kind !== "move") return { ok: true, move: null, talk: null, spend };
+  return { ok: true, ...nudgeMove(input, parsed.reply), spend };
 }

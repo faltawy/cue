@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { HitKind } from "./detect";
-import { runLlm } from "./llm";
+import { jsonOf, runLlm } from "./llm";
 import { NO_SPEND, type Spend, spendOf } from "./pricing";
 import { renderLines, type TranscriptLine } from "./transcript";
 
@@ -29,19 +29,14 @@ export function triagePrompt(request: TriageRequest): string {
 }
 
 export function parseTriage(reply: string): TriageVerdict | null {
-  const json = reply
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "");
-  try {
-    return verdictSchema.parse(JSON.parse(json));
-  } catch (error) {
-    console.error("[coach] triage reply was not the expected JSON; not nudging", {
-      _e: error instanceof Error ? error.message : String(error),
-      reply: reply.slice(0, 200),
-    });
-    return null;
-  }
+  const json = jsonOf(reply);
+  const verdict = json.ok ? verdictSchema.safeParse(json.value) : null;
+  if (verdict?.success) return verdict.data;
+  console.error("[coach] triage reply was not the expected JSON; not nudging", {
+    _e: verdict ? z.prettifyError(verdict.error) : json.ok ? "" : json.error,
+    reply: reply.slice(0, 200),
+  });
+  return null;
 }
 
 export async function askTriage(

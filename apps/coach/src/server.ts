@@ -7,15 +7,16 @@ import { type AppBridge, appBridgeFromEnv, type CoachEdit, type MeetingProject }
 import { createAccess, loginUrl, randomToken, TOKEN_ENV, withAccess } from "./access";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { type ChatStore, loadChats, type OpenReason, planChat, remember, saveChats } from "./chat-store";
-import { CATCH_UP_WINDOW_MS, catchUpPrompt, isNothing } from "./checkin";
+import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { coachError, StderrTail } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
 import { type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrapUpActions } from "./meeting-state";
+import { moveText } from "./move";
 import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from "./nudge";
 import { NO_SPEND, spendOf } from "./pricing";
 import { type NudgeRequest, PROACTIVE_DEFAULTS, Proactive, type ProactiveView } from "./proactive";
-import { actionItemText } from "./blocks";
+import { actionItemText, blockItemCount } from "./blocks";
 import { type AskImage, askContent, parseAskImages, thumbsOf } from "./images";
 import {
   addedBlockItem,
@@ -32,6 +33,7 @@ import {
 import { QuestionBroker } from "./questions";
 import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
+import { talkStats } from "./talk-time";
 import { type LiveTranscript, readLiveTranscript, readMeetingInfo, readSelfName } from "./transcript";
 import { runTriage } from "./triage";
 import { TurnTracker } from "./turn-events";
@@ -244,12 +246,12 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
     settleTurn({ ok: false, interrupted });
     return;
   }
-  const silent = isNothing(result.text) || result.text === "";
-  if (!silent) {
-    feed({ type: "text", delta: result.text });
-    nudgeNotes = rememberNote(nudgeNotes, nudgeNote(label, result.text));
+  if (result.move) {
+    feed({ type: "block", id: crypto.randomUUID(), block: { kind: "move", ...result.move } });
+    if (result.talk) feed({ type: "talk", talk: result.talk });
+    nudgeNotes = rememberNote(nudgeNotes, nudgeNote(label, moveText(result.move)));
   }
-  settleTurn({ ok: true, interrupted: false, silent });
+  settleTurn({ ok: true, interrupted: false, silent: result.move === null });
 }
 
 function clockTime(): string {
@@ -420,10 +422,12 @@ function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt:
   nudgeNotes = [];
 }
 
-function runCatchUp(session: CoachSession, latestSpeechEndMs: number) {
+function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
   proactive?.caughtUp();
-  const since = Math.max(0, latestSpeechEndMs - CATCH_UP_WINDOW_MS);
+  const since = Math.max(0, (lines.at(-1)?.end_ms ?? 0) - CATCH_UP_WINDOW_MS);
   startTurn(session, "catchup", `Catch me up · ${clockTime()}`, catchUpPrompt(since));
+  const talk = talkStats(lines, CATCH_UP_WINDOW_MS);
+  if (talk) feed({ type: "talk", talk });
 }
 
 function readTranscript() {
@@ -488,6 +492,7 @@ function startWrapUp(transcript: LiveTranscript) {
         actions: actionsFor(result),
         added: false,
         logged: false,
+        talk: talkStats(transcript.lines, Number.POSITIVE_INFINITY),
       });
     })
     .catch((error: unknown) => {
@@ -596,8 +601,7 @@ function blockItemRef(body: Record<string, unknown>): BlockItemRef | null {
   const index = typeof body.index === "number" && Number.isInteger(body.index) ? body.index : -1;
   const block = id ? findBlock(history, id) : null;
   if (!block || index < 0) return null;
-  const size = block.kind === "actions" ? block.items.length : block.options.length;
-  return index < size ? { id, index } : null;
+  return index < blockItemCount(block) ? { id, index } : null;
 }
 
 const port = Number(values.port);
@@ -684,7 +688,7 @@ const server = Bun.serve({
         if (!transcript?.live || transcript.sessionId !== chatSessionId) {
           return new Response("Check-ins need a meeting that's recording.", { status: 404 });
         }
-        runCatchUp(coach, transcript.lines.at(-1)?.end_ms ?? 0);
+        runCatchUp(coach, transcript.lines);
         return new Response(null, { status: 204 });
       },
     },

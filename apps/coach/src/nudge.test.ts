@@ -1,12 +1,16 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, spyOn, test } from "bun:test";
 
 import type { Hit } from "./detect";
+import { moveSchema } from "./move";
 import {
   NUDGE_SYSTEM,
+  type NudgeReply,
   nudgeLabel,
   nudgeMessage,
+  nudgeMove,
   nudgeNote,
   nudgeSystem,
+  parseNudge,
   rememberNote,
   withNudgeNotes,
 } from "./nudge";
@@ -95,6 +99,75 @@ describe("lightweight nudge prompt", () => {
     expect(total).toBeGreaterThan(2_500);
     expect(message).toEndWith(`${sentence.repeat(8)}299`);
     expect(system.startsWith(NUDGE_SYSTEM)).toBe(true);
+  });
+});
+
+describe("the nudge reply", () => {
+  const MOVE: NudgeReply = {
+    tag: "pushback",
+    headline: "Ask what's behind the price concern",
+    verb: "Ask",
+    line: "Is it the total, or how it lands in this quarter's budget?",
+    watch_out: "Don't discount yet",
+  };
+
+  test("a JSON move parses into a typed move, with or without the optional watch-out", () => {
+    expect(parseNudge(JSON.stringify(MOVE))).toEqual({ kind: "move", reply: MOVE });
+    const { watch_out: _dropped, ...bare } = MOVE;
+    expect(parseNudge(`\`\`\`json\n${JSON.stringify(bare)}\n\`\`\``)).toEqual({ kind: "move", reply: bare });
+  });
+
+  test("NOTHING stays a silent result and logs nothing", () => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    expect(parseNudge("NOTHING")).toEqual({ kind: "nothing" });
+    expect(parseNudge(" NOTHING.\n")).toEqual({ kind: "nothing" });
+    expect(logged).not.toHaveBeenCalled();
+    logged.mockRestore();
+  });
+
+  test.each([
+    ["the old text shape", 'Ask what is behind it\nAsk: "Is it the total?"'],
+    ["an unknown tag", JSON.stringify({ ...MOVE, tag: "objection" })],
+    ["a lowercase verb", JSON.stringify({ ...MOVE, verb: "ask" })],
+    ["no line", JSON.stringify({ tag: MOVE.tag, headline: MOVE.headline, verb: MOVE.verb })],
+    ["a blank line", JSON.stringify({ ...MOVE, line: "   " })],
+    ["a stray key", JSON.stringify({ ...MOVE, why: "they hesitated" })],
+    ["a model-made moment", JSON.stringify({ ...MOVE, moment: { speaker: "Sara", quote: "Too pricey" } })],
+    ["truncated JSON", JSON.stringify(MOVE).slice(0, 60)],
+  ])("drops %s and logs it, without guessing a move", (_name, reply) => {
+    const logged = spyOn(console, "error").mockImplementation(() => {});
+    const parsed = parseNudge(reply);
+    expect(parsed.kind).toBe("malformed");
+    expect(logged).toHaveBeenCalledTimes(1);
+    expect(logged.mock.calls[0]?.[0]).toBe("[coach] nudge reply was not the expected JSON; dropping it");
+    expect(logged.mock.calls[0]?.[1]).toMatchObject({ reply: reply.slice(0, 300) });
+    logged.mockRestore();
+  });
+
+  test("the move quotes the latest flagged line with its speaker and time; talk time only rides along for a talk-time move", () => {
+    const lines = [
+      line("You", "So the platform does all of this and also that.", 300, 420),
+      line("Omar", "Early question about seats?", 421, 424),
+      line("Omar", QUESTION, 481, 490),
+    ];
+    const input = { context: "Discovery", hits: [hit(2), hit(1, "Early question about seats?")], why: "open question", lines };
+    const { watch_out: _dropped, ...reply } = { ...MOVE, tag: "open_question" as const, verb: "Say" as const };
+    expect(nudgeMove(input, reply)).toEqual({
+      move: { ...reply, moment: { speaker: "Omar", quote: QUESTION, at: "08:01" } },
+      talk: null,
+    });
+    const talking = nudgeMove(input, { ...reply, tag: "talk_time" });
+    expect(talking.talk?.speakers.map((entry) => entry.speaker)).toEqual(["You", "Omar"]);
+    expect(talking.talk?.youLongestMs).toBe(120_000);
+  });
+
+  test("a very long flagged line is clipped to the moment limit", () => {
+    const long = `${"We need every reply logged in the CRM. ".repeat(12)}Can you do that?`;
+    const input = { context: "x", hits: [hit(0, long)], why: "y", lines: [line("Sara", long, 60)] };
+    const moment = nudgeMove(input, { tag: "open_question", headline: "Confirm it", verb: "Say", line: "Yes." }).move.moment;
+    expect(moment?.quote).toHaveLength(300);
+    expect(moment?.quote.endsWith("…")).toBe(true);
+    expect(moveSchema.safeParse(nudgeMove(input, { tag: "risk", headline: "h", verb: "Say", line: "l" }).move).success).toBe(true);
   });
 });
 

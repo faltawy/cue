@@ -38,7 +38,7 @@ export const EMAIL_PROMPT = `- You may search the user's email with the mcp__cla
 
 export const EMAIL_DRAFT_PROMPT = `- When the user asks, you may write a follow-up as a Gmail draft; the user reviews and sends it.`;
 
-export const BLOCKS_PROMPT = `- mcp__meeting__show puts a checklist or follow-up chips under your answer. Use it sparingly: kind "actions" only when the user asks for action items or your answer lists commitments (then don't also list them in text); kind "replies" only when a follow-up ask is genuinely likely (2 or 3 short asks, e.g. "Draft the reply", "Summarise for Slack"). Most answers need neither.`;
+export const BLOCKS_PROMPT = `- mcp__meeting__show puts a move, a checklist or follow-up chips under your answer. When your answer has a move, show it with kind "move" instead of writing the Say:/Ask: line in text; any fact the user asked for stays as text above it. Use the rest sparingly: kind "actions" only when the user asks for action items or your answer lists commitments (then don't also list them in text); kind "replies" only when a follow-up ask is genuinely likely (2 or 3 short asks, e.g. "Draft the reply", "Summarise for Slack"). Most answers need neither.`;
 
 export function coachPrompt(
   allowChanges: readonly string[] = [],

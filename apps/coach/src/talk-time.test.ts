@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { talkStats, talkSummary } from "./talk-time";
+import { percentLabel, talkShares, talkStats, talkSummary } from "./talk-time";
 import type { TranscriptLine } from "./transcript";
 
 const line = (speaker: string, startS: number, endS: number, text = "words"): TranscriptLine => ({
@@ -63,5 +63,40 @@ describe("talkSummary", () => {
     expect(stats && talkSummary(stats)).toBe(
       "Talk time, last 7 min: You 74%, Omar 14%, Sara 7%, others 5% · your longest stretch 05:00 · questions you asked: 1",
     );
+  });
+});
+
+describe("talkShares and percentLabel", () => {
+  test("the user first, the top two others by share, and the rest folded with its speaker count", () => {
+    const stats = talkStats([
+      line("Omar", 0, 120),
+      ...Array.from({ length: 11 }, (_, index) => line(`Speaker ${index + 1}`, 120 + index * 10, 125 + index * 10)),
+      line("You", 300, 330),
+    ]);
+    if (!stats) throw new Error("expected stats");
+    const shares = talkShares(stats);
+    expect(shares.youMs).toBe(30_000);
+    expect(shares.shown).toEqual([
+      { speaker: "Omar", ms: 120_000 },
+      { speaker: "Speaker 1", ms: 5_000 },
+    ]);
+    expect(shares.rest).toEqual({ ms: 50_000, speakers: 10 });
+  });
+
+  test("a meeting the user never spoke in still reports the user at 0%, and no rest when nobody is folded", () => {
+    const stats = talkStats([line("Omar", 0, 90), line("Sara", 90, 120)]);
+    if (!stats) throw new Error("expected stats");
+    expect(talkShares(stats)).toEqual({ youMs: 0, shown: [{ speaker: "Omar", ms: 90_000 }, { speaker: "Sara", ms: 30_000 }], rest: null });
+  });
+
+  test.each([
+    [0, 100_000, "0%"],
+    [100_000, 100_000, "100%"],
+    [400, 100_000, "<1%"],
+    [99_600, 100_000, ">99%"],
+    [62_500, 100_000, "63%"],
+    [0, 0, "0%"],
+  ])("%d of %d ms reads %s", (ms, total, label) => {
+    expect(percentLabel(ms, total)).toBe(label);
   });
 });

@@ -1,4 +1,5 @@
-import { formatTimestamp, type TranscriptLine } from "./transcript";
+import { formatTimestamp } from "./timestamp";
+import type { TranscriptLine } from "./transcript";
 
 export const TALK_WINDOW_MS = 10 * 60_000;
 const MIN_TALK_MS = 60_000;
@@ -40,17 +41,41 @@ export function talkStats(lines: readonly TranscriptLine[], windowMs = TALK_WIND
   return { spanMs: latestEnd - firstStart, totalMs, speakers, youLongestMs, youQuestions };
 }
 
-export function talkSummary(stats: TalkStats): string {
-  const percent = (ms: number) => `${Math.round((ms / stats.totalMs) * 100)}%`;
-  const you = stats.speakers.find((entry) => entry.speaker === "You");
+export type TalkShares = {
+  youMs: number;
+  shown: Array<{ speaker: string; ms: number }>;
+  rest: { ms: number; speakers: number } | null;
+};
+
+export function talkShares(stats: TalkStats, othersShown = OTHERS_SHOWN): TalkShares {
   const others = stats.speakers.filter((entry) => entry.speaker !== "You");
-  const shown = others.length > OTHERS_SHOWN ? others.slice(0, OTHERS_SHOWN - 1) : others;
-  const folded = others.slice(shown.length).reduce((sum, entry) => sum + entry.ms, 0);
+  const shown = others.length > othersShown ? others.slice(0, othersShown - 1) : others;
+  const folded = others.slice(shown.length);
+  return {
+    youMs: stats.speakers.find((entry) => entry.speaker === "You")?.ms ?? 0,
+    shown,
+    rest: folded.length > 0 ? { ms: folded.reduce((sum, entry) => sum + entry.ms, 0), speakers: folded.length } : null,
+  };
+}
+
+export function percentLabel(ms: number, totalMs: number): string {
+  const percent = totalMs > 0 ? Math.round((ms / totalMs) * 100) : 0;
+  if (ms > 0 && percent === 0) return "<1%";
+  if (percent === 100 && ms < totalMs) return ">99%";
+  return `${percent}%`;
+}
+
+export function windowMinutes(stats: TalkStats): number {
+  return Math.max(1, Math.round(stats.spanMs / 60_000));
+}
+
+export function talkSummary(stats: TalkStats): string {
+  const percent = (ms: number) => percentLabel(ms, stats.totalMs);
+  const { youMs, shown, rest } = talkShares(stats);
   const shares = [
-    `You ${percent(you?.ms ?? 0)}`,
+    `You ${percent(youMs)}`,
     ...shown.map((entry) => `${entry.speaker} ${percent(entry.ms)}`),
-    ...(folded > 0 ? [`others ${percent(folded)}`] : []),
+    ...(rest && rest.ms > 0 ? [`others ${percent(rest.ms)}`] : []),
   ];
-  const minutes = Math.max(1, Math.round(stats.spanMs / 60_000));
-  return `Talk time, last ${minutes} min: ${shares.join(", ")} · your longest stretch ${formatTimestamp(stats.youLongestMs)} · questions you asked: ${stats.youQuestions}`;
+  return `Talk time, last ${windowMinutes(stats)} min: ${shares.join(", ")} · your longest stretch ${formatTimestamp(stats.youLongestMs)} · questions you asked: ${stats.youQuestions}`;
 }

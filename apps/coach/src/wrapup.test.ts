@@ -24,7 +24,12 @@ describe("parseWrapUp", () => {
   });
 
   test("keeps coaching short: two things that went well and three for next time, first ones first", () => {
-    const next = (n: number) => ({ moment: `[0${n}:00] moment ${n}`, instead: `Say: "line ${n}"` });
+    const next = (n: number) => ({
+      moment: { speaker: "Marco", at: `0${n}:00`, quote: `moment ${n}` },
+      headline: `change ${n}`,
+      verb: "Say" as const,
+      line: `line ${n}`,
+    });
     const wrapUp = parseWrapUp({
       commitments: [],
       open_questions: [],
@@ -32,6 +37,24 @@ describe("parseWrapUp", () => {
       coaching: { went_well: ["a", "b", "c"], next_time: [next(1), next(2), next(3), next(4)] },
     });
     expect(wrapUp.coaching).toEqual({ went_well: ["a", "b"], next_time: [next(1), next(2), next(3)] });
+  });
+
+  test.each([
+    ["the old free-text shape", { moment: "[12:40] Marco pushed back on price", instead: 'Ask: "What is behind it?"' }],
+    ["a verb other than Say or Ask", { moment: { speaker: "Marco", at: null, quote: "too much" }, headline: "Probe", verb: "Tell", line: "x" }],
+    ["a moment without a speaker", { moment: { at: "12:40", quote: "too much" }, headline: "Probe", verb: "Ask", line: "x" }],
+  ])("refuses a next-time item in %s", (_name, item) => {
+    expect(() =>
+      parseWrapUp({ commitments: [], open_questions: [], follow_up_draft: "", coaching: { went_well: [], next_time: [item] } }),
+    ).toThrow();
+    expect(
+      parseWrapUp({
+        commitments: [],
+        open_questions: [],
+        follow_up_draft: "",
+        coaching: { went_well: [], next_time: [{ moment: { speaker: "Marco", at: null, quote: "too much" }, headline: "Probe", verb: "Ask", line: "x" }] },
+      }).coaching.next_time,
+    ).toHaveLength(1);
   });
 });
 

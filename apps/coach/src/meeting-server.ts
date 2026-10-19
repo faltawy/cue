@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { AppBridge, CoachEdit } from "./app-bridge";
 import { type Block, showInputShape } from "./blocks";
+import { MOVE_TAGS } from "./move";
 import { readMeetingNote } from "./notes";
 import { readLiveTranscript, readMeetingInfo, renderTranscript } from "./transcript";
 
@@ -24,12 +25,13 @@ export type MeetingEdits = {
 const SHOWN: Record<Block["kind"], string> = {
   actions: "The user sees the checklist under your answer; don't repeat it.",
   replies: "The user sees these as tappable follow-ups under your answer.",
+  move: "The user sees the move under your answer, with the line ready to copy; don't repeat it.",
 };
 
 export function showTool(onShow: (block: Block) => void) {
   return tool(
     "show",
-    'Show a rich block under your answer. kind "actions": a checklist of commitments or next steps, each with text and optional owner and due; the user can tick items or add them to the meeting notes. Use it only when the user asks for one or your answer lists commitments. kind "replies": 2 or 3 short follow-up asks, worded as the user would type them, shown as tappable chips. Use it only when a follow-up is genuinely likely. At most one of each per answer.',
+    `Show a rich block under your answer. kind "actions": a checklist of commitments or next steps, each with text and optional owner and due; the user can tick items or add them to the meeting notes. Use it only when the user asks for one or your answer lists commitments. kind "replies": 2 or 3 short follow-up asks, worded as the user would type them, shown as tappable chips. Use it only when a follow-up is genuinely likely. kind "move": the one move to make next. tag: the moment (${MOVE_TAGS.join(", ")}); headline: the move in under 10 words, in English; verb "Say" or "Ask"; line: one or two sentences the user can say word for word, in the meeting's language, without quotation marks; watch_out: optional, under 12 words, what to avoid or one fact they need; moment: optional, the line that prompted it, as speaker, a short quote and at (mm:ss from the transcript, no brackets). At most one of each per answer.`,
     showInputShape,
     async (input) => {
       const parsed = z.object(showInputShape).safeParse(input);

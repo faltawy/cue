@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { runLlm } from "./llm";
+import { MOVE_VERBS } from "./move";
 import { talkStats, talkSummary } from "./talk-time";
 import { type LiveTranscript, type MeetingInfo, renderTranscript } from "./transcript";
 
@@ -16,7 +17,14 @@ export const wrapUpSchema = z.object({
   follow_up_draft: z.string(),
   coaching: z.object({
     went_well: z.array(z.string()),
-    next_time: z.array(z.object({ moment: z.string(), instead: z.string() })),
+    next_time: z.array(
+      z.object({
+        moment: z.object({ speaker: z.string(), at: z.string().nullable(), quote: z.string() }),
+        headline: z.string(),
+        verb: z.enum(MOVE_VERBS),
+        line: z.string(),
+      }),
+    ),
   }),
 });
 
@@ -30,7 +38,7 @@ const WRAP_UP_SYSTEM = `You write the wrap-up of a meeting that just ended, from
 - follow_up_draft: a short follow-up message in the user's own voice (first person) to the other participants: a one-line thanks, the agreed next steps with owners, and the open questions. Never write speaker labels such as "You:" or "Them:" in it. Plain text, no subject line, written in English.
 - coaching: short, specific feedback for the user on how they ran this meeting, so they do better next time. Judge only the user ("You"), from the transcript only.
   went_well: one or two things the user did well, each naming the moment.
-  next_time: two or three changes, biggest impact first. moment = the timestamp and a few words of what happened, e.g. "[12:40] Marco pushed back on price". instead = what to do differently, with the line they could have said, in the meeting's language.
+  next_time: two or three changes, biggest impact first. moment = what happened: speaker = who said it ("You" for the user), at = its timestamp as mm:ss without brackets (null if unclear), quote = their words, verbatim and short, e.g. Marco, "12:40", "that's more than we budgeted". headline = what to do differently, in under 10 words, in English. verb = "Say" or "Ask", line = the words they could have used, in the meeting's language, without quotation marks.
   Look for what a strong coach would: questions the user left unanswered or never asked, pushback handled or dodged, vague commitments left open, promising what they can't confirm, conceding without getting something back, the user talking far more than the others (see the talk time), decisions without an owner, a meeting that ended without a clear next step. No generic advice. Leave both lists empty when the meeting was too short or the user barely spoke.
 Never invent commitments or deadlines that were not said.`;
 

@@ -70,6 +70,18 @@ export function toPromptContent(messages: LlmRequest["messages"]): ContentBlock[
   return blocks;
 }
 
+export function jsonOf(reply: string): { ok: true; value: unknown } | { ok: false; error: string } {
+  const json = reply
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  try {
+    return { ok: true, value: JSON.parse(json) };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export type LlmTuning = Pick<Options, "thinking" | "effort"> & { shortCache?: boolean };
 
 export function llmQueryOptions(

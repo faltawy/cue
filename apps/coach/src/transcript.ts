@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 
 import { assignmentsFrom, type SpeakerHint, speakerLabels, withProviderSpeakers } from "./speakers";
+import { formatTimestamp } from "./timestamp";
 
 export type Word = {
   id: string;
@@ -69,13 +70,6 @@ export function toLines(words: Word[], labels: Map<string, string>, sinceMs = 0)
     }
   }
   return lines;
-}
-
-export function formatTimestamp(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const minutes = Math.floor(total / 60);
-  const seconds = total % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 export function renderLines(lines: readonly TranscriptLine[]): string {

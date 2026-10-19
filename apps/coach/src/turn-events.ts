@@ -60,7 +60,9 @@ export function toolLabels(name: string, input: Record<string, unknown>): ToolLa
     case "mcp__meeting__undo_last_coach_edit":
       return label("Undid its last edit", "Undoing its last edit");
     case "mcp__meeting__show":
-      return label("Showed a list", "Preparing a list");
+      return asRecord(input.block).kind === "move"
+        ? label("Suggested a move", "Suggesting a move")
+        : label("Showed a list", "Preparing a list");
     case "WebSearch": {
       const query = clip(str(input.query), 40);
       return query

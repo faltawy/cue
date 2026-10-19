@@ -6,6 +6,7 @@ import type { StripView, WrapUpActions } from "./meeting-state";
 import type { ProactiveView } from "./proactive";
 import type { Question } from "./questions";
 import type { Source } from "./sources";
+import type { TalkStats } from "./talk-time";
 import type { TurnUsage } from "./usage";
 import type { WrapUp } from "./wrapup";
 
@@ -29,6 +30,7 @@ export type WrapUpView =
       actions: WrapUpActions;
       added: boolean;
       logged: boolean;
+      talk: TalkStats | null;
     }
   | { state: "failed"; title: string | null; message: string };
 
@@ -63,6 +65,7 @@ export type CoachEvent =
   | { type: "block"; id: string; block: Block }
   | { type: "block_check"; id: string; index: number; checked: boolean }
   | { type: "sources"; sources: Source[] }
+  | { type: "talk"; talk: TalkStats }
   | { type: "undone"; id: string; summary: string }
   | { type: "notice"; text: string }
   | { type: "wrapup"; wrapUp: WrapUpView | null }
@@ -85,6 +88,7 @@ export const FEED_EVENTS: ReadonlySet<CoachEvent["type"]> = new Set([
   "block",
   "block_check",
   "sources",
+  "talk",
 ]);
 
 export function appendHistory(history: CoachEvent[], event: CoachEvent): CoachEvent[] {
