@@ -384,17 +384,40 @@ describe("transcript SQLite queries", () => {
     );
   });
 
+  it("labels a contact who has only an email by that email, but not you", async () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+      db.exec(
+        "CREATE TABLE humans (id TEXT PRIMARY KEY, name TEXT, email TEXT, deleted_at TEXT)",
+      );
+      const insert = db.prepare("INSERT INTO humans VALUES (?, ?, ?, NULL)");
+      insert.run("ops", "", "ops@example.com");
+      insert.run("self", "", "me@example.com");
+      insert.run("sam", "  Sam Lee ", "sam@example.com");
+      mocks.execute.mockImplementationOnce((sql: string, params: string[]) =>
+        Promise.resolve(db.prepare(sql).all(...params)),
+      );
+
+      await expect(
+        getTranscriptHumans(["ops", "self", "sam"], "self"),
+      ).resolves.toEqual([
+        { human_id: "ops", name: "ops@example.com" },
+        { human_id: "sam", name: "Sam Lee" },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
   it("keeps historical speaker names after the assigned contact is deleted", async () => {
     const db = new DatabaseSync(":memory:");
     try {
       db.exec(
-        "CREATE TABLE humans (id TEXT PRIMARY KEY, name TEXT, deleted_at TEXT)",
+        "CREATE TABLE humans (id TEXT PRIMARY KEY, name TEXT, deleted_at TEXT, email TEXT NOT NULL DEFAULT '')",
       );
-      db.prepare("INSERT INTO humans VALUES (?, ?, ?)").run(
-        "artem",
-        "Artem",
-        "2026-09-24",
-      );
+      db.prepare(
+        "INSERT INTO humans (id, name, deleted_at) VALUES (?, ?, ?)",
+      ).run("artem", "Artem", "2026-09-24");
       mocks.execute.mockImplementationOnce((sql: string, params: string[]) =>
         Promise.resolve(db.prepare(sql).all(...params)),
       );

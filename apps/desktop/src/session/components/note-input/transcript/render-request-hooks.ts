@@ -74,6 +74,7 @@ export async function getSessionTranscriptRenderRequest(
       collectAssignedHumanIdsFromTranscriptRows(transcriptRows),
       selfHumanId,
     ),
+    selfHumanId,
   );
 
   return buildRenderTranscriptRequestFromRows(
@@ -138,7 +139,7 @@ function useRenderData(
       collectRenderHumanIds(participantHumanIds, assignedHumanIds, selfHumanId),
     [assignedHumanIds, participantHumanIds, selfHumanId],
   );
-  const humans = useTranscriptHumans(humanIds);
+  const humans = useTranscriptHumans(humanIds, selfHumanId);
 
   const request = useMemo(
     () =>

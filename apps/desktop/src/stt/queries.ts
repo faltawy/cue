@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+
 import type {
   LiveTranscriptDelta,
   RenderTranscriptHuman,
@@ -49,7 +51,7 @@ type TranscriptMetadataSqlRow = {
 };
 
 type ParticipantHumanSqlRow = { human_id: string };
-type HumanSqlRow = { id: string; name: string };
+type HumanSqlRow = { id: string; name: string; email: string };
 type TranscriptMutationSqlRow = {
   words_json: string;
   speaker_hints_json: string;
@@ -385,21 +387,31 @@ function getTranscriptHumansQuery(humanIds: readonly string[]) {
   return {
     humanIds: ids,
     sql: `
-      SELECT id, name
+      SELECT id, name, email
       FROM humans
       WHERE id IN (${placeholders || "NULL"})
-        AND name <> ''
+        AND (TRIM(name) <> '' OR TRIM(email) <> '')
       ORDER BY id
     `,
   };
 }
 
-function mapTranscriptHumans(rows: HumanSqlRow[]): RenderTranscriptHuman[] {
-  return rows.map((row) => ({ human_id: row.id, name: row.name }));
+// A contact known only by email (a calendar invitee) is labelled by that
+// email rather than "Speaker N"; your own unnamed voice stays "You".
+function mapTranscriptHumans(
+  rows: HumanSqlRow[],
+  selfHumanId?: string,
+): RenderTranscriptHuman[] {
+  return rows.flatMap((row) => {
+    const name =
+      row.name.trim() || (row.id === selfHumanId ? "" : row.email.trim());
+    return name ? [{ human_id: row.id, name }] : [];
+  });
 }
 
 export async function getTranscriptHumans(
   humanIds: readonly string[],
+  selfHumanId?: string,
 ): Promise<RenderTranscriptHuman[]> {
   const query = getTranscriptHumansQuery(humanIds);
   if (query.humanIds.length === 0) {
@@ -410,13 +422,18 @@ export async function getTranscriptHumans(
     query.sql,
     query.humanIds,
   );
-  return mapTranscriptHumans(rows);
+  return mapTranscriptHumans(rows, selfHumanId);
 }
 
 export function useTranscriptHumans(
   humanIds: readonly string[],
+  selfHumanId?: string,
 ): RenderTranscriptHuman[] {
   const query = getTranscriptHumansQuery(humanIds);
+  const mapRows = useCallback(
+    (rows: HumanSqlRow[]) => mapTranscriptHumans(rows, selfHumanId),
+    [selfHumanId],
+  );
   const { data = EMPTY_HUMANS } = useLiveQuery<
     HumanSqlRow,
     RenderTranscriptHuman[]
@@ -424,7 +441,7 @@ export function useTranscriptHumans(
     sql: query.sql,
     params: query.humanIds,
     enabled: query.humanIds.length > 0,
-    mapRows: mapTranscriptHumans,
+    mapRows,
   });
   return query.humanIds.length > 0 ? data : EMPTY_HUMANS;
 }
