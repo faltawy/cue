@@ -1,25 +1,34 @@
 # Releasing Cue
 
-Releases live in the private repo `faltawy/cue`. The installed app reads them with a read-only GitHub token that you paste into Settings.
+The code lives in the private repo `faltawy/cue`. Builds are published to the public repo [`faltawy/cue-releases`](https://github.com/faltawy/cue-releases), which holds only release assets. The installed app downloads updates from there without credentials.
 
 ## 1. Repository secrets (once)
 
-Set these in GitHub under Settings > Secrets and variables > Actions:
+Set these on `faltawy/cue` under Settings > Secrets and variables > Actions:
 
-| Secret                                        | Value                                           | Status           |
-| --------------------------------------------- | ----------------------------------------------- | ---------------- |
-| `APPLE_CERTIFICATE`                           | base64 of the code-signing `.p12`               | set              |
-| `APPLE_CERTIFICATE_PASSWORD`                  | password of that `.p12`                         | set              |
-| `TAURI_SIGNING_PRIVATE_KEY`                   | contents of `~/.tauri/cue-updater.key`          | **owner to add** |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`          | contents of `~/.tauri/cue-updater.key.password` | **owner to add** |
-| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | Apple Developer ID notarization (optional)      | not set: skipped |
-
-```sh
-gh secret set TAURI_SIGNING_PRIVATE_KEY -R faltawy/cue < ~/.tauri/cue-updater.key
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD -R faltawy/cue < ~/.tauri/cue-updater.key.password
-```
+| Secret                                        | Value                                               | Status           |
+| --------------------------------------------- | --------------------------------------------------- | ---------------- |
+| `APPLE_CERTIFICATE`                           | base64 of the code-signing `.p12`                   | set              |
+| `APPLE_CERTIFICATE_PASSWORD`                  | password of that `.p12`                             | set              |
+| `TAURI_SIGNING_PRIVATE_KEY`                   | contents of `~/.tauri/cue-updater.key`              | set              |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`          | contents of `~/.tauri/cue-updater.key.password`     | set              |
+| `RELEASES_TOKEN`                              | fine-grained token that publishes to `cue-releases` | **owner to add** |
+| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | Apple Developer ID notarization (optional)          | not set: skipped |
 
 The updater public key in `apps/desktop/src-tauri/tauri.conf.json` is `~/.tauri/cue-updater.key.pub`. The release workflow fails if the private key doesn't match it.
+
+### Create `RELEASES_TOKEN`
+
+1. Open https://github.com/settings/personal-access-tokens/new.
+2. Resource owner: `faltawy`. Repository access: Only select repositories, then `faltawy/cue-releases`.
+3. Permissions: Repository permissions > Contents: **Read and write**. Nothing else.
+4. Generate the token and store it:
+
+```sh
+gh secret set RELEASES_TOKEN -R faltawy/cue
+```
+
+The workflow stops at its first step if the secret is missing or can't reach `faltawy/cue-releases`. When the token expires, create a new one the same way.
 
 ## 2. Cut a release
 
@@ -29,22 +38,23 @@ git tag -a v0.2.0 -m "What changed, in a line or two"
 git push origin v0.2.0
 ```
 
-`.github/workflows/release.yaml` stamps the version from the tag, builds and signs `Cue.app`, and checks the signature, the absence of Homebrew links and the updater signature. It then publishes a GitHub Release with the DMG, `.app.tar.gz`, `.sig` and `latest.json`. The tag message becomes the release notes. A tag without a message gets GitHub's generated notes. A tag like `v0.3.0-beta.1` is published as a prerelease, which installed apps ignore.
+`.github/workflows/release.yaml` stamps the version from the tag, builds and signs `Cue.app`, and checks the signature, the absence of Homebrew links and the updater signature. It then publishes a release with the same tag on `faltawy/cue-releases` (the tag is created there on `main`) with the DMG, `.app.tar.gz`, `.sig` and `latest.json`, and checks that the update downloads from its public URL. The tag message becomes the release notes, and they are public, so keep them free of internal detail. A tag without a message gets "Cue 0.2.0" as its notes. A tag like `v0.3.0-beta.1` is published as a prerelease, which installed apps ignore.
 
-To rebuild an existing tag, delete its release first, then run the workflow by hand (Actions > Release > Run workflow, `tag: v0.2.0`).
+To rebuild an existing tag, delete its release and tag on `cue-releases` first, then run the workflow by hand (Actions > Release > Run workflow, `tag: v0.2.0`):
 
-## 3. Turn on updates in the app (each Mac)
+```sh
+gh release delete v0.2.0 -R faltawy/cue-releases --cleanup-tag
+```
 
-1. Open https://github.com/settings/personal-access-tokens/new and create a fine-grained token:
-   - Resource owner: `faltawy`. Repository access: Only select repositories, then `faltawy/cue`.
-   - Permissions: Repository permissions > Contents: **Read-only**. Nothing else.
-2. In Cue, open Settings > General > Updates, paste the token and choose Save. It is stored in the macOS Keychain and never shown again. Use Remove to clear it.
+## 3. Updates in the app
 
-Cue checks 30 seconds after launch and every 6 hours. Updates download in the background. "Restart" (in Settings or the tray) installs the update, but never while a recording is running or the coach is answering. Only the stable app (`com.hyprnote.stable`) updates. Dev builds show that updates are unavailable.
+Nothing to set up. Cue reads `https://github.com/faltawy/cue-releases/releases/latest/download/latest.json` 30 seconds after launch and every 6 hours, and checks each download against the updater public key. Updates download in the background. "Restart to update" (in Settings > General > Updates or the tray) installs the update, but never while a recording is running or the coach is answering. Only the stable app (`com.hyprnote.stable`) updates. Dev builds show that updates are unavailable.
+
+Versions before this change read releases from the private repo with a GitHub token. They don't see `cue-releases`, so install the next version on those Macs by hand once (section 4). You can then delete the old read-only token on GitHub.
 
 ## 4. First install of a self-signed build
 
-The DMG isn't notarized until an Apple Developer ID is set up. To install it:
+The DMG isn't notarized until an Apple Developer ID is set up. Download it from https://github.com/faltawy/cue-releases/releases/latest, then:
 
 1. Open the DMG and drag Cue to Applications.
 2. In Applications, right-click Cue and choose Open, then Open again in the dialog. On recent macOS versions, if there is no Open button, go to System Settings > Privacy & Security and choose "Open Anyway".
