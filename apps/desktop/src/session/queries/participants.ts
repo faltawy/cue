@@ -51,7 +51,8 @@ export function useSessionParticipants(
     `,
     params: [sessionId],
     enabled: Boolean(sessionId),
-    mapRows: (rows) => rows.map(mapSessionParticipantRow),
+    mapRows: (rows) =>
+      sortSessionParticipants(rows.map(mapSessionParticipantRow)),
   });
   return sessionId ? data : EMPTY_SESSION_PARTICIPANTS;
 }
@@ -115,6 +116,26 @@ export function removeSessionParticipant(mappingId: string): Promise<void> {
   });
 }
 
+const participantCollator = new Intl.Collator(undefined, {
+  sensitivity: "base",
+  numeric: true,
+});
+
+// SQLite sorts by byte: names with stray spaces or a leading accent land at
+// the wrong end, and people without a name sort first. Sort by what is shown.
+export function sortSessionParticipants(
+  records: SessionParticipantRecord[],
+): SessionParticipantRecord[] {
+  const label = (record: SessionParticipantRecord) =>
+    record.name || record.email;
+  return [...records].sort(
+    (a, b) =>
+      participantCollator.compare(label(a), label(b)) ||
+      participantCollator.compare(a.email, b.email) ||
+      a.id.localeCompare(b.id),
+  );
+}
+
 function mapSessionParticipantRow(
   row: SessionParticipantSqlRow,
 ): SessionParticipantRecord {
@@ -123,7 +144,7 @@ function mapSessionParticipantRow(
     sessionId: row.session_id,
     humanId: row.human_id,
     source: row.source,
-    name: row.name,
+    name: row.name.trim(),
     email: row.email,
     jobTitle: row.job_title,
     linkedinUsername: row.linkedin_username,
