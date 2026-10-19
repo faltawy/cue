@@ -3,7 +3,7 @@ import { useMemo, useSyncExternalStore } from "react";
 
 import { parseEventInstant, safeParseDate, TZDate } from "@anlg/utils";
 
-import { eventCalendarDay } from "./event-day";
+import { eventCalendarDays } from "./event-day";
 import { useIgnoredEvents } from "./ignored-events";
 import { useEnabledCalendarRows, useTimelineTables } from "./queries";
 
@@ -159,9 +159,14 @@ export function useCalendarData(): CalendarData {
       for (const [eventId, row] of Object.entries(eventsTable)) {
         if (isIgnored(row.tracking_id_event, row.recurrence_series_id))
           continue;
-        const day = eventCalendarDay(row.started_at, row.is_all_day, tz);
-        if (!day) continue;
-        (eventIdsByDate[day] ??= []).push(eventId);
+        for (const day of eventCalendarDays(
+          row.started_at,
+          row.ended_at,
+          row.is_all_day,
+          tz,
+        )) {
+          (eventIdsByDate[day] ??= []).push(eventId);
+        }
       }
 
       for (const ids of Object.values(eventIdsByDate)) {
