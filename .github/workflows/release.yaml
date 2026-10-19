@@ -1,0 +1,193 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and release (e.g. v0.2.0)
+        required: true
+        type: string
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Refuse an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists; delete it first to rebuild."
+            exit 1
+          fi
+
+      - uses: ./.github/actions/pnpm_install
+      - uses: ./.github/actions/install_desktop_deps
+      - uses: ./.github/actions/rust_install
+      - uses: ./.github/actions/bun_install
+
+      - name: Stamp the version
+        run: echo "VERSION=$(node scripts/release-version.mjs "$TAG")" >> "$GITHUB_ENV"
+
+      - name: Build the coach sidecar
+        working-directory: apps/coach
+        run: bun run build:sidecar
+
+      - name: Import the signing certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/cue-signing.keychain-db"
+          keychain_password=$(openssl rand -hex 24)
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" >/dev/null
+          read -r -a existing <<< "$(security list-keychains -d user | tr -d '"' | tr '\n' ' ')"
+          security list-keychains -d user -s "$keychain" "${existing[@]}"
+          identity=$(security find-identity -p codesigning "$keychain" | awk -F'"' '/\)/ { print $2; exit }')
+          if [ -z "$identity" ]; then
+            echo "::error::No code-signing identity in APPLE_CERTIFICATE."
+            exit 1
+          fi
+          echo "Signing as: $identity"
+          echo "APPLE_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+          echo "SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
+      - name: Enable notarization when Apple credentials exist
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            {
+              echo "APPLE_ID=$APPLE_ID"
+              echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+              echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+              echo "NOTARIZE=true"
+            } >> "$GITHUB_ENV"
+          else
+            echo "No Apple ID credentials; skipping notarization."
+          fi
+
+      - run: echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
+
+      - name: Build Cue
+        working-directory: apps/desktop
+        env:
+          LIBONNXRUNTIME_NO_PKG_CONFIG: "1"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          pnpm exec tauri build \
+            --target aarch64-apple-darwin \
+            --bundles app,dmg \
+            --config src-tauri/tauri.conf.stable.json \
+            --config '{"bundle":{"createUpdaterArtifacts":true}}'
+
+      - name: Collect artifacts
+        run: |
+          bundle="target/aarch64-apple-darwin/release/bundle"
+          app="$bundle/macos/Cue.app"
+          dmg=$(ls "$bundle"/dmg/*.dmg)
+          mkdir -p dist
+          cp "$dmg" "dist/Cue_${VERSION}_aarch64.dmg"
+          cp "$bundle/macos/Cue.app.tar.gz" "dist/Cue_${VERSION}_aarch64.app.tar.gz"
+          cp "$bundle/macos/Cue.app.tar.gz.sig" "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig"
+          echo "APP=$app" >> "$GITHUB_ENV"
+
+      - name: Verify the bundle
+        run: |
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dvv "$APP" 2>&1 | grep -F "Authority=$APPLE_SIGNING_IDENTITY"
+          if find "$APP/Contents" -type f \( -perm -u+x -o -name '*.dylib' \) -exec otool -L {} + 2>/dev/null | grep -F /opt/homebrew; then
+            echo "::error::The bundle links against Homebrew libraries."
+            exit 1
+          fi
+          test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" = "$VERSION"
+
+      - name: Verify the updater signature
+        run: |
+          brew install minisign
+          node -e 'const c=require("./apps/desktop/src-tauri/tauri.conf.json"); process.stdout.write(c.plugins.updater.pubkey)' \
+            | base64 --decode > "$RUNNER_TEMP/updater.pub"
+          base64 --decode < "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig" > "$RUNNER_TEMP/updater.minisig"
+          minisign -V -p "$RUNNER_TEMP/updater.pub" -x "$RUNNER_TEMP/updater.minisig" \
+            -m "dist/Cue_${VERSION}_aarch64.app.tar.gz"
+
+      - name: Notarize the DMG
+        if: env.NOTARIZE == 'true'
+        run: |
+          node scripts/notarize-dmg.mjs "dist/Cue_${VERSION}_aarch64.dmg"
+          xcrun stapler staple "dist/Cue_${VERSION}_aarch64.dmg"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          : > "$RUNNER_TEMP/tag-notes.md"
+          if [ "$(git cat-file -t "$TAG")" = tag ]; then
+            git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > "$RUNNER_TEMP/tag-notes.md"
+          fi
+          notes=(--generate-notes)
+          if grep -q '[^[:space:]]' "$RUNNER_TEMP/tag-notes.md"; then
+            notes=(--notes-file "$RUNNER_TEMP/tag-notes.md")
+          fi
+          prerelease=()
+          if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
+
+          gh release create "$TAG" --draft --verify-tag --title "Cue $VERSION" "${notes[@]}" "${prerelease[@]}" \
+            "dist/Cue_${VERSION}_aarch64.dmg" \
+            "dist/Cue_${VERSION}_aarch64.app.tar.gz" \
+            "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig"
+
+          release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" \
+            --jq ".[] | select(.tag_name == \"$TAG\" and .draft) | .id")
+          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" --jq .body > "$RUNNER_TEMP/notes.md"
+          asset_url=$(gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+            --jq ".assets[] | select(.name == \"Cue_${VERSION}_aarch64.app.tar.gz\") | .url")
+          if [ -z "$asset_url" ]; then
+            echo "::error::Uploaded .app.tar.gz asset not found."
+            exit 1
+          fi
+          node scripts/release-manifest.mjs \
+            --version "$VERSION" \
+            --signature-file "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig" \
+            --url "$asset_url" \
+            --notes-file "$RUNNER_TEMP/notes.md" > dist/latest.json
+          cat dist/latest.json
+          gh release upload "$TAG" dist/latest.json
+          gh release edit "$TAG" --draft=false
+
+      - name: Remove the signing keychain
+        if: always()
+        run: |
+          if [ -n "${SIGNING_KEYCHAIN:-}" ]; then security delete-keychain "$SIGNING_KEYCHAIN"; fi
