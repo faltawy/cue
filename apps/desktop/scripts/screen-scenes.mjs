@@ -16,6 +16,7 @@ const ANCHORS = {
     organization: "Lumen",
     template: "Daily Standup",
     folder: "Clients",
+    calendar: true,
     locked: "Hiring loop",
   },
   worst: {
@@ -26,6 +27,7 @@ const ANCHORS = {
     organization: "Northwind Industries Holdings International GmbH & Co. KG",
     template: "Enterprise quarterly business review",
     folder: "Clients",
+    calendar: true,
     locked: "Hiring loop",
   },
   one: {
@@ -36,6 +38,7 @@ const ANCHORS = {
     organization: "Lumen",
     template: "One template",
     folder: "Clients",
+    calendar: true,
   },
   empty: { template: "Daily Standup" },
 };
@@ -201,7 +204,11 @@ export function scenes(data = "demo") {
         { click: { text: a.organization, exact: true }, wait: 800 },
       ],
     },
-    { name: "15-calendar", steps: [{ click: "Open calendar", wait: 1200 }] },
+    {
+      name: "15-calendar",
+      needs: "calendar",
+      steps: [{ click: "Open calendar", wait: 1200 }],
+    },
     {
       name: "16-templates",
       needs: "template",
@@ -271,5 +278,5 @@ export function scenes(data = "demo") {
   ];
   return all
     .filter((scene) => !scene.needs || a[scene.needs])
-    .map((scene) => ({ ready: a.note ?? "Open calendar", ...scene }));
+    .map((scene) => ({ ready: a.note ?? "New Note", ...scene }));
 }
