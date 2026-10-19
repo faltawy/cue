@@ -1,6 +1,6 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useForm } from "@tanstack/react-form";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { Check, DotsThree, Heart, Plus, X } from "@anlg/ui/components/icons";
 import { Badge } from "@anlg/ui/components/ui/badge";
@@ -305,12 +305,10 @@ export function TemplateForm({
           <div className="min-w-0">
             <form.Field name="description">
               {(field) => (
-                <Textarea
+                <TemplateDescriptionField
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={field.handleChange}
                   placeholder={t`Describe the template purpose...`}
-                  className="text-muted-foreground text-body min-h-[24px] resize-none border-0 px-0 py-0 shadow-none"
-                  rows={1}
                 />
               )}
             </form.Field>
@@ -338,5 +336,36 @@ export function TemplateForm({
         </div>
       </div>
     </div>
+  );
+}
+
+// One row that grows with the text: a fixed single row hid everything past
+// the first line of a long description.
+function TemplateDescriptionField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${element.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <Textarea
+      ref={ref}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      className="text-muted-foreground text-body min-h-[24px] resize-none overflow-hidden border-0 px-0 py-0 shadow-none"
+      rows={1}
+    />
   );
 }

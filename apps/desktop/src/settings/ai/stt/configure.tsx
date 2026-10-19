@@ -24,9 +24,9 @@ export function ConfigureProviders() {
   );
 
   return (
-    <div className="border-border divide-border divide-y overflow-hidden rounded-lg border">
-      <div className="flex items-center gap-3">
-        <h3 className="text-title">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-title min-w-0">
           <Trans>Configure Providers</Trans>
         </h3>
         <ProviderSearch value={search} onChange={setSearch} />

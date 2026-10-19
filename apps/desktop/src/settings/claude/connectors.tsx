@@ -105,7 +105,9 @@ export function ClaudeConnectorsGroup({
                 className="flex items-center justify-between gap-4"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-ui font-medium">{row.name}</div>
+                  <div className="text-ui font-medium [overflow-wrap:anywhere]">
+                    {row.name}
+                  </div>
                   {isGmail && (
                     <p className="text-muted-foreground text-label">
                       <Trans>
@@ -115,7 +117,7 @@ export function ClaudeConnectorsGroup({
                     </p>
                   )}
                 </div>
-                <label className="text-muted-foreground text-label flex items-center gap-2">
+                <label className="text-muted-foreground text-label flex shrink-0 items-center gap-2 whitespace-nowrap">
                   <Trans>On</Trans>
                   <Switch
                     aria-label={t`Use ${row.name}`}
@@ -124,7 +126,7 @@ export function ClaudeConnectorsGroup({
                     onCheckedChange={(on) => turn(row, on)}
                   />
                 </label>
-                <label className="text-muted-foreground text-label flex items-center gap-2">
+                <label className="text-muted-foreground text-label flex shrink-0 items-center gap-2 whitespace-nowrap">
                   <Trans>Allow changes</Trans>
                   <Switch
                     aria-label={t`Allow ${row.name} to make changes`}
