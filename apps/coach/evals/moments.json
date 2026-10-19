@@ -1,0 +1,463 @@
+{
+  "self": "Sam Rivera",
+  "moments": [
+    {
+      "id": "price-before-pain",
+      "lang": "en",
+      "type": "sales discovery",
+      "context": "Intro call · with Dana Whitfield",
+      "startMin": 4,
+      "lines": [
+        ["You", "Thanks for making the time. I'd love to start by hearing a bit about your team."],
+        ["Dana", "Sure. Before we go much further though, what does this cost for 60 agents?"]
+      ],
+      "why": "Dana asks the price for 60 agents",
+      "silent": false,
+      "good": "Don't drop a cold number before knowing the pain or the volume. Give a short honest frame (it depends on volume, a range only if the user knows it) and pivot to a discovery question, e.g. Say: \"Happy to get you a number — it depends mostly on volume. How many conversations a month, and what's the main thing you want fixed?\""
+    },
+    {
+      "id": "price-objection-hedging",
+      "lang": "en",
+      "type": "negotiation",
+      "context": "Pricing review · with Marco Bianchi",
+      "instructions": "I sell annual software contracts. Discounts up to 10%, and only in exchange for a two-year term.",
+      "startMin": 22,
+      "lines": [
+        ["Marco", "Honestly, $48,000 a year is more than we budgeted. Another vendor quoted us around 30."],
+        ["You", "Yeah, I hear you, I mean, we could probably look at something, maybe some kind of discount, I'd have to check."]
+      ],
+      "flag": 2,
+      "why": "price objection and the user hedging toward a discount",
+      "silent": false,
+      "good": "Stop conceding: the user is offering a discount before isolating the objection. Acknowledge and isolate, then trade within the user's limit. Ask: \"Price aside, is this the solution you want?\" then only a discount tied to a two-year term (max 10%). Point out the hedge."
+    },
+    {
+      "id": "vague-them-commitment",
+      "lang": "en",
+      "type": "sales",
+      "context": "Demo follow-up · with Priya Nair",
+      "startMin": 41,
+      "lines": [
+        ["Priya", "This was really helpful, thanks."],
+        ["Priya", "We'll look into it internally and get back to you at some point."]
+      ],
+      "why": "vague next step from Priya",
+      "silent": false,
+      "good": "Pin the vague next step before the call ends: who else decides, and a dated follow-up. Ask: \"Who else needs to weigh in? Could we book 20 minutes Thursday to hear what they think?\""
+    },
+    {
+      "id": "user-overpromise-date",
+      "lang": "en",
+      "type": "customer call",
+      "context": "Quarterly check-in · with Lena Fischer",
+      "instructions": "I'm the account manager. Never promise delivery dates; engineering confirms them.",
+      "startMin": 12,
+      "lines": [
+        ["Lena", "The Salesforce sync is really the blocker for us."],
+        ["You", "Yes, absolutely, we'll have the Salesforce integration live by end of month, no problem."]
+      ],
+      "why": "the user promised a delivery date",
+      "silent": false,
+      "good": "The user just broke their own rule (never promise dates). Walk it back now, gracefully, and replace it with a dated commitment they control. Say: \"Let me correct myself — I'll confirm the date with engineering and send it to you by Friday.\""
+    },
+    {
+      "id": "over-talking-then-question",
+      "lang": "en",
+      "type": "sales discovery",
+      "context": "Discovery call · with Tom Okafor",
+      "startMin": 8,
+      "lines": [
+        ["You", "So let me walk you through how the platform works end to end, starting with the inbox, then routing, then the reporting layer, and how all of that ties together for teams like yours.", 70],
+        ["You", "And on top of that there's the automation piece, which honestly is where most customers see the biggest wins, and then the integrations, which we can go into as well.", 65],
+        ["Tom", "Okay.", 1],
+        ["You", "And the other thing worth mentioning is the analytics, because a lot of leaders love having that visibility across every channel and every team.", 60],
+        ["Tom", "Sure. So does it work with Zendesk?", 3]
+      ],
+      "why": "Tom asks if it works with Zendesk",
+      "silent": false,
+      "good": "The user has done nearly all the talking with no questions. Answer in one sentence (only what the user knows; don't invent), then hand the floor back. Ask: \"What does your Zendesk setup look like today, and what's not working about it?\""
+    },
+    {
+      "id": "buying-signal",
+      "lang": "en",
+      "type": "sales",
+      "context": "Evaluation call · with Grace Liu",
+      "startMin": 33,
+      "lines": [
+        ["Grace", "I like what I'm seeing."],
+        ["Grace", "If we went ahead, how quickly could our team be live? We'd want it before the holiday peak."]
+      ],
+      "why": "Grace asks how fast they could go live",
+      "silent": false,
+      "good": "Buying signal: answer briefly (no invented timeline) and advance to a mutual plan. Ask: \"What needs to happen on your side to decide in time for the peak, and who signs off?\""
+    },
+    {
+      "id": "escalation-angry",
+      "lang": "en",
+      "type": "support escalation",
+      "context": "Incident review · with Rob Mendes",
+      "startMin": 3,
+      "lines": [
+        ["Rob", "This is the third outage this month. Our agents couldn't reply to anyone for four hours yesterday. Why should we keep paying for this?"]
+      ],
+      "why": "angry customer asks why they should keep paying",
+      "silent": false,
+      "good": "Acknowledge the impact first, no excuses or SLA arguments, own it, and commit to a dated update. Say: \"You're right — four hours without replying to customers is unacceptable. I'll send you the root cause and what we're changing by Thursday 5pm.\""
+    },
+    {
+      "id": "silent-user-answered-well",
+      "lang": "en",
+      "type": "support escalation",
+      "context": "Incident follow-up · with Rob Mendes",
+      "startMin": 15,
+      "lines": [
+        ["Rob", "When will the fix be deployed?"],
+        ["You", "Tonight at 10pm UTC. I'll email you confirmation once it's live, by 11pm at the latest."]
+      ],
+      "flag": 2,
+      "why": "fix date question and the user's commitment",
+      "silent": true,
+      "good": "The user answered directly with a clear owner, action and time. Nothing to add: stay silent."
+    },
+    {
+      "id": "decision-not-confirmed",
+      "lang": "en",
+      "type": "internal planning",
+      "context": "Roadmap planning · with Omar, Sara, Jo",
+      "startMin": 18,
+      "lines": [
+        ["Sara", "OK so let's go with option B then, I guess."],
+        ["Omar", "Yeah, sounds fine."],
+        ["Omar", "Anyway, next topic, what about the hiring plan for Q1?"]
+      ],
+      "why": "moving on before option B has an owner",
+      "silent": false,
+      "good": "A decision is about to slip by with no owner or date. Lock it before moving on. Say: \"Before we move on — we're going with option B. Who owns it, and when do we see a first cut?\""
+    },
+    {
+      "id": "agenda-drift",
+      "lang": "en",
+      "type": "facilitation",
+      "context": "Weekly product sync (30 min) · with Omar, Sara",
+      "instructions": "I run this weekly. Keep us on the agenda: launch date, pricing page, hiring.",
+      "startMin": 24,
+      "lines": [
+        ["Sara", "I still think green converts better than blue for that button."],
+        ["Omar", "Blue matches the brand though. What do you think?"]
+      ],
+      "why": "asked to weigh in on button colour",
+      "silent": false,
+      "good": "24 minutes into a 30-minute sync, still off-agenda. Don't weigh in on colour; park it with an owner and move to the launch date. Say: \"Let's park the colour — Sara, can you decide by Friday? Six minutes left; launch date first.\""
+    },
+    {
+      "id": "one-on-one-vague",
+      "lang": "en",
+      "type": "1:1",
+      "context": "1:1 · with Alex Kim",
+      "instructions": "I'm Alex's manager.",
+      "startMin": 6,
+      "lines": [
+        ["You", "How are things going?"],
+        ["Alex", "Fine I guess, just a lot going on. The migration should probably finish next month."]
+      ],
+      "why": "Alex gives a vague status and a soft date",
+      "silent": false,
+      "good": "Don't accept \"fine\" and a \"probably\". Ask one open question about the load or the risk to the date. Ask: \"What's taking most of your energy right now?\" or \"What would make the migration slip past next month?\""
+    },
+    {
+      "id": "feedback-hedging",
+      "lang": "en",
+      "type": "1:1 feedback",
+      "context": "1:1 · with Alex Kim",
+      "instructions": "I'm Alex's manager.",
+      "startMin": 14,
+      "lines": [
+        ["You", "So, um, this is maybe a small thing, and it's totally fine, but, like, the weekly report was kind of late, maybe a couple of times?", 12],
+        ["Alex", "Was it? I thought I sent them on time. Which ones?"]
+      ],
+      "why": "Alex asks which reports were late",
+      "silent": false,
+      "good": "The user hedged the feedback into mush. Be specific about behaviour and impact, then ask. Say: \"The last two Monday reports came in on Wednesday, so I presented stale numbers to leadership. What got in the way?\" (dates only if the user knows them)."
+    },
+    {
+      "id": "interview-probe-we",
+      "lang": "en",
+      "type": "interview",
+      "context": "Interview: Senior engineer · with Chris Park",
+      "instructions": "I'm the hiring manager.",
+      "startMin": 20,
+      "lines": [
+        ["Chris", "At my last job we led the migration to microservices and we improved performance by about 40%."]
+      ],
+      "why": "candidate claims a 40% improvement",
+      "silent": false,
+      "good": "Probe the \"we\" and the number. Ask: \"What did you personally own in that migration, and how did you measure the 40%?\""
+    },
+    {
+      "id": "interview-user-candidate",
+      "lang": "en",
+      "type": "interview (user is the candidate)",
+      "context": "Interview: Product Manager · with Hannah Cole",
+      "startMin": 25,
+      "lines": [
+        ["Hannah", "What's your biggest weakness, honestly?"]
+      ],
+      "why": "classic weakness question aimed at the user",
+      "silent": false,
+      "good": "Give structure, not a script about facts the coach doesn't know: a real but non-core weakness, what you do about it, evidence it's working, in about 30 seconds; avoid humble-brags like perfectionism."
+    },
+    {
+      "id": "exec-bluf",
+      "lang": "en",
+      "type": "executive update",
+      "context": "Launch review · with Diane (CEO)",
+      "startMin": 9,
+      "lines": [
+        ["You", "So there's a lot of moving parts, the payment provider certification slipped about two weeks, QA is mostly on track, and design is finishing the last screens, so it's kind of complicated.", 25],
+        ["Diane", "Bottom line, are we going to hit the March 1 launch or not?"]
+      ],
+      "why": "CEO asks a yes/no on the March 1 date",
+      "silent": false,
+      "good": "Answer first, one reason, then what's needed. Say: \"No — March 1 is at risk; realistically mid-March. The one driver is the payment certification slipping two weeks.\" Don't invent a firm date beyond the transcript; stop rambling."
+    },
+    {
+      "id": "competitor-cheaper",
+      "lang": "en",
+      "type": "sales",
+      "context": "Evaluation call · with Grace Liu",
+      "startMin": 28,
+      "lines": [
+        ["Grace", "We're also looking at another tool, they quoted us $30 per seat."]
+      ],
+      "why": "competitor price mention",
+      "silent": false,
+      "good": "Don't bash the competitor or match price. Explore their criteria. Ask: \"Beyond price, what would make you pick one over the other?\""
+    },
+    {
+      "id": "discount-trade",
+      "lang": "en",
+      "type": "negotiation",
+      "context": "Contract call · with Marco Bianchi",
+      "instructions": "Discounts up to 10%, and only in exchange for a two-year term.",
+      "startMin": 35,
+      "lines": [
+        ["Marco", "Can you do 25% off if we sign this week?"]
+      ],
+      "why": "asks for 25% off",
+      "silent": false,
+      "good": "Within the user's limit, trade rather than concede. Say: \"25% isn't something I can do. If you commit to two years, I can do 10% — shall we write it that way?\""
+    },
+    {
+      "id": "risk-new-vp",
+      "lang": "en",
+      "type": "account management",
+      "context": "Quarterly business review · with Lena Fischer",
+      "startMin": 30,
+      "lines": [
+        ["Lena", "Heads up, our new VP is reviewing all vendor contracts next quarter."]
+      ],
+      "why": "new VP reviewing vendors next quarter",
+      "silent": false,
+      "good": "Risk signal: get ahead of it and multi-thread. Ask: \"What will the VP be looking for? Could we get 20 minutes with them before the review?\""
+    },
+    {
+      "id": "quantify-pain",
+      "lang": "en",
+      "type": "sales discovery",
+      "context": "Discovery call · with Tom Okafor",
+      "startMin": 15,
+      "lines": [
+        ["You", "What happens today when a customer emails after hours?"],
+        ["Tom", "It just waits until 9am, so about 14 hours sometimes."]
+      ],
+      "why": "Tom shares a 14-hour delay",
+      "silent": false,
+      "good": "Good question; go one level deeper and quantify the impact. Ask: \"What does a 14-hour wait cost you — churn, refunds, bad reviews?\""
+    },
+    {
+      "id": "silent-small-talk",
+      "lang": "en",
+      "type": "sales",
+      "context": "Intro call · with Dana Whitfield",
+      "startMin": 1,
+      "lines": [
+        ["Dana", "Haha, we had like 300 people at the summer party, it was chaos."]
+      ],
+      "why": "number mentioned",
+      "silent": true,
+      "good": "Small talk. Stay silent."
+    },
+    {
+      "id": "silent-owner-clear",
+      "lang": "en",
+      "type": "internal planning",
+      "context": "Release planning · with Omar, Sara",
+      "startMin": 11,
+      "lines": [
+        ["Omar", "Who owns the QA plan for the release?"],
+        ["Sara", "I do. I'll have it ready by Wednesday."]
+      ],
+      "flag": 2,
+      "why": "QA plan owner and date",
+      "silent": true,
+      "good": "Owner and date are clear and it isn't the user's action. Stay silent."
+    },
+    {
+      "id": "silent-user-confirmed",
+      "lang": "en",
+      "type": "customer call",
+      "context": "Onboarding sync · with Lena Fischer",
+      "startMin": 27,
+      "lines": [
+        ["You", "So to confirm: you send the user export by Tuesday, and I send the field mapping by Thursday."],
+        ["Lena", "Yes, perfect."]
+      ],
+      "flag": 2,
+      "why": "commitments recapped",
+      "silent": true,
+      "good": "The user already summarised owners and dates. Stay silent."
+    },
+    {
+      "id": "ar-price-objection",
+      "lang": "ar",
+      "type": "sales",
+      "context": "مكالمة عرض سعر · with Karim",
+      "startMin": 19,
+      "lines": [
+        ["Karim", "بصراحة السعر عالي علينا، احنا ميزانيتنا 20 الف بس السنة دي."]
+      ],
+      "why": "price objection with a stated budget",
+      "silent": false,
+      "good": "Don't drop the price. Acknowledge and explore value and budget flexibility, with the line in Arabic. Ask: \"مفهوم. قبل ما نتكلم في الرقم، إيه أكتر مشكلة لو اتحلت هتفرق معاكم؟\""
+    },
+    {
+      "id": "ar-vague-commitment",
+      "lang": "ar",
+      "type": "sales",
+      "context": "متابعة بعد العرض · with Mona",
+      "startMin": 38,
+      "lines": [
+        ["Mona", "إن شاء الله هنشوف الموضوع مع الإدارة ونرجعلكم."]
+      ],
+      "why": "vague promise to get back after management review",
+      "silent": false,
+      "good": "Pin who decides and when, with the line in Arabic. Ask: \"تمام، مين من الإدارة هياخد القرار؟ ينفع نحدد مكالمة قصيرة يوم الخميس؟\""
+    },
+    {
+      "id": "ar-escalation",
+      "lang": "ar",
+      "type": "support escalation",
+      "context": "مراجعة مشكلة · with Hassan",
+      "startMin": 5,
+      "lines": [
+        ["Hassan", "ليه كل مرة نفس المشكلة بترجع؟ احنا خسرنا عملاء بسببها."]
+      ],
+      "why": "repeat issue, lost customers",
+      "silent": false,
+      "good": "Acknowledge the impact first, own it, commit to a dated root cause, in Arabic. Say: \"عندك حق، ومش مقبول إنكم تخسروا عملاء بسببنا. هبعتلك السبب الحقيقي واللي هنغيره قبل يوم الخميس.\""
+    },
+    {
+      "id": "ar-user-overpromise",
+      "lang": "ar",
+      "type": "customer call",
+      "context": "متابعة التكامل · with Hassan",
+      "instructions": "Never promise delivery dates; engineering confirms them.",
+      "startMin": 21,
+      "lines": [
+        ["Hassan", "محتاجين الربط مع النظام بتاعنا بسرعة."],
+        ["You", "أكيد، هنعمل الربط ده الأسبوع الجاي إن شاء الله."]
+      ],
+      "why": "the user promised next week",
+      "silent": false,
+      "good": "The user broke their rule. Walk it back gracefully, in Arabic. Say: \"خليني أصحح: هأكد الميعاد مع فريق التطوير وأبعتلك يوم الخميس.\""
+    },
+    {
+      "id": "ar-silent-small-talk",
+      "lang": "ar",
+      "type": "sales",
+      "context": "مكالمة تعارف · with Karim",
+      "startMin": 1,
+      "lines": [
+        ["Karim", "الحمد لله، كان عندنا 3 أيام إجازة الأسبوع اللي فات."]
+      ],
+      "why": "number mentioned",
+      "silent": true,
+      "good": "Small talk. Stay silent."
+    },
+    {
+      "id": "ar-decision-next-step",
+      "lang": "ar",
+      "type": "internal planning",
+      "context": "تخطيط الإطلاق · with Mona, Hassan",
+      "startMin": 16,
+      "lines": [
+        ["Mona", "خلاص نمشي على الخطة التانية."],
+        ["Mona", "إيه رأيك نبدأ بقسم المبيعات الأول؟"]
+      ],
+      "why": "asked for an opinion on starting with sales",
+      "silent": false,
+      "good": "Answer the ask briefly and lock the decision: owner, date, and how they'll know it worked, in Arabic. Say: \"موافق نبدأ بالمبيعات. مين هيمسك التنفيذ، وإمتى نشوف أول نتيجة؟\""
+    },
+    {
+      "id": "ask-what-do-i-say",
+      "kind": "ask",
+      "lang": "en",
+      "type": "sales",
+      "context": "Demo follow-up · with Priya Nair",
+      "startMin": 40,
+      "lines": [
+        ["Priya", "This was really helpful, thanks."],
+        ["Priya", "We'll look into it internally and get back to you at some point."],
+        ["You", "Sounds good."]
+      ],
+      "ask": "she's stalling, what do I say?",
+      "silent": false,
+      "good": "Lead with the line: pin who decides and a dated next step. Ask: \"Totally fair — who else will weigh in? Can we put 20 minutes on Thursday to hear their take?\""
+    },
+    {
+      "id": "ask-fact-budget",
+      "kind": "ask",
+      "lang": "en",
+      "type": "negotiation",
+      "context": "Pricing review · with Marco Bianchi",
+      "startMin": 23,
+      "lines": [
+        ["Marco", "Honestly, $48,000 a year is more than we budgeted. Another vendor quoted us around 30."],
+        ["You", "Understood."],
+        ["Marco", "Our budget for this line is closer to 35 this year."]
+      ],
+      "ask": "what did he say their budget was?",
+      "silent": false,
+      "good": "Fact first: about $35k this year (vs your $48k; a competitor quoted about $30k). Then one move: don't split the difference; ask what's driving the gap or trade term/scope for price."
+    },
+    {
+      "id": "ask-arabic-objection",
+      "kind": "ask",
+      "lang": "ar",
+      "type": "sales",
+      "context": "مكالمة عرض سعر · with Karim",
+      "startMin": 19,
+      "lines": [
+        ["Karim", "احنا جربنا حاجة شبه كده قبل كده ومكانتش ماشية كويس."]
+      ],
+      "ask": "how do I respond to this?",
+      "silent": false,
+      "good": "Explore before defending, line in Arabic. Ask: \"إيه اللي ما اشتغلش المرة اللي فاتت بالظبط؟\" then address that specifically."
+    },
+    {
+      "id": "ask-pure-fact",
+      "kind": "ask",
+      "lang": "en",
+      "type": "customer call",
+      "context": "Quarterly check-in · with Lena Fischer",
+      "startMin": 13,
+      "lines": [
+        ["Lena", "Our renewal with you is on March 3rd, and procurement wants the paperwork two weeks before."],
+        ["Lena", "The Salesforce sync is really the blocker for us."]
+      ],
+      "ask": "when's the renewal?",
+      "silent": false,
+      "good": "March 3rd; procurement wants paperwork two weeks earlier (around Feb 17). Optionally one short move linking the Salesforce blocker to the renewal; no lecture."
+    }
+  ]
+}
