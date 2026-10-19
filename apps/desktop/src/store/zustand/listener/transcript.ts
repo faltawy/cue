@@ -10,9 +10,6 @@ import type {
 import type { RuntimeSpeakerHint, WordLike } from "~/stt/segment";
 
 type WordsByChannel = Record<number, LiveTranscriptDelta["partials"][number][]>;
-type LiveCaptionFinalWord = LiveTranscriptDelta["new_words"][number];
-const LIVE_CAPTION_HISTORY_CHARACTERS = 2048;
-const LIVE_CAPTION_HISTORY_WORDS = 2048;
 // The database retains the complete transcript; UI/native previews only need recent context.
 export const LIVE_TRANSCRIPT_PREVIEW_SEGMENT_LIMIT = 200;
 
@@ -42,8 +39,6 @@ export type OnStoppedCallback = (
 
 export type TranscriptState = {
   liveSegments: LiveTranscriptSegment[];
-  liveCaptionFinalWordsById: Record<string, LiveCaptionFinalWord>;
-  liveCaptionText: string;
   partialWordsByChannel: WordsByChannel;
   partialHintsByChannel: Record<number, RuntimeSpeakerHint[]>;
   handlePersistBySession: Record<string, LiveTranscriptPersistCallback>;
@@ -68,8 +63,6 @@ export type TranscriptActions = {
 
 const initialState: TranscriptState = {
   liveSegments: [],
-  liveCaptionFinalWordsById: {},
-  liveCaptionText: "",
   partialWordsByChannel: {},
   partialHintsByChannel: {},
   handlePersistBySession: {},
@@ -119,12 +112,6 @@ export const createTranscriptSlice = <
     if (options?.updateLivePreview !== false && previewChanged) {
       set((state) =>
         mutate(state, (draft) => {
-          updateLiveCaptionFinalWords(draft.liveCaptionFinalWordsById, delta);
-          draft.liveCaptionText = getCaptionTextFromDelta(
-            delta,
-            draft.liveCaptionFinalWordsById,
-            draft.liveCaptionText,
-          );
           draft.partialWordsByChannel = wordsByChannel;
           draft.partialHintsByChannel = hintsByChannel;
         }),
@@ -161,8 +148,6 @@ export const createTranscriptSlice = <
     set((state) =>
       mutate(state, (draft) => {
         draft.liveSegments = [];
-        draft.liveCaptionFinalWordsById = {};
-        draft.liveCaptionText = "";
         draft.partialWordsByChannel = {};
         draft.partialHintsByChannel = {};
       }),
@@ -232,85 +217,6 @@ function partialWordsByChannelEqual(
       })
     );
   });
-}
-
-function getCaptionTextFromDelta(
-  delta: LiveTranscriptDelta,
-  finalWordsById: Record<string, LiveCaptionFinalWord>,
-  currentCaptionText: string,
-): string {
-  const finalWords = Object.values(finalWordsById);
-
-  if (delta.partials.length > 0) {
-    return trimLiveCaptionHistory(
-      wordsToText([...finalWords, ...delta.partials]),
-    );
-  }
-
-  if (finalWords.length > 0) {
-    return trimLiveCaptionHistory(wordsToText(finalWords));
-  }
-
-  return currentCaptionText;
-}
-
-function updateLiveCaptionFinalWords(
-  finalWordsById: Record<string, LiveCaptionFinalWord>,
-  delta: LiveTranscriptDelta,
-) {
-  for (const replacedId of delta.replaced_ids) {
-    delete finalWordsById[replacedId];
-  }
-
-  for (const word of delta.new_words) {
-    const text = trimLiveCaptionHistory(word.text);
-    finalWordsById[word.id] = text === word.text ? word : { ...word, text };
-  }
-
-  const newestWords = Object.values(finalWordsById).sort(
-    (a, b) => b.start_ms - a.start_ms,
-  );
-  let retainedCharacters = 0;
-
-  for (const [index, word] of newestWords.entries()) {
-    retainedCharacters += word.text.length;
-    if (
-      index >= LIVE_CAPTION_HISTORY_WORDS ||
-      (retainedCharacters > LIVE_CAPTION_HISTORY_CHARACTERS && index > 0)
-    ) {
-      delete finalWordsById[word.id];
-    }
-  }
-}
-
-function wordsToText(words: Array<{ text: string; start_ms: number }>): string {
-  return words
-    .slice()
-    .sort((a, b) => a.start_ms - b.start_ms)
-    .map((word) => word.text)
-    .join("")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function trimLiveCaptionHistory(text: string): string {
-  if (text.length <= LIVE_CAPTION_HISTORY_CHARACTERS) {
-    return text;
-  }
-
-  let start = text.length - LIVE_CAPTION_HISTORY_CHARACTERS;
-  const firstCodeUnit = text.charCodeAt(start);
-  const previousCodeUnit = text.charCodeAt(start - 1);
-  if (
-    firstCodeUnit >= 0xdc00 &&
-    firstCodeUnit <= 0xdfff &&
-    previousCodeUnit >= 0xd800 &&
-    previousCodeUnit <= 0xdbff
-  ) {
-    start += 1;
-  }
-
-  return text.slice(start);
 }
 
 function applyLiveSegmentDelta(

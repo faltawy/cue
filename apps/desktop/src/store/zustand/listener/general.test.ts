@@ -226,7 +226,6 @@ describe("General Listener Slice", () => {
       expect(store.getState().live.postStopProcessingBySession.previous).toBe(
         true,
       );
-      expect(store.getState().liveCaptionText).toBe("before");
       store.getState().handleBatchStarted("previous");
       store.getState().setBatchPersist("previous", batchPersist);
       expect(
@@ -272,7 +271,6 @@ describe("General Listener Slice", () => {
       expect(nextPersist).toHaveBeenCalledTimes(3);
       expect(previousPersist).toHaveBeenCalledOnce();
       expect(batchPersist).toHaveBeenCalledOnce();
-      expect(store.getState().liveCaptionText).toBe("beforeduringafter");
       expect(stopCaptureMock).not.toHaveBeenCalled();
     } finally {
       finishSummary();
