@@ -1,5 +1,7 @@
 @layer base {
-  :root {
+  /* `.light` re-scopes the light tokens inside a dark tree (theme previews). */
+  :root,
+  .light {
     --background: oklch(0.98 0 0);
     --foreground: oklch(0.02 0 0);
     --card: oklch(1 0 0);

@@ -103,12 +103,10 @@ type AppToastItem = Readonly<{
 type AppToastTimer = Readonly<{
   deadline: number;
   timeoutId: ReturnType<typeof setTimeout>;
-  tickId: ReturnType<typeof setInterval>;
 }>;
 
 const DEFAULT_APP_TOAST_DURATION_MS = 3_000;
 const APP_TOAST_EXIT_DURATION_MS = 220;
-const APP_TOAST_TICK_MS = 100;
 const APP_TOAST_DESKTOP_HOVER_QUERY = "(hover: hover) and (pointer: fine)";
 const APP_TOAST_STACK_OFFSET_PX = 10;
 const APP_TOAST_STACK_SCALE_STEP = 0.035;
@@ -150,7 +148,6 @@ function clearAppToastTimer(id: string): void {
   const timer = appToastTimers.get(id);
   if (!timer) return;
   clearTimeout(timer.timeoutId);
-  clearInterval(timer.tickId);
   appToastTimers.delete(id);
 }
 
@@ -183,15 +180,6 @@ export function dismissAppToast(
   toast.onDismiss?.(reason);
 }
 
-function updateRemainingTime(id: string): void {
-  const timer = appToastTimers.get(id);
-  if (!timer) return;
-  const remainingMs = Math.max(0, timer.deadline - Date.now());
-  updateAppToast(id, (toast) =>
-    toast.remainingMs === remainingMs ? toast : { ...toast, remainingMs },
-  );
-}
-
 function startAppToastTimer(id: string, remainingMs: number): void {
   if (!Number.isFinite(remainingMs)) return;
 
@@ -201,20 +189,20 @@ function startAppToastTimer(id: string, remainingMs: number): void {
     () => dismissAppToast(id, 1, "timer"),
     safeRemainingMs,
   );
-  const tickId = setInterval(() => updateRemainingTime(id), APP_TOAST_TICK_MS);
-  appToastTimers.set(id, { deadline, timeoutId, tickId });
+  appToastTimers.set(id, { deadline, timeoutId });
 }
 
-function toggleAppToastTimer(id: string): void {
+// Auto-dismiss waits while the pointer or focus is on the toast, with no
+// visible countdown.
+function pauseAppToastTimer(id: string): void {
   const toast = appToastSnapshot.find((candidate) => candidate.id === id);
-  if (!toast || !Number.isFinite(toast.durationMs) || toast.phase === "exiting")
+  if (
+    !toast ||
+    toast.paused ||
+    !Number.isFinite(toast.durationMs) ||
+    toast.phase === "exiting"
+  )
     return;
-
-  if (toast.paused) {
-    updateAppToast(id, (current) => ({ ...current, paused: false }));
-    startAppToastTimer(id, toast.remainingMs);
-    return;
-  }
 
   const timer = appToastTimers.get(id);
   const remainingMs = timer
@@ -222,6 +210,13 @@ function toggleAppToastTimer(id: string): void {
     : toast.remainingMs;
   clearAppToastTimer(id);
   updateAppToast(id, (current) => ({ ...current, paused: true, remainingMs }));
+}
+
+function resumeAppToastTimer(id: string): void {
+  const toast = appToastSnapshot.find((candidate) => candidate.id === id);
+  if (!toast?.paused || toast.phase === "exiting") return;
+  updateAppToast(id, (current) => ({ ...current, paused: false }));
+  startAppToastTimer(id, toast.remainingMs);
 }
 
 function subscribeToDesktopHover(listener: () => void) {
@@ -423,8 +418,7 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
   const reduceMotion = useReducedMotion() ?? false;
   const [expanded, setExpanded] = useState(true);
   const detailsId = useId();
-  const hasTimer = Number.isFinite(toast.durationMs);
-  const hasDetails = hasTimer || toast.description !== undefined;
+  const hasDetails = toast.description !== undefined;
   const secondaryAction =
     toast.secondaryAction ??
     (toast.closeButton && toast.dismissible
@@ -441,10 +435,6 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
   );
   const exitDistance =
     typeof window === "undefined" ? 1_024 : window.innerWidth + 256;
-  const progress =
-    hasTimer && toast.durationMs > 0
-      ? Math.max(0, Math.min(1, toast.remainingMs / toast.durationMs))
-      : 0;
 
   const dismiss = (direction: AppToastDirection = 1) =>
     dismissAppToast(toast.id, direction, "user");
@@ -507,6 +497,13 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
       dragElastic={0.7}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
+      onMouseEnter={() => pauseAppToastTimer(toast.id)}
+      onMouseLeave={() => resumeAppToastTimer(toast.id)}
+      onFocus={() => pauseAppToastTimer(toast.id)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          resumeAppToastTimer(toast.id);
+      }}
       onClick={(event) => {
         if (
           hasDetails &&
@@ -623,48 +620,6 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
           </div>
         ) : null}
       </div>
-      {visuallyExpanded && hasTimer ? (
-        <button
-          type="button"
-          id={toast.description === undefined ? detailsId : undefined}
-          aria-label={
-            toast.paused ? "Resume auto-dismiss" : "Pause auto-dismiss"
-          }
-          onClick={() => toggleAppToastTimer(toast.id)}
-          className={cn([
-            "border-border text-caption text-muted-foreground relative flex h-7 w-full items-center justify-between gap-3 border-t px-3 text-start",
-            "hover:bg-muted transition-[background-color] duration-100 focus-visible:-outline-offset-2",
-          ])}
-        >
-          <span aria-hidden>
-            {toast.paused ? "Timer paused" : "Closing in"}{" "}
-            <span className="text-foreground font-medium tabular-nums">
-              {Math.max(0, Math.ceil(toast.remainingMs / 1_000))}
-            </span>{" "}
-            {Math.ceil(toast.remainingMs / 1_000) === 1 ? "second" : "seconds"}
-          </span>
-          <span aria-hidden className="text-foreground font-medium">
-            {toast.paused ? "Resume" : "Pause"}
-          </span>
-          <motion.span
-            aria-hidden
-            data-slot="app-toast-progress"
-            className={cn([
-              "absolute inset-x-0 bottom-0 h-0.5 origin-left rtl:origin-right",
-              toast.tone === "error"
-                ? "bg-destructive"
-                : toast.tone === "success"
-                  ? "bg-success"
-                  : "bg-foreground/30",
-            ])}
-            initial={false}
-            animate={{ scaleX: progress }}
-            transition={
-              reduceMotion ? { duration: 0 } : { duration: 0.1, ease: "linear" }
-            }
-          />
-        </button>
-      ) : null}
     </motion.div>
   );
 }

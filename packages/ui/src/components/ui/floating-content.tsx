@@ -3,6 +3,11 @@
 export const floatingSurfaceClassName =
   "bg-popover text-popover-foreground border-border rounded-lg border shadow-lg outline-hidden";
 
+// Round chips and buttons that float over scrolling content (coach
+// scroll-to-bottom): one step lower than menus.
+export const floatingChipClassName =
+  "bg-popover text-foreground border-border rounded-full border shadow-md";
+
 export const floatingMotionClassName =
   "data-[state=open]:animate-enter data-[state=closed]:animate-exit";
 

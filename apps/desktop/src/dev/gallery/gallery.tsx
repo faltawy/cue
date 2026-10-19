@@ -72,6 +72,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@anlg/ui/components/ui/popover";
+import { Radio } from "@anlg/ui/components/ui/radio";
 import { ListRow } from "@anlg/ui/components/ui/row";
 import {
   SegmentedControl,
@@ -294,6 +295,7 @@ const VARIANTS = [
 function ComponentsScene() {
   const [segment, setSegment] = useState("summary");
   const [checked, setChecked] = useState(true);
+  const [radio, setRadio] = useState("PDF");
   const [on, setOn] = useState(true);
   return (
     <div className="divide-border flex max-w-[860px] flex-col divide-y">
@@ -466,6 +468,26 @@ function ComponentsScene() {
             Disabled
           </label>
         </Row>
+        <Row label="radio">
+          {(["PDF", "Markdown", "Org"] as const).map((format) => (
+            <label key={format} className="text-ui flex items-center gap-1.5">
+              <Radio
+                name="gallery-format"
+                checked={radio === format}
+                onChange={() => setRadio(format)}
+              />
+              {format}
+            </label>
+          ))}
+          <label className="text-ui flex items-center gap-1.5">
+            <Radio name="gallery-focus" data-force="focus-visible" />
+            Focus
+          </label>
+          <label className="text-ui text-muted-foreground flex items-center gap-1.5">
+            <Radio name="gallery-disabled" checked disabled readOnly />
+            Disabled
+          </label>
+        </Row>
         <Row label="switch">
           <label className="text-ui flex items-center gap-2">
             <Switch checked={on} onCheckedChange={setOn} />
@@ -568,20 +590,20 @@ function ComponentsScene() {
             </ListRow>
           </div>
           <div className="bg-sidebar flex flex-col gap-0.5 rounded-lg p-2">
-            <ListRow surface="sidebar">
+            <ListRow>
               <FolderSimple />
               <span className="truncate">Clients</span>
               <CaretRight className="ms-auto rtl:rotate-180" />
             </ListRow>
-            <ListRow surface="sidebar" data-force="hover">
+            <ListRow data-force="hover">
               <FolderSimple />
               <span className="truncate">Hover</span>
             </ListRow>
-            <ListRow surface="sidebar" selected>
+            <ListRow selected>
               <FolderSimple />
               <span className="truncate">Selected</span>
             </ListRow>
-            <ListRow surface="sidebar" data-force="focus-visible">
+            <ListRow data-force="focus-visible">
               <Lightbulb />
               <span className="truncate">Focus</span>
             </ListRow>
@@ -592,14 +614,13 @@ function ComponentsScene() {
       <Section title="Avatars, card, loading">
         <Row label="avatar">
           {[16, 20, 24, 28, 32, 40].map((size) => (
-            <Avatar
-              key={size}
-              seed={`Ömer ${size}`}
-              label="Ömer Faruk"
-              size={size}
-            />
+            <Avatar key={size} seed="Ömer Faruk" size={size} />
           ))}
-          <Avatar seed="ahmad" label="Ahmad Falta" size={32} />
+          {["Ahmad Falta", "Sara Lindqvist", "Nedal", "يوسف أحمد", "Mia Chen"].map(
+            (name) => (
+              <Avatar key={name} seed={name} size={28} />
+            ),
+          )}
         </Row>
         <Row label="card">
           <Card className="w-72 px-3 pt-2.5 pb-3">

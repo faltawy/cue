@@ -258,23 +258,48 @@ describe("app toast", () => {
     ).toBeTruthy();
   });
 
-  it("pauses and resumes auto-dismiss from the expanded footer", async () => {
+  it("holds auto-dismiss while hovered and shows no countdown", async () => {
     vi.useFakeTimers();
     render(<AppToaster theme="light" />);
 
     act(() => {
       showAppToast({ message: "Sync complete", durationMs: 1_000 });
     });
+    const toast = document.querySelector<HTMLElement>("[data-app-toast]");
+    if (!toast) throw new Error("toast not rendered");
+    expect(toast.textContent).not.toMatch(/Closing in|seconds|Pause/);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pause auto-dismiss" }));
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    fireEvent.mouseEnter(toast);
     await act(() => vi.advanceTimersByTimeAsync(2_000));
     expect(screen.getByText("Sync complete")).toBeTruthy();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Resume auto-dismiss" }),
-    );
-    await act(() => vi.advanceTimersByTimeAsync(1_300));
+    fireEvent.mouseLeave(toast);
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(screen.getByText("Sync complete")).toBeTruthy();
+    await act(() => vi.advanceTimersByTimeAsync(400));
     expect(screen.queryByText("Sync complete")).toBeNull();
+  });
+
+  it("holds auto-dismiss while focus is inside the toast", async () => {
+    vi.useFakeTimers();
+    render(<AppToaster theme="light" />);
+
+    act(() => {
+      showAppToast({
+        message: "Recording saved",
+        durationMs: 1_000,
+        action: { label: "Open", onClick: () => {} },
+      });
+    });
+    const open = screen.getByRole("button", { name: "Open" });
+    act(() => open.focus());
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+    expect(screen.getByText("Recording saved")).toBeTruthy();
+
+    act(() => open.blur());
+    await act(() => vi.advanceTimersByTimeAsync(1_300));
+    expect(screen.queryByText("Recording saved")).toBeNull();
   });
 
   it.each([

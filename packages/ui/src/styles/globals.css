@@ -149,9 +149,11 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Coach styles.css, exactly: elements without their own radius get 4px. */
   :focus-visible {
     outline: 2px solid var(--warm-strong);
     outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 
   ::selection {

@@ -40,11 +40,7 @@ const TooltipContent = React.forwardRef<
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.1, ease: "easeOut" }}
-          className={cn([
-            "z-50 flex max-w-64 items-center gap-1.5 rounded-md px-2 py-1",
-            "bg-primary text-primary-foreground text-caption font-medium shadow-lg",
-            className,
-          ])}
+          className={cn([tooltipSurfaceClassName, "z-50 max-w-64", className])}
         >
           {props.children}
         </motion.div>
@@ -53,6 +49,10 @@ const TooltipContent = React.forwardRef<
   ),
 );
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+
+// Also used by hints that are not Radix tooltips (the meeting countdown).
+export const tooltipSurfaceClassName =
+  "flex items-center gap-1.5 rounded-md px-2 py-1 bg-primary text-primary-foreground text-caption font-medium shadow-lg";
 
 /** The shortcut half of a tooltip label, as in the coach: `Search ⌘K`. */
 function TooltipShortcut({
