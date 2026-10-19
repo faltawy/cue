@@ -21,6 +21,9 @@ export async function post(url: string, body?: unknown, method = "POST"): Promis
 
 export type CoachApi = {
   ask(text: string): Promise<ActionResult>;
+  checkItem(blockId: string, index: number, checked: boolean): Promise<ActionResult>;
+  addItemToNote(blockId: string, index: number): Promise<ActionResult>;
+  open(url: string): Promise<ActionResult>;
   stop(): Promise<ActionResult>;
   checkIn(): Promise<ActionResult>;
   newChat(): Promise<ActionResult>;
@@ -53,6 +56,9 @@ const EVENT_TYPES: ReadonlySet<string> = new Set<CoachEvent["type"]>([
   "notice",
   "wrapup",
   "transcript",
+  "block",
+  "block_check",
+  "sources",
 ]);
 
 function isCoachEvent(value: unknown): value is CoachEvent {
@@ -160,6 +166,9 @@ export function useCoach(): [CoachState, CoachApi] {
   const api = useMemo<CoachApi>(
     () => ({
       ask,
+      checkItem: (blockId, index, checked) => withNotice(post("/blocks/check", { block_id: blockId, index, checked })),
+      addItemToNote: (blockId, index) => withNotice(post("/blocks/action-item", { block_id: blockId, index })),
+      open: (url) => withNotice(post("/open", { url })),
       stop: () => withNotice(post("/stop")),
       checkIn: () => withNotice(post("/checkin")),
       newChat: () => withNotice(post("/new-chat")),

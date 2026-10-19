@@ -16,6 +16,9 @@ useDom();
 const ok = async () => ({ ok: true as const });
 const api: CoachApi = {
   ask: ok,
+  checkItem: ok,
+  addItemToNote: ok,
+  open: ok,
   stop: ok,
   checkIn: ok,
   newChat: ok,

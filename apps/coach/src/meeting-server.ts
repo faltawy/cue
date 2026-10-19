@@ -3,6 +3,7 @@ import type { Database } from "bun:sqlite";
 import { z } from "zod";
 
 import type { AppBridge, CoachEdit } from "./app-bridge";
+import { type Block, showInputShape } from "./blocks";
 import { readMeetingNote } from "./notes";
 import { readLiveTranscript, readMeetingInfo, renderTranscript } from "./transcript";
 
@@ -20,7 +21,32 @@ export type MeetingEdits = {
   onUndo(edit: CoachEdit): void;
 };
 
-export function meetingServer(db: Database, sessionId: () => string | undefined, edits?: MeetingEdits) {
+const SHOWN: Record<Block["kind"], string> = {
+  actions: "The user sees the checklist under your answer; don't repeat it.",
+  replies: "The user sees these as tappable follow-ups under your answer.",
+};
+
+export function showTool(onShow: (block: Block) => void) {
+  return tool(
+    "show",
+    'Show a rich block under your answer. kind "actions": a checklist of commitments or next steps, each with text and optional owner and due; the user can tick items or add them to the meeting notes. Use it only when the user asks for one or your answer lists commitments. kind "replies": 2 or 3 short follow-up asks, worded as the user would type them, shown as tappable chips. Use it only when a follow-up is genuinely likely. At most one of each per answer.',
+    showInputShape,
+    async (input) => {
+      const parsed = z.object(showInputShape).safeParse(input);
+      if (!parsed.success) return failed(new Error(`Invalid block: ${z.prettifyError(parsed.error)}`));
+      onShow(parsed.data.block);
+      return text(SHOWN[parsed.data.block.kind]);
+    },
+    { annotations: { readOnlyHint: true } },
+  );
+}
+
+export function meetingServer(
+  db: Database,
+  sessionId: () => string | undefined,
+  edits?: MeetingEdits,
+  onShow?: (block: Block) => void,
+) {
   const current = () => {
     const id = sessionId();
     if (!id) throw new Error("No meeting is attached to the coach.");
@@ -129,6 +155,7 @@ export function meetingServer(db: Database, sessionId: () => string | undefined,
         { annotations: { readOnlyHint: true } },
       ),
       ...editTools,
+      ...(onShow ? [showTool(onShow)] : []),
     ],
   });
 }

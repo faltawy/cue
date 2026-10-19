@@ -29,6 +29,9 @@ function stateFrom(events: CoachEvent[]): CoachState {
 function setup(scenario: Scenario | CoachState) {
   const api = {
     ask: mock(ok),
+    checkItem: mock(ok),
+    addItemToNote: mock(ok),
+    open: mock(ok),
     stop: mock(ok),
     checkIn: mock(ok),
     newChat: mock(ok),

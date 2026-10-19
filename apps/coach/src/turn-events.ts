@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { type CoachError, coachError } from "./errors";
 import type { CoachEvent } from "./protocol";
+import { type FoundSource, pickSources, type Source, sourcesFromTool } from "./sources";
 import { type TurnUsage, turnUsage, type UsageSource } from "./usage";
 
 export const OUTPUT_MAX = 4_000;
@@ -50,6 +51,8 @@ export function toolLabels(name: string, input: Record<string, unknown>): ToolLa
       return label("Checked off an action item", "Checking off an action item");
     case "mcp__meeting__undo_last_coach_edit":
       return label("Undid its last edit", "Undoing its last edit");
+    case "mcp__meeting__show":
+      return label("Showed a list", "Preparing a list");
     case "Read":
       return file ? label(`Read ${file}`, `Reading ${file}`) : label("Read a file", "Reading a file");
     case "Grep":
@@ -122,6 +125,7 @@ export type TurnOutcome = {
   ok: boolean;
   usage: TurnUsage | null;
   error: CoachError | null;
+  sources: Source[];
 };
 
 function blocks(value: unknown): Record<string, unknown>[] {
@@ -134,16 +138,22 @@ export class TurnTracker {
   private hookResults = new Map<string, string | null>();
   private lastMainUsage: unknown = undefined;
   private sdkError: string | undefined;
+  private found: FoundSource[] = [];
+  private answer = "";
 
   constructor(private readonly now: () => number = Date.now) {}
 
   beginTurn() {
     this.lastMainUsage = undefined;
     this.sdkError = undefined;
+    this.found = [];
+    this.answer = "";
   }
 
-  hookResult(toolUseId: string, response: unknown) {
+  hookResult(toolUseId: string, response: unknown, toolName = "") {
     this.hookResults.set(toolUseId, responseText(response));
+    const direct = toolName !== "WebSearch";
+    for (const source of sourcesFromTool(toolName, response)) this.found.push({ ...source, direct });
   }
 
   handle(raw: unknown): CoachEvent[] {
@@ -154,9 +164,9 @@ export class TurnTracker {
       case "stream_event": {
         const event = asRecord(message.event);
         const delta = asRecord(event.delta);
-        return event.type === "content_block_delta" && delta.type === "text_delta" && str(delta.text)
-          ? [{ type: "text", delta: str(delta.text) }]
-          : [];
+        if (event.type !== "content_block_delta" || delta.type !== "text_delta" || !str(delta.text)) return [];
+        this.answer += str(delta.text);
+        return [{ type: "text", delta: str(delta.text) }];
       }
       case "assistant": {
         const body = asRecord(message.message);
@@ -200,14 +210,18 @@ export class TurnTracker {
   finishTurn(result: ResultLike, input: { interrupted: boolean; stderr: string }): TurnOutcome {
     const usage = turnUsage({ result, lastMainUsage: this.lastMainUsage });
     const ok = result.subtype === "success" && !result.is_error;
+    const sources = pickSources(this.found, this.answer);
     this.starts.clear();
     this.hookResults.clear();
-    if (ok || input.interrupted) return { ok, usage, error: null };
+    this.found = [];
+    this.answer = "";
+    if (ok || input.interrupted) return { ok, usage, error: null, sources };
     const message = (result.result || (result.errors ?? []).filter(Boolean).join("\n")) || result.subtype;
     return {
       ok,
       usage,
       error: coachError({ message, stderr: input.stderr, ...(this.sdkError ? { sdkError: this.sdkError } : {}) }),
+      sources,
     };
   }
 }

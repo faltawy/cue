@@ -1,7 +1,9 @@
 import type { CoachEdit } from "../app-bridge";
+import type { ActionItem, Block } from "../blocks";
 import type { CoachError } from "../errors";
 import type { CoachEvent, StatusEvent, TurnKind, WrapUpView } from "../protocol";
 import type { Question } from "../questions";
+import type { Source } from "../sources";
 import type { TurnUsage } from "../usage";
 
 export type StepStatus = "running" | "ok" | "failed" | "stopped";
@@ -17,7 +19,13 @@ export type Step = {
   durationMs: number | null;
 };
 
-export type EditView = { id: string; summary: string; kind: CoachEdit["kind"]; undone: boolean };
+export type EditView = { id: string; summary: string; kind: CoachEdit["kind"]; undone: boolean; seq: number };
+
+export type ActionItemView = ActionItem & { checked: boolean; edit: EditView | null };
+
+export type BlockView =
+  | { id: string; kind: "actions"; items: ActionItemView[] }
+  | { id: string; kind: "replies"; options: string[] };
 
 export type TurnStatus = "sending" | "running" | "done" | "stopped" | "failed";
 
@@ -29,6 +37,8 @@ export type Turn = {
   text: string;
   steps: Step[];
   edits: EditView[];
+  blocks: BlockView[];
+  sources: Source[];
   status: TurnStatus;
   seconds: number | null;
 };
@@ -100,15 +110,72 @@ function updateTurn(state: CoachState, update: (turn: Turn) => Turn, match: (tur
 function updateEdit(items: readonly Item[], id: string, update: (edit: EditView) => EditView): Item[] {
   return items.map((item) => {
     if (item.kind === "edit" && item.edit.id === id) return { ...item, edit: update(item.edit) };
-    if (item.kind === "turn" && item.edits.some((edit) => edit.id === id)) {
-      return { ...item, edits: item.edits.map((edit) => (edit.id === id ? update(edit) : edit)) };
-    }
-    return item;
+    if (item.kind !== "turn") return item;
+    const inBlock = item.blocks.some(
+      (block) => block.kind === "actions" && block.items.some((entry) => entry.edit?.id === id),
+    );
+    if (!inBlock && !item.edits.some((edit) => edit.id === id)) return item;
+    return {
+      ...item,
+      edits: item.edits.map((edit) => (edit.id === id ? update(edit) : edit)),
+      blocks: item.blocks.map((block) =>
+        block.kind === "actions"
+          ? {
+              ...block,
+              items: block.items.map((entry) =>
+                entry.edit?.id === id ? { ...entry, edit: update(entry.edit) } : entry,
+              ),
+            }
+          : block,
+      ),
+    };
   });
 }
 
+function updateBlockItem(
+  state: CoachState,
+  blockId: string,
+  index: number,
+  update: (item: ActionItemView) => ActionItemView,
+): CoachState {
+  const items = state.items.map((item) => {
+    if (item.kind !== "turn" || !item.blocks.some((block) => block.id === blockId)) return item;
+    return {
+      ...item,
+      blocks: item.blocks.map((block) =>
+        block.id === blockId && block.kind === "actions"
+          ? { ...block, items: block.items.map((entry, position) => (position === index ? update(entry) : entry)) }
+          : block,
+      ),
+    };
+  });
+  return { ...state, items };
+}
+
+function blockView(id: string, block: Block): BlockView {
+  return block.kind === "actions"
+    ? { id, kind: "actions", items: block.items.map((item) => ({ ...item, checked: false, edit: null })) }
+    : { id, kind: "replies", options: block.options };
+}
+
+function updateCurrentTurn(state: CoachState, update: (turn: Turn) => Turn): CoachState {
+  return lastTurnIndex(state.items, isOpen) === -1 ? updateTurn(state, update, () => true) : updateTurn(state, update);
+}
+
 function newTurn(keyValue: string, ask: TurnKind, prompt: string, status: TurnStatus): Turn {
-  return { kind: "turn", key: keyValue, ask, prompt, text: "", steps: [], edits: [], status, seconds: null };
+  return {
+    kind: "turn",
+    key: keyValue,
+    ask,
+    prompt,
+    text: "",
+    steps: [],
+    edits: [],
+    blocks: [],
+    sources: [],
+    status,
+    seconds: null,
+  };
 }
 
 function applyEvent(state: CoachState, event: CoachEvent): CoachState {
@@ -132,6 +199,12 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
       const [turnKey, serial] = key(state, "turn");
       return { ...state, serial, items: [...state.items, newTurn(turnKey, event.kind, event.text, "running")] };
     }
+    case "block":
+      return updateCurrentTurn(state, (turn) => ({ ...turn, blocks: [...turn.blocks, blockView(event.id, event.block)] }));
+    case "block_check":
+      return updateBlockItem(state, event.id, event.index, (item) => ({ ...item, checked: event.checked }));
+    case "sources":
+      return updateCurrentTurn(state, (turn) => ({ ...turn, sources: event.sources }));
     case "text":
       return updateTurn(state, (turn) => ({ ...turn, text: turn.text + event.delta }));
     case "tool":
@@ -177,11 +250,19 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
       }));
     }
     case "edit": {
-      const edit: EditView = { id: event.edit.id, summary: event.edit.summary, kind: event.edit.kind, undone: false };
-      const running = lastTurnIndex(state.items, isOpen);
-      if (running !== -1) return updateTurn(state, (turn) => ({ ...turn, edits: [...turn.edits, edit] }));
       const [editKey, serial] = key(state, "edit");
-      return { ...state, serial, items: [...state.items, { kind: "edit", key: editKey, edit }] };
+      const edit: EditView = {
+        id: event.edit.id,
+        summary: event.edit.summary,
+        kind: event.edit.kind,
+        undone: false,
+        seq: serial,
+      };
+      const next = { ...state, serial };
+      if (event.block) return updateBlockItem(next, event.block.id, event.block.index, (item) => ({ ...item, edit }));
+      const running = lastTurnIndex(state.items, isOpen);
+      if (running !== -1) return updateTurn(next, (turn) => ({ ...turn, edits: [...turn.edits, edit] }));
+      return { ...next, items: [...state.items, { kind: "edit", key: editKey, edit }] };
     }
     case "undone":
       return { ...state, items: updateEdit(state.items, event.id, (edit) => ({ ...edit, undone: true })) };
@@ -264,13 +345,19 @@ export function lastAsk(state: CoachState): Turn | null {
   return item?.kind === "turn" ? item : null;
 }
 
-export function latestUndoable(state: CoachState): string | null {
-  const edits = state.items.flatMap((item) =>
-    item.kind === "edit" ? [item.edit] : item.kind === "turn" ? item.edits : [],
+function editsOf(item: Item): EditView[] {
+  if (item.kind === "edit") return [item.edit];
+  if (item.kind !== "turn") return [];
+  const fromBlocks = item.blocks.flatMap((block) =>
+    block.kind === "actions" ? block.items.flatMap((entry) => (entry.edit ? [entry.edit] : [])) : [],
   );
-  for (let index = edits.length - 1; index >= 0; index -= 1) {
-    const edit = edits[index];
-    if (edit && !edit.undone) return edit.id;
+  return [...item.edits, ...fromBlocks];
+}
+
+export function latestUndoable(state: CoachState): string | null {
+  let latest: EditView | null = null;
+  for (const edit of state.items.flatMap(editsOf)) {
+    if (!edit.undone && (!latest || edit.seq > latest.seq)) latest = edit;
   }
-  return null;
+  return latest?.id ?? null;
 }

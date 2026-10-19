@@ -13,10 +13,14 @@ import { type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrap
 import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from "./nudge";
 import { NO_SPEND, spendOf } from "./pricing";
 import { type NudgeRequest, PROACTIVE_DEFAULTS, Proactive, type ProactiveView } from "./proactive";
+import { actionItemText } from "./blocks";
 import {
+  addedBlockItem,
   appendHistory,
+  type BlockItemRef,
   type CoachEvent,
   dropSilentNudge,
+  findBlock,
   type ProjectView,
   type StatusEvent,
   type TurnKind,
@@ -82,6 +86,7 @@ let wrapUp: WrapUpView | null = null;
 let wrapUpSessionId: string | undefined;
 let wrapUpAbort: AbortController | null = null;
 const editSessions = new Map<string, string>();
+const addingBlockItems = new Set<string>();
 
 let store: ChatStore = loadChats(stateFile);
 let history: CoachEvent[] = [];
@@ -375,7 +380,8 @@ async function openChat(reason: OpenReason) {
     ...(bridge ? { edits: editHooks(bridge) } : {}),
     ...(plan.resume ? { resume: plan.resume } : {}),
     askUser: (id, asked, signal) => questions.ask(id, asked, signal),
-    onToolResult: (id, response) => tracker.hookResult(id, response),
+    show: (block) => feed({ type: "block", id: crypto.randomUUID(), block }),
+    onToolResult: (id, response, name) => tracker.hookResult(id, response, name),
     stderr: (chunk) => stderr.push(chunk),
   });
   coach = session;
@@ -530,6 +536,7 @@ function handle(message: SDKMessage) {
     interrupter?.settled();
     const outcome = tracker.finishTurn(message, { interrupted, stderr: stderr.take() });
     recoveries = 0;
+    if (outcome.sources.length > 0) feed({ type: "sources", sources: outcome.sources });
     if (outcome.usage) {
       feed({ type: "usage", usage: outcome.usage });
       proactive?.spend("asks", spendOf(outcome.usage.model ?? model, outcome.usage));
@@ -577,6 +584,15 @@ async function jsonBody(request: Request): Promise<Record<string, unknown>> {
   }
 }
 
+function blockItemRef(body: Record<string, unknown>): BlockItemRef | null {
+  const id = typeof body.block_id === "string" ? body.block_id : "";
+  const index = typeof body.index === "number" && Number.isInteger(body.index) ? body.index : -1;
+  const block = id ? findBlock(history, id) : null;
+  if (!block || index < 0) return null;
+  const size = block.kind === "actions" ? block.items.length : block.options.length;
+  return index < size ? { id, index } : null;
+}
+
 const server = Bun.serve({
   hostname: "127.0.0.1",
   port: Number(values.port),
@@ -613,6 +629,38 @@ const server = Bun.serve({
         if (busy) return conflict("The coach is still answering. Stop it first, or wait a moment.");
         startTurn(coach, "ask", text, text);
         return new Response(null, { status: 204 });
+      },
+    },
+    "/blocks/check": {
+      POST: async (request) => {
+        const body = await jsonBody(request);
+        const ref = blockItemRef(body);
+        if (!ref || typeof body.checked !== "boolean") return new Response("That item no longer exists.", { status: 404 });
+        feed({ type: "block_check", id: ref.id, index: ref.index, checked: body.checked });
+        return new Response(null, { status: 204 });
+      },
+    },
+    "/blocks/action-item": {
+      POST: async (request) => {
+        const ref = blockItemRef(await jsonBody(request));
+        const block = ref && findBlock(history, ref.id);
+        const item = ref && block?.kind === "actions" ? block.items[ref.index] : undefined;
+        if (!ref || !item) return new Response("That item no longer exists.", { status: 404 });
+        const key = `${ref.id}:${ref.index}`;
+        if (addingBlockItems.has(key) || addedBlockItem(history, ref)) return conflict("That item is already in the notes.");
+        if (!bridge || !chatSessionId) return conflict("Open the coach from the app during a meeting to add to the notes.");
+        const sessionId = chatSessionId;
+        addingBlockItems.add(key);
+        return bridgeCall(async () => {
+          try {
+            const edit = await bridge.addActionItem(sessionId, actionItemText(item));
+            editSessions.set(edit.id, edit.session_id);
+            feed({ type: "edit", edit, block: ref });
+            return new Response(null, { status: 204 });
+          } finally {
+            addingBlockItems.delete(key);
+          }
+        });
       },
     },
     "/checkin": {

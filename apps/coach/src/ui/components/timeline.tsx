@@ -6,13 +6,13 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import type { CoachError } from "../../errors";
 import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
+import { ActionsBlock, type BlockActions, Replies, SourceChips } from "./blocks";
 import { CoachMarkdown } from "./markdown";
 import { Button, cx, IconButton } from "./primitives";
 import { Steps } from "./steps";
 
-export type TimelineActions = {
+export type TimelineActions = BlockActions & {
   retry(turn: Turn): void;
-  undo(editId: string): void;
   copy(text: string): Promise<boolean>;
   signIn(): void;
 };
@@ -29,6 +29,7 @@ export function Timeline({
   glance = false,
   questionOpen = false,
   ready = true,
+  canAddToNotes = false,
 }: {
   items: readonly Item[];
   sent: number;
@@ -40,8 +41,10 @@ export function Timeline({
   busy: boolean;
   questionOpen?: boolean;
   ready?: boolean;
+  canAddToNotes?: boolean;
   actions: TimelineActions;
 }) {
+  const lastItem = items.at(-1);
   const lastTurn = [...items].reverse().find((item): item is Turn => item.kind === "turn");
   const [showEarlier, setShowEarlier] = useState(false);
   const lastTurnIndex = lastTurn ? items.indexOf(lastTurn) : -1;
@@ -79,6 +82,8 @@ export function Timeline({
             latestUndoable={ready ? latestUndoable : null}
             canRetry={ready && !busy && (item.kind === "turn" ? item.key === lastAskKey : lastAskKey !== null)}
             lastAsk={lastAskKey ? items.find((candidate): candidate is Turn => candidate.key === lastAskKey) : undefined}
+            canReply={ready && !busy && !questionOpen && item === lastItem}
+            canAddToNotes={ready && canAddToNotes}
             actions={actions}
           />
         ))}
@@ -124,6 +129,8 @@ const ItemView = memo(function ItemView({
   latestUndoable,
   canRetry,
   lastAsk,
+  canReply,
+  canAddToNotes,
   actions,
 }: {
   item: Item;
@@ -132,6 +139,8 @@ const ItemView = memo(function ItemView({
   latestUndoable: string | null;
   canRetry: boolean;
   lastAsk: Turn | undefined;
+  canReply: boolean;
+  canAddToNotes: boolean;
   actions: TimelineActions;
 }) {
   switch (item.kind) {
@@ -142,6 +151,8 @@ const ItemView = memo(function ItemView({
           latest={latest}
           questionOpen={questionOpen}
           canRetry={canRetry}
+          canReply={canReply}
+          canAddToNotes={canAddToNotes}
           latestUndoable={latestUndoable}
           actions={actions}
         />
@@ -183,9 +194,12 @@ const EDIT_TOOLS: ReadonlySet<string> = new Set([
   "mcp__meeting__undo_last_coach_edit",
 ]);
 
+const SHOW_TOOL = "mcp__meeting__show";
+
 export function shownSteps(turn: Turn): Step[] {
   return turn.steps.filter((step) => {
     if (step.name === "AskUserQuestion" && step.status === "running") return false;
+    if (step.name === SHOW_TOOL && step.status !== "failed") return false;
     return !(turn.edits.length > 0 && EDIT_TOOLS.has(step.name) && step.status === "ok");
   });
 }
@@ -195,6 +209,8 @@ function TurnView({
   latest,
   questionOpen,
   canRetry,
+  canReply,
+  canAddToNotes,
   latestUndoable,
   actions,
 }: {
@@ -202,6 +218,8 @@ function TurnView({
   latest: boolean;
   questionOpen: boolean;
   canRetry: boolean;
+  canReply: boolean;
+  canAddToNotes: boolean;
   latestUndoable: string | null;
   actions: TimelineActions;
 }) {
@@ -235,6 +253,24 @@ function TurnView({
       {!running && !turn.text && turn.status === "stopped" && (
         <p className="text-[13px] text-muted-foreground">Stopped before answering.</p>
       )}
+      {turn.blocks.map((block) =>
+        block.kind === "actions" ? (
+          <ActionsBlock
+            key={block.id}
+            block={block}
+            canAdd={canAddToNotes}
+            latestUndoable={latestUndoable}
+            actions={actions}
+          />
+        ) : null,
+      )}
+      {turn.sources.length > 0 && <SourceChips sources={turn.sources} onOpen={actions.open} />}
+      {!running &&
+        turn.blocks.map((block) =>
+          block.kind === "replies" && canReply ? (
+            <Replies key={block.id} options={block.options} onReply={actions.reply} />
+          ) : null,
+        )}
     </>
   );
   const footer = !running && turn.ask !== "nudge" && (

@@ -1,8 +1,10 @@
 import type { CoachEdit, MeetingProject } from "./app-bridge";
+import type { Block } from "./blocks";
 import type { CoachError } from "./errors";
 import type { StripView, WrapUpActions } from "./meeting-state";
 import type { ProactiveView } from "./proactive";
 import type { Question } from "./questions";
+import type { Source } from "./sources";
 import type { TurnUsage } from "./usage";
 import type { WrapUp } from "./wrapup";
 
@@ -41,6 +43,8 @@ export type StatusEvent = {
   proactive: ProactiveView;
 };
 
+export type BlockItemRef = { id: string; index: number };
+
 export type CoachEvent =
   | StatusEvent
   | { type: "reset"; reason: ResetReason }
@@ -54,7 +58,10 @@ export type CoachEvent =
   | { type: "usage"; usage: TurnUsage }
   | { type: "error"; error: CoachError }
   | { type: "done"; seconds: number; ok: boolean; silent: boolean; interrupted: boolean }
-  | { type: "edit"; edit: CoachEdit }
+  | { type: "edit"; edit: CoachEdit; block?: BlockItemRef }
+  | { type: "block"; id: string; block: Block }
+  | { type: "block_check"; id: string; index: number; checked: boolean }
+  | { type: "sources"; sources: Source[] }
   | { type: "undone"; id: string; summary: string }
   | { type: "notice"; text: string }
   | { type: "wrapup"; wrapUp: WrapUpView | null }
@@ -74,6 +81,9 @@ export const FEED_EVENTS: ReadonlySet<CoachEvent["type"]> = new Set([
   "edit",
   "undone",
   "notice",
+  "block",
+  "block_check",
+  "sources",
 ]);
 
 export function appendHistory(history: CoachEvent[], event: CoachEvent): CoachEvent[] {
@@ -83,6 +93,20 @@ export function appendHistory(history: CoachEvent[], event: CoachEvent): CoachEv
     return [...history.slice(0, -1), { type: "text", delta: last.delta + event.delta }];
   }
   return [...history, event];
+}
+
+export function findBlock(history: readonly CoachEvent[], id: string): Block | null {
+  for (const event of history) if (event.type === "block" && event.id === id) return event.block;
+  return null;
+}
+
+export function addedBlockItem(history: readonly CoachEvent[], ref: BlockItemRef): string | null {
+  let editId: string | null = null;
+  for (const event of history) {
+    if (event.type === "edit" && event.block?.id === ref.id && event.block.index === ref.index) editId = event.edit.id;
+    else if (event.type === "undone" && event.id === editId) editId = null;
+  }
+  return editId;
 }
 
 export function dropSilentNudge(history: CoachEvent[]): CoachEvent[] {

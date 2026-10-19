@@ -4,7 +4,7 @@ import { Composer, type ComposerHandle, folderName } from "./components/composer
 import { CATCH_UP_SHORTCUT, Header, TranscriptStrip } from "./components/header";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
-import { EmptyState, Timeline } from "./components/timeline";
+import { EmptyState, Timeline, type TimelineActions } from "./components/timeline";
 import { hasFollowUp, isEmptyWrapUp, WrapUpCard } from "./components/wrap-up-card";
 import { chipsAllowed, type CoachState, isBusy, lastAsk, latestUndoable, meetingPhase, suggestions, type Turn } from "./state";
 import { type CoachApi, useCoach } from "./use-coach";
@@ -173,10 +173,21 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
     [answer, ask, state.question],
   );
 
-  const timelineActions = useMemo(
-    () => ({ retry, undo: (id: string) => void api.undo(id), copy: copyText, signIn: () => void api.signIn() }),
-    [api, retry],
+  const timelineActions = useMemo<TimelineActions>(
+    () => ({
+      retry,
+      undo: (id) => void api.undo(id),
+      copy: copyText,
+      signIn: () => void api.signIn(),
+      checkItem: (blockId, index, checked) => void api.checkItem(blockId, index, checked),
+      addItemToNote: api.addItemToNote,
+      reply: (text) => void ask(text),
+      open: (url) => void api.open(url),
+    }),
+    [api, ask, retry],
   );
+  const lastTurn = state.items.at(-1);
+  const repliesShowing = lastTurn?.kind === "turn" && lastTurn.blocks.some((block) => block.kind === "replies");
   const wrapUpActions = useMemo(
     () => ({
       copy: copyText,
@@ -216,6 +227,7 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         busy={busy}
         questionOpen={state.question !== null}
         ready={ready}
+        canAddToNotes={(state.status?.appConnected ?? false) && (state.status?.meeting ?? false)}
         latestUndoable={latestUndoable(state)}
         lastAskKey={latestAsk?.key ?? null}
         actions={timelineActions}
@@ -236,7 +248,11 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         placeholder={placeholder}
         status={state.status}
         chips={
-          !glance && chipsAllowed(state) && !isEmptyWrapUp(state.wrapUp) && (state.items.length > 0 || state.wrapUp)
+          !glance &&
+          !repliesShowing &&
+          chipsAllowed(state) &&
+          !isEmptyWrapUp(state.wrapUp) &&
+          (state.items.length > 0 || state.wrapUp)
             ? chips
             : []
         }

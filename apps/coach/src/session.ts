@@ -10,6 +10,7 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import type { Database } from "bun:sqlite";
 
+import type { Block } from "./blocks";
 import { sessionEnv } from "./env";
 import { decide, GMAIL_SERVER, REMOVED_TOOLS, WEB_TOOLS } from "./guard";
 import type { Connectors } from "./mcp-config";
@@ -31,15 +32,19 @@ export const EMAIL_PROMPT = `- You may search the user's email with the mcp__cla
 
 export const EMAIL_DRAFT_PROMPT = `- When the user asks, you may write a follow-up as a Gmail draft; the user reviews and sends it.`;
 
+export const BLOCKS_PROMPT = `- mcp__meeting__show puts a checklist or follow-up chips under your answer. Use it sparingly: kind "actions" only when the user asks for action items or your answer lists commitments (then don't also list them in text); kind "replies" only when a follow-up ask is genuinely likely (2 or 3 short asks, e.g. "Draft the reply", "Summarise for Slack"). Most answers need neither.`;
+
 export function coachPrompt(
   allowChanges: readonly string[] = [],
   canEditNotes = false,
   canAsk = false,
   connectors: readonly string[] = [],
+  canShow = false,
 ): string {
   const lines = [COACH_PROMPT];
   if (canEditNotes) lines.push(NOTES_PROMPT);
   if (canAsk) lines.push(ASK_PROMPT);
+  if (canShow) lines.push(BLOCKS_PROMPT);
   const gmail = connectors.filter((server) => GMAIL_SERVER.test(server));
   if (gmail.length > 0) {
     lines.push(EMAIL_PROMPT);
@@ -86,7 +91,8 @@ export type CoachOptions = {
   allowChanges?: string[];
   resume?: string;
   askUser?: AskUser;
-  onToolResult?: (toolUseId: string, response: unknown) => void;
+  show?: (block: Block) => void;
+  onToolResult?: (toolUseId: string, response: unknown, toolName: string) => void;
   stderr?: (chunk: string) => void;
   abortController?: AbortController;
 };
@@ -181,7 +187,13 @@ export function coachQueryOptions(options: CoachOptions): Options {
       type: "preset",
       preset: "claude_code",
       append:
-        coachPrompt(allowChanges, options.edits !== undefined, options.askUser !== undefined, connectors) +
+        coachPrompt(
+          allowChanges,
+          options.edits !== undefined,
+          options.askUser !== undefined,
+          connectors,
+          options.show !== undefined,
+        ) +
         (webAccess ? `\n${WEB_PROMPT}` : "") +
         userContextPrompt(knowledge, options.instructions),
     },
@@ -192,7 +204,7 @@ export function coachQueryOptions(options: CoachOptions): Options {
     strictMcpConfig: true,
     mcpServers: {
       ...options.mcpServers,
-      meeting: meetingServer(options.db, options.meeting ?? (() => options.sessionId), options.edits),
+      meeting: meetingServer(options.db, options.meeting ?? (() => options.sessionId), options.edits, options.show),
     },
     ...(connectors.length > 0
       ? { extraArgs: { "mcp-config": JSON.stringify({ mcpServers: options.connectors }) } }
@@ -220,9 +232,9 @@ export function coachQueryOptions(options: CoachOptions): Options {
   };
 }
 
-function toolResultHook(onToolResult: (toolUseId: string, response: unknown) => void): HookCallback {
+function toolResultHook(onToolResult: NonNullable<CoachOptions["onToolResult"]>): HookCallback {
   return async (input) => {
-    if (input.hook_event_name === "PostToolUse") onToolResult(input.tool_use_id, input.tool_response);
+    if (input.hook_event_name === "PostToolUse") onToolResult(input.tool_use_id, input.tool_response, input.tool_name);
     return {};
   };
 }
