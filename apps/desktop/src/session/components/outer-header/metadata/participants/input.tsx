@@ -135,7 +135,6 @@ export function ParticipantInput({ sessionId }: { sessionId: string }) {
         {pendingParticipants.map((pending) => (
           <Badge
             key={pending.key}
-            variant="secondary"
             className="bg-foreground/10 flex items-center gap-1 px-2 py-0.5 text-xs opacity-60"
           >
             <span>{pending.name}</span>

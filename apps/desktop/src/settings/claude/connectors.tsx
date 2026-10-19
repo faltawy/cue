@@ -26,10 +26,7 @@ function connectorRows(
   const missing = saved.filter(
     (connector) => !found.some((row) => row.id === connector.id),
   );
-  return [
-    ...found,
-    ...missing.map(({ name, id, url }) => ({ name, id, url })),
-  ];
+  return [...found, ...missing.map(({ name, id, url }) => ({ name, id, url }))];
 }
 
 export function ClaudeConnectorsGroup({
@@ -121,7 +118,6 @@ export function ClaudeConnectorsGroup({
                 <label className="text-muted-foreground flex items-center gap-2 text-xs">
                   <Trans>On</Trans>
                   <Switch
-                    size="sm"
                     aria-label={t`Use ${row.name}`}
                     checked={saved !== undefined}
                     disabled={disabled}
@@ -131,7 +127,6 @@ export function ClaudeConnectorsGroup({
                 <label className="text-muted-foreground flex items-center gap-2 text-xs">
                   <Trans>Allow changes</Trans>
                   <Switch
-                    size="sm"
                     aria-label={t`Allow ${row.name} to make changes`}
                     checked={saved?.allow_changes ?? false}
                     disabled={disabled || saved === undefined}

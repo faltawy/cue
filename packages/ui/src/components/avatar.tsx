@@ -1,7 +1,6 @@
 import { useState, type CSSProperties } from "react";
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 import {
   AVATAR_RASTER_SIZE,
   avatarFallbackGradient,
@@ -75,7 +74,6 @@ function AvatarImage({
     imageCache.get(cacheKey),
   );
   const [imageFailed, setImageFailed] = useState(false);
-  const squircleRef = useSquircleRef<HTMLSpanElement>();
   const dimension = Math.max(1, size);
   const containerStyle = {
     width: dimension,
@@ -85,9 +83,9 @@ function AvatarImage({
     flexShrink: 0,
     overflow: "hidden",
     boxSizing: "border-box",
-    border: "1px solid rgb(0 0 0 / 0.1)",
+    borderRadius: "9999px",
+    border: "1px solid color-mix(in oklch, var(--foreground) 10%, transparent)",
     background: avatarFallbackGradient(recipe.seed),
-    boxShadow: "0 1px 2px rgb(0 0 0 / 0.08)",
   } satisfies CSSProperties;
   const initialsStyle = {
     position: "absolute",
@@ -122,12 +120,7 @@ function AvatarImage({
   });
 
   return (
-    <span
-      ref={squircleRef}
-      aria-hidden="true"
-      className={className}
-      style={containerStyle}
-    >
+    <span aria-hidden="true" className={className} style={containerStyle}>
       {displayedImageUrl ? (
         <img
           alt=""

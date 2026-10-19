@@ -133,7 +133,6 @@ export function SpokenLanguagesView({
           {selectedLanguageCodes.map((code) => (
             <Badge
               key={code}
-              variant="secondary"
               className="bg-muted flex items-center gap-1 px-2 py-0.5 text-xs"
             >
               {getBaseLanguageDisplayName(code, i18n.locale)}

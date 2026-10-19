@@ -1,72 +1,57 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 import { cn } from "@anlg/utils";
 
-const badgeVariants = cva(
-  "focus:outline-ring inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-2 focus:outline-offset-2",
-  {
-    variants: {
-      variant: {
-        default:
-          "bg-primary text-primary-foreground hover:bg-primary/80 border-transparent",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/80 border-transparent",
-        outline: "text-foreground",
-        success:
-          "border-transparent bg-green-500 text-white hover:bg-green-600",
-      },
-      size: {
-        default: "px-2.5 py-0.5 text-xs",
-        sm: "px-2 py-0.5 text-xs",
-        lg: "px-3 py-1 text-sm",
-      },
-      disabled: {
-        true: "pointer-events-none cursor-not-allowed opacity-50",
-        false: "",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-      disabled: false,
-    },
-  },
-);
+// cue.md §6: one neutral badge; status is a dot, never a coloured fill.
+const DOT_CLASS = {
+  success: "bg-success",
+  warning: "bg-warm",
+  destructive: "bg-destructive",
+  live: "bg-live",
+  neutral: "bg-muted-foreground",
+} as const;
 
-export interface BadgeProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    React.RefAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {
+export type BadgeTone = keyof typeof DOT_CLASS;
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Adds a status dot before the label. */
+  tone?: BadgeTone;
+  disabled?: boolean;
   label?: string;
+  ref?: React.Ref<HTMLSpanElement>;
 }
 
 function Badge({
   className,
-  variant,
-  size,
+  tone,
   disabled,
   label,
   children,
-  ref,
   ...props
 }: BadgeProps) {
-  const squircleRef = useSquircleRef<HTMLDivElement>(ref);
   return (
-    <div
-      className={cn([badgeVariants({ variant, size, disabled }), className])}
+    <span
+      data-slot="badge"
       aria-label={label}
-      role="status"
+      aria-disabled={disabled || undefined}
+      className={cn([
+        "inline-flex h-5 shrink-0 items-center gap-1 rounded-sm border px-1.5 whitespace-nowrap",
+        "border-border text-label text-muted-foreground font-medium",
+        "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3",
+        disabled && "pointer-events-none opacity-50",
+        className,
+      ])}
       {...props}
-      ref={squircleRef}
     >
+      {tone ? (
+        <span
+          aria-hidden
+          className={cn(["size-1.5 shrink-0 rounded-full", DOT_CLASS[tone]])}
+        />
+      ) : null}
       {children}
-    </div>
+    </span>
   );
 }
 
-export { Badge, badgeVariants };
+export { Badge };

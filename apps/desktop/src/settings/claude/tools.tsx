@@ -483,10 +483,7 @@ function ServerRow({
           <div className="flex items-center gap-2 text-sm font-medium">
             {server.name}
             {state && (
-              <Badge
-                size="sm"
-                variant={state === "ready" ? "secondary" : "destructive"}
-              >
+              <Badge tone={state === "ready" ? "success" : "destructive"}>
                 {stateLabels[state]}
               </Badge>
             )}
@@ -510,7 +507,6 @@ function ServerRow({
         <label className="text-muted-foreground flex items-center gap-2 text-xs">
           <Trans>On</Trans>
           <Switch
-            size="sm"
             aria-label={t`Use ${server.name}`}
             checked={server.enabled ?? true}
             disabled={disabled}
@@ -520,7 +516,6 @@ function ServerRow({
         <label className="text-muted-foreground flex items-center gap-2 text-xs">
           <Trans>Allow changes</Trans>
           <Switch
-            size="sm"
             aria-label={t`Allow ${server.name} to make changes`}
             checked={server.allow_changes ?? false}
             disabled={disabled}

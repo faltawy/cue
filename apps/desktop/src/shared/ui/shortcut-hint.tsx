@@ -4,6 +4,7 @@ import { Kbd, KbdGroup } from "@anlg/ui/components/ui/kbd";
 import {
   Tooltip,
   TooltipContent,
+  TooltipShortcut,
   TooltipTrigger,
 } from "@anlg/ui/components/ui/tooltip";
 
@@ -19,9 +20,7 @@ export function ShortcutKeys({
   return (
     <KbdGroup className={className}>
       {shortcutLabels(keys).map((label) => (
-        <Kbd key={label} className="h-4 min-w-4 px-1 text-[10px] shadow-none">
-          {label}
-        </Kbd>
+        <Kbd key={label}>{label}</Kbd>
       ))}
     </KbdGroup>
   );
@@ -41,9 +40,11 @@ export function ShortcutHint({
   return (
     <Tooltip delayDuration={500}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side={side} className="flex items-center gap-2">
+      <TooltipContent side={side}>
         <span>{label}</span>
-        {keys && keys.length > 0 ? <ShortcutKeys keys={keys} /> : null}
+        {keys && keys.length > 0 ? (
+          <TooltipShortcut>{shortcutLabels(keys).join("")}</TooltipShortcut>
+        ) : null}
       </TooltipContent>
     </Tooltip>
   );

@@ -69,11 +69,11 @@ export function WorkflowBuilder({
               <Trans>Workflow</Trans>
             </h3>
             {workflow.enabled ? (
-              <Badge variant="outline">
+              <Badge>
                 <Trans>Enabled</Trans>
               </Badge>
             ) : (
-              <Badge variant="outline">
+              <Badge>
                 <Trans>Draft</Trans>
               </Badge>
             )}
@@ -230,11 +230,9 @@ function WorkflowCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">{title}</span>
-          <Badge variant="outline" size="sm">
-            {badge}
-          </Badge>
+          <Badge>{badge}</Badge>
           {!ready ? (
-            <Badge variant="outline" size="sm">
+            <Badge>
               <Trans>Needs setup</Trans>
             </Badge>
           ) : null}

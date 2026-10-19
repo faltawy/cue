@@ -3,7 +3,7 @@ import * as React from "react";
 
 import { cn } from "@anlg/utils";
 
-import { Check } from "../icons";
+import { Check, Minus } from "../icons";
 
 const Checkbox = React.forwardRef<
   React.ComponentRef<typeof CheckboxPrimitive.Root>,
@@ -12,15 +12,21 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn([
-      "peer border-primary focus-visible:ring-ring data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground h-4 w-4 shrink-0 rounded-xs border shadow-xs focus-visible:ring-1 focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+      "peer border-input bg-background grid size-3.5 shrink-0 place-items-center rounded-sm border",
+      "transition-[background-color,border-color] duration-100",
+      "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+      "data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
+      "disabled:pointer-events-none disabled:opacity-40",
       className,
     ])}
     {...props}
   >
-    <CheckboxPrimitive.Indicator
-      className={cn(["flex items-center justify-center text-current"])}
-    >
-      <Check className="h-4 w-4" />
+    <CheckboxPrimitive.Indicator className="grid place-items-center text-current">
+      {props.checked === "indeterminate" ? (
+        <Minus className="size-2.5" weight="bold" />
+      ) : (
+        <Check className="size-2.5" weight="bold" />
+      )}
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ));

@@ -1,18 +1,17 @@
 import type { ReactNode } from "react";
 
-import type { Icon } from "@anlg/ui/components/icons";
-import { Button } from "@anlg/ui/components/ui/button";
+import { Chip } from "@anlg/ui/components/ui/chip";
 import { cn } from "@anlg/utils";
 
+// Coach empty state (apps/coach/src/ui/components/timeline.tsx): words and a
+// chip, no illustration.
 export function EmptyState({
-  icon: EmptyIcon,
   title,
   description,
   action,
   size = "panel",
   className,
 }: {
-  icon?: Icon;
   title: ReactNode;
   description?: ReactNode;
   action?: { label: ReactNode; onClick: () => void };
@@ -23,41 +22,27 @@ export function EmptyState({
     <div
       data-slot="empty-state"
       className={cn([
-        "flex flex-col items-center text-center",
-        size === "panel"
-          ? "h-full justify-center gap-3 px-6"
-          : "gap-2 px-4 py-8",
+        "m-auto flex max-w-[340px] flex-col items-center gap-3 text-center",
+        size === "panel" ? "py-8" : "px-4 py-6",
         className,
       ])}
     >
-      {EmptyIcon ? (
-        <EmptyIcon
-          aria-hidden
+      <div>
+        <p
           className={cn([
-            "text-muted-foreground/60",
-            size === "panel" ? "size-8" : "size-6",
+            "text-foreground text-balance",
+            size === "panel" ? "text-title" : "text-ui font-medium",
           ])}
-        />
-      ) : null}
-      <div className="flex max-w-72 flex-col gap-1">
-        <p className="text-foreground text-sm font-medium">{title}</p>
+        >
+          {title}
+        </p>
         {description ? (
-          <p className="text-muted-foreground text-xs leading-relaxed">
+          <p className="text-ui text-muted-foreground mt-1 text-balance">
             {description}
           </p>
         ) : null}
       </div>
-      {action ? (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={action.onClick}
-          className="mt-1"
-        >
-          {action.label}
-        </Button>
-      ) : null}
+      {action ? <Chip onClick={action.onClick}>{action.label}</Chip> : null}
     </div>
   );
 }

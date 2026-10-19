@@ -12,9 +12,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       ref={ref}
       className={cn([
         "rounded-lg",
-        variant === "default" && "bg-background border shadow-xs",
-        variant === "outline-solid" && "border",
-        variant === "ghost" && "border-none shadow-none",
+        variant === "default" && "bg-background border-border border",
+        variant === "outline-solid" && "border-border border",
+        variant === "ghost" && "border-none",
         className,
       ])}
       {...props}
@@ -52,7 +52,7 @@ export const CardTitle = forwardRef<HTMLHeadingElement, CardTitleProps>(
   ({ className, as: Component = "h3", ...props }, ref) => (
     <Component
       ref={ref}
-      className={cn(["leading-none font-semibold tracking-tight", className])}
+      className={cn(["text-strong", className])}
       {...props}
     />
   ),
@@ -67,7 +67,7 @@ export const CardDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn(["text-sm text-neutral-500", className])}
+    className={cn(["text-ui text-muted-foreground", className])}
     {...props}
   />
 ));

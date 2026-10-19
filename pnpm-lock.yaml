@@ -683,12 +683,6 @@ importers:
       '@hugeicons/react':
         specifier: ^1.1.10
         version: 1.1.10(react@19.2.5)
-      '@lisse/core':
-        specifier: ^0.7.2
-        version: 0.7.2
-      '@lisse/react':
-        specifier: ^0.7.2
-        version: 0.7.2(react@19.2.5)
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -698,6 +692,9 @@ importers:
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@radix-ui/react-direction':
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react@19.2.14)(react@19.2.5)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.16
         version: 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -2077,16 +2074,6 @@ packages:
         optional: true
       rolldown:
         optional: true
-
-  '@lisse/core@0.7.2':
-    resolution: {integrity: sha512-YjGQ1JprtAry68U3jM532roxFcug8GCisQGQhcAVyC2r3WloILFECTi24eZtM2RRq8i7yQ+aDF2Cx6q+ffIGxg==}
-    engines: {node: '>=18'}
-
-  '@lisse/react@0.7.2':
-    resolution: {integrity: sha512-Bpke6mYifeKe4I8rNwB9/xB0th2+PBEaFnoR0FafcAMZwuBvgUCLT7uZNFfwc1Ko1Kvlt3rX4HtHtylCaX/kpA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      react: '>=18.0.0'
 
   '@lit-labs/ssr-dom-shim@1.6.0':
     resolution: {integrity: sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==}
@@ -9263,13 +9250,6 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
-
-  '@lisse/core@0.7.2': {}
-
-  '@lisse/react@0.7.2(react@19.2.5)':
-    dependencies:
-      '@lisse/core': 0.7.2
-      react: 19.2.5
 
   '@lit-labs/ssr-dom-shim@1.6.0': {}
 

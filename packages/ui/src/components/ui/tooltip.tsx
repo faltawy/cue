@@ -6,7 +6,14 @@ import * as React from "react";
 
 import { cn } from "@anlg/utils";
 
-const TooltipProvider = TooltipPrimitive.Provider;
+// Coach tooltip (apps/coach/src/ui/components/primitives.tsx): dark chip,
+// 500ms open delay, 100ms fade, 6px from the trigger.
+function TooltipProvider({
+  delayDuration = 500,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+  return <TooltipPrimitive.Provider delayDuration={delayDuration} {...props} />;
+}
 
 const Tooltip = TooltipPrimitive.Root;
 
@@ -15,45 +22,27 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 const TooltipContent = React.forwardRef<
   React.ComponentRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, side = "top", ...props }, ref) => {
-  const getInitialPosition = () => {
-    switch (side) {
-      case "top":
-        return { y: 3 };
-      case "bottom":
-        return { y: -3 };
-      case "left":
-        return { x: 3 };
-      case "right":
-        return { x: -3 };
-      default:
-        return { y: 3 };
-    }
-  };
-
-  const initialPosition = getInitialPosition();
-
-  return (
+>(
+  (
+    { className, sideOffset = 6, side = "top", collisionPadding = 8, ...props },
+    ref,
+  ) => (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
         side={side}
+        collisionPadding={collisionPadding}
         asChild
         {...props}
       >
         <motion.div
-          initial={{ opacity: 0, ...initialPosition }}
-          animate={{ opacity: 1, x: 0, y: 0 }}
-          exit={{ opacity: 0, ...initialPosition }}
-          transition={{
-            duration: 0.15,
-            ease: [0.2, 0, 0, 1],
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.1, ease: "easeOut" }}
           className={cn([
-            "z-50 overflow-hidden rounded-md px-2 py-1 text-xs",
-            "border-border bg-popover text-popover-foreground border shadow-md",
-            "origin-(--radix-tooltip-content-transform-origin)",
+            "z-50 flex max-w-64 items-center gap-1.5 rounded-md px-2 py-1",
+            "bg-primary text-primary-foreground text-caption font-medium shadow-lg",
             className,
           ])}
         >
@@ -61,8 +50,28 @@ const TooltipContent = React.forwardRef<
         </motion.div>
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
-  );
-});
+  ),
+);
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
+/** The shortcut half of a tooltip label, as in the coach: `Search ⌘K`. */
+function TooltipShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      dir="ltr"
+      className={cn(["text-primary-foreground/60 tabular-nums", className])}
+      {...props}
+    />
+  );
+}
+
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipShortcut,
+  TooltipTrigger,
+};

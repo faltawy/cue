@@ -2,7 +2,6 @@ import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 
 import { ButtonGroup } from "@anlg/ui/components/ui/button-group";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 import { cn } from "@anlg/utils";
 
 export function ConnectButtonGroup({
@@ -17,10 +16,8 @@ export function ConnectButtonGroup({
   children: ReactNode;
 }) {
   const reducedMotion = useReducedMotion();
-  const ref = useSquircleRef<HTMLDivElement>();
   return (
     <div
-      ref={ref}
       className={cn([
         "focus-within:ring-ring/50 relative w-40 shrink-0 overflow-hidden focus-within:ring-[3px]",
         primary ? "bg-primary" : "border-input border",

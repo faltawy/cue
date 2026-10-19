@@ -1,7 +1,5 @@
 import { Trans } from "@lingui/react/macro";
 
-import { FolderSimple } from "@anlg/ui/components/icons";
-
 import { FolderEditor } from "./folder-editor";
 import { useActiveFolderPath } from "./selection";
 
@@ -26,7 +24,6 @@ export function FoldersMain() {
   if (!activeFolder) {
     return (
       <EmptyState
-        icon={FolderSimple}
         title={<Trans>No folders yet</Trans>}
         description={
           <Trans>

@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 
+import { segmentedTrackClassName } from "@anlg/ui/components/ui/segmented";
 import { cn } from "@anlg/utils";
 import { createEditorTabs } from "@anlg/utils/session";
 
@@ -58,7 +59,7 @@ export function SessionViewSwitcher({
       data-tauri-drag-region="false"
       className={cn([
         "pointer-events-auto relative z-10 w-fit max-w-full shrink-0 overflow-visible",
-        "bg-foreground/10 dark:bg-accent/55 rounded-pill flex h-7 items-center gap-[2px] p-[2px] [corner-shape:round]",
+        segmentedTrackClassName,
       ])}
     >
       {editorTabs.map((view, index) => {

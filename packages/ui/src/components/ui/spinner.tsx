@@ -29,7 +29,7 @@ const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
           return (
             <div
               key={i}
-              className="absolute top-0 left-0 h-full w-full"
+              className="absolute inset-0"
               style={{
                 transform: `rotate(${rotation}deg)`,
               }}

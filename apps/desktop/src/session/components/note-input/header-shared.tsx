@@ -98,17 +98,10 @@ export function iconHeaderViewClassName(
   const heightClassName = size === "tray" ? "h-6" : "h-7";
 
   return cn([
-    "group/header-view rounded-pill flex shrink-0 items-center justify-center transition-colors select-none [corner-shape:round] [&>svg]:shrink-0",
+    "group/header-view flex shrink-0 items-center justify-center rounded-sm transition-[background-color,color] duration-100 select-none [&>svg]:shrink-0",
     isActive
-      ? [
-          "text-foreground bg-white shadow-xs",
-          "dark:bg-accent dark:text-foreground dark:shadow-none",
-        ]
-      : [
-          "text-muted-foreground/70",
-          "hover:bg-background/60 hover:text-foreground",
-          "dark:hover:bg-accent/80 dark:hover:text-foreground",
-        ],
+      ? "bg-background text-foreground ring-border ring-1"
+      : "text-muted-foreground hover:text-foreground",
     heightClassName,
     className,
   ]);
