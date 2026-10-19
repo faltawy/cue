@@ -82,7 +82,7 @@ export function SessionChip({
       <PopoverTrigger asChild>
         <button
           className={cn([
-            "flex w-full items-center gap-1 rounded pl-0.5 text-left text-xs leading-tight",
+            "text-label flex w-full items-center gap-1 rounded-sm ps-0.5 text-start leading-tight",
             "cursor-pointer select-none hover:opacity-80",
           ])}
           onContextMenu={showContextMenu}
@@ -90,7 +90,7 @@ export function SessionChip({
           <div className="border-border w-[4px] shrink-0 self-stretch rounded-full border bg-transparent" />
           <span className="truncate">{title}</span>
           {createdAt && (
-            <span className="text-muted-foreground ml-auto shrink-0 tabular-nums">
+            <span className="text-muted-foreground ms-auto shrink-0 tabular-nums">
               {createdAt}
             </span>
           )}
@@ -128,12 +128,10 @@ function SessionPopoverContent({
 
   return (
     <div className="flex flex-col gap-3 p-4">
-      <div className="text-foreground text-base font-medium">
-        {session.title}
-      </div>
+      <div className="text-foreground text-title">{session.title}</div>
       <div className="bg-accent h-px" />
       {createdAt && (
-        <div className="text-muted-foreground text-sm">{createdAt}</div>
+        <div className="text-muted-foreground text-body">{createdAt}</div>
       )}
       <Button
         size="sm"

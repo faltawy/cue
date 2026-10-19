@@ -58,10 +58,10 @@ export function YourName() {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="your-name" className="text-sm font-medium">
+        <label htmlFor="your-name" className="text-body font-medium">
           <Trans>Your name</Trans>
         </label>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-label">
           <Trans>Shown for your voice in transcripts. Empty shows “You”.</Trans>
         </p>
       </div>

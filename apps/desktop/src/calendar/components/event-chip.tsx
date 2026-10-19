@@ -107,7 +107,7 @@ export function EventChip({
         {isAllDay ? (
           <button
             className={cn([
-              "text-primary-foreground w-full truncate rounded px-1.5 py-0.5 text-left text-xs leading-tight",
+              "text-primary-foreground text-label w-full truncate rounded-sm px-1.5 py-0.5 text-start leading-tight",
               "cursor-pointer select-none hover:opacity-80",
             ])}
             style={{ backgroundColor: color }}
@@ -118,7 +118,7 @@ export function EventChip({
         ) : (
           <button
             className={cn([
-              "flex w-full items-center gap-1 rounded pl-0.5 text-left text-xs leading-tight",
+              "text-label flex w-full items-center gap-1 rounded-sm ps-0.5 text-start leading-tight",
               "cursor-pointer select-none hover:opacity-80",
             ])}
             onContextMenu={showContextMenu}
@@ -129,7 +129,7 @@ export function EventChip({
             />
             <span className="truncate">{title}</span>
             {startedAt && (
-              <span className="text-muted-foreground ml-auto shrink-0 tabular-nums">
+              <span className="text-muted-foreground ms-auto shrink-0 tabular-nums">
                 {startedAt}
               </span>
             )}
@@ -312,7 +312,7 @@ function EventPopoverContent({
           type="button"
           onClick={() => setView("main")}
           className={cn([
-            "text-muted-foreground hover:text-foreground flex items-center gap-1 px-2 py-1 text-xs transition-colors",
+            "text-muted-foreground hover:text-foreground text-label flex items-center gap-1 px-2 py-1 transition-colors",
           ])}
         >
           <CaretLeft className="size-3.5" aria-hidden="true" />
@@ -342,19 +342,19 @@ function EventPopoverContent({
           type="button"
           onClick={() => setView("main")}
           className={cn([
-            "text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors",
+            "text-muted-foreground hover:text-foreground text-label flex items-center gap-1 transition-colors",
           ])}
         >
           <CaretLeft className="size-3.5" aria-hidden="true" />
           {t`Back`}
         </button>
-        <div className="flex items-center justify-between gap-2 text-sm">
+        <div className="text-body flex items-center justify-between gap-2">
           <span className="text-muted-foreground">{t`This note`}</span>
           <span className="min-w-0 truncate font-medium">
             {sessionFolder ? folderDisplayName(sessionFolder) : t`Unfiled`}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-2 text-sm">
+        <div className="text-body flex items-center justify-between gap-2">
           <span className="text-muted-foreground flex items-center gap-1.5">
             <Repeat className="size-3.5" aria-hidden="true" />
             {t`Future meetings`}
@@ -396,11 +396,11 @@ function EventPopoverContent({
   if (showAutoAdd) {
     return (
       <div className="flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-2 text-sm font-medium">
+        <div className="text-body flex items-center gap-2 font-medium">
           <Repeat className="size-4 shrink-0" aria-hidden="true" />
           {t`Auto-add future meetings?`}
         </div>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-body">
           {t`Automatically put all future instances of this recurring meeting into a folder.`}
         </p>
         <div className="flex gap-2">
@@ -449,7 +449,7 @@ function EventPopoverContent({
         ) : (
           <Folder className="size-3.5" aria-hidden="true" />
         )}
-        <span className="min-w-0 flex-1 truncate text-left">
+        <span className="min-w-0 flex-1 truncate text-start">
           {sessionFolder ? folderDisplayName(sessionFolder) : t`Add to folder`}
         </span>
         <CaretDown className="size-3.5 shrink-0" aria-hidden="true" />

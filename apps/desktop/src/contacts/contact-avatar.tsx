@@ -34,7 +34,7 @@ export function ContactImage({
       style={{ width: size, height: size }}
       className={cn([
         "shrink-0 rounded-full object-cover",
-        "border border-black/10 shadow-xs",
+        "border-border border",
         className,
       ])}
     />
@@ -75,10 +75,10 @@ export function AvatarUploadButton({
       <span
         className={cn([
           "absolute inset-0 flex items-center justify-center rounded-full",
-          "bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100",
+          "bg-scrim text-white opacity-0 transition-opacity group-hover:opacity-100",
         ])}
       >
-        <Camera className="size-5" />
+        <Camera className="size-4" />
       </span>
       <input
         ref={inputRef}

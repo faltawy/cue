@@ -15,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
-import { cn } from "@anlg/utils";
 
 export function ContactPageHeader({
   readOnly = false,
@@ -41,11 +40,11 @@ export function ContactPageHeader({
   return (
     <div
       data-tauri-drag-region
-      className="flex h-12 shrink-0 items-center justify-between gap-3 pr-1 pl-3"
+      className="flex h-12 shrink-0 items-center justify-between gap-3 ps-3 pe-1"
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {showCompactIdentity && compactIdentity}
-        <h2 className="min-w-0 truncate text-sm font-semibold">{title}</h2>
+        <h2 className="text-body min-w-0 truncate font-semibold">{title}</h2>
       </div>
       {!readOnly && (
         <div
@@ -58,7 +57,7 @@ export function ContactPageHeader({
                 size="icon"
                 variant="ghost"
                 data-tauri-drag-region="false"
-                className="text-muted-foreground hover:bg-accent hover:text-foreground rounded-full"
+                className="text-muted-foreground hover:text-foreground"
                 aria-label={t`Contact options`}
               >
                 <DotsThree size={16} />
@@ -86,13 +85,7 @@ export function ContactPageHeader({
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onDelete}
-                className={cn([
-                  "cursor-pointer text-red-600 dark:text-red-400",
-                  "hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50 dark:hover:text-red-300",
-                ])}
-              >
+              <DropdownMenuItem destructive onClick={onDelete}>
                 <Trash />
                 <span>
                   <Trans>Delete</Trans>

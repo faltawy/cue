@@ -225,11 +225,11 @@ export function CalendarView() {
         data-tauri-drag-region
         className={cn([
           "flex items-center justify-between",
-          "border-border h-12 border-b py-2 pr-3 pl-3 select-none",
+          "border-border h-12 border-b py-2 ps-3 pe-3 select-none",
         ])}
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-foreground text-sm font-semibold">
+          <h2 className="text-foreground text-body font-semibold">
             {isMonthView
               ? format(currentMonth, "MMMM yyyy")
               : format(compactVisibleStart, "MMMM yyyy")}
@@ -239,7 +239,7 @@ export function CalendarView() {
         <ButtonGroup
           data-tauri-drag-region="false"
           className={cn([
-            "border-border h-7 overflow-hidden rounded-full border",
+            "border-border h-7 overflow-hidden rounded-md border",
             "bg-card",
           ])}
         >
@@ -257,7 +257,7 @@ export function CalendarView() {
             size="sm"
             className={cn([
               "h-full rounded-none border-0",
-              "hover:bg-accent bg-transparent px-2 text-xs shadow-none",
+              "hover:bg-accent text-label bg-transparent px-2 shadow-none",
             ])}
             onClick={goToToday}
           >
@@ -285,9 +285,9 @@ export function CalendarView() {
               <div
                 key={`${day}-${i}`}
                 className={cn([
-                  "text-center text-xs font-medium",
+                  "text-label text-center font-medium",
                   "py-2",
-                  i < visibleHeaders.length - 1 && "border-r-border border-r",
+                  i < visibleHeaders.length - 1 && "border-e-border border-e",
                   day === "Sat" || day === "Sun"
                     ? "text-muted-foreground"
                     : "text-foreground",
@@ -334,8 +334,8 @@ export function CalendarView() {
                 <div
                   key={`header-${day.toISOString()}`}
                   className={cn([
-                    "border-r-border border-b-border snap-start border-r border-b",
-                    "py-2 text-center text-xs font-medium",
+                    "border-e-border border-b-border snap-start border-e border-b",
+                    "text-label py-2 text-center font-medium",
                     label === "Sat" || label === "Sun"
                       ? "text-muted-foreground"
                       : "text-foreground",

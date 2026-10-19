@@ -126,11 +126,11 @@ export function AccessPermissionRow({
         <div
           className={cn([
             "mb-1 flex items-center gap-2",
-            !isAuthorized && "text-red-500",
+            !isAuthorized && "text-destructive",
           ])}
         >
           {!isAuthorized && <WarningCircle className="size-4" />}
-          <h3 className="text-sm font-medium">{title}</h3>
+          <h3 className="text-body font-medium">{title}</h3>
         </div>
         <TroubleShootingLink
           onRequest={onRequest}
@@ -182,7 +182,7 @@ export function TroubleShootingLink({
   const { t } = useLingui();
   const [showActions, setShowActions] = useState(false);
   return (
-    <div className={cn(["text-muted-foreground text-xs", className])}>
+    <div className={cn(["text-muted-foreground text-label", className])}>
       {!showActions ? (
         <button
           type="button"

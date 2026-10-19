@@ -14,7 +14,7 @@ const _PROVIDERS = [
       <img
         src="/assets/apple-calendar.png"
         alt="Apple Calendar"
-        className="size-5 rounded-[4px] object-cover"
+        className="size-5 rounded-sm object-cover"
       />
     ),
   },

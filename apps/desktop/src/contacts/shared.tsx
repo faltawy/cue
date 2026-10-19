@@ -64,25 +64,25 @@ function SortDropdown({
         >
           <DropdownMenuRadioItem
             value="alphabetical"
-            className="cursor-pointer text-xs"
+            className="text-label cursor-pointer"
           >
             A-Z
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value="reverse-alphabetical"
-            className="cursor-pointer text-xs"
+            className="text-label cursor-pointer"
           >
             Z-A
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value="oldest"
-            className="cursor-pointer text-xs"
+            className="text-label cursor-pointer"
           >
             <Trans>Oldest</Trans>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value="newest"
-            className="cursor-pointer text-xs"
+            className="text-label cursor-pointer"
           >
             <Trans>Newest</Trans>
           </DropdownMenuRadioItem>
@@ -148,7 +148,7 @@ export function ColumnHeader({
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder={t`Search contacts...`}
-              className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm placeholder:text-sm focus:outline-hidden"
+              className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
             />
             {searchValue && (
               <button

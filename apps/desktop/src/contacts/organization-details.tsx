@@ -104,7 +104,7 @@ export function OrganizationDetailsColumn({
 
             <div>
               <div className="border-border flex items-center border-b px-4 py-3">
-                <div className="text-muted-foreground w-28 text-sm">
+                <div className="text-muted-foreground text-body w-28">
                   <Trans>Name</Trans>
                 </div>
                 <div className="flex-1">
@@ -117,7 +117,7 @@ export function OrganizationDetailsColumn({
             </div>
 
             <div className="p-6">
-              <h3 className="text-muted-foreground mb-4 text-sm font-medium">
+              <h3 className="text-muted-foreground text-body mb-4 font-medium">
                 <Trans>People</Trans>
                 <span className="text-muted-foreground font-normal">
                   {" "}
@@ -132,7 +132,7 @@ export function OrganizationDetailsColumn({
                       return (
                         <div
                           key={human.id}
-                          className="border-border bg-card cursor-pointer rounded-lg border p-4 transition-all hover:shadow-xs"
+                          className="border-border bg-background hover:bg-muted cursor-pointer rounded-lg border p-4 transition-colors duration-100"
                           onClick={() => onPersonClick?.(human.id)}
                         >
                           <div className="flex flex-col items-center gap-3 text-center">
@@ -150,11 +150,11 @@ export function OrganizationDetailsColumn({
                               />
                             )}
                             <div className="w-full">
-                              <div className="truncate text-sm font-semibold">
+                              <div className="text-body truncate font-semibold">
                                 {human.name || human.email || t`Unnamed`}
                               </div>
                               {human.jobTitle && (
-                                <div className="text-muted-foreground mt-1 truncate text-xs">
+                                <div className="text-muted-foreground text-label mt-1 truncate">
                                   {human.jobTitle}
                                 </div>
                               )}
@@ -200,7 +200,7 @@ export function OrganizationDetailsColumn({
                     })}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-muted-foreground text-body">
                     <Trans>No people in this organization</Trans>
                   </p>
                 )}
@@ -212,7 +212,7 @@ export function OrganizationDetailsColumn({
         </>
       ) : (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-body">
             <Trans>Select an organization to view details</Trans>
           </p>
         </div>
@@ -239,7 +239,7 @@ function EditableOrganizationNameField({
         });
       }}
       placeholder={t`Organization name`}
-      className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+      className="text-body h-7 border-none p-0"
     />
   );
 }

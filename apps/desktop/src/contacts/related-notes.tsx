@@ -32,7 +32,7 @@ export function RelatedNotesSection({
   return (
     <div className="p-6">
       <div className="mb-3 flex items-center gap-1">
-        <h3 className="text-muted-foreground text-sm font-medium">
+        <h3 className="text-muted-foreground text-body font-medium">
           <Trans>Related Notes</Trans>
         </h3>
         {sessions.length > 1 && (
@@ -65,7 +65,7 @@ export function RelatedNotesSection({
           </DropdownMenu>
         )}
 
-        <div className="border-border bg-muted/50 focus-within:bg-accent ml-auto flex h-8 w-52 max-w-[48%] items-center gap-2 rounded-lg border px-2.5 transition-colors">
+        <div className="border-border bg-muted/50 focus-within:bg-accent ms-auto flex h-8 w-52 max-w-[48%] items-center gap-2 rounded-lg border px-2.5 transition-colors">
           <MagnifyingGlass className="text-muted-foreground size-3.5 shrink-0" />
           <input
             type="text"
@@ -75,7 +75,7 @@ export function RelatedNotesSection({
               if (event.key === "Escape") setSearch("");
             }}
             placeholder={t`Search...`}
-            className="placeholder:text-muted-foreground min-w-0 flex-1 bg-transparent text-sm focus:outline-hidden"
+            className="placeholder:text-muted-foreground text-body min-w-0 flex-1 bg-transparent focus:outline-hidden"
           />
           {search && (
             <button
@@ -97,14 +97,14 @@ export function RelatedNotesSection({
               <button
                 type="button"
                 onClick={() => onSessionClick(session.id)}
-                className="hover:bg-accent flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors"
+                className="hover:bg-accent flex w-full items-center gap-3 rounded-md px-2 py-2 text-start transition-colors"
               >
                 <span className="bg-muted-foreground size-1.5 shrink-0 rounded-full" />
-                <span className="min-w-0 flex-1 truncate text-sm">
+                <span className="text-body min-w-0 flex-1 truncate">
                   {session.title || t`Untitled Note`}
                 </span>
                 {session.createdAt && (
-                  <time className="text-muted-foreground shrink-0 text-xs">
+                  <time className="text-muted-foreground text-label shrink-0">
                     {new Date(session.createdAt).toLocaleDateString()}
                   </time>
                 )}
@@ -113,7 +113,7 @@ export function RelatedNotesSection({
           ))}
         </ul>
       ) : (
-        <p className="text-muted-foreground px-2 py-2 text-sm">
+        <p className="text-muted-foreground text-body px-2 py-2">
           {sessions.length > 0 ? (
             <Trans>No results found.</Trans>
           ) : (

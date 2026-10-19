@@ -94,7 +94,7 @@ export function DayCell({
   return (
     <div
       className={cn([
-        "border-r-border border-b-border border-r border-b",
+        "border-e-border border-b-border border-e border-b",
         "flex min-w-0 flex-col p-1.5 select-none",
         (day.getDay() === 0 || day.getDay() === 6) && "bg-muted",
       ])}
@@ -102,7 +102,7 @@ export function DayCell({
       <div className="flex shrink-0 justify-end">
         <div
           className={cn([
-            "mb-1 flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
+            "text-body mb-1 flex h-7 w-7 items-center justify-center rounded-full font-medium",
             today && "bg-foreground text-background",
             !today && !isCurrentMonth && "text-muted-foreground/70",
             !today &&
@@ -140,7 +140,7 @@ export function DayCell({
         {overflow > 0 && (
           <Popover>
             <PopoverTrigger asChild>
-              <button className="text-muted-foreground hover:text-muted-foreground shrink-0 cursor-pointer pl-1 text-left text-xs">
+              <button className="text-muted-foreground hover:text-muted-foreground text-label shrink-0 cursor-pointer ps-1 text-start">
                 +{overflow} more
               </button>
             </PopoverTrigger>
@@ -149,7 +149,7 @@ export function DayCell({
               className="max-h-[300px] w-[220px] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="text-foreground mb-2 text-sm font-medium">
+              <div className="text-foreground text-body mb-2 font-medium">
                 {format(day, "MMM d, yyyy")}
               </div>
               <div className="flex flex-col gap-0.5">

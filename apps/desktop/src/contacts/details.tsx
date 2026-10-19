@@ -186,11 +186,11 @@ export function DetailsColumn({
 
             {!readOnly && duplicatesWithData.length > 0 && (
               <div className="border-alert-border bg-alert border-b px-6 py-4">
-                <h4 className="text-alert-foreground mb-1 text-sm font-semibold">
+                <h4 className="text-alert-foreground text-body mb-1 font-semibold">
                   Duplicate Contact
                   {duplicatesWithData.length > 1 ? "s" : ""} Found
                 </h4>
-                <p className="text-foreground mb-3 text-sm">
+                <p className="text-foreground text-body mb-3">
                   {duplicatesWithData.length > 1
                     ? `${duplicatesWithData.length} contacts`
                     : "Another contact"}{" "}
@@ -214,10 +214,10 @@ export function DetailsColumn({
                           />
                         )}
                         <div>
-                          <div className="text-foreground text-sm font-medium">
+                          <div className="text-foreground text-body font-medium">
                             {dup.name || "Unnamed Contact"}
                           </div>
-                          <div className="text-muted-foreground text-xs">
+                          <div className="text-muted-foreground text-label">
                             {dup.email}
                           </div>
                         </div>
@@ -255,10 +255,10 @@ export function DetailsColumn({
                     key={label}
                     className="border-border flex items-center border-b px-4 py-3"
                   >
-                    <div className="text-muted-foreground w-28 text-sm">
+                    <div className="text-muted-foreground text-body w-28">
                       {label}
                     </div>
-                    <div className="min-w-0 flex-1 text-base break-words whitespace-pre-wrap">
+                    <div className="text-body min-w-0 flex-1 break-words whitespace-pre-wrap">
                       {value}
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export function DetailsColumn({
             ) : (
               <div>
                 <div className="border-border flex items-center border-b px-4 py-3">
-                  <div className="text-muted-foreground w-28 text-sm">
+                  <div className="text-muted-foreground text-body w-28">
                     <Trans>Name</Trans>
                   </div>
                   <div className="flex-1">
@@ -285,7 +285,7 @@ export function DetailsColumn({
                 />
 
                 <div className="border-border flex items-center border-b px-4 py-3">
-                  <div className="text-muted-foreground w-28 text-sm">
+                  <div className="text-muted-foreground text-body w-28">
                     <Trans>Company</Trans>
                   </div>
                   <div className="flex-1">
@@ -360,7 +360,7 @@ export function DetailsColumn({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="text-muted-foreground -ml-2 h-7 px-2"
+                        className="text-muted-foreground -ms-2 h-7 px-2"
                         onClick={() => setAddingEmail(true)}
                       >
                         <Trans>Add email</Trans>
@@ -400,7 +400,7 @@ export function DetailsColumn({
         </>
       ) : (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-body">
             <Trans>Select a person to view details</Trans>
           </p>
         </div>
@@ -419,7 +419,7 @@ function ContactSummarySection({
   return (
     <div className="border-border border-b p-6">
       <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-muted-foreground text-sm font-medium">
+        <h3 className="text-muted-foreground text-body font-medium">
           <Trans>Summary</Trans>
         </h3>
         {summary.isGenerating && (
@@ -437,7 +437,7 @@ function ContactSummarySection({
 
       <div className="border-border bg-muted rounded-lg border p-4">
         {hasFacts ? (
-          <ul className="text-foreground list-disc space-y-2 pl-5 text-sm leading-relaxed">
+          <ul className="text-foreground text-body leading-reading list-disc space-y-2 ps-5">
             {summary.facts.map((fact) => (
               <li key={fact}>{fact}</li>
             ))}
@@ -462,7 +462,7 @@ function ContactSummarySection({
           </div>
         ) : summary.error ? (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-body">
               <Trans>Summary generation failed</Trans>
             </p>
             <Button
@@ -474,7 +474,7 @@ function ContactSummarySection({
             </Button>
           </div>
         ) : (
-          <p className="text-muted-foreground text-sm leading-relaxed">
+          <p className="text-muted-foreground text-body leading-reading">
             <Trans>
               AI-generated summary of all interactions and notes with this
               contact will appear here. This will synthesize key discussion
@@ -486,7 +486,7 @@ function ContactSummarySection({
 
         {hasFacts && summary.error && (
           <div className="border-border mt-3 flex items-center justify-between gap-3 border-t pt-3">
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-label">
               <Trans>Summary generation failed</Trans>
             </p>
             <Button
@@ -519,7 +519,7 @@ function EditablePersonNameField({
         persistHumanUpdate(personId, { name: event.target.value })
       }
       placeholder={t`Name`}
-      className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+      className="text-body h-7 border-none p-0"
     />
   );
 }
@@ -535,7 +535,7 @@ function EditablePersonJobTitleField({
 
   return (
     <div className="border-border flex items-center border-b px-4 py-3">
-      <div className="text-muted-foreground w-28 text-sm">
+      <div className="text-muted-foreground text-body w-28">
         <Trans>Job Title</Trans>
       </div>
       <div className="flex-1">
@@ -545,7 +545,7 @@ function EditablePersonJobTitleField({
             persistHumanUpdate(personId, { jobTitle: event.target.value })
           }
           placeholder={t`Software Engineer`}
-          className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="text-body h-7 border-none p-0"
         />
       </div>
     </div>
@@ -561,7 +561,7 @@ function EditablePersonEmailField({
 }) {
   return (
     <div className="border-border flex items-center border-b px-4 py-3">
-      <div className="text-muted-foreground w-28 text-sm">
+      <div className="text-muted-foreground text-body w-28">
         <Trans>Email</Trans>
       </div>
       <div className="flex-1">
@@ -572,7 +572,7 @@ function EditablePersonEmailField({
             persistHumanUpdate(personId, { email: event.target.value })
           }
           placeholder="john@example.com"
-          className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="text-body h-7 border-none p-0"
         />
       </div>
     </div>
@@ -611,7 +611,7 @@ function EditableAdditionalEmailRow({
             }
           }}
           placeholder="jane@example.com"
-          className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="text-body h-7 border-none p-0"
         />
         {onRemove && (
           <Button
@@ -639,7 +639,7 @@ function EditablePersonPhoneField({
 }) {
   return (
     <div className="border-border flex items-center border-b px-4 py-3">
-      <div className="text-muted-foreground w-28 text-sm">
+      <div className="text-muted-foreground text-body w-28">
         <Trans>Phone</Trans>
       </div>
       <div className="flex-1">
@@ -650,7 +650,7 @@ function EditablePersonPhoneField({
             persistHumanUpdate(personId, { phone: event.target.value })
           }
           placeholder="+1 (555) 123-4567"
-          className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="text-body h-7 border-none p-0"
         />
       </div>
     </div>
@@ -666,7 +666,7 @@ function EditablePersonLinkedInField({
 }) {
   return (
     <div className="border-border flex items-center border-b px-4 py-3">
-      <div className="text-muted-foreground w-28 text-sm">
+      <div className="text-muted-foreground text-body w-28">
         <Trans>LinkedIn</Trans>
       </div>
       <div className="flex-1">
@@ -678,7 +678,7 @@ function EditablePersonLinkedInField({
             })
           }
           placeholder="https://www.linkedin.com/in/johntopia/"
-          className="h-7 border-none p-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="text-body h-7 border-none p-0"
         />
       </div>
     </div>
@@ -696,7 +696,7 @@ function EditablePersonMemoField({
 
   return (
     <div className="border-border flex border-b px-4 py-3">
-      <div className="text-muted-foreground w-28 pt-2 text-sm">
+      <div className="text-muted-foreground text-body w-28 pt-2">
         <Trans>Notes</Trans>
       </div>
       <div className="flex-1">
@@ -706,7 +706,7 @@ function EditablePersonMemoField({
             persistHumanUpdate(personId, { memo: event.target.value })
           }
           placeholder={t`Add notes about this contact...`}
-          className="min-h-[80px] resize-none border-none px-0 py-2 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="text-body min-h-[80px] resize-none border-none px-0 py-2"
           rows={3}
         />
       </div>
@@ -742,16 +742,16 @@ export function ContactOrganizationSelector({
         <div
           aria-disabled={disabled || undefined}
           className={cn(
-            "hover:bg-accent -mx-2 inline-flex cursor-pointer items-center rounded-lg px-2 py-1 transition-colors",
+            "hover:bg-muted -mx-2 inline-flex cursor-pointer items-center rounded-md px-2 py-1 transition-colors duration-100",
             disabled && "pointer-events-none opacity-60",
           )}
         >
           {organization?.name ? (
             <div className="flex items-center">
-              <span className="text-base md:text-sm">{organization.name}</span>
-              <span className="group text-muted-foreground ml-2">
+              <span className="text-body">{organization.name}</span>
+              <span className="group text-muted-foreground ms-2">
                 <MinusCircle
-                  className="text-muted-foreground size-4 cursor-pointer hover:text-red-600"
+                  className="text-muted-foreground hover:text-destructive size-4 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemoveOrganization();
@@ -760,7 +760,7 @@ export function ContactOrganizationSelector({
               </span>
             </div>
           ) : (
-            <span className="text-muted-foreground flex items-center gap-1 text-base md:text-sm">
+            <span className="text-muted-foreground text-body flex items-center gap-1">
               <Plus className="size-4" />
               <Trans>Add organization</Trans>
             </span>
@@ -841,13 +841,13 @@ function OrganizationControl({
 
   return (
     <div className="flex max-w-[450px] flex-col gap-3">
-      <div className="text-muted-foreground text-sm font-medium">
+      <div className="text-muted-foreground text-body font-medium">
         <Trans>Organization</Trans>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="flex flex-col gap-2">
-          <div className="border-border bg-muted flex w-full items-center gap-2 rounded-xs border px-2 py-1.5">
+          <div className="border-border bg-muted flex w-full items-center gap-2 rounded-sm border px-2 py-1.5">
             <span className="text-muted-foreground shrink-0">
               <MagnifyingGlass className="size-4" />
             </span>
@@ -860,24 +860,24 @@ function OrganizationControl({
               }}
               onKeyDown={handleKeyDown}
               placeholder={t`Search or add company`}
-              className="placeholder:text-muted-foreground w-full bg-transparent text-sm focus:outline-hidden focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="placeholder:text-muted-foreground text-body w-full bg-transparent focus:outline-hidden"
             />
           </div>
 
           {searchTerm.trim() && (
-            <div className="border-border flex w-full flex-col overflow-hidden rounded-xs border">
+            <div className="border-border flex w-full flex-col overflow-hidden rounded-sm border">
               {organizations.map((org, index) => (
                 <button
                   key={org.id}
                   type="button"
                   className={[
-                    "flex items-center px-3 py-2 text-sm text-left transition-colors w-full",
+                    "flex items-center px-3 py-2 text-body text-start transition-colors w-full",
                     highlightedIndex === index ? "bg-muted" : "hover:bg-accent",
                   ].join(" ")}
                   onClick={() => selectOrganization(org.id)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
-                  <span className="bg-muted mr-2 flex size-5 shrink-0 items-center justify-center rounded-full">
+                  <span className="bg-muted me-2 flex size-5 shrink-0 items-center justify-center rounded-full">
                     <Buildings className="size-3" />
                   </span>
                   <span className="truncate font-medium">{org.name}</span>
@@ -888,7 +888,7 @@ function OrganizationControl({
                 <button
                   type="button"
                   className={[
-                    "flex items-center px-3 py-2 text-sm text-left transition-colors w-full",
+                    "flex items-center px-3 py-2 text-body text-start transition-colors w-full",
                     highlightedIndex === organizations.length
                       ? "bg-muted"
                       : "hover:bg-accent",
@@ -896,8 +896,8 @@ function OrganizationControl({
                   onClick={() => void handleCreateOrganization()}
                   onMouseEnter={() => setHighlightedIndex(organizations.length)}
                 >
-                  <span className="bg-accent mr-2 flex size-5 shrink-0 items-center justify-center rounded-full">
-                    <span className="text-xs">+</span>
+                  <span className="bg-accent me-2 flex size-5 shrink-0 items-center justify-center rounded-full">
+                    <span className="text-label">+</span>
                   </span>
                   <span className="text-muted-foreground flex items-center gap-1 font-medium">
                     Create
@@ -911,19 +911,19 @@ function OrganizationControl({
           )}
 
           {!searchTerm.trim() && organizations.length > 0 && (
-            <div className="custom-scrollbar border-border flex max-h-[40vh] w-full flex-col overflow-hidden overflow-y-auto rounded-xs border">
+            <div className="custom-scrollbar border-border flex max-h-[40vh] w-full flex-col overflow-hidden overflow-y-auto rounded-sm border">
               {organizations.map((org, index) => (
                 <button
                   key={org.id}
                   type="button"
                   className={[
-                    "flex items-center px-3 py-2 text-sm text-left transition-colors w-full",
+                    "flex items-center px-3 py-2 text-body text-start transition-colors w-full",
                     highlightedIndex === index ? "bg-muted" : "hover:bg-accent",
                   ].join(" ")}
                   onClick={() => selectOrganization(org.id)}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
-                  <span className="bg-muted mr-2 flex size-5 shrink-0 items-center justify-center rounded-full">
+                  <span className="bg-muted me-2 flex size-5 shrink-0 items-center justify-center rounded-full">
                     <Buildings className="size-3" />
                   </span>
                   <span className="truncate font-medium">{org.name}</span>

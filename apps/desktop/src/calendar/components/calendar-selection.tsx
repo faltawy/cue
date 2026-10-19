@@ -75,7 +75,7 @@ export function CalendarSelection({
         ) : (
           <>
             <CalendarSlash className="text-muted-foreground/70 mb-2 size-6" />
-            <div className="text-muted-foreground flex items-center gap-1 text-xs">
+            <div className="text-muted-foreground text-label flex items-center gap-1">
               <p>
                 <Trans>No calendars found</Trans>
               </p>
@@ -83,7 +83,7 @@ export function CalendarSelection({
                 <button
                   type="button"
                   onClick={onRefresh}
-                  className="text-muted-foreground hover:bg-accent hover:text-muted-foreground rounded p-1 transition-colors"
+                  className="text-muted-foreground hover:bg-accent hover:text-muted-foreground rounded-sm p-1 transition-colors"
                   aria-label={t`Refresh calendars`}
                 >
                   <ArrowsClockwise className="size-3" />
@@ -146,11 +146,11 @@ function CalendarGroupHeader({
       onContextMenu={hasMenu ? showContextMenu : undefined}
       className={cn([
         "flex items-center justify-between gap-2 py-1",
-        hasMenu && "group -mx-2 rounded-full px-2",
+        hasMenu && "group -mx-2 rounded-md px-2",
         hasMenu && !disableHoverTone && "hover:bg-accent",
       ])}
     >
-      <span className="text-muted-foreground truncate text-xs font-medium">
+      <span className="text-muted-foreground text-label truncate font-medium">
         {group.sourceName}
       </span>
       {hasMenu ? <CalendarGroupMenuButton onClick={showContextMenu} /> : null}
@@ -171,7 +171,7 @@ function CalendarGroupMenuButton({
       type="button"
       onClick={onClick}
       className={cn([
-        "text-muted-foreground shrink-0 rounded-full p-1 transition-colors",
+        "text-muted-foreground shrink-0 rounded-md p-1 transition-colors",
         "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100",
         "hover:bg-accent hover:text-muted-foreground",
         className,
@@ -217,11 +217,11 @@ function CalendarToggleRow({
           }
         });
       }}
-      className="flex w-full items-center gap-2 py-1 pr-2 pl-0 text-left"
+      className="flex w-full items-center gap-2 py-1 ps-0 pe-2 text-start"
     >
       <div
         className={cn([
-          "flex size-4 shrink-0 items-center justify-center rounded border",
+          "flex size-4 shrink-0 items-center justify-center rounded-sm border",
           "transition-colors duration-100",
         ])}
         style={
@@ -234,7 +234,7 @@ function CalendarToggleRow({
           <Check className="text-primary-foreground size-3" weight="bold" />
         )}
       </div>
-      <span className="truncate text-sm">{calendar.title}</span>
+      <span className="text-body truncate">{calendar.title}</span>
     </button>
   );
 }

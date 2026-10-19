@@ -149,7 +149,7 @@ function ProviderAccordionItem({
           providerMenuItems.length > 0 ? showProviderMenu : undefined
         }
         className={cn([
-          "group/row hover:bg-accent relative -mx-2 grid items-center gap-1 rounded-full px-2",
+          "group/row hover:bg-accent relative -mx-2 grid items-center gap-1 rounded-md px-2",
           canDisconnectApple
             ? "grid-cols-[minmax(0,1fr)_auto_auto]"
             : "grid-cols-[minmax(0,1fr)_auto]",
@@ -157,12 +157,12 @@ function ProviderAccordionItem({
       >
         <AccordionHeader className="min-w-0">
           <AccordionTriggerPrimitive
-            className="flex w-full min-w-0 items-center py-3 text-left text-sm font-medium transition-all hover:no-underline"
+            className="text-body flex w-full min-w-0 items-center py-3 text-start font-medium transition-all hover:no-underline"
             onClick={handleTriggerClick}
           >
             <div className="flex min-w-0 items-center gap-2">
               <ProviderIcon provider={provider} />
-              <span className="truncate text-sm font-medium">
+              <span className="text-body truncate font-medium">
                 {provider.displayName}
               </span>
             </div>
@@ -174,7 +174,7 @@ function ProviderAccordionItem({
             type="button"
             onClick={handleAppleConnect}
             disabled={calendar.isPending}
-            className="text-muted-foreground hover:bg-accent hover:text-foreground shrink-0 rounded-full p-1 transition-colors disabled:opacity-50"
+            className="text-muted-foreground hover:bg-accent hover:text-foreground shrink-0 rounded-md p-1 transition-colors disabled:opacity-50"
             aria-label={t`Connect ${provider.displayName}`}
           >
             {calendar.isPending ? (
@@ -188,7 +188,7 @@ function ProviderAccordionItem({
             type="button"
             onClick={showProviderMenu}
             className={cn([
-              "text-muted-foreground shrink-0 rounded-full p-1 transition-colors",
+              "text-muted-foreground shrink-0 rounded-md p-1 transition-colors",
               "pointer-events-none opacity-0 group-hover/row:pointer-events-auto group-hover/row:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100",
               "hover:bg-accent hover:text-muted-foreground",
             ])}
