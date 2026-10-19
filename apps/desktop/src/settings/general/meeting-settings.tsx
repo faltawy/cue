@@ -11,7 +11,6 @@ export function MeetingSettingsView({
   autoJoinScheduledMeetings,
   autoStartScheduledMeetings,
   autoStopMeetings,
-  floatingBar,
   meetingDisclosureAutoPost,
   captureMeetingChat,
   captureSharedScreens,
@@ -19,7 +18,6 @@ export function MeetingSettingsView({
   autoJoinScheduledMeetings: SettingItem;
   autoStartScheduledMeetings: SettingItem;
   autoStopMeetings: SettingItem;
-  floatingBar: SettingItem;
   meetingDisclosureAutoPost: SettingItem;
   captureMeetingChat: SettingItem;
   captureSharedScreens: SettingItem;
@@ -80,12 +78,6 @@ export function MeetingSettingsView({
         }
         checked={captureSharedScreens.value}
         onChange={captureSharedScreens.onChange}
-      />
-      <SettingSwitchRow
-        title={<Trans>Show floating bar</Trans>}
-        description={<Trans>Control listening without reopening Cue.</Trans>}
-        checked={floatingBar.value}
-        onChange={floatingBar.onChange}
       />
     </div>
   );

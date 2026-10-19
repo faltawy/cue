@@ -465,10 +465,6 @@ msgstr ""
 msgid "Calendar connected"
 msgstr ""
 
-#: src/meeting-float/display-setting.tsx
-msgid "camera"
-msgstr ""
-
 #: src/settings/ai/stt/select.tsx
 msgid "Can transcribe while the meeting is happening."
 msgstr ""
@@ -785,10 +781,6 @@ msgstr ""
 
 #: src/onboarding/calendar.tsx
 msgid "Continue"
-msgstr ""
-
-#: src/settings/general/meeting-settings.tsx
-msgid "Control listening without reopening Cue."
 msgstr ""
 
 #: src/settings/dictation.tsx
@@ -1300,10 +1292,6 @@ msgstr ""
 msgid "Folders"
 msgstr ""
 
-#: src/meeting-float/display-setting.tsx
-msgid "Follow my pointer"
-msgstr ""
-
 #: src/templates/template-icon-picker.tsx
 msgid "Food & Drink"
 msgstr ""
@@ -1689,10 +1677,6 @@ msgstr ""
 
 #: src/session/components/outer-header/overflow/index.tsx
 msgid "Meeting info"
-msgstr ""
-
-#: src/settings/general/index.tsx
-msgid "Meeting island"
 msgstr ""
 
 #: src/settings/general/index.tsx
@@ -2134,10 +2118,6 @@ msgstr ""
 
 #: src/settings/general/app-settings.tsx
 msgid "Open Cue from the menu bar."
-msgstr ""
-
-#: src/session/components/outer-header/overflow/index.tsx
-msgid "Open floating panel"
 msgstr ""
 
 #: src/shared/open-note-dialog.tsx
@@ -2784,27 +2764,15 @@ msgstr ""
 msgid "Show Event"
 msgstr ""
 
-#: src/settings/general/meeting-settings.tsx
-msgid "Show floating bar"
-msgstr ""
-
 #: src/calendar/components/session-chip.tsx
 #: src/settings/ai/stt/select.tsx
 #: src/sidebar/timeline/item.tsx
 msgid "Show in Finder"
 msgstr ""
 
-#: src/meeting-float/screenshot-setting.tsx
-msgid "Show in screenshots and screen sharing"
-msgstr ""
-
 #: src/settings/appearance/time-format.tsx
 msgid "Show meeting times as 14:00 instead of 2:00 PM."
 msgstr "Rādīt sapulču laikus kā 14:00, nevis 2:00 PM."
-
-#: src/meeting-float/display-setting.tsx
-msgid "Show on"
-msgstr ""
 
 #: src/settings/appearance/sidebar-item-fields.tsx
 msgid "Show tags under the date and time."
@@ -3243,10 +3211,6 @@ msgstr ""
 msgid "Try dictation"
 msgstr ""
 
-#: src/meeting-float/screenshot-setting.tsx
-msgid "Turn off to hide the meeting island and captions from anything you share or record."
-msgstr ""
-
 #: src/calendar/components/apple/permission.tsx
 msgid "Turn on Cue in System Settings → Privacy & Security → Calendars, then return here."
 msgstr ""
@@ -3438,10 +3402,6 @@ msgstr ""
 
 #: src/settings/automations/workflow-builder.tsx
 msgid "When this happens"
-msgstr ""
-
-#: src/meeting-float/display-setting.tsx
-msgid "Which display the island appears on. You can also drag it there."
 msgstr ""
 
 #: src/settings/claude/index.tsx

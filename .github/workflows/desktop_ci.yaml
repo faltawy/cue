@@ -52,7 +52,6 @@ jobs:
       - run: cargo test --locked -p tauri-plugin-coach
       - run: cargo test --locked -p cloudsync
       - run: "cargo test --locked -p db-core 'cloudsync::' -- --test-threads=1"
-      - run: swift test --package-path plugins/windows/swift-lib
       - run: |
           git diff --exit-code -- \
             plugins/db/js/bindings.gen.ts \

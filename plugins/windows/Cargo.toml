@@ -10,11 +10,9 @@ description = ""
 [build-dependencies]
 tauri-plugin = { workspace = true, features = ["build"] }
 
-[target.'cfg(target_os = "macos")'.build-dependencies]
-swift-rs = { workspace = true, features = ["build"] }
-
 [dev-dependencies]
 specta-typescript = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = { workspace = true }
@@ -22,7 +20,6 @@ objc2-app-kit = { workspace = true, features = ["NSWindow", "NSColor", "NSScreen
 objc2-core-foundation = { workspace = true, features = ["CFArray", "CFDictionary", "CFNumber"] }
 objc2-core-graphics = { workspace = true, features = ["CGGeometry", "CGWindow"] }
 objc2-foundation = { workspace = true }
-swift-rs = { workspace = true }
 
 [dependencies]
 serde = { workspace = true }
@@ -32,7 +29,7 @@ strum = { workspace = true, features = ["derive"] }
 url = { workspace = true, features = ["serde"] }
 uuid = { workspace = true, features = ["v4"] }
 
-specta = { workspace = true }
+specta = { workspace = true, features = ["serde_json"] }
 tauri = { workspace = true, features = ["test"] }
 tauri-specta = { workspace = true, features = ["derive", "typescript"] }
 

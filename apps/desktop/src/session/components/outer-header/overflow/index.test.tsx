@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OverflowButton } from "./index";
 
-import { openFloatingMeetingPanel } from "~/meeting-float/host";
 import type { EditorView } from "~/store/zustand/tabs/schema";
 
 const {
@@ -16,7 +15,6 @@ const {
   exportModalMock,
   useHasTranscriptMock,
   useListenerMock,
-  useConfigValueMock,
   windowShowMock,
 } = vi.hoisted(() => ({
   uploadAudioMock: vi.fn(),
@@ -30,7 +28,6 @@ const {
   ),
   useHasTranscriptMock: vi.fn(),
   useListenerMock: vi.fn(),
-  useConfigValueMock: vi.fn(),
   windowShowMock: vi.fn(() => Promise.resolve({ status: "ok", data: null })),
 }));
 
@@ -112,10 +109,6 @@ vi.mock("../metadata", () => ({
   ),
 }));
 
-vi.mock("~/meeting-float/host", () => ({
-  openFloatingMeetingPanel: vi.fn(),
-}));
-
 vi.mock("~/audio-player", () => ({
   useAudioPlayer: () => ({
     audioExists: audioExists.value,
@@ -138,10 +131,6 @@ vi.mock("~/session/components/shared", () => ({
   useHasTranscript: useHasTranscriptMock,
 }));
 
-vi.mock("~/shared/config", () => ({
-  useConfigValue: useConfigValueMock,
-}));
-
 vi.mock("~/stt/contexts", () => ({
   useListener: useListenerMock,
 }));
@@ -159,7 +148,6 @@ type Scenario = {
   audio?: boolean;
   audioResolved?: boolean;
   mode?: string;
-  floatingPanel?: boolean;
 };
 
 const ACTIONS = [
@@ -168,7 +156,6 @@ const ACTIONS = [
   "Start listening",
   "Resume listening",
   "Re-transcribe",
-  "Open floating panel",
   "Open in New Window",
   "Delete recording",
   "Delete note",
@@ -180,13 +167,11 @@ function arrange({
   audio = false,
   audioResolved = true,
   mode = "inactive",
-  floatingPanel = false,
 }: Scenario) {
   useHasTranscriptMock.mockReturnValue(transcript);
   currentNoteContent.value = content;
   audioExists.value = audio;
   audioExistsResolved.value = audioResolved;
-  useConfigValueMock.mockReturnValue(floatingPanel);
   useListenerMock.mockImplementation((selector) =>
     selector({ getSessionMode: () => mode, stop: vi.fn() }),
   );
@@ -269,18 +254,13 @@ describe("OverflowButton", () => {
     ],
     [
       "active listening",
-      { transcript: false, mode: "active", floatingPanel: true },
+      { transcript: false, mode: "active" },
       {},
-      [
-        "Start listening",
-        "Open floating panel",
-        "Open in New Window",
-        "Delete note",
-      ],
+      ["Start listening", "Open in New Window", "Delete note"],
     ],
     [
       "finalizing",
-      { audio: true, mode: "finalizing", floatingPanel: true },
+      { audio: true, mode: "finalizing" },
       {},
       ["Resume listening", "Open in New Window", "Delete note"],
     ],
@@ -292,7 +272,7 @@ describe("OverflowButton", () => {
     ],
     [
       "listening disabled",
-      { mode: "active", floatingPanel: true },
+      { mode: "active" },
       { allowListening: false },
       ["Open in New Window", "Delete note"],
     ],
@@ -327,19 +307,6 @@ describe("OverflowButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Re-transcribe" }));
 
     expect(regenerateTranscriptMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("opens the floating panel while actively listening", () => {
-    arrange({ mode: "active", floatingPanel: true });
-    renderOverflow();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Open floating panel" }),
-    );
-
-    expect(openFloatingMeetingPanel).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: "session-1", enabled: true }),
-    );
   });
 
   it("opens the current note in a standalone window", () => {

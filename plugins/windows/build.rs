@@ -14,23 +14,8 @@ const COMMANDS: &[&str] = &[
     "window_expand_width",
     "window_restore_width",
     "set_show_app_in_dock",
-    "floating_bar_show",
-    "floating_bar_hide",
-    "floating_bar_update",
-    "floating_bar_update_amplitude",
-    "floating_bar_displays",
-    "live_caption_show",
-    "live_caption_hide",
-    "live_caption_update",
 ];
 
 fn main() {
-    #[cfg(target_os = "macos")]
-    {
-        swift_rs::SwiftLinker::new("14.2")
-            .with_package("windows-swift", "./swift-lib/")
-            .link();
-    }
-
     tauri_plugin::Builder::new(COMMANDS).build();
 }

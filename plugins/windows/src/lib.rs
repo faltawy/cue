@@ -280,11 +280,6 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             events::OpenTab,
             events::VisibilityEvent,
             events::WebviewHealthCheck,
-            events::FloatingBarStop,
-            events::FloatingBarDictationAction,
-            events::FloatingBarOpenMain,
-            events::FloatingBarOpenCoach,
-            events::FloatingBarSettingsChange,
         ])
         .commands(tauri_specta::collect_commands![
             commands::window_show,
@@ -302,14 +297,6 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::window_expand_width,
             commands::window_restore_width,
             commands::set_show_app_in_dock,
-            commands::floating_bar_show,
-            commands::floating_bar_hide,
-            commands::floating_bar_update,
-            commands::floating_bar_update_amplitude,
-            commands::floating_bar_displays,
-            commands::live_caption_show,
-            commands::live_caption_hide,
-            commands::live_caption_update,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
@@ -321,8 +308,6 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app, _api| {
             specta_builder.mount_events(app);
-
-            crate::window::floating_bar::set_app_handle(app.clone());
 
             {
                 let ready_state = WindowReadyState::default();
@@ -457,12 +442,4 @@ mod test {
         let content = std::fs::read_to_string(OUTPUT_FILE).unwrap();
         std::fs::write(OUTPUT_FILE, format!("// @ts-nocheck\n{content}")).unwrap();
     }
-}
-
-pub fn hide_floating_bar() -> Result<(), Error> {
-    window::floating_bar::hide()
-}
-
-pub fn floating_bar_session_id() -> Option<String> {
-    window::floating_bar::session_id()
 }

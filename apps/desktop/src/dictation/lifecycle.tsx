@@ -130,10 +130,6 @@ function ActiveDictation({
           text: "",
           partial: "",
           amplitude: 0,
-          microphone: microphone || "Default microphone",
-          previewEnabled: livePreview,
-          previewUnavailable: livePreview && !conn,
-          expanded: livePreview,
         });
         const permission = unwrap(
           await permissions.checkPermission("microphone"),
@@ -167,9 +163,6 @@ function ActiveDictation({
               },
             }
           : null;
-        useDictationStatus.setState({
-          previewUnavailable: livePreview && !preview,
-        });
         abort.signal.throwIfAborted();
         await waitForDictationPanel(owner, abort.signal);
         abort.signal.throwIfAborted();
@@ -199,11 +192,7 @@ function ActiveDictation({
                   text: update.text,
                   partial: update.partial,
                 });
-              else
-                useDictationStatus.setState({
-                  previewUnavailable: true,
-                  partial: "",
-                });
+              else useDictationStatus.setState({ partial: "" });
             }),
           ),
         );
@@ -302,12 +291,7 @@ function ActiveDictation({
         unwrap(await shortcuts.configure(shortcut));
         armed = !disposed;
         if (!disposed)
-          useDictationStatus.setState({
-            ready: true,
-            error: null,
-            cancel,
-            finish: () => controller.release(true),
-          });
+          useDictationStatus.setState({ ready: true, error: null, cancel });
       })
       .catch(onError);
 
@@ -321,7 +305,6 @@ function ActiveDictation({
         phase: "idle",
         lastTranscript: useDictationStatus.getState().lastTranscript,
         cancel: null,
-        finish: null,
         owner: null,
         text: "",
         partial: "",

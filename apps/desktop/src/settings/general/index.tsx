@@ -23,8 +23,6 @@ import { WeekStartSelector } from "./week-start";
 
 import { CoachShortcut } from "~/coach/shortcut";
 import { YourName } from "~/contacts/self-name";
-import { MeetingIslandDisplaySetting } from "~/meeting-float/display-setting";
-import { MeetingIslandScreenshotSetting } from "~/meeting-float/screenshot-setting";
 import { SettingsPageTitle } from "~/settings/page-title";
 import {
   type StoredSettingValues,
@@ -39,7 +37,6 @@ const SETTINGS_FORM_KEYS = [
   "auto_join_scheduled_meetings",
   "auto_start_scheduled_meetings",
   "auto_stop_meetings",
-  "floating_bar_enabled",
   "show_app_in_dock",
   "show_tray_icon",
   "notification_detect",
@@ -64,7 +61,6 @@ function useSettingsForm(storedSettings: StoredSettingValues) {
       auto_start_scheduled_meetings:
         settingsValue.auto_start_scheduled_meetings,
       auto_stop_meetings: settingsValue.auto_stop_meetings,
-      floating_bar_enabled: settingsValue.floating_bar_enabled,
       show_app_in_dock: settingsValue.show_app_in_dock,
       show_tray_icon: settingsValue.show_tray_icon,
       notification_detect: settingsValue.notification_detect,
@@ -105,7 +101,6 @@ function useSettingsForm(storedSettings: StoredSettingValues) {
         auto_start_scheduled_meetings:
           normalizedValue.auto_start_scheduled_meetings,
         auto_stop_meetings: normalizedValue.auto_stop_meetings,
-        floating_bar_enabled: normalizedValue.floating_bar_enabled,
         show_app_in_dock: normalizedValue.show_app_in_dock,
         show_tray_icon: normalizedValue.show_tray_icon,
         notification_detect: normalizedValue.notification_detect,
@@ -239,16 +234,6 @@ function SettingsSectionContent({
 
           <div>
             <h2 className="text-title mb-4">
-              <Trans>Meeting island</Trans>
-            </h2>
-            <div className="flex flex-col gap-4">
-              <MeetingIslandDisplaySetting />
-              <MeetingIslandScreenshotSetting />
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-title mb-4">
               <Trans>Language &amp; Region</Trans>
             </h2>
             <div className="flex flex-col gap-6">
@@ -334,11 +319,6 @@ function SettingsSectionContent({
                   value: values.auto_stop_meetings,
                   onChange: (value) =>
                     submitFieldValue("auto_stop_meetings", value),
-                }}
-                floatingBar={{
-                  value: values.floating_bar_enabled,
-                  onChange: (value) =>
-                    submitFieldValue("floating_bar_enabled", value),
                 }}
                 meetingDisclosureAutoPost={{
                   value: values.consent_auto_send_chat,

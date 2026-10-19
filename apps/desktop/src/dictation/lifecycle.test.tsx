@@ -244,7 +244,6 @@ describe("dictation access and lifecycle", () => {
     expect(useDictationStatus.getState()).toMatchObject({
       text: "",
       partial: "",
-      previewUnavailable: false,
       amplitude: 0.5,
     });
     await act(async () => {
@@ -321,11 +320,10 @@ describe("dictation access and lifecycle", () => {
     expect(useDictationStatus.getState()).toMatchObject({
       text: "Hello",
       partial: "there",
-      expanded: true,
     });
     expect(mocks.insertText).not.toHaveBeenCalled();
     await act(async () => {
-      useDictationStatus.getState().finish?.();
+      mocks.listener?.({ payload: { type: "released" } });
     });
     await waitFor(() =>
       expect(mocks.insertText).toHaveBeenCalledWith("focused-field", "Hello"),

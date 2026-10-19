@@ -436,66 +436,6 @@ pub(crate) fn restore_expanded_width(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn floating_bar_show() -> Result<(), String> {
-    crate::window::floating_bar::show().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn floating_bar_hide() -> Result<(), String> {
-    crate::window::floating_bar::hide().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn floating_bar_update(
-    state: crate::window::floating_bar::FloatingBarState,
-) -> Result<(), String> {
-    crate::window::floating_bar::update(state).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn floating_bar_update_amplitude(amplitude: f64) -> Result<(), String> {
-    crate::window::floating_bar::update_amplitude(amplitude).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn floating_bar_displays()
--> Result<Vec<crate::window::floating_bar::IslandDisplay>, String> {
-    crate::window::floating_bar::displays().map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn live_caption_show() -> Result<(), String> {
-    crate::window::live_caption::show().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn live_caption_hide() -> Result<(), String> {
-    crate::window::live_caption::hide().map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn live_caption_update(
-    state: crate::window::live_caption::LiveCaptionState,
-) -> Result<(), String> {
-    crate::window::live_caption::update(state).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn window_is_exists(
     app: tauri::AppHandle<tauri::Wry>,
     window: AppWindow,

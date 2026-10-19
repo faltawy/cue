@@ -35,7 +35,6 @@ pnpm -F @anlg/ui build && pnpm -F @anlg/desktop typecheck && pnpm -F @anlg/deskt
 (cd apps/coach && bun run typecheck && bun test)
 cargo check -p desktop --features dev
 cargo test -p tauri-plugin-coach
-swift test --package-path plugins/windows/swift-lib
 ```
 
 ## Licence

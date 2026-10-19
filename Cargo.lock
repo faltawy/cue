@@ -14989,7 +14989,6 @@ dependencies = [
  "specta",
  "specta-typescript",
  "strum 0.28.0",
- "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
  "tauri",
  "tauri-plugin",
  "tauri-plugin-os",

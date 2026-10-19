@@ -8,8 +8,6 @@ pub enum Error {
     MainThreadRecvFailed,
     #[error("monitor not found")]
     MonitorNotFound,
-    #[error("panel error: {0}")]
-    PanelError(String),
     #[error("window not found: {0}")]
     WindowNotFound(String),
 }

@@ -5,7 +5,6 @@ Cue is a macOS meeting notepad with a live coach, forked from Anarlog. It is a p
 - `apps/desktop/`: Tauri 2 with React, TypeScript, Vite, and Tailwind. Zustand owns UI state; TanStack Query/Form own queries, mutations, and forms. The Rust host is `apps/desktop/src-tauri` (package `desktop`).
 - `apps/coach/`: the coach, a Bun sidecar outside the pnpm workspace (own `bun.lock`). `bun run build:sidecar` compiles it, and copies the Claude Code runtime, into `apps/desktop/src-tauri/binaries/`. `plugins/coach/` launches it and owns its settings. `apps/coach/NOTICE` (Catamorphic, Apache-2.0) must ship with it.
 - `crates/db-app/`: canonical SQLite schema and migrations. `db-core` owns runtime initialization, `db-migrate` owns migration execution, and `plugins/db/` exposes the transport. React consumes these through `packages/db-runtime`, `packages/db-react`, and `packages/db-tauri`; `packages/db` is the Drizzle adapter.
-- `plugins/windows/swift-lib`: native Swift windows (meeting island) with its own Swift tests.
 - `docs/design/`: the Cue design spec (`cue.md`) and its audit of the app.
 
 Cue is macOS-only and ships by direct download (no App Store build); there are no Windows or Linux code paths.
@@ -32,7 +31,6 @@ Sessions are the core entity: all notes are backed by sessions. ProseMirror powe
 | Coach                                          | In `apps/coach`: `bun run typecheck`, `bun test`, `bun run build:sidecar`; `cargo test -p tauri-plugin-coach` when the plugin changes.             |
 | Desktop Rust and plugins                       | `cargo check --locked -p desktop --features dev`, plus `cargo test -p <crate>` for touched crates.                                                  |
 | CloudSync and local SQLite                     | `cargo test --locked -p cloudsync`, `cargo test --locked -p db-core 'cloudsync::' -- --test-threads=1`, and tests for `db-app` / `db-migrate`.      |
-| Swift windows                                  | `swift test --package-path plugins/windows/swift-lib`.                                                                                             |
 | Root scripts                                   | `node --test scripts/*.test.mjs`.                                                                                                                  |
 
 - Decide what to test, delete, or leave untested with `.agents/skills/testing/SKILL.md`: one regression test per fix, no tests for CSS, copy, mock call counts, private state, or file layout.

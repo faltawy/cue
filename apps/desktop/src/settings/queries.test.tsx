@@ -241,6 +241,25 @@ describe("SQLite settings", () => {
     expect(result.values.week_start).toBe("monday");
   });
 
+  it("reads settings saved beside keys the app no longer has", () => {
+    const result = parseSettingRows([
+      {
+        id: "legacy_settings_document",
+        value_json: JSON.stringify({
+          general: { overlay_display: "display-2", week_start: "monday" },
+        }),
+      },
+      { id: "floating_bar_enabled", value_json: JSON.stringify(false) },
+      { id: "live_caption_position", value_json: JSON.stringify("topLeft") },
+      { id: "theme", value_json: JSON.stringify("light") },
+    ]);
+
+    expect(result.values).toEqual(
+      expect.objectContaining({ theme: "light", week_start: "monday" }),
+    );
+    expect(result.values).not.toHaveProperty("floating_bar_enabled");
+  });
+
   it("recovers main-store values after settings document values and aliases", () => {
     const result = parseSettingRows([
       {

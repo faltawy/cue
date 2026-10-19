@@ -1,5 +1,3 @@
-pub(crate) mod floating_bar;
-pub(crate) mod live_caption;
 mod v1;
 
 pub type AppWindow = v1::AppWindow;

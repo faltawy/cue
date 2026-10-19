@@ -1,12 +1,14 @@
+import { commands as dictation, type Phase } from "@anlg/plugin-dictation";
+import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
+
 import { useDictationStatus } from "./state";
 
-import type { FloatingRouteState } from "~/meeting-float/route-state";
-import {
-  DEFAULT_FLOATING_OVERLAY_SETTINGS,
-  type FloatingOverlaySettings,
-} from "~/meeting-float/settings";
-
-const emptyBubbles: FloatingRouteState["transcriptBubbles"] = [];
+type DictationOverlayState = {
+  owner: string;
+  phase: Phase;
+  amplitude: number;
+  preview: string;
+};
 
 export function waitForDictationPanel(
   owner: string,
@@ -38,38 +40,104 @@ export function waitForDictationPanel(
   });
 }
 
-export function getDictationPanelState(
-  settings: Pick<
-    FloatingOverlaySettings,
-    "visibleInScreenshots" | "overlayDisplay"
-  > = DEFAULT_FLOATING_OVERLAY_SETTINGS,
-): FloatingRouteState | null {
-  const state = useDictationStatus.getState();
+export function getDictationOverlayState(
+  state: ReturnType<typeof useDictationStatus.getState>,
+): DictationOverlayState | null {
   if (state.phase === "idle" || !state.owner) return null;
   return {
-    sessionId: state.owner,
-    title: "Dictation",
+    owner: state.owner,
+    phase: state.phase === "transcribing" ? "processing" : "recording",
     amplitude: state.phase === "recording" ? state.amplitude : 0,
-    status: "recording",
-    colorScheme: "dark",
-    opacity: 1,
-    liveCaptionOpacity: 1,
-    liveCaptionWidth: 360,
-    liveCaptionLineCount: 4,
-    liveCaptionPosition: DEFAULT_FLOATING_OVERLAY_SETTINGS.liveCaptionPosition,
-    liveCaptionMinimized: !state.expanded,
-    liveCaptionToggleVisible: true,
-    visibleInScreenshots: settings.visibleInScreenshots,
-    overlayDisplay: settings.overlayDisplay,
-    transcriptBubbles: emptyBubbles,
-    dictation: {
-      sessionId: state.owner,
-      phase: state.phase,
-      microphone: state.microphone,
-      text: state.text,
-      partial: state.partial,
-      previewEnabled: state.previewEnabled,
-      previewUnavailable: state.previewUnavailable,
+    preview: [state.text, state.partial].filter(Boolean).join(" "),
+  };
+}
+
+function unwrap(
+  result: { status: "ok" } | { status: "error"; error: string },
+): void {
+  if (result.status === "error") throw new Error(result.error);
+}
+
+async function applyDictationOverlay(
+  shown: DictationOverlayState | null,
+  next: DictationOverlayState | null,
+) {
+  if (!next) {
+    if (shown) unwrap(await dictation.hide());
+    return;
+  }
+  if (!shown || shown.owner !== next.owner) {
+    unwrap(await dictation.setPhase(next.phase));
+    unwrap(await dictation.setPreview(next.preview));
+    unwrap(await dictation.updateAmplitude(next.amplitude));
+    unwrap(await dictation.show());
+    return;
+  }
+  if (shown.phase !== next.phase) unwrap(await dictation.setPhase(next.phase));
+  if (shown.preview !== next.preview)
+    unwrap(await dictation.setPreview(next.preview));
+  if (shown.amplitude !== next.amplitude)
+    unwrap(await dictation.updateAmplitude(next.amplitude));
+}
+
+/** Applies overlay states one at a time, always skipping to the latest. */
+export function createDictationOverlaySynchronizer(
+  onPresented: (owner: string | null) => void,
+) {
+  let desired: DictationOverlayState | null = null;
+  let shown: DictationOverlayState | null = null;
+  let revision = 0;
+  let appliedRevision = 0;
+  let running: Promise<void> | null = null;
+
+  const drain = async () => {
+    while (appliedRevision < revision) {
+      const target = revision;
+      const next = desired;
+      try {
+        await applyDictationOverlay(shown, next);
+        shown = next;
+        if (target === revision) onPresented(next?.owner ?? null);
+      } catch (error) {
+        shown = null;
+        console.error("Failed to update the dictation overlay:", error);
+      }
+      appliedRevision = target;
+    }
+  };
+
+  const schedule = () => {
+    if (running) return;
+    running = drain().finally(() => {
+      running = null;
+      if (appliedRevision < revision) schedule();
+    });
+  };
+
+  return {
+    update(state: DictationOverlayState | null) {
+      desired = state;
+      revision += 1;
+      schedule();
     },
   };
+}
+
+export function DictationOverlay() {
+  useMountEffect(() => {
+    const synchronizer = createDictationOverlaySynchronizer((owner) =>
+      useDictationStatus.setState({ presentedOwner: owner }),
+    );
+    const sync = () =>
+      synchronizer.update(
+        getDictationOverlayState(useDictationStatus.getState()),
+      );
+    sync();
+    const unsubscribe = useDictationStatus.subscribe(sync);
+    return () => {
+      unsubscribe();
+      synchronizer.update(null);
+    };
+  });
+  return null;
 }

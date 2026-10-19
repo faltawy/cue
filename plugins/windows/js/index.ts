@@ -3,14 +3,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 export * from "./bindings.gen";
 import { commands, events } from "./bindings.gen";
 
-export type WindowLabel =
-  | "main"
-  | "floating"
-  | "floating-bar"
-  | "live-caption"
-  | `note-${string}`
-  | "calendar"
-  | "settings";
+export type WindowLabel = "main" | `note-${string}` | "calendar" | "settings";
 
 export const getCurrentWebviewWindowLabel = () => {
   const window = getCurrentWebviewWindow();

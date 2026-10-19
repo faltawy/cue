@@ -5,6 +5,7 @@ import { useLanguageModel } from "~/ai/hooks";
 import { CoachShortcutLifecycle } from "~/coach/shortcut";
 import { SelfNameBackfill } from "~/contacts/self-name";
 import { DictationLifecycle } from "~/dictation/lifecycle";
+import { DictationOverlay } from "~/dictation/panel";
 import { takePendingWelcomeSession } from "~/onboarding/welcome-note";
 import { initEnhancerService } from "~/services/enhancer";
 import { useConfigValue } from "~/shared/config";
@@ -44,6 +45,7 @@ export function ClassicMainServices() {
       <ScheduledMeetingAutoStart />
       <MainListenerControlBridge />
       <DictationLifecycle />
+      <DictationOverlay />
       <CoachShortcutLifecycle />
       <SelfNameBackfill />
       <EnhancerInit />

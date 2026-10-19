@@ -248,30 +248,6 @@ pub fn main() {
             specta_builder.mount_events(&app_handle);
 
             {
-                use tauri_specta::Event;
-                let stop_handle = app_handle.clone();
-                tauri_plugin_windows::FloatingBarStop::listen(&app_handle, move |_| {
-                    let Some(session_id) = tauri_plugin_windows::floating_bar_session_id() else {
-                        return;
-                    };
-                    let app = stop_handle.clone();
-                    tauri::async_runtime::spawn(async move {
-                        // Give the main webview the first chance to stop so its
-                        // post-stop work runs; this only stops if it didn't.
-                        tokio::time::sleep(std::time::Duration::from_millis(1_500)).await;
-                        if tauri_plugin_transcription::stop_capture_for_session(&app, &session_id)
-                            .await
-                            && tauri_plugin_windows::floating_bar_session_id().as_deref()
-                                == Some(session_id.as_str())
-                            && let Err(error) = tauri_plugin_windows::hide_floating_bar()
-                        {
-                            tracing::warn!(%error, "failed to hide floating bar after native stop");
-                        }
-                    });
-                });
-            }
-
-            {
                 use tauri_plugin_transcription::ListenerPluginExt;
                 use tauri_specta::Event;
                 let stop_handle = app_handle.clone();
@@ -300,10 +276,6 @@ pub fn main() {
             {
                 use tauri_plugin_coach::CoachPluginExt;
                 use tauri_specta::Event;
-                let coach = app_handle.clone();
-                tauri_plugin_windows::FloatingBarOpenCoach::listen(&app_handle, move |_| {
-                    coach.coach().toggle();
-                });
                 let coach = app_handle.clone();
                 tauri_plugin_shortcut::CoachShortcutPressed::listen(&app_handle, move |_| {
                     coach.coach().toggle();

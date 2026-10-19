@@ -135,31 +135,6 @@ pub struct WebviewHealthCheck {
     pub request_id: String,
 }
 
-common_event_derives! {
-    pub struct FloatingBarStop {}
-}
-
-common_event_derives! {
-    pub struct FloatingBarOpenMain {}
-}
-
-common_event_derives! {
-    pub struct FloatingBarOpenCoach {}
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct FloatingBarSettingsChange {
-    pub floating_bar_opacity: Option<f64>,
-    pub live_caption_opacity: Option<f64>,
-    pub live_caption_width: Option<f64>,
-    pub live_caption_line_count: Option<u32>,
-    pub live_caption_position: Option<crate::window::live_caption::LiveCaptionPosition>,
-    pub live_caption_minimized: Option<bool>,
-    pub visible_in_screenshots: Option<bool>,
-    pub overlay_display: Option<String>,
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -196,19 +171,4 @@ mod test {
             }
         }
     }
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, specta::Type, tauri_specta::Event)]
-#[serde(rename_all = "camelCase")]
-pub struct FloatingBarDictationAction {
-    pub session_id: String,
-    pub action: DictationPanelAction,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum DictationPanelAction {
-    Finish,
-    Cancel,
-    TogglePreview,
 }

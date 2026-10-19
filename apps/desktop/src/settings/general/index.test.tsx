@@ -35,12 +35,6 @@ vi.mock("~/settings/queries", () => ({
 
 vi.mock("~/contacts/self-name", () => ({ YourName: () => null }));
 vi.mock("~/coach/shortcut", () => ({ CoachShortcut: () => null }));
-vi.mock("~/meeting-float/screenshot-setting", () => ({
-  MeetingIslandScreenshotSetting: () => null,
-}));
-vi.mock("~/meeting-float/display-setting", () => ({
-  MeetingIslandDisplaySetting: () => null,
-}));
 vi.mock("./app-settings", () => ({ AppSettingsView: () => null }));
 vi.mock("./audio-settings", () => ({
   AudioSettingsView: () => <span>Audio settings</span>,

@@ -30,8 +30,6 @@ import {
   reportCaughtReactError,
 } from "./error-reporting";
 import { AppI18nProvider } from "./i18n/provider";
-import { FloatingMeetingWindowHost } from "./meeting-float/host";
-import { moveIslandToBottomOnce } from "./meeting-float/move-to-bottom";
 import { routeTree } from "./routeTree.gen";
 import { EventListeners } from "./services/event-listeners";
 import { TaskManager } from "./services/task-manager";
@@ -123,7 +121,6 @@ function ReadyApp() {
           <TaskSchedulerProvider scheduler={scheduler}>
             <App />
             {isMainWindow ? <TaskManager /> : null}
-            {isMainWindow ? <FloatingMeetingWindowHost /> : null}
             {isMainWindow ? <EventListeners /> : null}
             {isMainWindow ? <TrayScheduleSync /> : null}
             {isMainWindow ? <TrayRecordingSync /> : null}
@@ -186,7 +183,6 @@ function runMainWindowStartupTasks() {
     "ai_credentials_migrate",
     migratePlaintextAiProviderApiKeys,
   );
-  void runStartupTask("meeting_island_move_to_bottom", moveIslandToBottomOnce);
 }
 
 async function runStartupTask(

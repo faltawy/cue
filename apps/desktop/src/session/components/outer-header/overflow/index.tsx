@@ -9,7 +9,6 @@ import {
   DotsThree,
   FileArrowDown,
   FileText,
-  PictureInPicture,
   Waveform,
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
@@ -33,7 +32,6 @@ import { Listening } from "./listening";
 import { LockNote } from "./lock-note";
 
 import { useAudioPlayer } from "~/audio-player";
-import { openFloatingMeetingPanel } from "~/meeting-float/host";
 import { useRegenerateTranscript } from "~/session/components/note-input/transcript/actions";
 import {
   useCurrentNoteHasContent,
@@ -41,7 +39,6 @@ import {
 } from "~/session/components/shared";
 import { VersionHistoryDialog } from "~/session/components/version-history-dialog";
 import { openStandaloneNoteWindow } from "~/session/window";
-import { useConfigValue } from "~/shared/config";
 import type { EditorView } from "~/store/zustand/tabs/schema";
 import { useListener } from "~/stt/contexts";
 import { useUploadFile } from "~/stt/useUploadFile";
@@ -71,7 +68,6 @@ export function OverflowButton({
   const { uploadAudio, uploadTranscript } = useUploadFile(sessionId);
   const regenerateTranscript = useRegenerateTranscript(sessionId);
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
-  const floatingBarEnabled = useConfigValue("floating_bar_enabled");
   const isMeetingInProgress =
     sessionMode === "active" || sessionMode === "finalizing";
   const showListeningAction = allowListening;
@@ -83,8 +79,6 @@ export function OverflowButton({
     !hasTranscript &&
     !currentNoteHasContent &&
     !isMeetingInProgress;
-  const canOpenFloatingPanel =
-    allowListening && floatingBarEnabled && sessionMode === "active";
   const hasRecordingActions =
     showListeningAction || showRetranscribeAction || showUploadActions;
   const openExportModal = () => {
@@ -108,13 +102,6 @@ export function OverflowButton({
   const handleRetranscribe = () => {
     setOpen(false);
     void regenerateTranscript();
-  };
-  const handleOpenFloatingPanel = () => {
-    setOpen(false);
-    void openFloatingMeetingPanel({
-      sessionId,
-      enabled: floatingBarEnabled,
-    });
   };
   const handleOpenStandaloneWindow = () => {
     setOpen(false);
@@ -215,17 +202,6 @@ export function OverflowButton({
               <AppWindow />
               <span>
                 <Trans>Open in New Window</Trans>
-              </span>
-            </DropdownMenuItem>
-          )}
-          {canOpenFloatingPanel && (
-            <DropdownMenuItem
-              onClick={handleOpenFloatingPanel}
-              className="cursor-pointer"
-            >
-              <PictureInPicture />
-              <span>
-                <Trans>Open floating panel</Trans>
               </span>
             </DropdownMenuItem>
           )}

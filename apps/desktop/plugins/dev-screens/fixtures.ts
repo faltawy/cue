@@ -87,7 +87,6 @@ const FIXTURES: Record<string, unknown> = {
   "plugin:detect|get_preferred_languages": ["en"],
   "plugin:calendar|list_connection_ids": [],
   "plugin:window|is_always_on_top": false,
-  "plugin:windows|floating_bar_displays": [],
   "plugin:fs-sync|attachment_list": [],
   "plugin:fs-sync|audio_exist": false,
   "plugin:permissions|check_permission": "authorized",

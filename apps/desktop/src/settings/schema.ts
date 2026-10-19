@@ -59,56 +59,6 @@ export const SETTING_DEFINITIONS = {
     path: ["general", "auto_join_scheduled_meetings"],
     default: false as boolean,
   },
-  floating_bar_enabled: {
-    type: "boolean",
-    path: ["general", "floating_bar_enabled"],
-    default: true as boolean,
-  },
-  floating_bar_opacity: {
-    type: "number",
-    path: ["general", "floating_bar_opacity"],
-    default: 0.78 as number,
-  },
-  live_caption_opacity: {
-    type: "number",
-    path: ["general", "live_caption_opacity"],
-    default: 0.85 as number,
-  },
-  live_caption_width: {
-    type: "number",
-    path: ["general", "live_caption_width"],
-    default: 440 as number,
-  },
-  live_caption_line_count: {
-    type: "number",
-    path: ["general", "live_caption_line_count"],
-    default: 2 as number,
-  },
-  live_caption_position: {
-    type: "string",
-    path: ["general", "live_caption_position"],
-    default: "bottomCenter" as string,
-  },
-  live_caption_minimized: {
-    type: "boolean",
-    path: ["general", "live_caption_minimized"],
-    default: false as boolean,
-  },
-  overlay_visible_in_screenshots: {
-    type: "boolean",
-    path: ["general", "overlay_visible_in_screenshots"],
-    default: true as boolean,
-  },
-  overlay_display: {
-    type: "string",
-    path: ["general", "overlay_display"],
-    default: "camera" as string,
-  },
-  overlay_moved_to_bottom: {
-    type: "boolean",
-    path: ["general", "overlay_moved_to_bottom"],
-    default: false as boolean,
-  },
   show_app_in_dock: {
     type: "boolean",
     path: ["general", "show_app_in_dock"],

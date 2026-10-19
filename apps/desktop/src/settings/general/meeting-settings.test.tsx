@@ -12,7 +12,6 @@ function setting(value = true) {
 
 function renderMeetingSettings({
   autoStartScheduledMeetings = true,
-  floatingBar = true,
   meetingDisclosureAutoPost = setting(),
   captureMeetingChat = setting(false),
   captureSharedScreens = setting(false),
@@ -23,7 +22,6 @@ function renderMeetingSettings({
         autoJoinScheduledMeetings={setting()}
         autoStartScheduledMeetings={setting(autoStartScheduledMeetings)}
         autoStopMeetings={setting()}
-        floatingBar={setting(floatingBar)}
         meetingDisclosureAutoPost={meetingDisclosureAutoPost}
         captureMeetingChat={captureMeetingChat}
         captureSharedScreens={captureSharedScreens}
