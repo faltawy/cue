@@ -80,6 +80,19 @@ async function applyDictationOverlay(
     unwrap(await dictation.updateAmplitude(next.amplitude));
 }
 
+function isSameOverlay(
+  left: DictationOverlayState | null,
+  right: DictationOverlayState | null,
+) {
+  if (!left || !right) return left === right;
+  return (
+    left.owner === right.owner &&
+    left.phase === right.phase &&
+    left.amplitude === right.amplitude &&
+    left.preview === right.preview
+  );
+}
+
 /** Applies overlay states one at a time, always skipping to the latest. */
 export function createDictationOverlaySynchronizer(
   onPresented: (owner: string | null) => void,
@@ -116,6 +129,7 @@ export function createDictationOverlaySynchronizer(
 
   return {
     update(state: DictationOverlayState | null) {
+      if (isSameOverlay(state, desired)) return;
       desired = state;
       revision += 1;
       schedule();
@@ -125,9 +139,10 @@ export function createDictationOverlaySynchronizer(
 
 export function DictationOverlay() {
   useMountEffect(() => {
-    const synchronizer = createDictationOverlaySynchronizer((owner) =>
-      useDictationStatus.setState({ presentedOwner: owner }),
-    );
+    const synchronizer = createDictationOverlaySynchronizer((owner) => {
+      if (useDictationStatus.getState().presentedOwner !== owner)
+        useDictationStatus.setState({ presentedOwner: owner });
+    });
     const sync = () =>
       synchronizer.update(
         getDictationOverlayState(useDictationStatus.getState()),

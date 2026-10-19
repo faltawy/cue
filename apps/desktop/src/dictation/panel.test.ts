@@ -143,6 +143,25 @@ describe("dictation overlay", () => {
     ]);
   });
 
+  it("settles when presenting feeds the unchanged state straight back", async () => {
+    let state: ReturnType<typeof overlay> | null = null;
+    let feedbacks = 0;
+    const synchronizer = createDictationOverlaySynchronizer(() => {
+      if (feedbacks++ < 50) synchronizer.update(state && { ...state });
+    });
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    synchronizer.update(null);
+    await settle();
+    expect(feedbacks).toBe(0);
+
+    state = overlay("a", { preview: "Hi" });
+    synchronizer.update(state);
+    await settle();
+    expect(feedbacks).toBe(1);
+    expect(mocks.calls.filter((call) => call === "show")).toHaveLength(1);
+  });
+
   it("never reports an overlay that failed to show as presented", async () => {
     mocks.failing = "show";
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
