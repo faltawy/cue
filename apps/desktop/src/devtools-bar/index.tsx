@@ -52,17 +52,17 @@ function resolveBuildChannel(identifier: string): BuildChannel {
 }
 
 const CHANNEL_DOT: Record<BuildChannel, string> = {
-  dev: "bg-sky-400",
-  staging: "bg-amber-400",
-  nightly: "bg-violet-400",
-  stable: "bg-neutral-400",
+  dev: "bg-warm",
+  staging: "bg-muted-foreground",
+  nightly: "bg-muted-foreground",
+  stable: "bg-foreground",
 };
 
 const CHANNEL_TEXT: Record<BuildChannel, string> = {
-  dev: "text-sky-300",
-  staging: "text-amber-300",
-  nightly: "text-violet-300",
-  stable: "text-neutral-200",
+  dev: "text-foreground",
+  staging: "text-foreground",
+  nightly: "text-foreground",
+  stable: "text-foreground",
 };
 
 const COLLAPSED_STORAGE_KEY = "anarlog:devtools-bar:collapsed";
@@ -70,18 +70,18 @@ const COLLAPSED_STORAGE_KEY = "anarlog:devtools-bar:collapsed";
 const ITEM_CLASS = "flex items-center gap-1.5 px-2";
 const BUTTON_CLASS = cn([
   ITEM_CLASS,
-  "hover:bg-white/8 focus-visible:bg-white/8 focus-visible:outline-hidden",
-  "data-[state=open]:bg-white/8",
+  "hover:bg-accent focus-visible:bg-accent focus-visible:outline-hidden",
+  "data-[state=open]:bg-accent",
 ]);
-const LABEL_CLASS = "text-neutral-500";
-const VALUE_CLASS = "tabular-nums text-neutral-100";
+const LABEL_CLASS = "text-muted-foreground";
+const VALUE_CLASS = "tabular-nums text-foreground";
 
 type Tone = "ok" | "warn" | "bad";
 
 const TONE_CLASS: Record<Tone, string> = {
-  ok: "text-neutral-100",
-  warn: "text-amber-400",
-  bad: "text-red-400",
+  ok: "text-foreground",
+  warn: "text-warm-strong",
+  bad: "text-destructive",
 };
 
 /**
@@ -133,8 +133,8 @@ function DevtoolsStatusBarContent(props: Record<never, never>) {
         title="Expand developer bar"
         data-testid="devtools-status-bar-collapsed"
         className={cn([
-          "h-1.5 w-full shrink-0 border-t border-neutral-800 bg-neutral-900",
-          "hover:bg-neutral-700 focus-visible:outline-hidden",
+          "dark border-border bg-background h-1.5 w-full shrink-0 border-t",
+          "hover:bg-accent focus-visible:outline-hidden",
         ])}
         onClick={toggleCollapsed}
       >
@@ -154,16 +154,16 @@ function DevtoolsStatusBarContent(props: Record<never, never>) {
       data-testid="devtools-status-bar"
       data-devbar=""
       className={cn([
-        "flex h-6 shrink-0 items-stretch select-none",
-        "border-t border-neutral-800 bg-neutral-900 text-neutral-300",
-        "font-mono text-[11px] leading-none",
+        "dark flex h-6 shrink-0 items-stretch select-none",
+        "border-border bg-background text-foreground border-t",
+        "text-caption font-mono leading-none",
       ])}
     >
       <DevtoolsMenu onAction={run}>
         <button
           type="button"
           title="Devtools actions"
-          className={cn([BUTTON_CLASS, "pl-2.5"])}
+          className={cn([BUTTON_CLASS, "ps-2.5"])}
         >
           <span
             className={cn([
@@ -179,7 +179,7 @@ function DevtoolsStatusBarContent(props: Record<never, never>) {
           >
             {build.channel}
           </span>
-          <span className="text-neutral-500">
+          <span className="text-muted-foreground">
             {build.version}
             {build.hash ? ` ${build.hash}` : ""}
           </span>
@@ -205,7 +205,7 @@ function DevtoolsStatusBarContent(props: Record<never, never>) {
         <button
           type="button"
           aria-label="Collapse developer bar"
-          className={cn([BUTTON_CLASS, "pr-2.5"])}
+          className={cn([BUTTON_CLASS, "pe-2.5"])}
           onClick={toggleCollapsed}
         >
           <Minus size={12} aria-hidden="true" />
@@ -302,7 +302,9 @@ function LiveMetrics() {
         chart={<Sparkline values={metrics.renders} />}
         trailing={
           <span
-            className={outlinesEnabled ? "text-violet-300" : "text-neutral-500"}
+            className={
+              outlinesEnabled ? "text-foreground" : "text-muted-foreground"
+            }
           >
             {outlinesEnabled ? "◉" : "○"}
           </span>
@@ -439,23 +441,23 @@ function Rows(props: {
   return (
     <div className="flex flex-col gap-1">
       {props.title ? (
-        <div className="max-w-72 text-neutral-400">{props.title}</div>
+        <div className="text-muted-foreground max-w-72">{props.title}</div>
       ) : null}
       {props.rows.length ? (
         <table className="tabular-nums">
           <tbody>
             {props.rows.map(([key, value]) => (
               <tr key={key}>
-                <td className="max-w-64 truncate pr-3 text-neutral-300">
+                <td className="text-foreground max-w-64 truncate pe-3">
                   {key}
                 </td>
-                <td className="text-right text-neutral-100">{value}</td>
+                <td className="text-foreground text-end">{value}</td>
               </tr>
             ))}
           </tbody>
         </table>
       ) : props.empty ? (
-        <div className="text-neutral-500">{props.empty}</div>
+        <div className="text-muted-foreground">{props.empty}</div>
       ) : null}
     </div>
   );
@@ -607,7 +609,7 @@ function ChartFrame({ children }: { children?: React.ReactNode }) {
       aria-hidden
       width={CHART_WIDTH}
       height={CHART_HEIGHT}
-      className="shrink-0 text-neutral-400"
+      className="text-muted-foreground shrink-0"
     >
       {children}
     </svg>

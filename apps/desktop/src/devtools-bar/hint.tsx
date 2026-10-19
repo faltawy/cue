@@ -18,8 +18,8 @@ export function Hint(props: {
         side={props.side ?? "top"}
         sideOffset={props.side === "right" ? 8 : 6}
         className={cn([
-          "border-neutral-700 bg-neutral-900/95 text-neutral-200 shadow-xl backdrop-blur",
-          "max-w-72 px-2.5 py-1.5 font-mono text-[11px] leading-4",
+          "dark border-border bg-background text-foreground border",
+          "text-caption max-w-72 px-2.5 py-1.5 font-mono leading-4",
         ])}
       >
         {props.content}

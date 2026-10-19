@@ -89,7 +89,7 @@ export function FinalSection({
   return (
     <div className="flex flex-col items-start gap-2">
       <OnboardingButton
-        className="px-6 py-2 text-sm disabled:cursor-wait disabled:opacity-70"
+        className="text-body px-6 py-2 disabled:cursor-wait disabled:opacity-70"
         disabled={status === "loading"}
         onClick={() => void handleContinue()}
       >
@@ -103,7 +103,7 @@ export function FinalSection({
         )}
       </OnboardingButton>
       {status === "error" && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-body text-destructive" role="alert">
           {translate({
             id: "onboarding.finish-error",
             message: "Couldn't open Cue. Please try again.",

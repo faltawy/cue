@@ -10,6 +10,7 @@ import {
   CircleNotch,
   XCircle,
 } from "@anlg/ui/components/icons";
+import { buttonVariants } from "@anlg/ui/components/ui/button";
 import { cn } from "@anlg/utils";
 
 const SCROLL_DELAY_MS = 350;
@@ -64,17 +65,15 @@ export function OnboardingSection({
           isActive && "mb-3 pt-4",
         ])}
       >
-        {isCompleted && (
-          <Check className="size-4 shrink-0 text-green-600" weight="bold" />
-        )}
+        {isCompleted && <Check className="text-success size-3.5 shrink-0" />}
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center gap-2">
             <h2
               className={cn([
                 "transition-all duration-300",
                 isCompleted
-                  ? "text-muted-foreground/70 text-xs font-normal"
-                  : "text-foreground font-sans text-xl font-semibold",
+                  ? "text-tertiary-foreground text-label"
+                  : "text-foreground text-title",
               ])}
             >
               {isCompleted ? (completedTitle ?? title) : title}
@@ -85,7 +84,7 @@ export function OnboardingSection({
                   <button
                     onClick={onBack}
                     aria-label={t`Go to previous section`}
-                    className="text-muted-foreground hover:text-muted-foreground rounded p-0.5 transition-colors"
+                    className="text-muted-foreground hover:text-muted-foreground rounded-sm p-0.5 transition-colors"
                   >
                     <CaretLeft className="size-3" />
                   </button>
@@ -100,7 +99,7 @@ export function OnboardingSection({
                           onNext?.();
                         }
                       }}
-                      className="text-muted-foreground hover:text-muted-foreground flex items-center gap-1 text-sm transition-colors"
+                      className="text-muted-foreground hover:text-foreground text-ui flex items-center gap-1 transition-colors duration-100"
                     >
                       <Trans>Skip</Trans>
                       <CaretRight className="size-3" />
@@ -109,7 +108,7 @@ export function OnboardingSection({
                     <button
                       onClick={onNext}
                       aria-label={t`Go to next section`}
-                      className="text-muted-foreground hover:text-muted-foreground rounded p-0.5 transition-colors"
+                      className="text-muted-foreground hover:text-muted-foreground rounded-sm p-0.5 transition-colors"
                     >
                       <CaretRight className="size-3" />
                     </button>
@@ -118,7 +117,7 @@ export function OnboardingSection({
             )}
           </div>
           {isActive && description && (
-            <div className="text-muted-foreground text-sm">{description}</div>
+            <div className="text-muted-foreground text-ui">{description}</div>
           )}
         </div>
       </div>
@@ -152,13 +151,15 @@ export function OnboardingButton({
     <button
       {...props}
       className={cn([
-        "w-fit rounded-full px-6 py-2.5 text-sm font-medium transition-all duration-200",
-        variant === "primary" &&
-          "border-primary bg-primary text-primary-foreground hover:bg-primary/90 border-2 shadow-[0_2px_6px_rgba(87,83,78,0.22),0_10px_18px_-10px_rgba(87,83,78,0.65)]",
-        variant === "secondary" &&
-          "border-border/60 bg-card/55 text-muted-foreground hover:bg-card/75 hover:text-foreground border shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm disabled:opacity-50",
-        variant === "ghost" &&
-          "text-muted-foreground hover:text-muted-foreground",
+        "w-fit",
+        buttonVariants({
+          variant:
+            variant === "primary"
+              ? "default"
+              : variant === "secondary"
+                ? "outline"
+                : "ghost",
+        }),
         className,
       ])}
     />
@@ -173,15 +174,15 @@ export function StepRow({
   label: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
-      {status === "done" && <CheckCircle className="size-4 text-emerald-600" />}
+    <div className="text-ui flex items-center gap-1.5">
+      {status === "done" && <CheckCircle className="text-success size-3.5" />}
       {status === "active" && (
-        <CircleNotch className="text-muted-foreground size-4 animate-spin" />
+        <CircleNotch className="text-muted-foreground size-3.5 animate-spin" />
       )}
-      {status === "failed" && <XCircle className="size-4 text-red-400" />}
+      {status === "failed" && <XCircle className="text-destructive size-3.5" />}
       <span
         className={
-          status === "failed" ? "text-red-500" : "text-muted-foreground"
+          status === "failed" ? "text-destructive" : "text-muted-foreground"
         }
       >
         {label}

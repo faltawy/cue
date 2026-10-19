@@ -1,10 +1,10 @@
 import { Trans } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { commands as sfxCommands } from "@anlg/plugin-sfx";
 import { SpeakerHigh, SpeakerX } from "@anlg/ui/components/icons";
+import { Button } from "@anlg/ui/components/ui/button";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { cn } from "@anlg/utils";
 
@@ -124,55 +124,20 @@ function OnboardingScreenContent({
   );
 
   return (
-    <div className="bg-card relative flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute inset-0"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
-        >
-          <video
-            ref={onboardingVideoRef}
-            className="absolute inset-0 h-full w-full object-cover object-bottom opacity-28"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-          >
-            <source src="/assets/onboarding-video.mp4" type="video/mp4" />
-          </video>
-          <div className="from-background/8 via-background/18 absolute inset-0 bg-linear-to-t to-transparent" />
-        </motion.div>
-        <div className="absolute inset-x-0 top-0 h-[80%] [mask-image:linear-gradient(to_bottom,black,black_18%,rgba(0,0,0,0.9)_36%,rgba(0,0,0,0.6)_58%,transparent)] backdrop-blur-[32px]" />
-        <div className="absolute inset-x-0 top-0 h-[92%] [mask-image:linear-gradient(to_bottom,black,rgba(0,0,0,0.8)_34%,rgba(0,0,0,0.35)_62%,transparent)] backdrop-blur-[12px]" />
-        <div className="from-background via-background/82 via-background/97 to-background/0 absolute inset-x-0 top-0 h-[84%] bg-linear-to-b via-18% via-42%" />
-        <motion.div
-          className="bg-background absolute inset-0"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 1.0, ease: "easeOut", delay: 0.1 }}
-        />
-      </div>
-
+    <div className="bg-background relative flex h-full min-h-0 flex-col overflow-hidden">
       <div
         data-tauri-drag-region={headerDragRegion || undefined}
-        className="relative z-30 flex h-12 shrink-0 items-center justify-end pr-3 pl-12"
+        className="relative z-30 flex h-12 shrink-0 items-center justify-end ps-12 pe-3"
       >
-        <button
+        <Button
+          size="icon"
+          variant="ghost"
           onClick={() => setIsMuted((prev) => !prev)}
           data-tauri-drag-region="false"
-          className="hover:bg-accent rounded-full p-1.5 transition-colors"
           aria-label={isMuted ? "Unmute" : "Mute"}
         >
-          {isMuted ? (
-            <SpeakerX size={16} className="text-muted-foreground" />
-          ) : (
-            <SpeakerHigh size={16} className="text-muted-foreground" />
-          )}
-        </button>
+          {isMuted ? <SpeakerX /> : <SpeakerHigh />}
+        </Button>
       </div>
 
       <div
@@ -182,57 +147,73 @@ function OnboardingScreenContent({
           headerClassName,
         ])}
       >
-        <h1 className="text-foreground text-3xl leading-none font-medium tracking-tight">
+        <h1 className="text-foreground text-page-title">
           <Trans>Welcome to Cue</Trans>
         </h1>
       </div>
 
       <div className="scroll-fade-y relative z-10 flex-1 overflow-y-auto">
-        <div className="flex flex-col gap-4 px-12 pb-16">
-          <OnboardingSection
-            title={<Trans>Start with permissions</Trans>}
-            completedTitle={<Trans>Permissions granted</Trans>}
-            description={
-              <Trans>
-                Cue needs microphone and system audio to transcribe your
-                meetings, plus Accessibility to read meeting controls, visible
-                chat.
-              </Trans>
-            }
-            status={getStepStatus("permissions", currentStep)}
-            skippable={false}
-            onBack={goBack}
-            onNext={goNext}
-          >
-            <PermissionsSection onContinue={goNext} />
-          </OnboardingSection>
+        <div className="flex items-start gap-10 px-12 pb-16">
+          <div className="flex max-w-xl min-w-0 flex-1 flex-col gap-4">
+            <OnboardingSection
+              title={<Trans>Start with permissions</Trans>}
+              completedTitle={<Trans>Permissions granted</Trans>}
+              description={
+                <Trans>
+                  Cue needs microphone and system audio to transcribe your
+                  meetings, plus Accessibility to read meeting controls, visible
+                  chat.
+                </Trans>
+              }
+              status={getStepStatus("permissions", currentStep)}
+              skippable={false}
+              onBack={goBack}
+              onNext={goNext}
+            >
+              <PermissionsSection onContinue={goNext} />
+            </OnboardingSection>
 
-          <OnboardingSection
-            title={<Trans>Connect calendar</Trans>}
-            description={
-              <Trans>
-                Cue will sync your calendar to get meeting reminders
-              </Trans>
-            }
-            completedTitle={<Trans>Calendar connected</Trans>}
-            status={getStepStatus("calendar", currentStep)}
-            onBack={goBack}
-            onNext={goNext}
-            onSkip={skipCurrentStep}
-          >
-            <CalendarSection onContinue={goNext} />
-          </OnboardingSection>
+            <OnboardingSection
+              title={<Trans>Connect calendar</Trans>}
+              description={
+                <Trans>
+                  Cue will sync your calendar to get meeting reminders
+                </Trans>
+              }
+              completedTitle={<Trans>Calendar connected</Trans>}
+              status={getStepStatus("calendar", currentStep)}
+              onBack={goBack}
+              onNext={goNext}
+              onSkip={skipCurrentStep}
+            >
+              <CalendarSection onContinue={goNext} />
+            </OnboardingSection>
 
-          <OnboardingSection
-            title={<Trans>Ready to go</Trans>}
-            description={<FinalDescription />}
-            status={getStepStatus("final", currentStep)}
-            skippable={false}
-            onBack={goBack}
-            onNext={() => void finishOnboarding(handleFinish)}
-          >
-            <FinalSection onContinue={handleFinish} />
-          </OnboardingSection>
+            <OnboardingSection
+              title={<Trans>Ready to go</Trans>}
+              description={<FinalDescription />}
+              status={getStepStatus("final", currentStep)}
+              skippable={false}
+              onBack={goBack}
+              onNext={() => void finishOnboarding(handleFinish)}
+            >
+              <FinalSection onContinue={handleFinish} />
+            </OnboardingSection>
+          </div>
+          <div className="border-border sticky top-0 hidden aspect-[4/5] w-[min(40%,380px)] shrink-0 overflow-hidden rounded-lg border lg:block">
+            <video
+              ref={onboardingVideoRef}
+              className="size-full object-cover object-bottom"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+            >
+              <source src="/assets/onboarding-video.mp4" type="video/mp4" />
+            </video>
+          </div>
         </div>
       </div>
     </div>

@@ -62,10 +62,10 @@ function PermissionBlock({
       disabled={isPending || isAuthorized}
       title={body}
       className={cn([
-        "group flex w-full min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
+        "group flex w-full min-w-0 items-center gap-2.5 rounded-md border px-2.5 py-2 text-start transition-[background-color,opacity] duration-100",
         isAuthorized
-          ? "border-border bg-card border"
-          : "border-primary bg-primary text-primary-foreground hover:bg-primary/90 border shadow-[0_4px_14px_rgba(87,83,78,0.18)] active:scale-[0.98]",
+          ? "border-border bg-background"
+          : "border-primary bg-primary text-primary-foreground hover:opacity-90 active:opacity-80",
         (isPending || isAuthorized) && "cursor-default",
         isPending && "opacity-50",
       ])}
@@ -77,10 +77,8 @@ function PermissionBlock({
     >
       <div
         className={cn([
-          "flex size-6 shrink-0 items-center justify-center rounded-md",
-          isAuthorized
-            ? "text-green-600"
-            : "bg-primary-foreground/10 text-primary-foreground",
+          "flex size-4 shrink-0 items-center justify-center",
+          isAuthorized ? "text-success" : "text-primary-foreground",
         ])}
       >
         {isAuthorized ? (
@@ -91,7 +89,7 @@ function PermissionBlock({
       </div>
       <span
         className={cn([
-          "min-w-0 flex-1 truncate text-sm font-medium",
+          "text-ui min-w-0 flex-1 truncate font-medium",
           isAuthorized ? "text-foreground" : "text-primary-foreground",
         ])}
       >
@@ -99,7 +97,7 @@ function PermissionBlock({
       </span>
       {!isAuthorized && (
         <ArrowRight
-          className="text-primary-foreground/70 size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
+          className="text-primary-foreground/70 size-3.5 shrink-0 rtl:rotate-180"
           data-testid="permission-action-arrow"
         />
       )}

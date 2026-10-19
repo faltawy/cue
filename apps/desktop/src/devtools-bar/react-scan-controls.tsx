@@ -57,7 +57,7 @@ export function ReactScanControls() {
   };
 
   const buttonClass =
-    "shrink-0 px-2 hover:bg-white/8 aria-pressed:bg-white/15 disabled:opacity-40";
+    "shrink-0 px-2 hover:bg-accent aria-pressed:bg-accent disabled:opacity-40";
   return (
     <>
       <button

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { floatingSurfaceClassName } from "@anlg/ui/components/ui/floating-content";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { cn } from "@anlg/utils";
 
@@ -21,7 +22,7 @@ import {
 import { RESIZE_HANDLES, useScanPanelLayout } from "./scan-panel-layout";
 
 const buttonClass =
-  "rounded-lg px-2 py-1 text-muted-foreground hover:bg-background/50 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring";
+  "rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground";
 type View = "ranked" | "overview" | "prompts" | "settings";
 type Selection = Readonly<{
   event: ScanEvent;
@@ -65,16 +66,19 @@ export function ScanPanel({
       data-devbar=""
       data-testid="react-scan-panel"
       aria-label="React Scan performance"
-      className="border-border bg-background text-foreground flex min-h-0 flex-col overflow-hidden rounded-[22px] border font-mono text-[11px] leading-snug shadow-xl"
+      className={cn([
+        floatingSurfaceClassName,
+        "dark text-foreground text-caption flex min-h-0 flex-col overflow-hidden font-mono leading-snug",
+      ])}
     >
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label="Slowdown history"
-          className="bg-background/15 border-border/40 flex w-[28%] max-w-[300px] min-w-[180px] shrink-0 flex-col border-r"
+          className="bg-background/15 border-border/40 flex w-[28%] max-w-[300px] min-w-[180px] shrink-0 flex-col border-e"
         >
           <div
             onPointerDown={layout.drag}
-            className="border-border/40 flex h-10 shrink-0 cursor-move touch-none items-center gap-2 border-b pr-3 pl-6"
+            className="border-border/40 flex h-10 shrink-0 cursor-move touch-none items-center gap-2 border-b ps-6 pe-3"
           >
             <span className="min-w-0 flex-1 truncate">
               History{" "}
@@ -102,9 +106,8 @@ export function ScanPanel({
                 aria-pressed={event.id === selected?.id}
                 title={event.label}
                 className={cn([
-                  "hover:bg-background/50 mb-0.5 flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left",
-                  event.id === selected?.id &&
-                    "bg-background/60 ring-border/30 shadow-sm ring-1",
+                  "hover:bg-muted mb-0.5 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-start",
+                  event.id === selected?.id && "bg-muted",
                 ])}
                 onClick={() => {
                   setSelection(captureSelection(event));
@@ -118,8 +121,8 @@ export function ScanPanel({
                     event.severity === "high"
                       ? "bg-destructive"
                       : event.severity === "needs-improvement"
-                        ? "bg-amber-500"
-                        : "bg-blue-500",
+                        ? "bg-warm"
+                        : "bg-muted-foreground",
                   ])}
                 />
                 <span className="min-w-0 flex-1 truncate">{event.label}</span>
@@ -146,7 +149,7 @@ export function ScanPanel({
         <div className="flex min-w-0 flex-1 flex-col">
           <div
             onPointerDown={layout.drag}
-            className="border-border/40 flex h-10 shrink-0 cursor-move touch-none items-center gap-1 border-b pr-6 pl-3"
+            className="border-border/40 flex h-10 shrink-0 cursor-move touch-none items-center gap-1 border-b ps-3 pe-6"
           >
             <div
               role="tablist"
@@ -164,7 +167,7 @@ export function ScanPanel({
                       buttonClass,
                       !state.inspecting &&
                         view === tab &&
-                        "bg-background/65 text-foreground ring-border/30 shadow-sm ring-1",
+                        "bg-muted text-foreground",
                     ])}
                     onClick={() => {
                       setReactInspecting(false);
@@ -252,7 +255,7 @@ export function ScanPanel({
                 >
                   {selected.label}
                 </span>
-                <span className="text-muted-foreground ml-auto shrink-0 tabular-nums">
+                <span className="text-muted-foreground ms-auto shrink-0 tabular-nums">
                   {ms(selected.duration)}ms
                   {selected.fps === null
                     ? " processing"
@@ -292,7 +295,7 @@ export function ScanPanel({
           className={cn(["absolute z-10 touch-none", className])}
         >
           {edge === "se" ? (
-            <span className="text-muted-foreground pointer-events-none absolute right-2 bottom-2">
+            <span className="text-muted-foreground pointer-events-none absolute end-2 bottom-2">
               ◢
             </span>
           ) : null}
@@ -329,8 +332,7 @@ function Prompts({
             aria-selected={mode === tab}
             className={cn([
               buttonClass,
-              mode === tab &&
-                "bg-background/65 text-foreground ring-border/30 shadow-sm ring-1",
+              mode === tab && "bg-muted text-foreground",
             ])}
             onClick={() => {
               setMode(tab);
@@ -343,7 +345,7 @@ function Prompts({
         <button
           type="button"
           disabled={!prompt || !copyText}
-          className="border-border/40 bg-background/55 hover:bg-background/50 ml-auto rounded-lg border px-3 py-1 font-semibold shadow-sm disabled:opacity-50"
+          className="border-border hover:bg-muted ms-auto rounded-md border px-2.5 py-1 font-medium disabled:opacity-50"
           onClick={() => {
             setError(false);
             void copyText?.(prompt).then(
@@ -359,7 +361,7 @@ function Prompts({
         aria-label={`${mode} prompt`}
         readOnly
         value={prompt}
-        className="border-border/40 bg-background/55 focus:border-ring min-h-0 flex-1 resize-none rounded-xl border p-3 text-[11px] leading-relaxed outline-none"
+        className="border-input bg-background focus:border-foreground text-caption min-h-0 flex-1 resize-none rounded-md border p-2.5 leading-relaxed outline-none"
       />
       <p role="status" className="text-muted-foreground shrink-0">
         {error
@@ -389,7 +391,7 @@ function Ranked({ event }: Readonly<{ event: ScanEvent }>) {
       {rows.map((row, index) => (
         <details
           key={`${row.label}-${index}`}
-          className="border-border/40 bg-background/25 overflow-hidden rounded-xl border"
+          className="border-border overflow-hidden rounded-lg border"
           open={row.component ? undefined : false}
         >
           <summary
@@ -400,7 +402,7 @@ function Ranked({ event }: Readonly<{ event: ScanEvent }>) {
           >
             <span
               aria-hidden="true"
-              className="bg-foreground/5 absolute inset-y-0 left-0"
+              className="bg-foreground/5 absolute inset-y-0 start-0"
               style={{ width: `${(Math.max(0, row.time) / max) * 100}%` }}
             />
             <span className="relative min-w-0 flex-1 truncate">
@@ -465,7 +467,7 @@ function Overview({ event }: Readonly<{ event: ScanEvent }>) {
           </div>
           <div className="bg-foreground/10 h-1.5 overflow-hidden rounded-full">
             <div
-              className="h-full rounded bg-blue-500"
+              className="bg-foreground h-full rounded-full"
               style={{
                 width: `${Math.min(100, (Math.max(0, timing.time) / Math.max(1, event.duration)) * 100)}%`,
               }}
@@ -501,7 +503,7 @@ function PanelFps() {
     (metrics) => metrics.fps[metrics.fps.length - 1],
   );
   return (
-    <span className="text-muted-foreground inline-block w-[8ch] shrink-0 truncate text-right tabular-nums">
+    <span className="text-muted-foreground inline-block w-[8ch] shrink-0 truncate text-end tabular-nums">
       {fps === undefined ? "–" : Math.round(fps)} FPS
     </span>
   );

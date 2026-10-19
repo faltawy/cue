@@ -23,7 +23,7 @@ export function MenuGroup(props: {
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>{props.label}</DropdownMenuSubTrigger>
       <DropdownMenuSubContent className={cn(["w-56", props.className])}>
-        <div className="text-muted-foreground px-2 pt-1.5 pb-1 text-xs leading-4">
+        <div className="text-muted-foreground text-label px-2 pt-1.5 pb-1 leading-4">
           {props.description}
         </div>
         <DropdownMenuSeparator />
