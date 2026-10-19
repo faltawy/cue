@@ -1,4 +1,4 @@
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Plural, Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -25,6 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
+
+import { formatBytes } from "~/shared/format-bytes";
 
 const QUERY_KEY = ["legacy-migration"] as const;
 
@@ -55,7 +57,7 @@ export function useLegacyMigrationCleanup() {
 }
 
 export function LegacyMigrationCleanupRow() {
-  const { t } = useLingui();
+  const { i18n, t } = useLingui();
   const queryClient = useQueryClient();
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const migrationQuery = useLegacyMigrationCleanup();
@@ -203,9 +205,15 @@ export function LegacyMigrationCleanupRow() {
               </DialogTitle>
               <DialogDescription>
                 <Trans>
-                  This will remove {status.fileCount} legacy files and free{" "}
-                  {formatBytes(status.totalBytes)}. Your app data will not be
-                  affected because the migration to SQLite is complete.
+                  This will remove{" "}
+                  <Plural
+                    value={status.fileCount}
+                    one="# legacy file"
+                    other="# legacy files"
+                  />{" "}
+                  and free {formatBytes(status.totalBytes, i18n.locale)}. Your
+                  app data will not be affected because the migration to SQLite
+                  is complete.
                 </Trans>
               </DialogDescription>
             </DialogHeader>
@@ -237,10 +245,4 @@ export function LegacyMigrationCleanupRow() {
       )}
     </>
   );
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

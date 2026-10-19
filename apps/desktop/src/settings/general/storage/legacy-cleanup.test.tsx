@@ -116,6 +116,7 @@ describe("LegacyMigrationCleanupRow", () => {
     fireEvent.click(openButton);
 
     expect(screen.getByText("Clean up legacy files?")).toBeTruthy();
+    expect(screen.getByRole("dialog").textContent).toContain("free 2 kB.");
     expect(mocks.cleanupLegacyFiles).not.toHaveBeenCalled();
 
     fireEvent.click(
