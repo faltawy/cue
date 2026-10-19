@@ -15,10 +15,11 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  RELEASES_REPO: faltawy/cue-releases
 
 jobs:
   release:
@@ -28,20 +29,32 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Check the releases repo
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Secret RELEASES_TOKEN is missing. Add a fine-grained token with Contents read/write on $RELEASES_REPO (docs/RELEASING.md)."
+            exit 1
+          fi
+          if ! gh api "repos/$RELEASES_REPO" --silent; then
+            echo "::error::RELEASES_TOKEN can't reach $RELEASES_REPO."
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$RELEASES_REPO" >/dev/null 2>"$RUNNER_TEMP/release-view.err"; then
+            echo "::error::Release $TAG already exists in $RELEASES_REPO; delete it first to rebuild."
+            exit 1
+          fi
+          if ! grep -q "release not found" "$RUNNER_TEMP/release-view.err"; then
+            cat "$RUNNER_TEMP/release-view.err"
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
         with:
           ref: refs/tags/${{ env.TAG }}
           submodules: recursive
           fetch-depth: 0
-
-      - name: Refuse an existing release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::error::Release $TAG already exists; delete it first to rebuild."
-            exit 1
-          fi
 
       - uses: ./.github/actions/pnpm_install
       - uses: ./.github/actions/install_desktop_deps
@@ -150,42 +163,42 @@ jobs:
 
       - name: Publish the release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
-          : > "$RUNNER_TEMP/tag-notes.md"
+          : > "$RUNNER_TEMP/notes.md"
           if [ "$(git cat-file -t "$TAG")" = tag ]; then
-            git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > "$RUNNER_TEMP/tag-notes.md"
+            git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > "$RUNNER_TEMP/notes.md"
           fi
-          notes=(--generate-notes)
-          if grep -q '[^[:space:]]' "$RUNNER_TEMP/tag-notes.md"; then
-            notes=(--notes-file "$RUNNER_TEMP/tag-notes.md")
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
+            echo "Cue $VERSION" > "$RUNNER_TEMP/notes.md"
           fi
           prerelease=()
           if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
 
-          gh release create "$TAG" --draft --verify-tag --title "Cue $VERSION" "${notes[@]}" "${prerelease[@]}" \
-            "dist/Cue_${VERSION}_aarch64.dmg" \
-            "dist/Cue_${VERSION}_aarch64.app.tar.gz" \
-            "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig"
-
-          release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=30" \
-            --jq ".[] | select(.tag_name == \"$TAG\" and .draft) | .id")
-          gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" --jq .body > "$RUNNER_TEMP/notes.md"
-          asset_url=$(gh api "repos/$GITHUB_REPOSITORY/releases/$release_id" \
-            --jq ".assets[] | select(.name == \"Cue_${VERSION}_aarch64.app.tar.gz\") | .url")
-          if [ -z "$asset_url" ]; then
-            echo "::error::Uploaded .app.tar.gz asset not found."
-            exit 1
-          fi
+          tarball="Cue_${VERSION}_aarch64.app.tar.gz"
           node scripts/release-manifest.mjs \
             --version "$VERSION" \
-            --signature-file "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig" \
-            --url "$asset_url" \
+            --signature-file "dist/$tarball.sig" \
+            --repo "$RELEASES_REPO" \
+            --tag "$TAG" \
+            --asset "$tarball" \
             --notes-file "$RUNNER_TEMP/notes.md" > dist/latest.json
           cat dist/latest.json
-          gh release upload "$TAG" dist/latest.json
-          gh release edit "$TAG" --draft=false
+
+          gh release create "$TAG" --repo "$RELEASES_REPO" --target main --draft \
+            --title "Cue $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${prerelease[@]}" \
+            "dist/Cue_${VERSION}_aarch64.dmg" \
+            "dist/$tarball" \
+            "dist/$tarball.sig" \
+            dist/latest.json
+          gh release edit "$TAG" --repo "$RELEASES_REPO" --draft=false
+
+          url=$(node -p 'require("./dist/latest.json").platforms["darwin-aarch64"].url')
+          if ! curl -fsSL -o /dev/null "$url"; then
+            echo "::error::The published update isn't downloadable at $url."
+            exit 1
+          fi
 
       - name: Remove the signing keychain
         if: always()

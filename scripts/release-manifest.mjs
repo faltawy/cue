@@ -7,6 +7,14 @@ import { normalizeVersion } from "./release-version.mjs";
 
 export const UPDATER_TARGET = "darwin-aarch64";
 
+export function releaseAssetUrl({ repo, tag, asset }) {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo ?? "")) {
+    throw new Error(`the release repo must be owner/name: ${repo}`);
+  }
+  if (!tag || !asset) throw new Error("the release tag and asset are required");
+  return `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(asset)}`;
+}
+
 export function buildManifest({ version, notes, pubDate, signature, url }) {
   const sig = String(signature ?? "").trim();
   if (!sig) throw new Error("the updater signature is empty");
@@ -30,7 +38,9 @@ if (
       options: {
         version: { type: "string" },
         "signature-file": { type: "string" },
-        url: { type: "string" },
+        repo: { type: "string" },
+        tag: { type: "string" },
+        asset: { type: "string" },
         "notes-file": { type: "string" },
         "pub-date": { type: "string" },
       },
@@ -38,7 +48,7 @@ if (
     const manifest = buildManifest({
       version: values.version,
       signature: readFileSync(values["signature-file"], "utf8"),
-      url: values.url,
+      url: releaseAssetUrl(values),
       notes: values["notes-file"]
         ? readFileSync(values["notes-file"], "utf8")
         : "",

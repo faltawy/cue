@@ -87,6 +87,9 @@
       }
     },
     "updater": {
+      "endpoints": [
+        "https://github.com/faltawy/cue-releases/releases/latest/download/latest.json"
+      ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhEQTlDQ0M2REMwQkIyODYKUldTR3NndmN4c3lwamFEOVhDdW9TOGFrOGhhWFg2VXBlVTNUTjhLRlFGSXduWGhHWVMrN3oxVlQK"
     }
   }
