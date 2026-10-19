@@ -16,10 +16,10 @@ import {
 import { createPortal } from "react-dom";
 
 import { CheckCircle, Info, WarningCircle } from "@anlg/ui/components/icons";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
-import { panelSquircle } from "@anlg/ui/lib/squircle";
 import { appToastSwipeDismissDirection } from "@anlg/ui/lib/toast-gesture";
 import { cn } from "@anlg/utils";
+
+import { buttonVariants } from "./button";
 
 export type AppToastTone = "info" | "success" | "warning" | "error";
 
@@ -67,15 +67,12 @@ export type AppToastHandle = Readonly<{
 }>;
 
 export type AppToastAlign = "center" | "end";
-/** `compact` matches desktop chrome: `size-8` icon buttons with `size-4` glyphs. */
-export type AppToastSize = "default" | "compact";
 
 export type AppToasterProps = Readonly<{
   theme?: "light" | "dark" | "system";
   position?: "top" | "bottom";
   /** Horizontal placement of the stack: centered (mobile) or flush right (desktop). */
   align?: AppToastAlign;
-  size?: AppToastSize;
   visibleToasts?: number;
   gap?: number;
   className?: string;
@@ -110,8 +107,6 @@ type AppToastTimer = Readonly<{
 }>;
 
 const DEFAULT_APP_TOAST_DURATION_MS = 3_000;
-const APP_TOAST_CORNER_RADIUS = 20;
-const APP_TOAST_COMPACT_CORNER_RADIUS = 14;
 const APP_TOAST_EXIT_DURATION_MS = 220;
 const APP_TOAST_TICK_MS = 100;
 const APP_TOAST_DESKTOP_HOVER_QUERY = "(hover: hover) and (pointer: fine)";
@@ -252,7 +247,6 @@ export function AppToaster({
   theme = "system",
   position = "bottom",
   align = "center",
-  size = "default",
   visibleToasts = 4,
   gap = 8,
   className,
@@ -305,7 +299,7 @@ export function AppToaster({
       className={cn([
         "pointer-events-none fixed inset-x-0 isolate z-50 flex",
         align === "end"
-          ? "justify-end pr-[max(1rem,env(safe-area-inset-right))]"
+          ? "justify-end pe-[max(1rem,env(safe-area-inset-right))]"
           : "justify-center",
         position === "top"
           ? "top-[max(1rem,env(safe-area-inset-top))] items-start"
@@ -337,7 +331,6 @@ export function AppToaster({
             <AppToast
               key={toast.id}
               toast={toast}
-              size={size}
               stackDepth={stackDepth}
               stacked={stacked}
             />
@@ -422,17 +415,11 @@ export function dismissAppToasts(): void {
 
 type AppToastProps = Readonly<{
   toast: AppToastItem;
-  size: AppToastSize;
   stackDepth: number;
   stacked: boolean;
 }>;
 
-function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
-  const compact = size === "compact";
-  const squircleRef = useSquircleRef<HTMLDivElement>(undefined, {
-    ...panelSquircle,
-    radius: compact ? APP_TOAST_COMPACT_CORNER_RADIUS : APP_TOAST_CORNER_RADIUS,
-  });
+function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
   const reduceMotion = useReducedMotion() ?? false;
   const [expanded, setExpanded] = useState(true);
   const detailsId = useId();
@@ -480,7 +467,6 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
       data-slot="app-toast"
       data-app-toast=""
       data-tone={toast.tone}
-      data-size={size}
       data-expanded={visuallyExpanded}
       data-phase={toast.phase}
       data-exit-direction={toast.exitDirection}
@@ -535,9 +521,8 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
       whileDrag={reduceMotion ? undefined : { scale: 0.985 }}
       className={cn([
         "no-drag pointer-events-auto col-start-1 row-start-1 mx-auto origin-top touch-pan-y self-start select-none",
-        compact
-          ? "w-[min(20rem,calc(100vw-2rem))] rounded-[14px] shadow-md"
-          : "w-[min(32rem,calc(100vw-2rem))] rounded-[20px] shadow-lg",
+        "w-[min(22rem,calc(100vw-2rem))] overflow-hidden",
+        "bg-popover text-popover-foreground border-border rounded-lg border shadow-lg",
         toast.dismissible && toast.phase === "visible"
           ? "cursor-grab active:cursor-grabbing"
           : null,
@@ -547,11 +532,7 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
       ])}
       style={{ zIndex: stackDepth === 0 ? 10 : 10 - stackDepth }}
     >
-      <div
-        ref={squircleRef}
-        data-slot="smooth-corners"
-        className="bg-popover text-popover-foreground ring-border/70 relative ring-1"
-      >
+      <div className="relative p-3">
         <button
           type="button"
           aria-label={
@@ -566,30 +547,21 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
           disabled={!hasDetails}
           onClick={() => setExpanded((current) => !current)}
           className={cn([
-            "focus-visible:ring-ring flex w-full items-center text-left focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
+            "flex w-full items-start gap-2.5 rounded-sm text-start",
             hasDetails ? "cursor-pointer" : "cursor-default",
-            compact
-              ? "min-h-11 gap-2 px-2.5 py-1.5"
-              : "min-h-16 gap-3 px-4 py-3",
           ])}
         >
           {/* The slot sizes the glyph, so callers only pass color. */}
           <span
             data-slot="app-toast-leading"
-            className={cn([
-              "flex shrink-0 items-center justify-center",
-              compact ? "size-8 [&>svg]:size-4" : "size-7 [&>svg]:size-6",
-            ])}
+            className="mt-px flex size-4 shrink-0 items-center justify-center [&>svg]:size-4"
             aria-hidden
           >
             {toast.leading ?? <AppToastToneIcon tone={toast.tone} />}
           </span>
           <span
             data-slot="app-toast-message"
-            className={cn([
-              "min-w-0 flex-1 font-semibold break-words whitespace-normal",
-              compact ? "text-[13px] leading-5" : "text-sm",
-            ])}
+            className="text-ui min-w-0 flex-1 font-medium break-words whitespace-normal"
           >
             {toast.message}
           </span>
@@ -614,14 +586,7 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
               }
               className="overflow-hidden"
             >
-              <div
-                className={cn([
-                  "text-muted-foreground",
-                  compact
-                    ? "px-2.5 pb-2.5 text-xs leading-4"
-                    : "px-4 pb-3 text-sm leading-5",
-                ])}
-              >
+              <div className="text-label text-muted-foreground ps-6.5 pt-0.5">
                 {toast.description}
               </div>
             </motion.div>
@@ -630,10 +595,7 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
         {!stackedBehind && actions.length > 0 ? (
           <div
             data-slot="app-toast-actions"
-            className={cn([
-              "flex items-center gap-2",
-              compact ? "px-2.5 pb-2.5" : "px-4 pb-3",
-            ])}
+            className="flex items-center gap-2 ps-6.5 pt-2.5"
           >
             {actions.map((action, index) => (
               <button
@@ -650,70 +612,59 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
                       dismiss();
                   }
                 }}
-                className={cn([
-                  "focus-visible:ring-ring inline-flex min-w-0 items-center justify-center font-medium transition-[color,background-color,transform] focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98]",
-                  action === toast.action
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border-border bg-background text-foreground hover:bg-accent border",
-                  compact
-                    ? "min-h-7 rounded-md px-2.5 py-1 text-xs"
-                    : "min-h-9 rounded-lg px-3 py-1.5 text-sm",
-                ])}
+                className={buttonVariants({
+                  size: "sm",
+                  variant: action === toast.action ? "default" : "outline",
+                })}
               >
                 {action.label}
               </button>
             ))}
           </div>
         ) : null}
-        {visuallyExpanded && hasTimer ? (
-          <button
-            type="button"
-            id={toast.description === undefined ? detailsId : undefined}
-            aria-label={
-              toast.paused ? "Resume auto-dismiss" : "Pause auto-dismiss"
-            }
-            onClick={() => toggleAppToastTimer(toast.id)}
-            className={cn([
-              "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted focus-visible:ring-ring relative flex w-full items-center justify-between gap-3 border-t text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset",
-              compact
-                ? "min-h-8 px-2.5 py-1.5 text-[11px]"
-                : "min-h-10 px-4 py-2 text-xs",
-            ])}
-          >
-            <span aria-hidden>
-              {toast.paused ? "Timer paused" : "Closing in"}{" "}
-              <span className="text-foreground font-semibold tabular-nums">
-                {Math.max(0, Math.ceil(toast.remainingMs / 1_000))}
-              </span>{" "}
-              {Math.ceil(toast.remainingMs / 1_000) === 1
-                ? "second"
-                : "seconds"}
-            </span>
-            <span aria-hidden className="text-foreground font-medium">
-              {toast.paused ? "Resume" : "Pause"}
-            </span>
-            <motion.span
-              aria-hidden
-              data-slot="app-toast-progress"
-              className={cn([
-                "absolute inset-x-0 bottom-0 h-0.5 origin-left",
-                toast.tone === "error"
-                  ? "bg-destructive"
-                  : toast.tone === "success"
-                    ? "bg-success"
-                    : "bg-foreground/30",
-              ])}
-              initial={false}
-              animate={{ scaleX: progress }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : { duration: 0.1, ease: "linear" }
-              }
-            />
-          </button>
-        ) : null}
       </div>
+      {visuallyExpanded && hasTimer ? (
+        <button
+          type="button"
+          id={toast.description === undefined ? detailsId : undefined}
+          aria-label={
+            toast.paused ? "Resume auto-dismiss" : "Pause auto-dismiss"
+          }
+          onClick={() => toggleAppToastTimer(toast.id)}
+          className={cn([
+            "border-border text-caption text-muted-foreground relative flex h-7 w-full items-center justify-between gap-3 border-t px-3 text-start",
+            "hover:bg-muted transition-[background-color] duration-100 focus-visible:-outline-offset-2",
+          ])}
+        >
+          <span aria-hidden>
+            {toast.paused ? "Timer paused" : "Closing in"}{" "}
+            <span className="text-foreground font-medium tabular-nums">
+              {Math.max(0, Math.ceil(toast.remainingMs / 1_000))}
+            </span>{" "}
+            {Math.ceil(toast.remainingMs / 1_000) === 1 ? "second" : "seconds"}
+          </span>
+          <span aria-hidden className="text-foreground font-medium">
+            {toast.paused ? "Resume" : "Pause"}
+          </span>
+          <motion.span
+            aria-hidden
+            data-slot="app-toast-progress"
+            className={cn([
+              "absolute inset-x-0 bottom-0 h-0.5 origin-left rtl:origin-right",
+              toast.tone === "error"
+                ? "bg-destructive"
+                : toast.tone === "success"
+                  ? "bg-success"
+                  : "bg-foreground/30",
+            ])}
+            initial={false}
+            animate={{ scaleX: progress }}
+            transition={
+              reduceMotion ? { duration: 0 } : { duration: 0.1, ease: "linear" }
+            }
+          />
+        </button>
+      ) : null}
     </motion.div>
   );
 }
@@ -721,9 +672,9 @@ function AppToast({ toast, size, stackDepth, stacked }: AppToastProps) {
 function AppToastToneIcon({ tone }: Readonly<{ tone: AppToastTone }>) {
   switch (tone) {
     case "success":
-      return <CheckCircle className="text-emerald-600" />;
+      return <CheckCircle className="text-success" />;
     case "warning":
-      return <WarningCircle className="text-amber-600" />;
+      return <WarningCircle className="text-warm-strong" />;
     case "error":
       return <WarningCircle className="text-destructive" />;
     case "info":

@@ -5,7 +5,6 @@ import { HexColorInput, HexColorPicker } from "react-colorful";
 
 import { Check, MagnifyingGlass, X } from "@anlg/ui/components/icons";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -285,158 +284,155 @@ export function TemplateIconPicker({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        variant="app"
         align="start"
         sideOffset={6}
-        className="w-[420px] max-w-[calc(100vw-24px)]"
+        className="w-[420px] max-w-[calc(100vw-24px)] overflow-hidden p-0"
       >
-        <AppFloatingPanel className="overflow-hidden">
-          <div className="border-border flex h-12 items-end gap-6 border-b px-4">
-            {(["icons", "emojis"] as const).map((nextTab) => (
-              <button
-                key={nextTab}
-                type="button"
-                role="tab"
-                aria-selected={tab === nextTab}
-                onClick={() => setTab(nextTab)}
-                className={cn([
-                  "relative h-full pt-1 text-sm font-medium capitalize",
-                  tab === nextTab
-                    ? "text-foreground after:bg-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5"
-                    : "text-muted-foreground hover:text-foreground",
-                ])}
-              >
-                {nextTab === "icons" ? t`Icons` : t`Emojis`}
-              </button>
-            ))}
-          </div>
+        <div className="border-border flex h-12 items-end gap-6 border-b px-4">
+          {(["icons", "emojis"] as const).map((nextTab) => (
+            <button
+              key={nextTab}
+              type="button"
+              role="tab"
+              aria-selected={tab === nextTab}
+              onClick={() => setTab(nextTab)}
+              className={cn([
+                "relative h-full pt-1 text-sm font-medium capitalize",
+                tab === nextTab
+                  ? "text-foreground after:bg-primary after:absolute after:right-0 after:bottom-0 after:left-0 after:h-0.5"
+                  : "text-muted-foreground hover:text-foreground",
+              ])}
+            >
+              {nextTab === "icons" ? t`Icons` : t`Emojis`}
+            </button>
+          ))}
+        </div>
 
-          {tab === "icons" ? (
-            <div>
-              <div className="border-border border-b px-4 py-3">
-                <div className="flex items-center justify-between">
-                  {ICON_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className="relative flex size-7 items-center justify-center rounded-full"
-                      style={{ backgroundColor: color }}
-                      onClick={() => {
-                        setCustomColorOpen(false);
-                        selectColor(color);
-                      }}
-                      aria-label={`Use ${color}`}
-                    >
-                      {iconColor.toLowerCase() === color.toLowerCase() ? (
-                        <Check className="size-4 text-white" />
-                      ) : null}
-                    </button>
-                  ))}
-                  <div className="bg-border h-7 w-px" />
+        {tab === "icons" ? (
+          <div>
+            <div className="border-border border-b px-4 py-3">
+              <div className="flex items-center justify-between">
+                {ICON_COLORS.map((color) => (
                   <button
+                    key={color}
                     type="button"
-                    className={cn([
-                      "size-7 rounded-full bg-[conic-gradient(from_180deg,red,#ff0,#0f0,#0ff,#00f,#f0f,red)]",
-                      customColorOpen && "ring-primary ring-2 ring-offset-2",
-                    ])}
-                    onClick={() => setCustomColorOpen((current) => !current)}
-                    aria-label={t`Choose custom color`}
-                  />
-                </div>
+                    className="relative flex size-7 items-center justify-center rounded-full"
+                    style={{ backgroundColor: color }}
+                    onClick={() => {
+                      setCustomColorOpen(false);
+                      selectColor(color);
+                    }}
+                    aria-label={`Use ${color}`}
+                  >
+                    {iconColor.toLowerCase() === color.toLowerCase() ? (
+                      <Check className="size-4 text-white" />
+                    ) : null}
+                  </button>
+                ))}
+                <div className="bg-border h-7 w-px" />
+                <button
+                  type="button"
+                  className={cn([
+                    "size-7 rounded-full bg-[conic-gradient(from_180deg,red,#ff0,#0f0,#0ff,#00f,#f0f,red)]",
+                    customColorOpen && "ring-primary ring-2 ring-offset-2",
+                  ])}
+                  onClick={() => setCustomColorOpen((current) => !current)}
+                  aria-label={t`Choose custom color`}
+                />
+              </div>
 
-                {customColorOpen ? (
-                  <div className="mt-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <span
-                        className="size-6 rounded-full"
-                        style={{ backgroundColor: iconColor }}
-                      />
-                      <span className="text-muted-foreground text-xs font-medium">
-                        HEX
-                      </span>
-                      <HexColorInput
-                        color={iconColor}
-                        onChange={selectColor}
-                        prefixed
-                        className="min-w-0 flex-1 bg-transparent text-sm uppercase outline-hidden"
-                      />
-                    </div>
-                    <HexColorPicker
+              {customColorOpen ? (
+                <div className="mt-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span
+                      className="size-6 rounded-full"
+                      style={{ backgroundColor: iconColor }}
+                    />
+                    <span className="text-muted-foreground text-xs font-medium">
+                      HEX
+                    </span>
+                    <HexColorInput
                       color={iconColor}
                       onChange={selectColor}
-                      className="template-color-picker! h-36! w-full!"
+                      prefixed
+                      className="min-w-0 flex-1 bg-transparent text-sm uppercase outline-hidden"
                     />
                   </div>
-                ) : null}
-              </div>
-
-              <SearchField
-                value={iconSearch}
-                onChange={setIconSearch}
-                placeholder={t`Search icons...`}
-              />
-              <div className="scroll-fade-y max-h-[360px] overflow-y-auto p-3">
-                <div className="grid grid-cols-12 gap-1">
-                  {filteredIcons.map((icon) => (
-                    <button
-                      key={icon.value}
-                      type="button"
-                      onClick={() => selectIcon(icon.value)}
-                      className={cn([
-                        "hover:bg-accent flex size-7 items-center justify-center rounded-md transition-colors",
-                        selected.type === "icon" &&
-                          selected.value === icon.value &&
-                          "bg-accent",
-                      ])}
-                      title={icon.search}
-                      aria-label={icon.search}
-                    >
-                      <icon.component
-                        className="size-[18px]"
-                        style={{ color: iconColor }}
-                      />
-                    </button>
-                  ))}
+                  <HexColorPicker
+                    color={iconColor}
+                    onChange={selectColor}
+                    className="template-color-picker! h-36! w-full!"
+                  />
                 </div>
-                {filteredIcons.length === 0 ? (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
-                    {t`No icons found`}
-                  </p>
-                ) : null}
-              </div>
+              ) : null}
             </div>
-          ) : (
-            <div>
-              <SearchField
-                value={emojiSearch}
-                onChange={setEmojiSearch}
-                placeholder={t`Search emoji...`}
-              />
-              <div className="scroll-fade-y max-h-[480px] overflow-y-auto px-4 py-3">
-                {!emojiSearch.trim() ? (
-                  <EmojiSection
-                    title={t`Frequently used`}
-                    emojis={frequentEmojis}
-                    onSelect={selectEmoji}
-                  />
-                ) : null}
-                {filteredEmojiCategories.map((category) => (
-                  <EmojiSection
-                    key={category.id}
-                    title={emojiCategoryLabels[category.id] ?? category.id}
-                    emojis={category.items}
-                    onSelect={selectEmoji}
-                  />
+
+            <SearchField
+              value={iconSearch}
+              onChange={setIconSearch}
+              placeholder={t`Search icons...`}
+            />
+            <div className="scroll-fade-y max-h-[360px] overflow-y-auto p-3">
+              <div className="grid grid-cols-12 gap-1">
+                {filteredIcons.map((icon) => (
+                  <button
+                    key={icon.value}
+                    type="button"
+                    onClick={() => selectIcon(icon.value)}
+                    className={cn([
+                      "hover:bg-accent flex size-7 items-center justify-center rounded-md transition-colors",
+                      selected.type === "icon" &&
+                        selected.value === icon.value &&
+                        "bg-accent",
+                    ])}
+                    title={icon.search}
+                    aria-label={icon.search}
+                  >
+                    <icon.component
+                      className="size-[18px]"
+                      style={{ color: iconColor }}
+                    />
+                  </button>
                 ))}
-                {filteredEmojiCategories.length === 0 ? (
-                  <p className="text-muted-foreground py-8 text-center text-sm">
-                    {t`No emoji found`}
-                  </p>
-                ) : null}
               </div>
+              {filteredIcons.length === 0 ? (
+                <p className="text-muted-foreground py-8 text-center text-sm">
+                  {t`No icons found`}
+                </p>
+              ) : null}
             </div>
-          )}
-        </AppFloatingPanel>
+          </div>
+        ) : (
+          <div>
+            <SearchField
+              value={emojiSearch}
+              onChange={setEmojiSearch}
+              placeholder={t`Search emoji...`}
+            />
+            <div className="scroll-fade-y max-h-[480px] overflow-y-auto px-4 py-3">
+              {!emojiSearch.trim() ? (
+                <EmojiSection
+                  title={t`Frequently used`}
+                  emojis={frequentEmojis}
+                  onSelect={selectEmoji}
+                />
+              ) : null}
+              {filteredEmojiCategories.map((category) => (
+                <EmojiSection
+                  key={category.id}
+                  title={emojiCategoryLabels[category.id] ?? category.id}
+                  emojis={category.items}
+                  onSelect={selectEmoji}
+                />
+              ))}
+              {filteredEmojiCategories.length === 0 ? (
+                <p className="text-muted-foreground py-8 text-center text-sm">
+                  {t`No emoji found`}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

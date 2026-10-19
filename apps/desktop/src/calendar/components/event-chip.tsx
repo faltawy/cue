@@ -12,7 +12,6 @@ import {
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -138,15 +137,14 @@ export function EventChip({
         )}
       </PopoverTrigger>
       <PopoverContent
-        variant="app"
         align="start"
         collisionPadding={16}
-        className="flex max-h-[min(36rem,var(--radix-popover-content-available-height))] w-[min(320px,calc(100vw-32px))] min-w-0 flex-col overflow-hidden"
+        className="flex max-h-[min(36rem,var(--radix-popover-content-available-height))] w-[min(320px,calc(100vw-32px))] min-w-0 flex-col overflow-hidden p-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <AppFloatingPanel className="min-h-0 overflow-x-hidden overflow-y-auto">
+        <div className="min-h-0 overflow-x-hidden overflow-y-auto">
           <EventPopoverContent eventId={eventId} event={event} />
-        </AppFloatingPanel>
+        </div>
       </PopoverContent>
     </Popover>
   );

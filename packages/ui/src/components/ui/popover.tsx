@@ -4,21 +4,18 @@ import * as React from "react";
 import { cn } from "@anlg/utils";
 
 import {
-  AppFloatingPanel,
-  appFloatingContentClassName,
-  appFloatingMenuPanelClassName,
-  type FloatingContentVariant,
+  floatingMotionClassName,
+  floatingSurfaceClassName,
 } from "./floating-content";
 
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 const PopoverAnchor = PopoverPrimitive.Anchor;
 
+// `p-3` for content; lists and command palettes pass `p-1` or `p-0`.
 const PopoverContent = React.forwardRef<
   React.ComponentRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
-    variant?: FloatingContentVariant;
-  }
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
 >(
   (
     {
@@ -26,7 +23,6 @@ const PopoverContent = React.forwardRef<
       align = "center",
       sideOffset = 4,
       collisionPadding = 8,
-      variant = "default",
       ...props
     },
     ref,
@@ -38,10 +34,9 @@ const PopoverContent = React.forwardRef<
         sideOffset={sideOffset}
         collisionPadding={collisionPadding}
         className={cn([
-          "text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) outline-hidden",
-          variant === "app"
-            ? appFloatingContentClassName
-            : "bg-popover rounded-[18px] border p-4 shadow-md",
+          "z-50 w-72 origin-(--radix-popover-content-transform-origin) p-3 outline-hidden",
+          floatingSurfaceClassName,
+          floatingMotionClassName,
           className,
         ])}
         {...props}
@@ -51,11 +46,4 @@ const PopoverContent = React.forwardRef<
 );
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-export {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverTrigger,
-};
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };

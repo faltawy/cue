@@ -12,7 +12,6 @@ import {
   CommandList,
 } from "@anlg/ui/components/ui/command";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -103,61 +102,58 @@ export function SearchableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        variant="app"
         align="start"
-        className={dropdownClassName}
+        className={cn(["overflow-hidden p-0", dropdownClassName])}
         style={{
           width: dropdownClassName
             ? undefined
             : "var(--radix-popover-trigger-width)",
         }}
       >
-        <AppFloatingPanel className="overflow-hidden">
-          <Command
-            filter={filterFunction}
-            className="rounded-[inherit] border-0 bg-transparent"
-          >
-            <CommandInput
-              placeholder={searchPlaceholder ?? t`Search...`}
-              value={query}
-              onValueChange={setQuery}
-            />
-            <CommandEmpty>
-              <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                {emptyMessage ?? t`No results found.`}
-              </div>
-            </CommandEmpty>
-            <CommandList>
-              <CommandGroup className="max-h-[250px] overflow-y-auto">
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={
-                      option.detail
-                        ? `${option.label} ${option.detail}`
-                        : option.label
-                    }
-                    onSelect={() => handleSelect(option.value)}
-                    className={cn([
-                      "cursor-pointer",
-                      "hover:bg-accent! focus:bg-accent! aria-selected:bg-transparent",
-                    ])}
-                  >
-                    <span className="flex-1 truncate">{option.label}</span>
-                    {option.detail && (
-                      <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
-                        {option.detail}
-                      </span>
-                    )}
-                    {value === option.value && (
-                      <Check className="h-4 w-4 shrink-0" />
-                    )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </AppFloatingPanel>
+        <Command
+          filter={filterFunction}
+          className="rounded-[inherit] border-0 bg-transparent"
+        >
+          <CommandInput
+            placeholder={searchPlaceholder ?? t`Search...`}
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandEmpty>
+            <div className="text-muted-foreground px-2 py-1.5 text-sm">
+              {emptyMessage ?? t`No results found.`}
+            </div>
+          </CommandEmpty>
+          <CommandList>
+            <CommandGroup className="max-h-[250px] overflow-y-auto">
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={
+                    option.detail
+                      ? `${option.label} ${option.detail}`
+                      : option.label
+                  }
+                  onSelect={() => handleSelect(option.value)}
+                  className={cn([
+                    "cursor-pointer",
+                    "hover:bg-accent! focus:bg-accent! aria-selected:bg-transparent",
+                  ])}
+                >
+                  <span className="flex-1 truncate">{option.label}</span>
+                  {option.detail && (
+                    <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
+                      {option.detail}
+                    </span>
+                  )}
+                  {value === option.value && (
+                    <Check className="h-4 w-4 shrink-0" />
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </PopoverContent>
     </Popover>
   );

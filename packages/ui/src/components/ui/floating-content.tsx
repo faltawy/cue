@@ -1,44 +1,27 @@
-import type { ComponentProps } from "react";
+// One surface for every floating layer: menus, selects, popovers and command
+// lists (docs/design/cue.md §6). Items sit 4px inside the 8px container.
+export const floatingSurfaceClassName =
+  "bg-popover text-popover-foreground border-border rounded-lg border shadow-lg";
 
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
-import { panelSquircle } from "@anlg/ui/lib/squircle";
-import { cn } from "@anlg/utils";
+export const floatingMotionClassName =
+  "data-[state=open]:animate-enter data-[state=closed]:animate-exit";
 
-// Nested radii stay concentric: outer = inner + padding.
-export const APP_FLOATING_CHROME_RADIUS_PX = 22;
-export const APP_FLOATING_CHROME_PADDING_PX = 2;
-export const APP_FLOATING_PANEL_RADIUS_PX =
-  APP_FLOATING_CHROME_RADIUS_PX - APP_FLOATING_CHROME_PADDING_PX;
-export const APP_FLOATING_PANEL_PADDING_PX = 6;
-export const APP_FLOATING_ITEM_RADIUS_PX =
-  APP_FLOATING_PANEL_RADIUS_PX - APP_FLOATING_PANEL_PADDING_PX;
-export const FLOATING_MENU_RADIUS_PX = 18;
-export const FLOATING_MENU_PADDING_PX = 4;
-export const FLOATING_MENU_ITEM_RADIUS_PX =
-  FLOATING_MENU_RADIUS_PX - FLOATING_MENU_PADDING_PX;
+export const menuItemClassName = [
+  "relative flex h-7 cursor-default items-center gap-2 rounded-md px-2 text-ui outline-hidden select-none",
+  "data-highlighted:bg-muted data-[state=open]:bg-muted",
+  "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+  "[&_svg:not([class*='text-'])]:text-muted-foreground data-highlighted:[&_svg:not([class*='text-'])]:text-foreground",
+].join(" ");
 
-export const appFloatingContentClassName =
-  "bg-app-floating-chrome text-popover-foreground border-app-floating-border overflow-hidden rounded-[22px] border p-0.5 shadow-lg";
+// Radix marks disabled items with a bare `data-disabled`; cmdk writes
+// `data-disabled="false"` on every item, so Command keeps its own rule.
+export const menuItemDisabledClassName =
+  "data-disabled:pointer-events-none data-disabled:opacity-40";
 
-export const appFloatingMenuPanelClassName = "overflow-hidden p-1.5";
-export const appFloatingItemClassName = "rounded-[14px]";
+export const menuDestructiveItemClassName =
+  "text-destructive data-highlighted:bg-destructive/10 [&_svg:not([class*='text-'])]:text-destructive data-highlighted:[&_svg:not([class*='text-'])]:text-destructive";
 
-export type FloatingContentVariant = "default" | "app";
+export const menuLabelClassName =
+  "text-label text-muted-foreground px-2 pt-1.5 pb-1 font-medium";
 
-export function AppFloatingPanel({
-  className,
-  ref,
-  ...props
-}: ComponentProps<"div">) {
-  const squircleRef = useSquircleRef<HTMLDivElement>(ref, panelSquircle);
-  return (
-    <div
-      className={cn([
-        "bg-app-floating-panel text-popover-foreground border-app-floating-border rounded-[20px] border",
-        className,
-      ])}
-      {...props}
-      ref={squircleRef}
-    />
-  );
-}
+export const menuSeparatorClassName = "bg-border -mx-1 my-1 h-px";

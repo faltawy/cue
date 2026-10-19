@@ -1,11 +1,9 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 
-import { BookOpenText, DotsThree, Heart } from "@anlg/ui/components/icons";
+import { DotsThree, Heart } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -54,10 +52,7 @@ export function TemplateDetailsColumn({
   if (isWebMode) {
     if (!selectedWebTemplate) {
       return (
-        <EmptyState
-          icon={BookOpenText}
-          title={<Trans>No community templates available</Trans>}
-        />
+        <EmptyState title={<Trans>No community templates available</Trans>} />
       );
     }
     return (
@@ -87,7 +82,6 @@ export function TemplateDetailsColumn({
 function TemplateDetailEmpty({ onCreate }: { onCreate: () => void }) {
   return (
     <EmptyState
-      icon={BookOpenText}
       title={<Trans>No templates yet</Trans>}
       description={
         <Trans>Templates shape how your meeting notes are written.</Trans>
@@ -174,15 +168,13 @@ function WebTemplatePreview({
                   <DotsThree className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent variant="app" align="end">
-                <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                  <DropdownMenuItem
-                    onClick={() => onClone(nextTemplate)}
-                    className="cursor-pointer"
-                  >
-                    <Trans>Duplicate</Trans>
-                  </DropdownMenuItem>
-                </AppFloatingPanel>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => onClone(nextTemplate)}
+                  className="cursor-pointer"
+                >
+                  <Trans>Duplicate</Trans>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>

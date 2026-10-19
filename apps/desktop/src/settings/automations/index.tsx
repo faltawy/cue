@@ -14,8 +14,6 @@ import {
 import { Badge } from "@anlg/ui/components/ui/badge";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -215,12 +213,10 @@ function AutomationActionsMenu({
           <DotsThree className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent variant="app" align="end">
-        <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-          <DropdownMenuItem onClick={onAction} className="cursor-pointer">
-            {actionLabel}
-          </DropdownMenuItem>
-        </AppFloatingPanel>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onAction} className="cursor-pointer">
+          {actionLabel}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -397,11 +393,11 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                 {starter.title}
               </h3>
               {isEnabled ? (
-                <Badge variant="outline">
+                <Badge>
                   <Trans>Enabled</Trans>
                 </Badge>
               ) : (
-                <Badge variant="outline">
+                <Badge>
                   <Trans>Draft</Trans>
                 </Badge>
               )}
@@ -487,7 +483,7 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">{step.title}</span>
-                    <Badge variant="outline" size="sm">
+                    <Badge>
                       {step.kind === "ai" ? (
                         <Trans>AI step</Trans>
                       ) : step.kind === "trigger" ? (

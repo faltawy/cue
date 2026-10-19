@@ -6,8 +6,6 @@ import type { TemplateSection } from "@anlg/store";
 import { DotsSixVertical, DotsThree, Plus } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -242,41 +240,39 @@ function SectionItem({
                 <DotsThree className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent variant="app" align="end">
-              <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                <DropdownMenuItem
-                  onClick={() => onInsertAbove(index)}
-                  className="cursor-pointer"
-                >
-                  <Trans>Insert above</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onInsertBelow(index + 1)}
-                  className="cursor-pointer"
-                >
-                  <Trans>Insert below</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onMove(item.key, -1)}
-                  disabled={index === 0}
-                  className="cursor-pointer"
-                >
-                  <Trans>Move up</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onMove(item.key, 1)}
-                  disabled={index === total - 1}
-                  className="cursor-pointer"
-                >
-                  <Trans>Move down</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(item.key)}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  <Trans>Delete</Trans>
-                </DropdownMenuItem>
-              </AppFloatingPanel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => onInsertAbove(index)}
+                className="cursor-pointer"
+              >
+                <Trans>Insert above</Trans>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onInsertBelow(index + 1)}
+                className="cursor-pointer"
+              >
+                <Trans>Insert below</Trans>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onMove(item.key, -1)}
+                disabled={index === 0}
+                className="cursor-pointer"
+              >
+                <Trans>Move up</Trans>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onMove(item.key, 1)}
+                disabled={index === total - 1}
+                className="cursor-pointer"
+              >
+                <Trans>Move down</Trans>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDelete(item.key)}
+                className="cursor-pointer text-red-600 focus:text-red-600"
+              >
+                <Trans>Delete</Trans>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

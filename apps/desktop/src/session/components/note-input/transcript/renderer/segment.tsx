@@ -358,11 +358,10 @@ const EditableSegmentText = memo(function EditableSegmentText({
         </div>
       )}
       <PopoverContent
-        variant="app"
         side="bottom"
         align="start"
         collisionPadding={12}
-        className="flex max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-24px)] flex-col overflow-hidden"
+        className="flex max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-24px)] flex-col overflow-hidden p-0"
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           requestAnimationFrame(() =>

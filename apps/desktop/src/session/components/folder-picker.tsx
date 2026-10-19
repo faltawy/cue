@@ -11,13 +11,10 @@ import {
   CommandList,
 } from "@anlg/ui/components/ui/command";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@anlg/ui/components/ui/popover";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
-import { squircleFocusVisibleClassName } from "@anlg/ui/lib/squircle";
 import { cn } from "@anlg/utils";
 
 import { useFolderSelection } from "~/folders/selection";
@@ -47,7 +44,6 @@ export function FolderPicker({
   align?: "start" | "end";
 }) {
   const { t } = useLingui();
-  const triggerRef = useSquircleRef<HTMLButtonElement>();
   const [open, setOpen] = useState(false);
   const currentPath = normalizeFolderPath(
     useSession(sessionId)?.folder_id ?? "",
@@ -58,7 +54,6 @@ export function FolderPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          ref={triggerRef}
           type="button"
           data-tauri-drag-region="false"
           role="combobox"
@@ -73,7 +68,6 @@ export function FolderPicker({
               ? "max-w-36 min-w-0 gap-1 px-1.5 @max-[480px]:w-7 @max-[480px]:gap-0 @max-[480px]:px-0"
               : "w-7 justify-center",
             "text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-            squircleFocusVisibleClassName,
             open && "bg-accent text-foreground",
           ])}
         >
@@ -92,11 +86,7 @@ export function FolderPicker({
           ) : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        variant="app"
-        align={align}
-        className="w-56 overflow-hidden pb-0"
-      >
+      <PopoverContent align={align} className="w-56 overflow-hidden p-0">
         <FolderPickerContent
           sessionId={sessionId}
           onClose={() => setOpen(false)}
@@ -187,67 +177,65 @@ export function FolderPickerContent({
 
   return (
     <div className="flex flex-col">
-      <AppFloatingPanel className="overflow-hidden">
-        <Command
-          filter={filterFolders}
-          value={highlighted}
-          onValueChange={setHighlighted}
-          className="rounded-[inherit] border-0 bg-transparent **:[[cmdk-input-wrapper]]:h-8 **:[[cmdk-input-wrapper]]:px-2.5"
-        >
-          <CommandInput
-            placeholder={t`Search or create folder`}
-            value={query}
-            onValueChange={setQuery}
-            className="h-8 py-0"
-          />
-          <CommandList className="p-1">
-            <CommandEmpty className="text-muted-foreground px-2.5 py-2 text-left text-sm">
-              {trimmedQuery
-                ? normalizedQuery === null
-                  ? t`Enter a valid folder name.`
-                  : t`No folders found.`
-                : t`No folders yet.`}
-            </CommandEmpty>
-            {folders.length > 0 ? (
-              <CommandGroup>
-                {folders.map((path) => (
-                  <CommandItem
-                    key={path}
-                    value={path}
-                    onSelect={() =>
-                      handleSelect(path === currentPath ? "" : path)
-                    }
-                    className="cursor-pointer"
-                  >
-                    <TemplateIconGlyph
-                      icon={resolvedFolderIcon(path, folderIcons)}
-                      className="size-4 opacity-70"
-                    />
-                    <span className="min-w-0 flex-1 truncate">{path}</span>
-                    {path === currentPath ? (
-                      <Check className="size-4 shrink-0" />
-                    ) : null}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            ) : null}
-            {canCreateFolder && normalizedQuery ? (
-              <CommandGroup>
+      <Command
+        filter={filterFolders}
+        value={highlighted}
+        onValueChange={setHighlighted}
+        className="rounded-[inherit] border-0 bg-transparent **:[[cmdk-input-wrapper]]:h-8 **:[[cmdk-input-wrapper]]:px-2.5"
+      >
+        <CommandInput
+          placeholder={t`Search or create folder`}
+          value={query}
+          onValueChange={setQuery}
+          className="h-8 py-0"
+        />
+        <CommandList className="p-1">
+          <CommandEmpty className="text-muted-foreground px-2.5 py-2 text-left text-sm">
+            {trimmedQuery
+              ? normalizedQuery === null
+                ? t`Enter a valid folder name.`
+                : t`No folders found.`
+              : t`No folders yet.`}
+          </CommandEmpty>
+          {folders.length > 0 ? (
+            <CommandGroup>
+              {folders.map((path) => (
                 <CommandItem
-                  value={`create-folder ${normalizedQuery}`}
-                  onSelect={() => handleSelect(normalizedQuery)}
+                  key={path}
+                  value={path}
+                  onSelect={() =>
+                    handleSelect(path === currentPath ? "" : path)
+                  }
                   className="cursor-pointer"
                 >
-                  <Plus className="size-4 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {t`Create "${folderName}"`}
-                  </span>
+                  <TemplateIconGlyph
+                    icon={resolvedFolderIcon(path, folderIcons)}
+                    className="size-4 opacity-70"
+                  />
+                  <span className="min-w-0 flex-1 truncate">{path}</span>
+                  {path === currentPath ? (
+                    <Check className="size-4 shrink-0" />
+                  ) : null}
                 </CommandItem>
-              </CommandGroup>
-            ) : null}
-          </CommandList>
-        </Command>
-      </AppFloatingPanel>
+              ))}
+            </CommandGroup>
+          ) : null}
+          {canCreateFolder && normalizedQuery ? (
+            <CommandGroup>
+              <CommandItem
+                value={`create-folder ${normalizedQuery}`}
+                onSelect={() => handleSelect(normalizedQuery)}
+                className="cursor-pointer"
+              >
+                <Plus className="size-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">
+                  {t`Create "${folderName}"`}
+                </span>
+              </CommandItem>
+            </CommandGroup>
+          ) : null}
+        </CommandList>
+      </Command>
       <button
         type="button"
         onClick={handleSeeAllFolders}

@@ -106,7 +106,6 @@ export function Toaster({
     <AppToaster
       align={position.endsWith("right") ? "end" : "center"}
       position={position.startsWith("top") ? "top" : "bottom"}
-      size="compact"
       {...props}
     />
   );

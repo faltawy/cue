@@ -189,12 +189,11 @@ export function MultiSelectionBar({
           </button>
         </PopoverTrigger>
         <PopoverContent
-          variant="app"
           side="top"
           align="center"
           sideOffset={8}
           collisionPadding={16}
-          className="flex max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-32px)] flex-col overflow-hidden"
+          className="flex max-h-(--radix-popover-content-available-height) w-80 max-w-[calc(100vw-32px)] flex-col overflow-hidden p-0"
         >
           <SpeakerParticipantPicker
             sessionId={selection.sessionId}

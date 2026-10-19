@@ -12,7 +12,6 @@ import {
 import { Button } from "@anlg/ui/components/ui/button";
 import { Input } from "@anlg/ui/components/ui/input";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -769,14 +768,12 @@ export function ContactOrganizationSelector({
         </div>
       </PopoverTrigger>
 
-      <PopoverContent variant="app" align="start" side="bottom">
-        <AppFloatingPanel className="p-3">
-          <OrganizationControl
-            organizations={organizations}
-            onChange={handleChange}
-            closePopover={() => setOpen(false)}
-          />
-        </AppFloatingPanel>
+      <PopoverContent align="start" side="bottom">
+        <OrganizationControl
+          organizations={organizations}
+          onChange={handleChange}
+          closePopover={() => setOpen(false)}
+        />
       </PopoverContent>
     </Popover>
   );

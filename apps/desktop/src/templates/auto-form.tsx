@@ -13,8 +13,6 @@ import {
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -182,22 +180,20 @@ export function AutoFormatForm({
                     <DotsThree size={16} />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent variant="app" align="end" className="w-56">
-                  <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      disabled={
-                        (!isCustomized &&
-                          formatsMatch(currentFormat, defaultFormat)) ||
-                        saveMutation.isPending
-                      }
-                      onClick={() => {
-                        void resetToDefault().catch(() => {});
-                      }}
-                    >
-                      <Trans>Reset to default format</Trans>
-                    </DropdownMenuItem>
-                  </AppFloatingPanel>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    disabled={
+                      (!isCustomized &&
+                        formatsMatch(currentFormat, defaultFormat)) ||
+                      saveMutation.isPending
+                    }
+                    onClick={() => {
+                      void resetToDefault().catch(() => {});
+                    }}
+                  >
+                    <Trans>Reset to default format</Trans>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}

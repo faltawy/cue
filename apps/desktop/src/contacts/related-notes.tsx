@@ -4,15 +4,12 @@ import { useState } from "react";
 import { ArrowsDownUp, MagnifyingGlass, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 
 import type { HumanSessionRecord } from "./queries";
 
@@ -25,7 +22,6 @@ export function RelatedNotesSection({
 }) {
   const { t } = useLingui();
   const [search, setSearch] = useState("");
-  const searchRef = useSquircleRef<HTMLDivElement>();
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const visibleSessions = sortAndFilterRelatedNotes(
     sessions,
@@ -51,30 +47,25 @@ export function RelatedNotesSection({
                 <ArrowsDownUp size={15} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent variant="app" align="start">
-              <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                <DropdownMenuRadioGroup
-                  value={sortOrder}
-                  onValueChange={(value) =>
-                    setSortOrder(value as "newest" | "oldest")
-                  }
-                >
-                  <DropdownMenuRadioItem value="newest">
-                    <Trans>Newest</Trans>
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="oldest">
-                    <Trans>Oldest</Trans>
-                  </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </AppFloatingPanel>
+            <DropdownMenuContent align="start">
+              <DropdownMenuRadioGroup
+                value={sortOrder}
+                onValueChange={(value) =>
+                  setSortOrder(value as "newest" | "oldest")
+                }
+              >
+                <DropdownMenuRadioItem value="newest">
+                  <Trans>Newest</Trans>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="oldest">
+                  <Trans>Oldest</Trans>
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
 
-        <div
-          ref={searchRef}
-          className="border-border bg-muted/50 focus-within:bg-accent ml-auto flex h-8 w-52 max-w-[48%] items-center gap-2 rounded-lg border px-2.5 transition-colors"
-        >
+        <div className="border-border bg-muted/50 focus-within:bg-accent ml-auto flex h-8 w-52 max-w-[48%] items-center gap-2 rounded-lg border px-2.5 transition-colors">
           <MagnifyingGlass className="text-muted-foreground size-3.5 shrink-0" />
           <input
             type="text"

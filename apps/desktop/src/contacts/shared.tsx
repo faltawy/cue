@@ -10,15 +10,12 @@ import {
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 
@@ -60,38 +57,36 @@ function SortDropdown({
           <ArrowsDownUp size={16} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent variant="app" align="end">
-        <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-          <DropdownMenuRadioGroup
-            value={sortOption}
-            onValueChange={(value) => setSortOption(value as SortOption)}
+      <DropdownMenuContent align="end">
+        <DropdownMenuRadioGroup
+          value={sortOption}
+          onValueChange={(value) => setSortOption(value as SortOption)}
+        >
+          <DropdownMenuRadioItem
+            value="alphabetical"
+            className="cursor-pointer text-xs"
           >
-            <DropdownMenuRadioItem
-              value="alphabetical"
-              className="cursor-pointer text-xs"
-            >
-              A-Z
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem
-              value="reverse-alphabetical"
-              className="cursor-pointer text-xs"
-            >
-              Z-A
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem
-              value="oldest"
-              className="cursor-pointer text-xs"
-            >
-              <Trans>Oldest</Trans>
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem
-              value="newest"
-              className="cursor-pointer text-xs"
-            >
-              <Trans>Newest</Trans>
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </AppFloatingPanel>
+            A-Z
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem
+            value="reverse-alphabetical"
+            className="cursor-pointer text-xs"
+          >
+            Z-A
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem
+            value="oldest"
+            className="cursor-pointer text-xs"
+          >
+            <Trans>Oldest</Trans>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem
+            value="newest"
+            className="cursor-pointer text-xs"
+          >
+            <Trans>Newest</Trans>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -113,7 +108,6 @@ export function ColumnHeader({
   searchInputRef?: RefObject<HTMLInputElement | null>;
 }) {
   const { t } = useLingui();
-  const searchRef = useSquircleRef<HTMLDivElement>();
   const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
       onSearchChange?.("");
@@ -145,10 +139,7 @@ export function ColumnHeader({
       </CustomSidebarHeader>
       {onSearchChange && (
         <div className="pb-2">
-          <div
-            ref={searchRef}
-            className="border-border bg-muted focus-within:bg-accent flex h-8 w-full items-center gap-2 rounded-lg border px-3 transition-colors"
-          >
+          <div className="border-border bg-muted focus-within:bg-accent flex h-8 w-full items-center gap-2 rounded-lg border px-3 transition-colors">
             <MagnifyingGlass className="text-muted-foreground h-4 w-4 shrink-0" />
             <input
               ref={searchInputRef}

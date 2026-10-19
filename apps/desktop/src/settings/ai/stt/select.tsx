@@ -36,8 +36,6 @@ import {
   TooltipTrigger,
 } from "@anlg/ui/components/ui/tooltip";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
-import { chipSquircle } from "@anlg/ui/lib/squircle";
 import { cn } from "@anlg/utils";
 
 import { useSttSettings } from "./context";
@@ -271,10 +269,7 @@ export function SelectProviderAndModel() {
       <div className="flex flex-row items-center gap-4">
         <div className="min-w-0 flex-2" data-stt-provider-selector>
           <Select value={visibleProvider} onValueChange={handleProviderChange}>
-            <SelectTrigger
-              corners={{ radius: 18, smoothing: 0 }}
-              className="bg-card rounded-[18px] shadow-none"
-            >
+            <SelectTrigger className="bg-card rounded-[18px] shadow-none">
               <SelectValue placeholder={t`Select a provider`} />
             </SelectTrigger>
             <SelectContent>
@@ -337,7 +332,6 @@ export function SelectProviderAndModel() {
               disabled={selectedModels.length === 0}
             >
               <SelectTrigger
-                corners={{ radius: 18, smoothing: 0 }}
                 className={cn([
                   "bg-card rounded-[18px] text-left shadow-none",
                   "[&>span]:!flex [&>span]:w-full [&>span]:min-w-0 [&>span]:items-center [&>span]:justify-start [&>span]:gap-2 [&>span]:overflow-visible [&>span]:[-webkit-line-clamp:unset]",
@@ -974,10 +968,8 @@ function ModelSelectedValue({ model }: { model: ModelEntry }) {
 }
 
 function DeprecatedBadge() {
-  const ref = useSquircleRef<HTMLSpanElement>(undefined, chipSquircle);
   return (
     <span
-      ref={ref}
       className={cn([
         "shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
         "bg-muted text-muted-foreground",
@@ -989,7 +981,6 @@ function DeprecatedBadge() {
 }
 
 function ModelModeBadge({ mode }: { mode?: ModelEntry["mode"] }) {
-  const ref = useSquircleRef<HTMLSpanElement>(undefined, chipSquircle);
   if (!mode) {
     return null;
   }
@@ -1000,7 +991,6 @@ function ModelModeBadge({ mode }: { mode?: ModelEntry["mode"] }) {
     <Tooltip delayDuration={100}>
       <TooltipTrigger asChild>
         <span
-          ref={ref}
           className={cn([
             "shrink-0 cursor-help rounded-md px-1.5 py-0.5 text-[11px] font-medium",
             isRealtime

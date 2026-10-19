@@ -21,7 +21,6 @@ import {
   CommandList,
 } from "@anlg/ui/components/ui/command";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -464,7 +463,6 @@ export function NotificationSettingsView() {
                                         return (
                                           <Badge
                                             key={bundleId}
-                                            variant="secondary"
                                             className={cn([
                                               "flex items-center gap-1 px-2 py-0.5 text-xs",
                                               isDefault
@@ -509,51 +507,49 @@ export function NotificationSettingsView() {
                                   </div>
                                 </PopoverTrigger>
                                 <PopoverContent
-                                  variant="app"
                                   align="start"
+                                  className="overflow-hidden p-0"
                                   style={{
                                     width: "var(--radix-popover-trigger-width)",
                                   }}
                                 >
-                                  <AppFloatingPanel className="overflow-hidden">
-                                    <Command className="rounded-[inherit] border-0 bg-transparent">
-                                      <CommandInput
-                                        placeholder={t`Search installed apps...`}
-                                        value={searchQuery}
-                                        onValueChange={setSearchQuery}
-                                      />
-                                      <CommandEmpty>
-                                        <div className="text-muted-foreground px-2 py-1.5 text-sm">
-                                          <Trans>No apps found.</Trans>
-                                        </div>
-                                      </CommandEmpty>
-                                      <CommandList>
-                                        <CommandGroup className="max-h-[250px] overflow-y-auto">
-                                          {ignorableApps.map((app) => (
-                                            <CommandItem
-                                              key={app.id}
-                                              value={`${app.name} ${app.id}`}
-                                              onSelect={() =>
-                                                handleToggleIgnoredApp(
-                                                  app.id,
-                                                  ignoredPlatforms,
-                                                  includedPlatforms,
-                                                )
-                                              }
-                                              className={cn([
-                                                "cursor-pointer",
-                                                "hover:bg-accent! focus:bg-accent! aria-selected:bg-transparent",
-                                              ])}
-                                            >
-                                              <span className="flex-1 truncate">
-                                                {app.name}
-                                              </span>
-                                            </CommandItem>
-                                          ))}
-                                        </CommandGroup>
-                                      </CommandList>
-                                    </Command>
-                                  </AppFloatingPanel>
+                                  <Command className="rounded-[inherit] border-0 bg-transparent">
+                                    <CommandInput
+                                      placeholder={t`Search installed apps...`}
+                                      value={searchQuery}
+                                      onValueChange={setSearchQuery}
+                                    />
+                                    <CommandEmpty>
+                                      <div className="text-muted-foreground px-2 py-1.5 text-sm">
+                                        <Trans>No apps found.</Trans>
+                                      </div>
+                                    </CommandEmpty>
+                                    <CommandList>
+                                      <CommandGroup className="max-h-[250px] overflow-y-auto">
+                                        {ignorableApps.map((app) => (
+                                          <CommandItem
+                                            key={app.id}
+                                            value={`${app.name} ${app.id}`}
+                                            onSelect={() =>
+                                              handleToggleIgnoredApp(
+                                                app.id,
+                                                ignoredPlatforms,
+                                                includedPlatforms,
+                                              )
+                                            }
+                                            className={cn([
+                                              "cursor-pointer",
+                                              "hover:bg-accent! focus:bg-accent! aria-selected:bg-transparent",
+                                            ])}
+                                          >
+                                            <span className="flex-1 truncate">
+                                              {app.name}
+                                            </span>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
                                 </PopoverContent>
                               </Popover>
                             </div>

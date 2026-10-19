@@ -6,7 +6,6 @@ import { commands as fsSyncCommands } from "@anlg/plugin-fs-sync";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -98,14 +97,11 @@ export function SessionChip({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        variant="app"
         align="start"
-        className="w-[280px]"
+        className="w-[280px] p-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <AppFloatingPanel>
-          <SessionPopoverContent sessionId={sessionId} session={session} />
-        </AppFloatingPanel>
+        <SessionPopoverContent sessionId={sessionId} session={session} />
       </PopoverContent>
     </Popover>
   );

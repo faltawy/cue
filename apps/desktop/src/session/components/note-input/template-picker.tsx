@@ -10,7 +10,6 @@ import {
   X,
 } from "@anlg/ui/components/icons";
 import {
-  AppFloatingPanel,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -387,9 +386,9 @@ export function TemplatePickerPopover({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent variant="app" className="w-80 pb-0" align="start">
+      <PopoverContent className="w-80 overflow-hidden p-0" align="start">
         <div className="flex flex-col">
-          <AppFloatingPanel className="flex flex-col overflow-hidden rounded-[20px]">
+          <div className="flex flex-col">
             <div className="border-border border-b py-1">
               <div
                 className={cn([
@@ -477,7 +476,7 @@ export function TemplatePickerPopover({
                 </div>
               </div>
             </div>
-          </AppFloatingPanel>
+          </div>
 
           <button
             onClick={handleSeeAllTemplates}

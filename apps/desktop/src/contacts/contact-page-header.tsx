@@ -9,8 +9,6 @@ import {
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -66,42 +64,40 @@ export function ContactPageHeader({
                 <DotsThree size={16} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent variant="app" align="end" className="w-48">
-              <AppFloatingPanel className={appFloatingMenuPanelClassName}>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={onTogglePin}
+                className="cursor-pointer"
+              >
+                <PushPin weight={pinned ? "bold" : "regular"} />
+                <span>
+                  {pinned ? <Trans>Unpin</Trans> : <Trans>Pin</Trans>}
+                </span>
+              </DropdownMenuItem>
+              {onRemoveAvatar && (
                 <DropdownMenuItem
-                  onClick={onTogglePin}
+                  onClick={onRemoveAvatar}
                   className="cursor-pointer"
                 >
-                  <PushPin weight={pinned ? "bold" : "regular"} />
+                  <MinusCircle />
                   <span>
-                    {pinned ? <Trans>Unpin</Trans> : <Trans>Pin</Trans>}
+                    <Trans>Remove photo</Trans>
                   </span>
                 </DropdownMenuItem>
-                {onRemoveAvatar && (
-                  <DropdownMenuItem
-                    onClick={onRemoveAvatar}
-                    className="cursor-pointer"
-                  >
-                    <MinusCircle />
-                    <span>
-                      <Trans>Remove photo</Trans>
-                    </span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={onDelete}
-                  className={cn([
-                    "cursor-pointer text-red-600 dark:text-red-400",
-                    "hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50 dark:hover:text-red-300",
-                  ])}
-                >
-                  <Trash />
-                  <span>
-                    <Trans>Delete</Trans>
-                  </span>
-                </DropdownMenuItem>
-              </AppFloatingPanel>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onDelete}
+                className={cn([
+                  "cursor-pointer text-red-600 dark:text-red-400",
+                  "hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/50 dark:hover:text-red-300",
+                ])}
+              >
+                <Trash />
+                <span>
+                  <Trans>Delete</Trans>
+                </span>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

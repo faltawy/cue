@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ArrowsDownUp,
-  BookOpenText,
   MagnifyingGlass,
   Plus,
   Sparkle,
@@ -11,14 +10,11 @@ import {
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 import { cn } from "@anlg/utils";
 
 import { type WebTemplate } from "./codec";
@@ -41,7 +37,6 @@ export function TemplatesSidebarContent({
 }) {
   const { t } = useLingui();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const searchRef = useSquircleRef<HTMLDivElement>();
   const [search, setSearch] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("alphabetical");
   const autoPrompt = useConfigValue("auto_summary_prompt");
@@ -352,19 +347,15 @@ export function TemplatesSidebarContent({
                   <ArrowsDownUp size={16} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent variant="app" align="end">
-                <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                  <DropdownMenuItem
-                    onClick={() => setSortOption("alphabetical")}
-                  >
-                    <Trans>A to Z</Trans>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSortOption("reverse-alphabetical")}
-                  >
-                    <Trans>Z to A</Trans>
-                  </DropdownMenuItem>
-                </AppFloatingPanel>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSortOption("alphabetical")}>
+                  <Trans>A to Z</Trans>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setSortOption("reverse-alphabetical")}
+                >
+                  <Trans>Z to A</Trans>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -381,7 +372,6 @@ export function TemplatesSidebarContent({
 
         <div className="pb-2">
           <div
-            ref={searchRef}
             className={cn([
               "border-border bg-accent/50 flex h-8 w-full shrink-0 items-center gap-2 rounded-lg border px-3",
               "focus-within:bg-accent transition-colors",
@@ -425,7 +415,6 @@ export function TemplatesSidebarContent({
           search ? (
             <EmptyState
               size="list"
-              icon={MagnifyingGlass}
               title={<Trans>No templates match “{search.trim()}”</Trans>}
               action={{
                 label: <Trans>Clear search</Trans>,
@@ -435,10 +424,11 @@ export function TemplatesSidebarContent({
           ) : (
             <EmptyState
               size="list"
-              icon={BookOpenText}
               title={<Trans>No templates yet</Trans>}
               description={
-                <Trans>Templates shape how your meeting notes are written.</Trans>
+                <Trans>
+                  Templates shape how your meeting notes are written.
+                </Trans>
               }
               action={{
                 label: <Trans>New template</Trans>,

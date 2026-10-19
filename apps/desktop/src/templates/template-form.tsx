@@ -6,8 +6,6 @@ import { Check, DotsThree, Heart, Plus, X } from "@anlg/ui/components/icons";
 import { Badge } from "@anlg/ui/components/ui/badge";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -74,7 +72,6 @@ function TemplateTargetsInput({
       {value.map((target, index) => (
         <Badge
           key={`${target}-${index}`}
-          variant="secondary"
           className="bg-muted flex h-6 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-normal"
         >
           {target}
@@ -285,21 +282,19 @@ export function TemplateForm({
                 <DotsThree className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent variant="app" align="end">
-              <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                <DropdownMenuItem
-                  onClick={() => handleDuplicateTemplate(id)}
-                  className="cursor-pointer"
-                >
-                  <Trans>Duplicate</Trans>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleDeleteTemplate(id)}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  <Trans>Delete</Trans>
-                </DropdownMenuItem>
-              </AppFloatingPanel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => handleDuplicateTemplate(id)}
+                className="cursor-pointer"
+              >
+                <Trans>Duplicate</Trans>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDeleteTemplate(id)}
+                className="cursor-pointer text-red-600 focus:text-red-600"
+              >
+                <Trans>Delete</Trans>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

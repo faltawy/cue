@@ -64,7 +64,6 @@ vi.mock("./word-span", () => ({
 }));
 
 vi.mock("@anlg/ui/components/ui/popover", () => ({
-  AppFloatingPanel: () => null,
   Popover: ({ children }: { children: ReactNode }) => <>{children}</>,
   PopoverContent: () => null,
   PopoverTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,

@@ -1,10 +1,7 @@
 import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { MapPin, VideoCamera } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
-import {
-  AppFloatingPanel,
-  PopoverContent,
-} from "@anlg/ui/components/ui/popover";
+import { PopoverContent } from "@anlg/ui/components/ui/popover";
 import { safeFormat, safeParseDate, TZDate } from "@anlg/utils";
 
 import { DateEditor } from "./date";
@@ -16,7 +13,7 @@ import { useTimeFormat } from "~/shared/hooks/useTimeFormat";
 
 export function MetadataPopoverContent({ sessionId }: { sessionId: string }) {
   return (
-    <PopoverContent variant="app" align="end" className="w-72 overflow-hidden">
+    <PopoverContent align="end" className="w-72 overflow-hidden p-0">
       <MetadataPanelContent sessionId={sessionId} />
     </PopoverContent>
   );
@@ -24,9 +21,9 @@ export function MetadataPopoverContent({ sessionId }: { sessionId: string }) {
 
 export function MetadataPanelContent({ sessionId }: { sessionId: string }) {
   return (
-    <AppFloatingPanel className="scrollbar-hide max-h-[80vh] min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain">
+    <div className="scrollbar-hide max-h-[80vh] min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain">
       <ContentInner sessionId={sessionId} />
-    </AppFloatingPanel>
+    </div>
   );
 }
 

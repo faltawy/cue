@@ -1,22 +1,16 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMemo, useState } from "react";
 
-import {
-  FolderSimple,
-  MagnifyingGlass,
-  Plus,
-  X,
-} from "@anlg/ui/components/icons";
+import { MagnifyingGlass, Plus, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
-import { useSquircleRef } from "@anlg/ui/hooks/use-squircle";
 import { cn } from "@anlg/utils";
 
 import { useActiveFolderPath, useFolderSelection } from "./selection";
 
 import { createNamedFolder } from "~/session/folder-catalog";
-import { EmptyState } from "~/shared/ui/empty-state";
 import { resolvedFolderIcon } from "~/session/folder-icon";
 import { useFolderIcons, useFolderPaths } from "~/session/queries";
+import { EmptyState } from "~/shared/ui/empty-state";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 import { FolderNameDialog } from "~/sidebar/folder-name-dialog";
 import { TemplateIconGlyph } from "~/templates/template-icon";
@@ -30,7 +24,6 @@ export function FoldersSidebar() {
   const activeFolder = useActiveFolderPath(folders);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
-  const searchRef = useSquircleRef<HTMLDivElement>();
 
   const filteredFolders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -60,7 +53,6 @@ export function FoldersSidebar() {
 
         <div className="pb-2">
           <div
-            ref={searchRef}
             className={cn([
               "border-border bg-accent/50 flex h-8 w-full shrink-0 items-center gap-2 rounded-lg border px-3",
               "focus-within:bg-accent transition-colors",
@@ -102,7 +94,6 @@ export function FoldersSidebar() {
           search ? (
             <EmptyState
               size="list"
-              icon={MagnifyingGlass}
               title={<Trans>No folders match “{search.trim()}”</Trans>}
               action={{
                 label: <Trans>Clear search</Trans>,
@@ -112,7 +103,6 @@ export function FoldersSidebar() {
           ) : (
             <EmptyState
               size="list"
-              icon={FolderSimple}
               title={<Trans>No folders yet</Trans>}
               description={
                 <Trans>Group related notes and files in a folder.</Trans>

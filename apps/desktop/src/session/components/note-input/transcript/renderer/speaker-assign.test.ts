@@ -49,13 +49,6 @@ vi.mock("@anlg/ui/components/ui/popover", async () => {
   } | null>(null);
 
   return {
-    AppFloatingPanel: ({
-      children,
-      className,
-    }: {
-      children: ReactNode;
-      className?: string;
-    }) => React.createElement("div", { className }, children),
     Popover: ({
       children,
       open,

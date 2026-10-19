@@ -4,8 +4,6 @@ import { useCallback, useRef, useState } from "react";
 import { DotsThree, File, Plus, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -159,16 +157,14 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
                 <DotsThree className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent variant="app" align="end">
-              <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-                <DropdownMenuItem
-                  disabled={busy}
-                  onClick={() => setDeleting(true)}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  <Trans>Delete</Trans>
-                </DropdownMenuItem>
-              </AppFloatingPanel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                disabled={busy}
+                onClick={() => setDeleting(true)}
+                className="cursor-pointer text-red-600 focus:text-red-600"
+              >
+                <Trans>Delete</Trans>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -14,8 +14,6 @@ import {
 } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import {
-  AppFloatingPanel,
-  appFloatingMenuPanelClassName,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -137,109 +135,104 @@ export function OverflowButton({
             <DotsThree className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent variant="app" align="end" className="w-56">
-          <AppFloatingPanel className={appFloatingMenuPanelClassName}>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="cursor-pointer">
-                <CalendarBlank />
-                <span>
-                  <Trans>Meeting info</Trans>
-                </span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent
-                  variant="app"
-                  className="w-72 overflow-hidden"
-                >
-                  <MetadataPanelContent sessionId={sessionId} />
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer">
+              <CalendarBlank />
+              <span>
+                <Trans>Meeting info</Trans>
+              </span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="w-72 overflow-hidden p-0">
+                <MetadataPanelContent sessionId={sessionId} />
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+          <DropdownMenuItem
+            onClick={openVersionHistory}
+            className="cursor-pointer"
+          >
+            <ClockCounterClockwise />
+            <span>
+              <Trans>Version history</Trans>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {showListeningAction && (
+            <Listening
+              sessionId={sessionId}
+              resume={audioExists || hasTranscript}
+            />
+          )}
+          {showRetranscribeAction && (
             <DropdownMenuItem
-              onClick={openVersionHistory}
+              onClick={handleRetranscribe}
               className="cursor-pointer"
             >
-              <ClockCounterClockwise />
-              <span>
-                <Trans>Version history</Trans>
-              </span>
+              <ArrowsClockwise />
+              <span>Re-transcribe</span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {showListeningAction && (
-              <Listening
-                sessionId={sessionId}
-                resume={audioExists || hasTranscript}
-              />
-            )}
-            {showRetranscribeAction && (
+          )}
+          {showUploadActions && (
+            <>
               <DropdownMenuItem
-                onClick={handleRetranscribe}
+                onClick={handleUploadAudio}
                 className="cursor-pointer"
               >
-                <ArrowsClockwise />
-                <span>Re-transcribe</span>
+                <Waveform />
+                <span>
+                  <Trans>Upload audio</Trans>
+                </span>
               </DropdownMenuItem>
-            )}
-            {showUploadActions && (
-              <>
-                <DropdownMenuItem
-                  onClick={handleUploadAudio}
-                  className="cursor-pointer"
-                >
-                  <Waveform />
-                  <span>
-                    <Trans>Upload audio</Trans>
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleUploadTranscript}
-                  className="cursor-pointer"
-                >
-                  <FileText />
-                  <span>
-                    <Trans>Upload transcript</Trans>
-                  </span>
-                </DropdownMenuItem>
-              </>
-            )}
-            {hasRecordingActions && <DropdownMenuSeparator />}
+              <DropdownMenuItem
+                onClick={handleUploadTranscript}
+                className="cursor-pointer"
+              >
+                <FileText />
+                <span>
+                  <Trans>Upload transcript</Trans>
+                </span>
+              </DropdownMenuItem>
+            </>
+          )}
+          {hasRecordingActions && <DropdownMenuSeparator />}
+          <DropdownMenuItem
+            onClick={openExportModal}
+            className="cursor-pointer"
+          >
+            <FileArrowDown />
+            <span>
+              <Trans>Export</Trans>
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {!standaloneWindow && (
             <DropdownMenuItem
-              onClick={openExportModal}
+              onClick={handleOpenStandaloneWindow}
               className="cursor-pointer"
             >
-              <FileArrowDown />
+              <AppWindow />
               <span>
-                <Trans>Export</Trans>
+                <Trans>Open in New Window</Trans>
               </span>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            {!standaloneWindow && (
-              <DropdownMenuItem
-                onClick={handleOpenStandaloneWindow}
-                className="cursor-pointer"
-              >
-                <AppWindow />
-                <span>
-                  <Trans>Open in New Window</Trans>
-                </span>
-              </DropdownMenuItem>
-            )}
-            {canOpenFloatingPanel && (
-              <DropdownMenuItem
-                onClick={handleOpenFloatingPanel}
-                className="cursor-pointer"
-              >
-                <PictureInPicture />
-                <span>
-                  <Trans>Open floating panel</Trans>
-                </span>
-              </DropdownMenuItem>
-            )}
-            <AlwaysOnTop />
-            <DropdownMenuSeparator />
-            <LockNote sessionId={sessionId} />
-            <DeleteNote sessionId={sessionId} />
-          </AppFloatingPanel>
+          )}
+          {canOpenFloatingPanel && (
+            <DropdownMenuItem
+              onClick={handleOpenFloatingPanel}
+              className="cursor-pointer"
+            >
+              <PictureInPicture />
+              <span>
+                <Trans>Open floating panel</Trans>
+              </span>
+            </DropdownMenuItem>
+          )}
+          <AlwaysOnTop />
+          <DropdownMenuSeparator />
+          <LockNote sessionId={sessionId} />
+          <DeleteNote sessionId={sessionId} />
         </DropdownMenuContent>
       </DropdownMenu>
       {hasOpenedExportModal && (
