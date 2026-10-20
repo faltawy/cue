@@ -184,24 +184,51 @@ pub async fn configure_coach(
 
     let state = app.state::<GlobalState>();
     let mut coach = state.coach.lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(previous) = coach.take() {
-        app.global_shortcut()
-            .unregister(previous)
-            .map_err(|e| e.to_string())?;
-    }
-    let Some(key) = key else {
+    swap_shortcut(
+        &mut coach,
+        key,
+        |key| {
+            app.global_shortcut()
+                .on_shortcut(key, |app, _, event| {
+                    if event.state == ShortcutState::Pressed {
+                        let _ = CoachShortcutPressed {}.emit(app);
+                    }
+                })
+                .map_err(|e| {
+                    format!(
+                        "Could not register the coach shortcut. It may be used by another app: {e}"
+                    )
+                })
+        },
+        |key| {
+            app.global_shortcut()
+                .unregister(key)
+                .map_err(|e| e.to_string())
+        },
+    )
+}
+
+fn swap_shortcut<K: Copy + PartialEq>(
+    current: &mut Option<K>,
+    next: Option<K>,
+    mut register: impl FnMut(K) -> Result<(), String>,
+    mut unregister: impl FnMut(K) -> Result<(), String>,
+) -> Result<(), String> {
+    if next == *current {
         return Ok(());
-    };
-    app.global_shortcut()
-        .on_shortcut(key, |app, _, event| {
-            if event.state == ShortcutState::Pressed {
-                let _ = CoachShortcutPressed {}.emit(app);
-            }
-        })
-        .map_err(|e| {
-            format!("Could not register the coach shortcut. It may be used by another app: {e}")
-        })?;
-    *coach = Some(key);
+    }
+    if let Some(key) = next {
+        register(key)?;
+    }
+    if let Some(previous) = *current
+        && let Err(error) = unregister(previous)
+    {
+        if let Some(key) = next {
+            unregister(key)?;
+        }
+        return Err(error);
+    }
+    *current = next;
     Ok(())
 }
 
@@ -250,5 +277,46 @@ mod validation_tests {
         assert!(validate_shortcut("Control+Alt+KeyD", true).is_ok());
         assert!(validate_shortcut("Control+Alt+KeyD", false).is_err());
         assert!(validate_shortcut("Fn", false).is_ok());
+    }
+
+    #[test]
+    fn a_coach_shortcut_that_fails_to_register_keeps_the_previous_one_working() {
+        let mut registered = vec!["old"];
+        let mut current = Some("old");
+        let result = swap_shortcut(
+            &mut current,
+            Some("taken"),
+            |_| Err("used by another app".into()),
+            |key| {
+                registered.retain(|held| *held != key);
+                Ok(())
+            },
+        );
+        assert_eq!(result, Err("used by another app".into()));
+        assert_eq!(current, Some("old"));
+        assert_eq!(registered, vec!["old"]);
+    }
+
+    #[test]
+    fn a_new_coach_shortcut_replaces_the_previous_one() {
+        let mut registered = vec!["old"];
+        let mut current = Some("old");
+        let mut unregistered = Vec::new();
+        swap_shortcut(
+            &mut current,
+            Some("new"),
+            |key| {
+                registered.push(key);
+                Ok(())
+            },
+            |key| {
+                unregistered.push(key);
+                Ok(())
+            },
+        )
+        .unwrap();
+        registered.retain(|held| !unregistered.contains(held));
+        assert_eq!(current, Some("new"));
+        assert_eq!(registered, vec!["new"]);
     }
 }
