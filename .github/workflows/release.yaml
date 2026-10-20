@@ -127,7 +127,7 @@ jobs:
 
       - name: Collect artifacts
         run: |
-          bundle="target/aarch64-apple-darwin/release/bundle"
+          bundle="apps/desktop/src-tauri/target/aarch64-apple-darwin/release/bundle"
           app="$bundle/macos/Cue.app"
           dmg=$(ls "$bundle"/dmg/*.dmg)
           mkdir -p dist
