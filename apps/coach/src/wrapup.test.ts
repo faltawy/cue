@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { commitmentText, logToClientsPrompt, parseWrapUp, wrapUpPrompt } from "./wrapup";
+import { showTool } from "./meeting-server";
+import { NUDGE_SYSTEM } from "./nudge";
+import { coachPrompt } from "./session";
+import { commitmentText, logToClientsPrompt, parseWrapUp, WRAP_UP_SYSTEM, wrapUpPrompt } from "./wrapup";
 
 const NO_COACHING = { went_well: [], next_time: [] };
 
@@ -85,6 +88,44 @@ describe("wrapUpPrompt", () => {
       "Invited: Marco\n\nTalk time, last 20 min: You 75%, Marco 25% · your longest stretch 15:00 · questions you asked: 0\n\nMeeting: Pricing review (ended)\n[00:00] You: Let me walk you through all of it.\n[15:00] Marco: Too expensive.",
     );
   });
+
+  test("an Arabic meeting reaches the model in Arabic and its Arabic wrap-up survives parsing, repeats dropped", () => {
+    const prompt = wrapUpPrompt(
+      {
+        sessionId: "s",
+        transcriptId: "t",
+        title: "مراجعة الأسعار",
+        live: false,
+        startedAtMs: 0,
+        endedAtMs: 120_000,
+        lines: [line("You", 0, 30, "هبعتلك عرض السعر بكرة."), line("عمر", 30, 60, "مين هيوافق على الميزانية؟")],
+        pending: "",
+      },
+      { sessionId: "s", title: "مراجعة الأسعار", startedAt: null, endedAt: null, participants: [{ name: "عمر", email: null }] },
+    );
+    expect(prompt).toStartWith("Invited: عمر\n\n");
+    expect(prompt).toEndWith("Meeting: مراجعة الأسعار (ended)\n[00:00] You: هبعتلك عرض السعر بكرة.\n[00:30] عمر: مين هيوافق على الميزانية؟");
+
+    const draft = "شكراً يا عمر على وقتك. هبعتلك عرض السعر بكرة.";
+    const wrapUp = parseWrapUp({
+      commitments: [
+        { who: "You", what: "إرسال عرض السعر", when: "بكرة" },
+        { who: "You", what: "إرسال  عرض السعر ", when: "بكرة" },
+      ],
+      open_questions: ["مين هيوافق على الميزانية؟", " مين هيوافق على  الميزانية؟"],
+      follow_up_draft: draft,
+      coaching: {
+        went_well: ["حددت موعد إرسال العرض"],
+        next_time: [
+          { moment: { speaker: "عمر", at: "00:30", quote: "مين هيوافق على الميزانية؟" }, headline: "Pin down the budget owner", verb: "Ask", line: "مين غيرك لازم يوافق؟" },
+        ],
+      },
+    });
+    expect(wrapUp.commitments).toEqual([{ who: "You", what: "إرسال عرض السعر", when: "بكرة" }]);
+    expect(wrapUp.open_questions).toEqual(["مين هيوافق على الميزانية؟"]);
+    expect(wrapUp.follow_up_draft).toBe(draft);
+    expect(commitmentText({ who: "عمر", what: "مراجعة الميزانية", when: "الأحد" })).toBe("عمر: مراجعة الميزانية (الأحد)");
+  });
 });
 
 describe("commitmentText", () => {
@@ -110,5 +151,20 @@ describe("logToClientsPrompt", () => {
     expect(prompt).toContain('"Acme weekly"');
     expect(prompt).toContain("- share the deck (today)\n- Sara: confirm seats");
     expect(prompt).toContain("ask me instead of guessing");
+  });
+});
+
+describe("meeting language", () => {
+  const PROMPTS = {
+    "the coach chat": coachPrompt([], true),
+    "nudges": NUDGE_SYSTEM,
+    "the wrap-up": WRAP_UP_SYSTEM,
+    "the move block": showTool(() => {}).description,
+  };
+
+  test.each(Object.entries(PROMPTS))("%s pins only the UI headline to English, so a non-English meeting gets its replies, lines and follow-up in its own language", (_, prompt) => {
+    const english = prompt.match(/[^.;\n]*\bEnglish\b[^.;\n]*/g) ?? [];
+    expect(english.filter((clause) => !clause.includes("headline"))).toEqual([]);
+    expect(prompt).toContain("meeting's main language");
   });
 });
