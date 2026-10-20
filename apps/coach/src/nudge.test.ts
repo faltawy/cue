@@ -201,3 +201,44 @@ describe("nudgeLabel", () => {
     );
   });
 });
+
+describe("objection and monologue nudges", () => {
+  const PUSHBACK = "Honestly, $48,000 a year is too expensive for us.";
+
+  test("an objection is described as pushback and the card is steered to the pushback tag", () => {
+    const lines = [line("Marco", PUSHBACK, 600)];
+    const message = nudgeMessage({
+      context: "Pricing review · with Marco",
+      hits: [
+        { kind: "objection", lineIndex: 0, text: PUSHBACK },
+        { kind: "number", lineIndex: 0, text: PUSHBACK },
+      ],
+      why: "price pushback",
+      lines,
+    });
+    expect(message).toContain(
+      `Flagged moment:\n- pushback (price, timing, a competitor, a decision maker or doubt), a number, date or price: "${PUSHBACK}"\nFlagged because: price pushback\nSuggested tag: pushback\n`,
+    );
+  });
+
+  test("a monologue asks for a hand-over question and the talk_time tag; a plain question gets no tag hint", () => {
+    const lines = [line("You", "And then the reporting layer ties it all together.", 600, 700)];
+    const message = nudgeMessage({
+      context: "Discovery call · with Omar",
+      hits: [{ kind: "monologue", lineIndex: 0, text: "And then the reporting layer ties it all together." }],
+      why: "You have talked for 01:40 without handing over",
+      lines,
+    });
+    expect(message).toContain(
+      'Flagged moment:\n- the user has held the floor too long; hand it back with one concrete question about what they were just saying: "And then the reporting layer ties it all together."\nFlagged because: You have talked for 01:40 without handing over\nSuggested tag: talk_time\n',
+    );
+    const asked = nudgeMessage({ context: "x", hits: [hit(0)], why: "y", lines: [line("Omar", QUESTION, 1)] });
+    expect(asked).toContain("Flagged because: y\n");
+    expect(asked).not.toContain("Suggested tag");
+  });
+
+  test("labels lead with the monologue, then pushback, over a question on the same line", () => {
+    expect(nudgeLabel([{ kind: "question", lineIndex: 1, text: "" }, { kind: "objection", lineIndex: 1, text: "" }])).toBe("Pushback");
+    expect(nudgeLabel([{ kind: "monologue", lineIndex: 1, text: "" }])).toBe("Long monologue");
+  });
+});

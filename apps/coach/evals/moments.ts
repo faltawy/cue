@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 import { detectHits, type Hit } from "../src/detect";
+import { monologueNudge, PROACTIVE_DEFAULTS } from "../src/proactive";
 import type { TranscriptLine } from "../src/transcript";
 import data from "./moments.json";
 
 const momentSchema = z.object({
   id: z.string(),
   kind: z.enum(["nudge", "ask"]).default("nudge"),
+  trigger: z.enum(["lines", "monologue"]).default("lines"),
   lang: z.enum(["en", "ar"]),
   type: z.string(),
   context: z.string(),
@@ -41,5 +43,14 @@ export function momentLines(moment: Moment): TranscriptLine[] {
 }
 
 export function momentHits(moment: Moment, lines: readonly TranscriptLine[]): Hit[] {
+  if (moment.trigger === "monologue") {
+    const stretch = monologueNudge(lines, PROACTIVE_DEFAULTS.monologueMs);
+    return stretch ? [stretch.hit] : [];
+  }
   return lines.flatMap((line, index) => (index >= lines.length - moment.flag ? detectHits(line, index, SELF_NAME) : []));
+}
+
+export function momentWhy(moment: Moment, lines: readonly TranscriptLine[]): string {
+  if (moment.trigger !== "monologue") return moment.why;
+  return monologueNudge(lines, PROACTIVE_DEFAULTS.monologueMs)?.why ?? moment.why;
 }

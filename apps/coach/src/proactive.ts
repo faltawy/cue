@@ -1,5 +1,7 @@
 import { detectHits, type Hit, type HitKind } from "./detect";
 import type { Spend } from "./pricing";
+import { monologue } from "./talk-time";
+import { formatTimestamp } from "./timestamp";
 import type { TranscriptLine } from "./transcript";
 import type { TriageRequest, TriageResult } from "./triage";
 
@@ -13,6 +15,8 @@ export const PROACTIVE_DEFAULTS = {
   rateMax: 4,
   windowMs: 90_000,
   capUsd: 0.5,
+  monologueMs: 90_000,
+  monologueGapMs: 5 * 60_000,
 };
 
 export type ProactiveConfig = typeof PROACTIVE_DEFAULTS & { enabled: boolean };
@@ -39,9 +43,24 @@ export type ProactiveDeps = {
 
 type HeldHit = Hit & { seenAt: number };
 
+export function monologueNudge(
+  lines: readonly TranscriptLine[],
+  minMs: number,
+): { startMs: number; hit: Hit; why: string } | null {
+  const stretch = monologue(lines);
+  const last = stretch && lines[stretch.lineIndex];
+  if (!stretch || !last || stretch.ms < minMs) return null;
+  return {
+    startMs: stretch.startMs,
+    hit: { kind: "monologue", lineIndex: stretch.lineIndex, text: last.text },
+    why: `You have talked for ${formatTimestamp(stretch.ms)} without handing over`,
+  };
+}
+
 export class Proactive {
   private readonly now: () => number;
   private lines: readonly TranscriptLine[] = [];
+  private live = false;
   private scanned = 0;
   private readonly reported = new Set<string>();
   private activityKey = "";
@@ -49,6 +68,8 @@ export class Proactive {
   private held: HeldHit[] = [];
   private lastTriageAt = Number.NEGATIVE_INFINITY;
   private lastNudgeAt = Number.NEGATIVE_INFINITY;
+  private lastMonologueAt = Number.NEGATIVE_INFINITY;
+  private monologueNudged: number | null = null;
   private nudgedAt: number[] = [];
   private triaging = false;
   private nudgesUsd = 0;
@@ -65,6 +86,7 @@ export class Proactive {
   observe(input: Observed) {
     const now = this.now();
     this.lines = input.lines;
+    this.live = input.live;
     const last = input.lines.at(-1);
     const key = `${input.lines.length}:${last?.end_ms ?? 0}:${last?.text.length ?? 0}:${input.pending}`;
     if (key !== this.activityKey) {
@@ -77,6 +99,7 @@ export class Proactive {
     this.scan(input, paused ? input.lines.length : input.lines.length - 1, input.selfName, now);
     this.held = this.held.filter((hit) => now - hit.seenAt < this.config.hitTtlMs);
     if (this.due(now, paused)) this.triage(now);
+    else this.handOver(now);
   }
 
   spend(source: SpendSource, cost: Spend) {
@@ -130,11 +153,28 @@ export class Proactive {
     this.scanned = Math.max(this.scanned, finalCount);
   }
 
+  private blocked(now: number): boolean {
+    return this.triaging || this.capped() || this.rateLimited(now) || this.deps.busy();
+  }
+
   private due(now: number, paused: boolean): boolean {
     const first = this.held[0];
-    if (!first || this.triaging || this.capped() || this.rateLimited(now) || this.deps.busy()) return false;
+    if (!first || this.blocked(now)) return false;
     if (!paused && now - first.seenAt < this.config.maxHoldMs) return false;
     return now - this.lastTriageAt >= this.config.triageGapMs && now - this.lastNudgeAt >= this.config.nudgeGapMs;
+  }
+
+  private handOver(now: number) {
+    const stretch = monologueNudge(this.lines, this.config.monologueMs);
+    if (!stretch || stretch.startMs === this.monologueNudged) return;
+    if (now - this.lastMonologueAt < this.config.monologueGapMs || now - this.lastNudgeAt < this.config.nudgeGapMs) return;
+    if (this.blocked(now)) return;
+    const request = { context: this.deps.context(), hits: [stretch.hit], why: stretch.why, lines: this.lines };
+    if (!this.deps.nudge(request)) return;
+    this.monologueNudged = stretch.startMs;
+    this.lastMonologueAt = now;
+    this.lastNudgeAt = now;
+    this.nudgedAt.push(now);
   }
 
   private triage(now: number) {
@@ -153,7 +193,7 @@ export class Proactive {
       })
       .then((result) => {
         this.spend("nudges", result.spend);
-        if (!result.verdict?.nudge || this.capped() || this.deps.busy()) return;
+        if (!result.verdict?.nudge || !this.live || this.capped() || this.deps.busy()) return;
         if (!this.deps.nudge({ context, hits, why: result.verdict.why, lines: this.lines })) return;
         const at = this.now();
         this.lastNudgeAt = at;

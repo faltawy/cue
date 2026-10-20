@@ -13,7 +13,7 @@ import { coachPrompt, userContextPrompt } from "../src/session";
 import { renderLines } from "../src/transcript";
 import { parseTriage, TRIAGE_MODEL, TRIAGE_SYSTEM, triagePrompt } from "../src/triage";
 import { OLD_TRIAGE_SYSTEM, oldCoachAppend, oldNudgeMessage, oldNudgeSystem } from "./baseline";
-import { MOMENTS, type Moment, momentHits, momentLines } from "./moments";
+import { MOMENTS, type Moment, momentHits, momentLines, momentWhy } from "./moments";
 import { JUDGE_SYSTEM } from "./rubric";
 
 // Offline coaching eval: runs each scripted moment through the nudge path (or, for direct asks, a one-shot
@@ -101,7 +101,7 @@ function coachPromptFor(variant: Variant, moment: Moment): Prompt {
       tuning: {},
     };
   }
-  const input = { context: moment.context, hits: momentHits(moment, lines), why: moment.why, lines };
+  const input = { context: moment.context, hits: momentHits(moment, lines), why: momentWhy(moment, lines), lines };
   return variant === "old"
     ? { model: NUDGE_MODEL, system: oldNudgeSystem(moment.instructions), message: oldNudgeMessage(input), tuning: { effort: "low", shortCache: true } }
     : { model: NUDGE_MODEL, system: nudgeSystem(moment.instructions), message: nudgeMessage(input), tuning: { effort: "low", shortCache: true } };
@@ -187,7 +187,7 @@ async function runVariant(variant: Variant, moments: readonly Moment[]) {
       const score = scoreSchema.parse(JSON.parse(await complete(judgePrompt(moment, note), file(variant, moment, "judge"))));
       console.log(`   judge: ${DIMENSIONS.map((dimension) => `${dimension} ${score[dimension]}`).join(", ")} · ${score.notes}`);
     }
-    if (values.triage && moment.kind === "nudge") {
+    if (values.triage && moment.kind === "nudge" && moment.trigger === "lines") {
       const reply = await complete(triagePromptFor(variant, moment), file(variant, moment, "triage"));
       const verdict = parseTriage(reply);
       console.log(`   triage: ${verdict?.nudge === !moment.silent ? "ok" : "MISS"} ${reply.replace(/\s+/g, " ")}`);

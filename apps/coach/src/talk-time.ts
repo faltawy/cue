@@ -1,3 +1,4 @@
+import { asksQuestion, normalize } from "./detect";
 import { formatTimestamp } from "./timestamp";
 import type { TranscriptLine } from "./transcript";
 
@@ -39,6 +40,84 @@ export function talkStats(lines: readonly TranscriptLine[], windowMs = TALK_WIND
     .sort((a, b) => Number(b.speaker === "You") - Number(a.speaker === "You") || b.ms - a.ms);
   const firstStart = Math.max(recent[0]?.start_ms ?? from, from);
   return { spanMs: latestEnd - firstStart, totalMs, speakers, youLongestMs, youQuestions };
+}
+
+const BACKCHANNEL_MS = 2_000;
+const MONOLOGUE_GAP_MS = 5_000;
+const BACKCHANNEL_WORDS = new Set([
+  "yeah",
+  "yes",
+  "yep",
+  "yup",
+  "right",
+  "ok",
+  "okay",
+  "sure",
+  "mm",
+  "mhm",
+  "mm-hm",
+  "mm-hmm",
+  "uh-huh",
+  "hmm",
+  "got",
+  "it",
+  "i",
+  "see",
+  "true",
+  "exactly",
+  "totally",
+  "cool",
+  "nice",
+  "great",
+  "اه",
+  "ايوه",
+  "ايوا",
+  "اي",
+  "تمام",
+  "صح",
+  "ماشي",
+  "طيب",
+  "اكيد",
+  "نعم",
+  "اوكي",
+  "حلو",
+  "مظبوط",
+  "بالضبط",
+  "زين",
+  "يب",
+]);
+
+function isBackchannel(line: TranscriptLine): boolean {
+  const spoken = normalize(line.text)
+    .split(/[\s,،.!?؟]+/u)
+    .filter(Boolean);
+  if (asksQuestion(line.text) || (/[?؟]/.test(line.text) && spoken.length > 1)) return false;
+  if (line.end_ms - line.start_ms <= BACKCHANNEL_MS) return true;
+  return spoken.length > 0 && spoken.every((word) => BACKCHANNEL_WORDS.has(word));
+}
+
+export type Monologue = { startMs: number; ms: number; lineIndex: number };
+
+export function monologue(lines: readonly TranscriptLine[]): Monologue | null {
+  let lastIndex: number | null = null;
+  let startMs = 0;
+  let endMs = 0;
+  let nextStart: number | null = null;
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (!line || (nextStart !== null && nextStart - line.end_ms > MONOLOGUE_GAP_MS)) break;
+    if (line.speaker === "You") {
+      if (lastIndex === null) {
+        lastIndex = index;
+        endMs = line.end_ms;
+      }
+      startMs = line.start_ms;
+    } else if (!isBackchannel(line)) {
+      break;
+    }
+    nextStart = line.start_ms;
+  }
+  return lastIndex === null ? null : { startMs, ms: endMs - startMs, lineIndex: lastIndex };
 }
 
 export type TalkShares = {

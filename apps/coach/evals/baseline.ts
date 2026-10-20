@@ -49,6 +49,8 @@ const MOMENT: Record<HitKind, string> = {
   name: "someone said the user's name",
   commitment: "a commitment",
   number: "a number, date or price",
+  objection: "pushback",
+  monologue: "the user talking for a long stretch",
 };
 
 export function oldNudgeMessage(input: { context: string; hits: readonly Hit[]; why: string; lines: readonly TranscriptLine[] }) {

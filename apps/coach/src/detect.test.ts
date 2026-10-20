@@ -127,3 +127,55 @@ describe("detectHits: hit shape", () => {
     }
   });
 });
+
+describe("detectHits: objections and pushback from the other side", () => {
+  test.each([
+    ["price", "Honestly, this is too expensive for a team our size."],
+    ["price", "That's way over our budget for this year."],
+    ["price", "We just can't afford that right now."],
+    ["timing", "It's not the right time for us."],
+    ["timing", "Not now, let's revisit it in the new year."],
+    ["competitor", "We already use Zendesk for all of this."],
+    ["competitor", "We're pretty happy with our current vendor."],
+    ["authority", "I need to check with my boss before we commit."],
+    ["authority", "That's not my decision to make."],
+    ["doubt", "I'm not sure it works at our volume."],
+    ["doubt", "I'm a bit concerned about the migration."],
+    ["price, Gulf", "والله السعر غالي علينا شوي"],
+    ["price, Egyptian", "بصراحة ده غالي جدا علينا"],
+    ["price, Gulf", "ما عندنا ميزانية لهذا الشي"],
+    ["price, Levantine", "كتير غالي هيدا"],
+    ["timing, Egyptian", "مش وقته دلوقتي خالص"],
+    ["timing, Gulf", "مو وقته الحين"],
+    ["timing, Levantine", "هلق مش وقتها"],
+    ["competitor", "احنا عندنا نظام شغال من سنتين"],
+    ["authority", "لازم أرجع للمدير قبل ما نقرر"],
+    ["authority, Levantine", "بدي إرجع للمدير بالأول"],
+    ["doubt, Egyptian", "مش متأكد إن ده هيمشي معانا"],
+    ["doubt, Gulf", "مو متأكد إنه يناسبنا"],
+  ])("fires on %s: %s", (_, text) => {
+    expect(kinds("Omar", text)).toContain("objection");
+  });
+
+  test.each(["Other tools are too expensive, ours isn't.", "لازم أرجع للمدير قبل ما نقرر", "مش متأكد إن ده هيمشي معانا"])(
+    "the user saying it is not pushback: %s",
+    (text) => {
+      expect(kinds("Omar", text)).toContain("objection");
+      expect(kinds("You", text)).not.toContain("objection");
+    },
+  );
+
+  test.each([
+    ["negated price", "Honestly it's not too expensive for what it does."],
+    ["negated price", "It isn't expensive at all."],
+    ["negated price, Egyptian", "السعر مش غالي أبدا"],
+    ["negated price, Gulf", "السعر مو غالي"],
+    ["sure, not unsure", "I'm sure it works for our volume."],
+    ["sure, not unsure, Arabic", "أنا متأكد إن ده هيمشي معانا"],
+    ["already, not a competitor", "We already shipped the new inbox."],
+    ["عندنا without a system", "عندنا اجتماع مع الفريق"],
+    ["small talk", "The weather has been lovely this week."],
+  ])("near-miss stays quiet (%s): %s", (_, text) => {
+    expect(kinds("Omar", text)).not.toContain("objection");
+  });
+});

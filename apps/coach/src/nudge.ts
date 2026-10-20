@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isNothing, NOTHING } from "./checkin";
 import type { Hit, HitKind } from "./detect";
 import { jsonOf, runLlm } from "./llm";
-import { type Moment, type Move, MOVE_TAGS, moveFields, QUOTE_MAX } from "./move";
+import { type Moment, type Move, MOVE_TAGS, type MoveTag, moveFields, QUOTE_MAX } from "./move";
 import { charTokens, estimateTokens, NO_SPEND, type Spend, spendOf } from "./pricing";
 import { INSTRUCTIONS_HEADING } from "./session";
 import { type TalkStats, talkStats, talkSummary } from "./talk-time";
@@ -36,18 +36,29 @@ const MOMENTS_MAX = 3;
 const MOMENT: Record<HitKind, string> = {
   question: "a question aimed at the user",
   name: "someone said the user's name",
+  objection: "pushback (price, timing, a competitor, a decision maker or doubt)",
   commitment: "a commitment",
   number: "a number, date or price",
+  monologue: "the user has held the floor too long; hand it back with one concrete question about what they were just saying",
 };
 
-const LABEL_ORDER: readonly HitKind[] = ["question", "name", "commitment", "number"];
+const TAG_HINT: Partial<Record<HitKind, MoveTag>> = { monologue: "talk_time", objection: "pushback" };
+
+const LABEL_ORDER: readonly HitKind[] = ["monologue", "objection", "question", "name", "commitment", "number"];
 
 const LABEL: Record<HitKind, string> = {
   question: "Question for you",
   name: "You were mentioned",
+  objection: "Pushback",
   commitment: "Commitment",
   number: "Number mentioned",
+  monologue: "Long monologue",
 };
+
+function tagHint(hits: readonly Hit[]): MoveTag | undefined {
+  const kind = LABEL_ORDER.find((candidate) => TAG_HINT[candidate] && hits.some((hit) => hit.kind === candidate));
+  return kind && TAG_HINT[kind];
+}
 
 export function nudgeLabel(hits: readonly Hit[]): string {
   const kind = LABEL_ORDER.find((candidate) => hits.some((hit) => hit.kind === candidate)) ?? "question";
@@ -119,11 +130,12 @@ export function nudgeMessage(input: NudgeInput): string {
   const latestEnd = input.lines.at(-1)?.end_ms ?? 0;
   const recent = input.lines.filter((line) => line.end_ms >= latestEnd - NUDGE_WINDOW_MS);
   const stats = talkStats(input.lines);
+  const tag = tagHint(input.hits);
   return `Meeting: ${headWithin(input.context, TOKENS.context)}
 Flagged moment:
 ${moments(input.hits)}
 Flagged because: ${headWithin(input.why, TOKENS.why)}
-${stats ? `${talkSummary(stats)}\n` : ""}The last 3 minutes:
+${tag ? `Suggested tag: ${tag}\n` : ""}${stats ? `${talkSummary(stats)}\n` : ""}The last 3 minutes:
 ${recentLines(recent, TOKENS.lines) || "(nothing yet)"}`;
 }
 

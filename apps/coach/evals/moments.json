@@ -458,6 +458,80 @@
       "ask": "when's the renewal?",
       "silent": false,
       "good": "March 3rd; procurement wants paperwork two weeks earlier (around Feb 17). Optionally one short move linking the Salesforce blocker to the renewal; no lecture."
+    },
+    {
+      "id": "objection-timing-competitor",
+      "lang": "en",
+      "type": "sales discovery",
+      "context": "Discovery call · with Nadia Haddad",
+      "startMin": 14,
+      "lines": [
+        ["You", "So that is roughly how the routing would look for your team."],
+        ["Nadia", "Look, we already use Freshdesk and the team is used to it. Honestly, it is not the right time to switch."]
+      ],
+      "why": "timing and incumbent-tool pushback",
+      "silent": false,
+      "good": "Acknowledge without arguing or bashing the incumbent, then explore what is behind the timing: what would have to be true to revisit it, or what the current setup costs them. One question, e.g. Ask: \"Fair enough. What would need to change for this to be worth looking at, and when?\""
+    },
+    {
+      "id": "ar-objection-price-authority-gulf",
+      "lang": "ar",
+      "type": "sales",
+      "context": "عرض سعر · with Faisal Al-Otaibi",
+      "startMin": 27,
+      "lines": [
+        ["You", "هذا السعر يشمل كل القنوات والدعم الكامل."],
+        ["Faisal", "والله العرض حلو، بس السعر غالي شوي وما أقدر أقرر لحالي، لازم أرجع للمدير."]
+      ],
+      "why": "price and decision-maker pushback",
+      "silent": false,
+      "good": "Do not discount. Acknowledge, then find out what the manager will weigh and get access to them; line in Gulf Arabic, e.g. Ask: \"أكيد، وش أهم شي بيهتم فيه المدير؟ وتشوف نسوي اجتماع قصير معه هالأسبوع؟\""
+    },
+    {
+      "id": "ar-objection-incumbent-doubt",
+      "lang": "ar",
+      "type": "sales",
+      "context": "مكالمة متابعة · with Mona Saeed",
+      "startMin": 9,
+      "lines": [
+        ["You", "وده بيوفر على الفريق وقت كتير في الردود المتكررة."],
+        ["Mona", "بصراحة احنا عندنا نظام شغال ومش متأكدة إن التغيير يستاهل."]
+      ],
+      "why": "doubt about switching from the current system",
+      "silent": false,
+      "good": "Do not defend the product yet. Acknowledge and ask what is not working with the current system or what switching would have to prove; line in Egyptian Arabic, e.g. Ask: \"مفهوم. إيه أكتر حاجة مضايقاكم في النظام الحالي؟\""
+    },
+    {
+      "id": "monologue-walkthrough",
+      "trigger": "monologue",
+      "lang": "en",
+      "type": "sales discovery",
+      "context": "Discovery call · with Dana Whitfield",
+      "startMin": 8,
+      "lines": [
+        ["You", "So the way the inbox works is that every channel, email, chat, WhatsApp, lands in one place, and each conversation keeps its full history, so whoever picks it up sees everything that happened before.", 28],
+        ["Dana", "Mm-hm.", 1],
+        ["You", "And then on top of that there is routing, which looks at the language, the topic and the customer plan, and sends it to the right team, and if nobody picks it up quickly it escalates automatically.", 30],
+        ["You", "And the reporting side pulls all of that together, so your leads can see response times per team, which topics are growing, and where the AI resolves things on its own versus handing off to an agent.", 32]
+      ],
+      "silent": false,
+      "good": "Stop and hand the floor back with one concrete question tied to what was just shown, not a recap or a generic \"any questions?\", e.g. Ask: \"How do your leads track response times per team today?\""
+    },
+    {
+      "id": "ar-monologue-walkthrough",
+      "trigger": "monologue",
+      "lang": "ar",
+      "type": "sales discovery",
+      "context": "مكالمة تعريفية · with Hassan Ali",
+      "startMin": 15,
+      "lines": [
+        ["You", "بص يا سيدي، الفكرة إن كل القنوات بتاعتكم، الإيميل والواتساب والشات، بتيجي في مكان واحد، وكل محادثة بيبقى معاها التاريخ كله.", 30],
+        ["Hassan", "اه تمام", 1],
+        ["You", "وبعد كده عندنا التوزيع الأوتوماتيك، بيشوف اللغة والموضوع ويبعت للفريق المناسب، ولو محدش رد في وقت معين بيصعّد لوحده.", 30],
+        ["You", "وكمان التقارير بتوريكم وقت الرد لكل فريق، وإيه المواضيع اللي بتزيد، وإمتى الذكاء الاصطناعي بيحل لوحده وإمتى بيحول لموظف.", 31]
+      ],
+      "silent": false,
+      "good": "Stop and hand the floor back with one concrete question in Egyptian Arabic tied to what was just said, e.g. Ask: \"إنتو بتتابعوا وقت الرد لكل فريق إزاي دلوقتي؟\"; no recap."
     }
   ]
 }

@@ -34,7 +34,8 @@ function harness(options: { verdict?: TriageVerdict | null; config?: Partial<Pro
   );
   let lines: TranscriptLine[] = [];
   let pending = "";
-  const observe = () => proactive.observe({ lines, pending, live: true, selfName: "Ahmad Falta" });
+  let live = true;
+  const observe = () => proactive.observe({ lines, pending, live, selfName: "Ahmad Falta" });
   return {
     proactive,
     triage,
@@ -42,6 +43,9 @@ function harness(options: { verdict?: TriageVerdict | null; config?: Partial<Pro
     changed,
     setBusy: (value: boolean) => {
       busy = value;
+    },
+    end: () => {
+      live = false;
     },
     say: (...next: TranscriptLine[]) => {
       lines = [...lines, ...next];
@@ -319,5 +323,139 @@ describe("Proactive: failures", () => {
     } finally {
       log.mockRestore();
     }
+  });
+});
+
+describe("Proactive: objections", () => {
+  const PUSHBACK = line("Omar", "Honestly, this is too expensive for a team our size.", 60, 64);
+
+  test("pushback from the other side goes through triage, and the nudge carries the objection", async () => {
+    const coach = harness();
+    coach.say(PUSHBACK);
+    coach.tick(3);
+    expect(coach.triage.mock.calls[0]?.[0].kinds).toEqual(["objection"]);
+    await settle();
+    expect(coach.nudge.mock.calls[0]?.[0].hits).toEqual([{ kind: "objection", lineIndex: 0, text: PUSHBACK.text }]);
+  });
+
+  test("the user saying the same words never reaches triage", () => {
+    const coach = harness();
+    coach.say(line("You", PUSHBACK.text, 60, 64));
+    coach.tick(10);
+    expect(coach.triage).not.toHaveBeenCalled();
+  });
+
+  test("a triage still running when the meeting ends starts no nudge", async () => {
+    let answer: (result: TriageResult) => void = () => {};
+    const coach = harness();
+    coach.triage.mockImplementationOnce(
+      () =>
+        new Promise<TriageResult>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    coach.say(PUSHBACK);
+    coach.tick(3);
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    coach.end();
+    coach.tick(1);
+    answer({ verdict: { nudge: true, why: "price pushback" }, spend: TRIAGE_SPEND });
+    await settle();
+    expect(coach.nudge).not.toHaveBeenCalled();
+  });
+});
+
+describe("Proactive: long monologues", () => {
+  const MORE = "And here is the next part of how the inbox works.";
+  const talk = async (coach: ReturnType<typeof harness>, fromS: number, toS: number, speaker = "You") => {
+    for (let at = fromS; at < toS; at += 10) {
+      coach.say(line(speaker, MORE, at, at + 10));
+      coach.tick(10);
+      await settle();
+    }
+  };
+  const NO = { nudge: false, why: "already handled" };
+
+  test("the user talking 90 seconds straight gets one hand-over nudge, without triage, and no repeat while it goes on", async () => {
+    const coach = harness();
+    await talk(coach, 0, 80);
+    expect(coach.nudge).not.toHaveBeenCalled();
+    await talk(coach, 80, 90);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    const request = coach.nudge.mock.calls[0]?.[0];
+    expect(request?.hits).toEqual([{ kind: "monologue", lineIndex: 8, text: MORE }]);
+    expect(request?.why).toBe("You have talked for 01:30 without handing over");
+    expect(request?.context).toBe("Weekly sync · with Omar");
+    await talk(coach, 90, 300);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.triage).not.toHaveBeenCalled();
+  });
+
+  test("backchannels do not reset the stretch; a question from the other side does", async () => {
+    const backchannel = harness();
+    await talk(backchannel, 0, 50);
+    backchannel.say(line("Omar", "Mm-hm.", 50, 51));
+    await talk(backchannel, 51, 91);
+    expect(backchannel.nudge).toHaveBeenCalledTimes(1);
+
+    const asked = harness({ verdict: NO });
+    await talk(asked, 0, 50);
+    asked.say(line("Omar", "How much?", 50, 51));
+    await talk(asked, 51, 91);
+    expect(asked.triage).toHaveBeenCalledTimes(1);
+    expect(asked.nudge).not.toHaveBeenCalled();
+    await talk(asked, 91, 141);
+    expect(asked.nudge).toHaveBeenCalledTimes(1);
+    expect(asked.nudge.mock.calls[0]?.[0].why).toBe("You have talked for 01:30 without handing over");
+  });
+
+  test("a second monologue right after the first waits out the cooldown", async () => {
+    const coach = harness({ verdict: NO });
+    await talk(coach, 0, 90);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    coach.say(line("Omar", "Okay, so what would the rollout look like for us then?", 90, 96));
+    coach.tick(6);
+    await settle();
+    await talk(coach, 96, 196);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    await talk(coach, 196, 396);
+    expect(coach.nudge).toHaveBeenCalledTimes(2);
+  });
+
+  test("the other side talking for minutes is not the user's monologue", async () => {
+    const coach = harness();
+    await talk(coach, 0, 200, "Omar");
+    expect(coach.nudge).not.toHaveBeenCalled();
+  });
+
+  test("off, capped, busy or after the meeting ended: no monologue nudge; the same talk nudges when open", async () => {
+    const open = harness();
+    await talk(open, 0, 90);
+    expect(open.nudge).toHaveBeenCalledTimes(1);
+
+    const off = harness({ config: { enabled: false } });
+    await talk(off, 0, 120);
+    const capped = harness({ config: { capUsd: 0.05 } });
+    capped.proactive.spend("nudges", { usd: 0.05, tokens: 9_000, cachedTokens: 0 });
+    await talk(capped, 0, 120);
+    const busy = harness();
+    busy.setBusy(true);
+    await talk(busy, 0, 120);
+    const ended = harness();
+    await talk(ended, 0, 80);
+    ended.end();
+    await talk(ended, 80, 120);
+    for (const coach of [off, capped, busy, ended]) expect(coach.nudge).not.toHaveBeenCalled();
+  });
+
+  test("a nudge declined by the app is retried on the next look, not dropped", async () => {
+    const coach = harness();
+    coach.nudge.mockImplementationOnce(() => false);
+    await talk(coach, 0, 80);
+    coach.say(line("You", MORE, 80, 90));
+    coach.tick(1);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    coach.tick(1);
+    expect(coach.nudge).toHaveBeenCalledTimes(2);
   });
 });

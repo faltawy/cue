@@ -1,6 +1,6 @@
 import type { TranscriptLine } from "./transcript";
 
-export type HitKind = "question" | "name" | "commitment" | "number";
+export type HitKind = "question" | "name" | "objection" | "commitment" | "number" | "monologue";
 export type Hit = { kind: HitKind; lineIndex: number; text: string };
 
 const YOU = "You";
@@ -101,6 +101,108 @@ function sentences(text: string): string[] {
     .split(/(?<=[.!?؟])\s+/u)
     .map((sentence) => sentence.trim())
     .filter(Boolean);
+}
+
+export function asksQuestion(text: string): boolean {
+  return sentences(normalize(text)).some(isQuestion);
+}
+
+const bounded = (alternatives: readonly string[]) =>
+  new RegExp(`${NOT_LETTER_BEFORE}(?:${words(alternatives)})${NOT_LETTER_AFTER}`, "u");
+
+const DECIDERS =
+  "boss|manager|team|ceo|cfo|cto|coo|director|vp|head of \\p{L}+|legal|procurement|finance|board|partners?|leadership|management|founders?";
+const AR_NOT = "مش|مو|مب|ما|مهو|مهوش|ماني|مانيش|مانيب|ما ني|مني";
+const AR_DECIDERS = "(?:لل|ل|ال)?(?:مدير\\p{L}*|مدراء|اداره|مجلس|ريس|رئيس|مسؤول\\p{L}*|شركاء|شريك\\p{L}*|مالك)";
+const AR_ASK_UP =
+  "ارجع|نرجع|هرجع|هنرجع|حرجع|اشاور|نشاور|هشاور|استشير|نستشير|اسال|نسال|هسال|اكلم|نكلم|هكلم|هنكلم|اتكلم مع|نتكلم مع|هتكلم مع";
+const OBJECTION = bounded([
+  "over (?:our |the |my )?budget",
+  "(?:out of|above|beyond) (?:our |the |my )?budget",
+  "(?:more|higher) than (?:we|i) (?:budgeted|planned|expected)",
+  "(?:can't|cannot|can not|couldn't) afford",
+  "(?:don't|do not|doesn't|didn't) have (?:the |a |any )?budget",
+  "no budget",
+  "budget is (?:tight|limited|frozen|gone)",
+  "costs? too much",
+  "too much (?:money|for us)",
+  "(?:the )?price is (?:too |a bit |pretty |really )?(?:high|steep)",
+  "(?:something|anything|a) cheaper",
+  "not (?:the )?(?:right|best|a good) time",
+  "bad tim(?:e|ing)",
+  "not now",
+  "not (?:a )?priority",
+  "(?:on|put (?:it|this) on) hold",
+  "(?:maybe|probably|wait (?:until|till)|until|till) (?:the )?next (?:quarter|year)",
+  "maybe later",
+  "we (?:already|currently) (?:use|work with|pay for|have (?:a |an )?(?:tool|system|solution|vendor|provider|platform|contract))",
+  "we're (?:already |currently )?using",
+  "(?:happy|fine|ok|okay) with (?:our|what we have|the current)",
+  "(?:our|the) current (?:vendor|provider|tool|solution|system|platform|setup)",
+  "another (?:vendor|provider|tool|solution|platform)",
+  "competitors?",
+  "(?:built|build) (?:it|this|our own) in[- ]house",
+  `(?:check|talk|speak|confirm|discuss(?: it| this| that)?)(?: in)? with (?:my|our|the) (?:${DECIDERS})`,
+  `run (?:it|this|that) (?:by|past) (?:my|our|the) (?:${DECIDERS})`,
+  "not (?:my|our) (?:decision|call)",
+  "(?:i|we) (?:can't|cannot|don't) (?:decide|make (?:that|this|the) (?:decision|call))",
+  "need (?:an |the )?(?:approval|sign-off|signoff|sign off)",
+  `(?:has|have|needs?) to (?:be approved|go through) (?:by )?(?:${DECIDERS})`,
+  "not (?:sure|convinced|certain) (?:it|this|that|if|whether|about|it'll|this'll|that's|it's|we|they)",
+  "not convinced",
+  "concerned (?:about|that|with)",
+  "(?:my|our|the) (?:main |big |biggest |only |real )?(?:concerns?|worry|worries|hesitations?)",
+  "worried (?:about|that)",
+  "s[kc]eptical",
+  "(?:too|sounds|seems|a bit|pretty|very) risky",
+  "i doubt",
+  "hesitant",
+  "(?:doesn't|does not|won't|will not) (?:work|fit) for us",
+  "السعر (?:عالي|كتير|كثير|مرتفع)",
+  "الاسعار (?:عاليه|كتير|كثير|مرتفعه)",
+  "(?:فوق|اكتر من|اكثر من|اعلي من|خارج) (?:ال)?ميزانيه",
+  "(?:ما عندنا|ماعندنا|معندناش|مفيش|مافي|ما في|ما فيه|ما عندي|معنديش) ميزانيه",
+  "الميزانيه (?:ما|مش|مو) (?:تسمح|بتسمح|تكفي|هتكفي|كفايه)",
+  "الميزانيه محدوده",
+  "(?:ما نقدر|مش هنقدر|مش قادرين) ندفع",
+  "ارخص",
+  `(?:${AR_NOT}) (?:وقته|وقتها|الوقت المناسب|وقت مناسب|دلوقتي|الحين|هلق|هلا)`,
+  "(?:ناجل|نؤجل|هناجل|خلينا ناجل)\\p{L}*",
+  "تاجيل",
+  "عندنا (?:نظام|حل|سيستم|برنامج|مزود)",
+  "(?:احنا|حنا|نحن|نحنا) (?:اصلا |حاليا )?(?:بنستخدم|نستخدم|مستخدمين|مشتركين)",
+  "(?:شركه|مزود) (?:تانيه|ثانيه|تاني|ثاني|اخري|اخر)",
+  "منافس\\p{L}*",
+  `(?:${AR_ASK_UP}) ${AR_DECIDERS}`,
+  "(?:مش|مو|مب) قراري",
+  "القرار (?:مش|مو|مب) (?:بايدي|بيدي|عندي)",
+  "(?:محتاج|محتاجين|نحتاج|يحتاج|لازم) موافقه",
+  `(?:${AR_NOT}) (?:متاكد|متاكدين|متاكده|مقتنع|مقتنعين|مقتنعه|مطمن|مطمنين|واثق|واثقين)`,
+  "قلقان\\p{L}*",
+  "(?:عندي|عندنا) (?:قلق|تخوف)",
+  "خايف(?:ين)? (?:من|ان|انه|انها)",
+  "متخوف\\p{L}*",
+  "مخاطره",
+]);
+const PRICEY = new RegExp(
+  `${NOT_LETTER_BEFORE}(?:(?:too|so|very|really|quite|pretty|a bit|kind of|kinda|way too) )?(?:expensive|pricey|costly|overpriced|غالي|غاليه|مكلف|مكلفه)${NOT_LETTER_AFTER}`,
+  "gu",
+);
+const NEGATION = new Set(["not", "isn't", "wasn't", "aren't", "never", "no", "hardly", "مش", "مو", "مب", "ما", "مهو", "مهوش", "مهوا"]);
+const NEGATION_REACH = 2;
+
+function negated(text: string, at: number): boolean {
+  return text
+    .slice(0, at)
+    .split(/[\s,،]+/u)
+    .filter(Boolean)
+    .slice(-NEGATION_REACH)
+    .some((word) => NEGATION.has(word));
+}
+
+function isObjection(text: string): boolean {
+  if (OBJECTION.test(text)) return true;
+  return [...text.matchAll(PRICEY)].some((match) => !negated(text, match.index));
 }
 
 const PROMISE_VERBS = [
@@ -255,6 +357,7 @@ export function detectHits(line: TranscriptLine, lineIndex: number, selfName: st
   const found: HitKind[] = [];
   if (fromOthers && sentences(plain).some(isQuestion)) found.push("question");
   if (fromOthers && namePattern(selfName)?.test(plain)) found.push("name");
+  if (fromOthers && isObjection(plain)) found.push("objection");
   if (COMMITMENT.some((pattern) => pattern.test(plain))) found.push("commitment");
   if (NUMBER.some((pattern) => pattern.test(plain))) found.push("number");
   return found.map((kind) => ({ kind, lineIndex, text }));

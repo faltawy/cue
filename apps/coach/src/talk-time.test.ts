@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { percentLabel, talkShares, talkStats, talkSummary } from "./talk-time";
+import { monologue, percentLabel, talkShares, talkStats, talkSummary } from "./talk-time";
 import type { TranscriptLine } from "./transcript";
 
 const line = (speaker: string, startS: number, endS: number, text = "words"): TranscriptLine => ({
@@ -98,5 +98,47 @@ describe("talkShares and percentLabel", () => {
     [0, 0, "0%"],
   ])("%d of %d ms reads %s", (ms, total, label) => {
     expect(percentLabel(ms, total)).toBe(label);
+  });
+});
+
+describe("monologue", () => {
+  const pitch = [line("You", 0, 30, "So the inbox works like this."), line("You", 31, 60, "Then routing."), line("You", 61, 95, "And reporting.")];
+
+  test("the user's current unbroken stretch, from its first line to its last", () => {
+    expect(monologue(pitch)).toEqual({ startMs: 0, ms: 95_000, lineIndex: 2 });
+  });
+
+  test.each([
+    ["a short yeah", line("Omar", 60, 61, "Yeah.")],
+    ["an Arabic backchannel", line("Omar", 60, 61.5, "اه تمام")],
+    ["a slow mm-hm", line("Omar", 60, 63, "Mm-hm, right.")],
+    ["a one-word really?", line("Omar", 60, 61, "Really?")],
+  ])("%s from the other side does not break it", (_, backchannel) => {
+    const lines = [pitch[0], pitch[1], backchannel, pitch[2]].flatMap((entry) => (entry ? [entry] : []));
+    expect(monologue(lines)).toEqual({ startMs: 0, ms: 95_000, lineIndex: 3 });
+  });
+
+  test("a trailing backchannel keeps the stretch current", () => {
+    expect(monologue([...pitch, line("Omar", 95, 96, "Okay.")])).toEqual({ startMs: 0, ms: 95_000, lineIndex: 2 });
+  });
+
+  test.each([
+    ["a short question", line("Omar", 60, 61, "How much?")],
+    ["a short Arabic question", line("Omar", 60, 61.5, "بكام ده؟")],
+    ["a real turn", line("Omar", 60, 66, "We tried something like that before, it did not go well.")],
+  ])("%s from the other side starts a new stretch after it", (_, turn) => {
+    const lines = [pitch[0], pitch[1], turn, pitch[2]].flatMap((entry) => (entry ? [entry] : []));
+    expect(monologue(lines)).toEqual({ startMs: 61_000, ms: 34_000, lineIndex: 3 });
+  });
+
+  test("a long silence ends the stretch", () => {
+    const lines = [line("You", 0, 50), line("You", 60, 95)];
+    expect(monologue(lines)).toEqual({ startMs: 60_000, ms: 35_000, lineIndex: 1 });
+  });
+
+  test("none while the other side holds the floor, or before anyone spoke", () => {
+    expect(monologue([...pitch, line("Omar", 96, 110, "Let me push back on the reporting part.")])).toBeNull();
+    expect(monologue([line("Omar", 0, 120, "A long story from the other side.")])).toBeNull();
+    expect(monologue([])).toBeNull();
   });
 });
