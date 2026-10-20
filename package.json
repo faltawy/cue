@@ -1,5 +1,7 @@
 {
   "scripts": {
+    "changeset": "changeset add",
+    "release:version": "changeset version && node scripts/release-notes.mjs version",
     "dev": "node scripts/dev.mjs desktop",
     "dev:desktop": "node scripts/dev.mjs desktop",
     "fmt:check": "dprint check",
@@ -9,6 +11,7 @@
     "lint:oxlint": "oxlint --type-aware"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@dotenvx/dotenvx": "^1.61.0",
     "@tanstack/eslint-plugin-query": "^5.99.0",
     "braces": "3.0.3",

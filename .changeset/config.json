@@ -1,0 +1,9 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
+  "baseBranch": "main",
+  "changelog": "./changelog.mjs",
+  "commit": false,
+  "format": false,
+  "ignore": ["**", "!@anlg/desktop"],
+  "privatePackages": { "version": true, "tag": false }
+}
