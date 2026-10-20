@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.3.0
+
+### Minor Changes
+
+- Cue's download and updates are much smaller. The coach uses your installed Claude Code when it's up to date; otherwise it downloads what it needs the first time you open it, and Settings > Claude shows which one it uses.
+
 ## 0.2.0
 
 ### Minor Changes
