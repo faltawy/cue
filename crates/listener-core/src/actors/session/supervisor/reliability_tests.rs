@@ -341,6 +341,130 @@ async fn live_words_resume_after_stalled_streams_without_restarting_recorder() {
     }
 }
 
+struct LiveCapture;
+
+impl anlg_audio::AudioProvider for LiveCapture {
+    fn open_capture(
+        &self,
+        config: anlg_audio::CaptureConfig,
+    ) -> Result<anlg_audio::CaptureStream, anlg_audio::Error> {
+        let chunk = config.chunk_size;
+        let period = Duration::from_secs_f64(chunk as f64 / config.sample_rate as f64);
+        Ok(anlg_audio::CaptureStream::new(
+            futures_util::stream::unfold(0_usize, move |frame| async move {
+                tokio::time::sleep(period).await;
+                let samples: Arc<[f32]> = (0..chunk)
+                    .map(|i| ((frame * chunk + i) as f32 * 0.05).sin() * 0.3)
+                    .collect();
+                Some((
+                    Ok(anlg_audio::CaptureFrame {
+                        raw_mic: samples.clone(),
+                        raw_speaker: samples,
+                        aec_mic: None,
+                    }),
+                    frame + 1,
+                ))
+            }),
+        ))
+    }
+    fn open_speaker_capture(
+        &self,
+        _sample_rate: u32,
+        _chunk_size: usize,
+    ) -> Result<anlg_audio::CaptureStream, anlg_audio::Error> {
+        unimplemented!()
+    }
+    fn open_mic_capture(
+        &self,
+        _device: Option<String>,
+        _sample_rate: u32,
+        _chunk_size: usize,
+    ) -> Result<anlg_audio::CaptureStream, anlg_audio::Error> {
+        unimplemented!()
+    }
+    fn default_device_name(&self) -> String {
+        "test".to_string()
+    }
+    fn list_mic_devices(&self) -> Vec<String> {
+        vec![]
+    }
+    fn play_silence(&self) -> std::sync::mpsc::Sender<()> {
+        std::sync::mpsc::channel().0
+    }
+    fn play_bytes(&self, _bytes: &'static [u8]) -> std::sync::mpsc::Sender<()> {
+        std::sync::mpsc::channel().0
+    }
+    fn probe_mic(&self, _device: Option<String>) -> Result<(), anlg_audio::Error> {
+        Ok(())
+    }
+    fn probe_speaker(&self) -> Result<(), anlg_audio::Error> {
+        Ok(())
+    }
+}
+
+async fn wait_for_audio(received: &std::sync::atomic::AtomicUsize, at_least: usize) {
+    while received.load(std::sync::atomic::Ordering::SeqCst) < at_least {
+        tokio::time::sleep(Duration::from_millis(20)).await;
+    }
+}
+
+// Captured audio has to reach the provider once the handshake completes, and again after the
+// provider drops the stream mid-meeting and the session reconnects.
+#[tokio::test]
+async fn captured_audio_reaches_the_provider_after_connecting_and_reconnecting() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let socket = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = socket.local_addr().unwrap();
+    let received = [Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0))];
+    let server_received = received.clone();
+    let server = tokio::spawn(async move {
+        for (connection, received) in server_received.iter().enumerate() {
+            let (stream, _) = socket.accept().await.unwrap();
+            tokio::time::sleep(Duration::from_secs(3)).await;
+            let mut ws = accept_async(stream).await.unwrap();
+            while let Some(Ok(message)) = ws.next().await {
+                if !matches!(message, Message::Binary(_)) {
+                    continue;
+                }
+                let count = received.fetch_add(1, Ordering::SeqCst) + 1;
+                if count % 8 == 0 && ws.send(response("heard", true)).await.is_err() {
+                    break;
+                }
+                if connection == 0 && count == 60 {
+                    let _ = ws.close(None).await;
+                    break;
+                }
+            }
+        }
+    });
+    let vault = tempfile::tempdir().unwrap();
+    let mut ctx = test_ctx();
+    ctx.audio = Arc::new(LiveCapture);
+    ctx.app_dir = vault.path().to_path_buf();
+    ctx.params.session_id = uuid::Uuid::new_v4().to_string();
+    ctx.params.base_url = format!("http://{address}/v1");
+    ctx.params.model = "nova-3".to_string();
+    let session_id = ctx.params.session_id.clone();
+    let (supervisor, supervisor_task) = Actor::spawn(None, SessionActor, ctx).await.unwrap();
+
+    timeout(Duration::from_secs(20), wait_for_audio(&received[0], 60))
+        .await
+        .expect("audio should stream after the first connect");
+    timeout(Duration::from_secs(30), wait_for_audio(&received[1], 80))
+        .await
+        .expect("audio should stream again after reconnecting");
+    let listener = wait_for_listener(&session_id, None).await;
+    assert_eq!(listener.get_status(), ActorStatus::Running);
+
+    supervisor.cast(SessionMsg::Shutdown).unwrap();
+    timeout(Duration::from_secs(10), supervisor_task)
+        .await
+        .unwrap()
+        .unwrap();
+    server.abort();
+}
+
 async fn wait_for_listener_registration(session_id: &str, registered: bool) {
     while registry::where_is(ListenerActor::name(session_id)).is_some() != registered {
         tokio::time::sleep(Duration::from_millis(10)).await;

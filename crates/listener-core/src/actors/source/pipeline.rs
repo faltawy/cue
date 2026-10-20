@@ -25,7 +25,10 @@ const MAX_BUFFER_CHUNKS: usize = 150;
 const REPLAY_HISTORY_SECS: usize = 5;
 const LISTENER_DISPATCH_CAPACITY: usize = 32;
 const LISTENER_AUDIO_ACK_TIMEOUT: Duration = Duration::from_secs(1);
-const LISTENER_BACKPRESSURE_TIMEOUT: Duration = Duration::from_secs(1);
+// On a high-latency uplink TCP needs several round trips to open its window after connecting or
+// after loss, and the bounded buffers below hold the audio meanwhile; a shorter wait tears down
+// streams that would have caught up.
+const LISTENER_BACKPRESSURE_TIMEOUT: Duration = Duration::from_secs(10);
 const LISTENER_BACKPRESSURE_RETRY_DELAY: Duration = Duration::from_millis(10);
 const MAX_BACKLOG_DISPATCH_PER_FRAME: usize = 2;
 const RECORDER_DISPATCH_CAPACITY: usize = 32;
@@ -876,6 +879,54 @@ mod tests {
 
     struct StuckListenerProbe;
 
+    // Answers Backpressured until `ready_at`, like a provider socket whose TCP window is still
+    // opening on a high-latency uplink, then accepts.
+    struct RampingListenerProbe {
+        ready_at: Instant,
+        tx: tokio::sync::mpsc::UnboundedSender<ProbeEvent>,
+    }
+
+    #[ractor::async_trait]
+    impl Actor for RampingListenerProbe {
+        type Msg = ListenerMsg;
+        type State = ();
+        type Arguments = ();
+
+        async fn pre_start(
+            &self,
+            _myself: ActorRef<Self::Msg>,
+            _args: Self::Arguments,
+        ) -> Result<Self::State, ActorProcessingErr> {
+            Ok(())
+        }
+
+        async fn handle(
+            &self,
+            _myself: ActorRef<Self::Msg>,
+            message: Self::Msg,
+            _state: &mut Self::State,
+        ) -> Result<(), ActorProcessingErr> {
+            if let ListenerMsg::AudioDual(_, _, reply) = message {
+                if Instant::now() < self.ready_at {
+                    let _ = reply.send(ListenerAudioResult::Backpressured);
+                } else {
+                    let _ = self.tx.send(ProbeEvent::ListenerDual);
+                    let _ = reply.send(ListenerAudioResult::Accepted);
+                }
+            }
+            Ok(())
+        }
+
+        async fn post_stop(
+            &self,
+            _myself: ActorRef<Self::Msg>,
+            _state: &mut Self::State,
+        ) -> Result<(), ActorProcessingErr> {
+            let _ = self.tx.send(ProbeEvent::ListenerStopped);
+            Ok(())
+        }
+    }
+
     #[ractor::async_trait]
     impl Actor for BackpressuredListenerProbe {
         type Msg = ListenerMsg;
@@ -1338,6 +1389,47 @@ mod tests {
         let replay = pipeline.prepare_listener_refresh();
         assert!(replay.duration_secs > 0.0);
         assert_eq!(pipeline.audio_buffer.len(), 1);
+    }
+
+    // On a high-latency uplink the provider socket can refuse audio for seconds after connecting
+    // while TCP ramps up; tearing the stream down then reconnects into the same wall.
+    #[tokio::test]
+    async fn listener_backpressure_while_the_uplink_ramps_up_keeps_the_stream() {
+        let mut pipeline = test_pipeline();
+        let (probe_tx, mut probe_rx) = tokio::sync::mpsc::unbounded_channel();
+        let (listener_ref, _handle) = Actor::spawn(
+            None,
+            RampingListenerProbe {
+                ready_at: Instant::now() + Duration::from_secs(3),
+                tx: probe_tx,
+            },
+            (),
+        )
+        .await
+        .unwrap();
+        let routing = ListenerRouting::Attached(listener_ref.clone());
+
+        for _ in 0..3 {
+            pipeline
+                .dispatch_frame(
+                    source_frame(false),
+                    ChannelMode::MicAndSpeaker,
+                    &routing,
+                    None,
+                )
+                .await
+                .unwrap();
+        }
+
+        for _ in 0..3 {
+            let event = tokio::time::timeout(Duration::from_secs(6), probe_rx.recv())
+                .await
+                .expect("audio should be delivered once the uplink opens")
+                .unwrap();
+            assert!(matches!(event, ProbeEvent::ListenerDual));
+        }
+        assert_eq!(listener_ref.get_status(), ractor::ActorStatus::Running);
+        listener_ref.stop(None);
     }
 
     #[tokio::test]
