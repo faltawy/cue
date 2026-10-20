@@ -658,10 +658,12 @@ async fn ensure_folder_catalog_revives_and_uses_session_workspace() {
 #[tokio::test]
 async fn rename_folder_catalog_rewrites_exact_and_nested_paths() {
     let db = test_db().await;
-    sqlx::query("INSERT INTO folders (id, path) VALUES ('f-1', 'a')")
-        .execute(db.pool())
-        .await
-        .unwrap();
+    sqlx::query(
+        "INSERT INTO folders (id, path) VALUES ('f-1', 'a'), ('f-2', 'a/sub'), ('f-3', 'ab')",
+    )
+    .execute(db.pool())
+    .await
+    .unwrap();
     sqlx::query(
         "INSERT INTO folder_attachments (id, folder_path, relative_path)
          VALUES ('fa-1', 'a/sub', 'materials/x'), ('fa-2', 'a\\win', 'materials/y')",
@@ -687,11 +689,13 @@ async fn rename_folder_catalog_rewrites_exact_and_nested_paths() {
     .await
     .unwrap();
 
-    let path: String = sqlx::query_scalar("SELECT path FROM folders WHERE id = 'f-1'")
-        .fetch_one(db.pool())
-        .await
-        .unwrap();
-    assert_eq!(path, "b");
+    let folder_paths: Vec<String> = sqlx::query_scalar(
+        "SELECT path FROM folders WHERE id IN ('f-1', 'f-2', 'f-3') ORDER BY id",
+    )
+    .fetch_all(db.pool())
+    .await
+    .unwrap();
+    assert_eq!(folder_paths, ["b", "b/sub", "ab"]);
 
     let mut material_paths: Vec<String> =
         sqlx::query_scalar("SELECT folder_path FROM folder_attachments ORDER BY id")

@@ -15,6 +15,7 @@ import {
 } from "~/session/folder-attachments";
 import { deleteNamedFolder, renameNamedFolder } from "~/session/folder-catalog";
 import { FolderInstructionsField } from "~/session/folder-instructions";
+import { folderDisplayName, parentFolderPath } from "~/session/folders";
 import { useFolderMaterialUpload } from "~/shared/hooks/useFileUpload";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
 
@@ -67,6 +68,15 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
             onClick={() => setDeleting(true)}
           >
             <Trash size={14} />
+          </button>
+          <button
+            type="button"
+            aria-label={t`Show all notes`}
+            title={t`Show all notes`}
+            className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-6 items-center justify-center rounded-md"
+            onClick={() => setFolderFilter(null)}
+          >
+            <X size={14} />
           </button>
         </div>
         <div className="mt-1 mb-1.5">
@@ -155,10 +165,14 @@ export function FolderMaterialsPanel({ folderPath }: { folderPath: string }) {
         open={renaming}
         title={t`Rename folder`}
         confirmLabel={t`Rename`}
-        initialValue={folderPath}
+        initialValue={folderDisplayName(folderPath)}
         onOpenChange={setRenaming}
-        onSubmit={async (nextPath) => {
-          const renamed = await renameNamedFolder(folderPath, nextPath);
+        onSubmit={async (name) => {
+          const parent = parentFolderPath(folderPath);
+          const renamed = await renameNamedFolder(
+            folderPath,
+            parent ? `${parent}/${name}` : name,
+          );
           setFolderFilter(renamed);
         }}
       />

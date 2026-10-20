@@ -209,14 +209,22 @@ pub async fn rename_folder_row(
     let result = sqlx::query(
         "UPDATE folders
         SET
-          path = ?,
+          path = CASE
+            WHEN path = ? THEN ?
+            ELSE ? || substr(path, length(?) + 1)
+          END,
           updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
           deleted_at = NULL
-        WHERE path = ?
-          AND deleted_at IS NULL",
+        WHERE deleted_at IS NULL
+          AND (path = ? OR path LIKE ? OR path LIKE ?)",
     )
+    .bind(old_path)
+    .bind(new_path)
     .bind(new_path)
     .bind(old_path)
+    .bind(old_path)
+    .bind(format!("{old_path}/%"))
+    .bind(format!("{old_path}\\%"))
     .execute(&mut *conn)
     .await?;
     Ok(result.rows_affected())

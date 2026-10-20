@@ -157,6 +157,33 @@ describe("FolderMaterialsPanel", () => {
     });
   });
 
+  it("renames a nested folder in place instead of moving it to the top level", async () => {
+    mocks.renameNamedFolder.mockResolvedValue("CS 101/Week 2");
+    render(<FolderMaterialsPanel folderPath="CS 101/Week 1" />);
+
+    fireEvent.click(screen.getByLabelText("Rename folder"));
+    const input = screen.getByLabelText("Folder name") as HTMLInputElement;
+    expect(input.value).toBe("Week 1");
+    fireEvent.change(input, { target: { value: "Week 2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+
+    await waitFor(() => {
+      expect(mocks.renameNamedFolder).toHaveBeenCalledWith(
+        "CS 101/Week 1",
+        "CS 101/Week 2",
+      );
+      expect(mocks.setFolderFilter).toHaveBeenCalledWith("CS 101/Week 2");
+    });
+  });
+
+  it("clears the folder filter to show all notes again", () => {
+    render(<FolderMaterialsPanel folderPath="CS 101" />);
+
+    fireEvent.click(screen.getByLabelText("Show all notes"));
+
+    expect(mocks.setFolderFilter).toHaveBeenCalledWith(null);
+  });
+
   it("saves folder context when the field blurs", async () => {
     render(<FolderMaterialsPanel folderPath="CS 101" />);
 
