@@ -523,7 +523,7 @@ impl VoiceActivityDetector {
 						// Note that division by 4 equals shift by 2, hence,
 						// (Q13 >> 8) = (Q13 >> 6) / 4 = Q7.
 						tmp_s16 += 128;
-						let ssk = (ssk + (tmp_s16 >> 8)).min(MIN_STD);
+						let ssk = (ssk + (tmp_s16 >> 8)).max(MIN_STD);
 						self.speech_stds[gaussian][channel] = ssk;
 					} else {
 						// Update GMM variance vectors.
@@ -544,7 +544,7 @@ impl VoiceActivityDetector {
 						// Q20 / Q7 = Q13.
 						let mut tmp_s16 = if tmp1_s32 > 0 { div_i32_i16(tmp1_s32, nsk) } else { -div_i32_i16(-tmp1_s32, nsk) } as i16;
 						tmp_s16 += 32; // Rounding
-						let nsk = (nsk + (tmp_s16 >> 6)).min(MIN_STD);
+						let nsk = (nsk + (tmp_s16 >> 6)).max(MIN_STD);
 						self.noise_stds[gaussian][channel] = nsk;
 					}
 				}

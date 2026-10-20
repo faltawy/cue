@@ -55,11 +55,11 @@ fn allpass(inv: &[i16], out: &mut [i16], filter_state: &mut i16, filter_coeffici
 	let mut state32 = (*filter_state as i32) * (1 << 16);
 	let mut j = 0;
 	for i in 0..out.len() {
-		let tmp32 = state32 + filter_coefficient as i32 * inv[j] as i32;
+		let tmp32 = state32.wrapping_add(filter_coefficient as i32 * inv[j] as i32);
 		let tmp16 = (tmp32 >> 16) as i16;
 		out[i] = tmp16;
-		state32 = (inv[j] as i32 * (1 << 14)) - filter_coefficient as i32 * tmp16 as i32;
-		state32 *= 2;
+		state32 = (inv[j] as i32 * (1 << 14)).wrapping_sub(filter_coefficient as i32 * tmp16 as i32);
+		state32 = state32.wrapping_mul(2);
 		j += 2;
 	}
 	*filter_state = (state32 >> 16) as i16;

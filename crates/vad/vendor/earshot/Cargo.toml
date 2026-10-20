@@ -1,4 +1,7 @@
 # Source: pykeio/earshot, earshot@0.1.0 (BSD-3-Clause).
+# Local patch: GMM standard deviations are floored at MIN_STD, as in the WebRTC reference, instead of capped;
+# the peak-amplitude scan saturates i16::MIN like WebRtcSpl_MaxAbsValueW16; the all-pass filter wraps on
+# clipped input like the reference's int32 arithmetic instead of panicking in debug builds.
 
 [package]
 edition = "2021"

@@ -2,7 +2,7 @@ use crate::util::{norm_i32, size_in_bits};
 
 fn get_scaling_square(inv: &[i16], times: usize) -> u8 {
 	let n_bits = size_in_bits(times as i32);
-	let smax = inv.iter().map(|c| c.abs()).max().unwrap() as i32;
+	let smax = inv.iter().map(|c| c.saturating_abs()).max().unwrap() as i32;
 	let t = norm_i32(smax * smax) as u8;
 	if smax != 0 {
 		if t > n_bits { 0 } else { n_bits - t }
