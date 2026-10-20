@@ -37,6 +37,7 @@ const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
     meetingTokens: 125_000_000,
     cachedTokens: 120_000_000,
   },
+  setup: { state: "ready" },
   ...overrides,
 });
 
@@ -290,7 +291,7 @@ const worstConversation: CoachEvent[] = [
       kind: "auth",
       title: "Claude sign-in expired",
       message: "Open Terminal, run `claude`, and type `/login`. Then try again.",
-      detail: `Failed to authenticate. API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"OAuth token has expired. Please obtain a new token or refresh your existing token."},"request_id":"req_011CUZ9f8e7d6c5b4a4c3d8e2f1a0b9c8d7e6f"}\n    at /Users/aleksandra.wisniewska-kowalczyk/work/anarlog-eval/anarlog/apps/desktop/src-tauri/target/debug/bundle/macos/Cue Dev.app/Contents/MacOS/anarlog-claude:1:28471923`,
+      detail: `Failed to authenticate. API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"OAuth token has expired. Please obtain a new token or refresh your existing token."},"request_id":"req_011CUZ9f8e7d6c5b4a4c3d8e2f1a0b9c8d7e6f"}\n    at /Users/aleksandra.wisniewska-kowalczyk/Library/Caches/com.hyprnote.dev/claude-code/0.3.302/claude:1:28471923`,
     },
   },
   { type: "done", seconds: 1.2, ok: false, silent: false, interrupted: false },

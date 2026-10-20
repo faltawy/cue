@@ -1,6 +1,6 @@
-import path from "node:path";
 import { parseArgs } from "node:util";
 
+import { CLAUDE_ARGS, claudeCodeFromArgs } from "./claude-code";
 import { findConnectors } from "./connectors";
 
 const DISCOVERY_TIMEOUT_MS = 10_000;
@@ -8,12 +8,12 @@ const DISCOVERY_TIMEOUT_MS = 10_000;
 const { values } = parseArgs({
   options: {
     "list-connectors": { type: "boolean" },
-    claude: { type: "string" },
+    ...CLAUDE_ARGS,
   },
 });
 
 const found = await findConnectors({
-  claudePath: values.claude ? path.resolve(values.claude) : undefined,
+  claudePath: await claudeCodeFromArgs(values).executable(),
   timeoutMs: DISCOVERY_TIMEOUT_MS,
 });
 await Bun.write(Bun.stdout, JSON.stringify(found));

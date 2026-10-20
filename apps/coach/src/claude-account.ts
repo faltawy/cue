@@ -4,12 +4,8 @@ import { sessionEnv } from "./env";
 
 const authStatusSchema = z.object({ loggedIn: z.boolean() });
 
-export function claudeExecutable(claudePath: string | undefined): string {
-  return claudePath ?? Bun.resolveSync("@anthropic-ai/claude-agent-sdk-darwin-arm64/claude", import.meta.dir);
-}
-
-export async function claudeSignedIn(claudePath: string | undefined): Promise<boolean> {
-  const child = Bun.spawn([claudeExecutable(claudePath), "auth", "status", "--json"], {
+export async function claudeSignedIn(claudePath: string): Promise<boolean> {
+  const child = Bun.spawn([claudePath, "auth", "status", "--json"], {
     env: sessionEnv(process.env),
     stdin: "ignore",
     stdout: "pipe",

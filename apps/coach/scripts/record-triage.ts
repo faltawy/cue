@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { claudeCodeFromArgs } from "../src/claude-code";
 import { detectHits, type HitKind } from "../src/detect";
 import type { TranscriptLine } from "../src/transcript";
 import { askTriage, parseTriage, TRIAGE_MODEL } from "../src/triage";
@@ -11,6 +12,7 @@ import { askTriage, parseTriage, TRIAGE_MODEL } from "../src/triage";
 const file = path.join(import.meta.dir, "../src/fixtures/triage-moments.json");
 type Moment = { id: string; lines: Array<[string, string]>; nudge: boolean; reply: string } & Record<string, unknown>;
 const data: { replies: string; moments: Moment[] } = await Bun.file(file).json();
+const { executable } = claudeCodeFromArgs({});
 
 let agreed = 0;
 let asked = 0;
@@ -27,7 +29,7 @@ for (const moment of data.moments) {
   asked += 1;
   const answer = await askTriage(
     { context: "Rollout sync · with Omar, Sara", kinds, lines },
-    { signal: AbortSignal.timeout(60_000) },
+    { signal: AbortSignal.timeout(60_000), claudePath: await executable() },
   );
   if ("error" in answer) throw new Error(`${moment.id}: ${answer.error}`);
   moment.reply = answer.reply;

@@ -16,6 +16,7 @@ export const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
   appConnected: true,
   meeting: true,
   proactive: { state: "on", nudgesUsd: 0.0123, capUsd: 0.5, meetingUsd: 0.0441, meetingTokens: 182_400, cachedTokens: 160_000 },
+  setup: { state: "ready" },
   ...overrides,
 });
 

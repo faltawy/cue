@@ -4,6 +4,7 @@ import { Composer, type ComposerHandle, folderName } from "./components/composer
 import { CATCH_UP_SHORTCUT, Header, TranscriptStrip } from "./components/header";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
+import { SetupFailed, setupLabel } from "./components/setup-notice";
 import { EmptyState, Timeline, type TimelineActions } from "./components/timeline";
 import { hasFollowUp, isEmptyWrapUp, WrapUpCard } from "./components/wrap-up-card";
 import type { PreparedImage } from "./images";
@@ -45,7 +46,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
   const glance = useMediaQuery(GLANCE_QUERY);
   const composer = useRef<ComposerHandle>(null);
   const busy = isBusy(state);
-  const ready = state.connection === "open" && state.status !== null;
+  const setup = state.status?.setup ?? null;
+  const settingUp = setup ? setupLabel(setup) : null;
+  const ready = state.connection === "open" && state.status !== null && settingUp === null;
   const phase = meetingPhase(state);
   const live = phase === "live";
   const needsFolder = state.status?.project.needsFolder ?? false;
@@ -160,7 +163,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
   const placeholder = !ready
     ? state.connection === "lost"
       ? "Reconnecting…"
-      : "Connecting to the coach…"
+      : settingUp && state.connection === "open"
+        ? settingUp
+        : "Connecting to the coach…"
     : state.question
       ? "Type your own answer…"
       : live || phase === "ended"
@@ -263,7 +268,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
             : []
         }
         above={
-          state.question ? (
+          setup?.state === "failed" ? (
+            <SetupFailed message={setup.message} onRetry={() => void api.retrySetup()} />
+          ) : state.question ? (
             <QuestionPanel
               key={state.question.id}
               questions={state.question.questions}

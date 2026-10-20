@@ -203,7 +203,7 @@ export type NudgeResult =
 
 export async function runNudge(
   input: NudgeInput,
-  options: { instructions: string; signal: AbortSignal; claudePath?: string },
+  options: { instructions: string; signal: AbortSignal; claudePath: string },
 ): Promise<NudgeResult> {
   let text = "";
   let spend = NO_SPEND;

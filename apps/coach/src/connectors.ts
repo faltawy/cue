@@ -29,7 +29,7 @@ async function* noPrompt(signal: AbortSignal): AsyncGenerator<SDKUserMessage> {
   await new Promise((resolve) => signal.addEventListener("abort", resolve, { once: true }));
 }
 
-export async function findConnectors(options: { claudePath?: string; timeoutMs: number }): Promise<FoundConnector[]> {
+export async function findConnectors(options: { claudePath: string; timeoutMs: number }): Promise<FoundConnector[]> {
   const cwd = mkdtempSync(path.join(os.tmpdir(), "anarlog-connectors-"));
   const abortController = new AbortController();
   const handle = query({
@@ -42,7 +42,7 @@ export async function findConnectors(options: { claudePath?: string; timeoutMs: 
       skills: [],
       canUseTool: async () => ({ behavior: "deny", message: "Listing connectors only." }),
       abortController,
-      ...(options.claudePath ? { pathToClaudeCodeExecutable: options.claudePath } : {}),
+      pathToClaudeCodeExecutable: options.claudePath,
     },
   });
   try {

@@ -71,7 +71,7 @@ Reply with one line per promise saying where it was logged.`;
 export async function generateWrapUp(
   transcript: LiveTranscript,
   info: MeetingInfo | null,
-  options: { model: string; claudePath?: string; signal: AbortSignal },
+  options: { model: string; claudePath: string; signal: AbortSignal },
 ): Promise<WrapUp> {
   let output = "";
   for await (const event of runLlm(

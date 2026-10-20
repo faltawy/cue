@@ -41,7 +41,7 @@ export function parseTriage(reply: string): TriageVerdict | null {
 
 export async function askTriage(
   request: TriageRequest,
-  options: { signal: AbortSignal; claudePath?: string },
+  options: { signal: AbortSignal; claudePath: string },
 ): Promise<{ reply: string; spend: Spend } | { error: string; spend: Spend }> {
   let reply = "";
   let spend = NO_SPEND;
@@ -64,7 +64,7 @@ export async function askTriage(
 
 export async function runTriage(
   request: TriageRequest,
-  options: { signal: AbortSignal; claudePath?: string },
+  options: { signal: AbortSignal; claudePath: string },
 ): Promise<TriageResult> {
   const answer = await askTriage(request, options);
   if ("error" in answer) {

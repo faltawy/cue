@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { isNothing } from "../src/checkin";
+import { claudeCodeFromArgs } from "../src/claude-code";
 import { type LlmTuning, runLlm } from "../src/llm";
 import { moveText } from "../src/move";
 import { NUDGE_MODEL, nudgeMessage, nudgeSystem, parseNudge } from "../src/nudge";
@@ -57,6 +58,8 @@ type Cached = { hash: string; text: string };
 
 let calls = 0;
 
+const { executable: claudePath } = claudeCodeFromArgs({});
+
 function hashOf(prompt: Prompt): string {
   return new Bun.CryptoHasher("sha256").update(JSON.stringify(prompt)).digest("hex").slice(0, 16);
 }
@@ -78,7 +81,7 @@ async function complete(prompt: Prompt, file: string): Promise<string> {
       ...(prompt.schema ? { schema: prompt.schema } : {}),
     },
     AbortSignal.timeout(120_000),
-    undefined,
+    await claudePath(),
     prompt.tuning,
   )) {
     if (event.type === "text") text += event.delta;

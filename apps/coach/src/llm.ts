@@ -87,13 +87,13 @@ export type LlmTuning = Pick<Options, "thinking" | "effort"> & { shortCache?: bo
 export function llmQueryOptions(
   request: LlmRequest,
   abortController: AbortController,
-  claudePath?: string,
+  claudePath: string,
   tuning: LlmTuning = {},
 ): Options {
   const { shortCache = false, ...model } = tuning;
   return {
     ...model,
-    ...(claudePath ? { pathToClaudeCodeExecutable: claudePath } : {}),
+    pathToClaudeCodeExecutable: claudePath,
     cwd: os.tmpdir(),
     model: request.model,
     systemPrompt: request.system ?? "",
@@ -149,7 +149,7 @@ export function eventsFromMessage(message: SDKMessage, structured: boolean): Llm
 export async function* runLlm(
   request: LlmRequest,
   signal: AbortSignal,
-  claudePath?: string,
+  claudePath: string,
   tuning?: LlmTuning,
 ): AsyncIterable<LlmEvent> {
   const abortController = new AbortController();
@@ -171,7 +171,7 @@ export async function* runLlm(
   }
 }
 
-export function llmResponse(request: Request, claudePath?: string): Response {
+export function llmResponse(request: Request, claudePath: () => Promise<string>): Response {
   return new Response(
     new ReadableStream<string>({
       async start(controller) {
@@ -181,7 +181,7 @@ export function llmResponse(request: Request, claudePath?: string): Response {
             controller.enqueue(`${JSON.stringify({ type: "error", message: body.error.message })}\n`);
             return;
           }
-          for await (const event of runLlm(body.data, request.signal, claudePath)) {
+          for await (const event of runLlm(body.data, request.signal, await claudePath())) {
             controller.enqueue(`${JSON.stringify(event)}\n`);
           }
         } catch (error) {

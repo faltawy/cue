@@ -78,18 +78,18 @@ describe("llmQueryOptions", () => {
   });
 
   test("short-cache calls write the prompt cache with the 5-minute TTL; others keep Claude Code's default", () => {
-    const short = llmQueryOptions(request(), new AbortController(), undefined, { shortCache: true, effort: "low" });
+    const short = llmQueryOptions(request(), new AbortController(), "/bin/claude", { shortCache: true, effort: "low" });
     expect(short.env?.FORCE_PROMPT_CACHING_5M).toBe("1");
     expect(short.effort).toBe("low");
     expect(short).not.toHaveProperty("shortCache");
-    const plain = llmQueryOptions(request(), new AbortController());
+    const plain = llmQueryOptions(request(), new AbortController(), "/bin/claude");
     expect(plain.env?.DISABLE_TELEMETRY).toBe("1");
     expect(plain.env).not.toHaveProperty("FORCE_PROMPT_CACHING_5M");
   });
 
   test("a schema turns on structured output", () => {
     const schema = { type: "object", properties: { title: { type: "string" } } };
-    expect(llmQueryOptions(request({ schema }), new AbortController()).outputFormat).toEqual({
+    expect(llmQueryOptions(request({ schema }), new AbortController(), "/bin/claude").outputFormat).toEqual({
       type: "json_schema",
       schema,
     });

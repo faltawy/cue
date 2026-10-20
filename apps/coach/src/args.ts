@@ -1,6 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 
+import { CLAUDE_ARGS } from "./claude-code";
 import { expandProtectedRoots } from "./guard";
 import { loadMcpConfig } from "./mcp-config";
 import { type CoachOptions } from "./session";
@@ -14,7 +15,7 @@ export const COACH_ARGS = {
   db: { type: "string", default: DEFAULT_DB },
   session: { type: "string" },
   model: { type: "string", default: "sonnet" },
-  claude: { type: "string" },
+  ...CLAUDE_ARGS,
   "mcp-config": { type: "string" },
   "allow-changes": { type: "string" },
   instructions: { type: "string" },
@@ -30,6 +31,7 @@ export type CoachArgValues = {
   session?: string;
   model: string;
   claude?: string;
+  "claude-dir"?: string;
   "mcp-config"?: string;
   "allow-changes"?: string;
   instructions?: string;
@@ -56,7 +58,6 @@ export async function coachOptionsFromArgs(values: CoachArgValues): Promise<Coac
     db: openAppDb(values.db),
     sessionId: values.session,
     model: values.model,
-    pathToClaudeCodeExecutable: values.claude,
     ...(await loadMcpConfig(values["mcp-config"])),
     allowChanges: parseServerList(values["allow-changes"]),
     instructions: values.instructions ? await Bun.file(values.instructions).text() : "",

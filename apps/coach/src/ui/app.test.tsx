@@ -45,6 +45,7 @@ function setup(scenario: Scenario | CoachState) {
     logToClients: mock(ok),
     signIn: mock(ok),
     chooseProjectFolder: mock(ok),
+    retrySetup: mock(ok),
     notify: mock(() => {}),
   } satisfies CoachApi;
   view = render(<CoachView state={typeof scenario === "string" ? fixtureState(scenario) : scenario} api={api} />);
@@ -212,6 +213,27 @@ describe("empty and offline states", () => {
     expect(view.queryByText(/Not recording/)).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Help me prepare for a meeting" }));
     expect(api.ask).toHaveBeenCalledWith("Help me prepare for a meeting");
+  });
+
+  test("while Claude Code downloads, the composer shows the progress and waits", () => {
+    setup(stateFrom([status({ setup: { state: "downloading", percent: 45 } })]));
+    const box = view.getByRole("textbox", { name: "Ask the coach" });
+    expect(box.getAttribute("placeholder")).toBe("Setting up the coach… 45%");
+    expect(view.getByRole("button", { name: "Waiting for the coach" })).toBeTruthy();
+    cleanup();
+
+    setup(stateFrom([status()]));
+    expect(view.getByRole("textbox", { name: "Ask the coach" }).getAttribute("placeholder")).not.toContain("Setting up");
+    expect(view.getByRole("button", { name: "Send" })).toBeTruthy();
+  });
+
+  test("a failed download says why and Retry asks the coach to try again", () => {
+    const message = "The coach needs a one-time download of Claude Code. Fetch failed. Check your internet connection and try again.";
+    const api = setup(stateFrom([status({ setup: { state: "failed", message } })]));
+    const alert = view.getByRole("alert");
+    expect(within(alert).getByText(message)).toBeTruthy();
+    fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+    expect(api.retrySetup).toHaveBeenCalledTimes(1);
   });
 });
 

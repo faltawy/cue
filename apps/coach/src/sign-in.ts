@@ -6,8 +6,8 @@ function appleScriptString(value: string): string {
   return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
 }
 
-export function signInCommand(claudePath: string | undefined): string[] {
-  const command = `${claudePath ? shellQuote(claudePath) : "claude"} /login`;
+export function signInCommand(claudePath: string): string[] {
+  const command = `${shellQuote(claudePath)} /login`;
   return [
     "osascript",
     "-e",

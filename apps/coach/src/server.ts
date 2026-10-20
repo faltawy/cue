@@ -20,6 +20,7 @@ import {
 } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { claudeSignedIn } from "./claude-account";
+import { claudeCodeFromArgs } from "./claude-code";
 import { coachError, GAVE_UP, StderrTail, withSignIn } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
@@ -47,6 +48,7 @@ import {
   dropSilentNudge,
   findBlock,
   type ProjectView,
+  type SetupView,
   type StatusEvent,
   type TurnKind,
   type WrapUpView,
@@ -140,13 +142,53 @@ let proactive: Proactive | null = null;
 let proactiveMeeting: string | undefined;
 let selfName: string | null = null;
 let claudeSignedInNow: boolean | null = null;
+let setup: SetupView = { state: "checking" };
+let claudeExecutable: Promise<string> | null = null;
+
+const { claudeCode, executable: claudeCodeExecutable } = claudeCodeFromArgs(values);
+claudeCode.onProgress(({ receivedBytes, totalBytes }) => {
+  const percent = totalBytes > 0 ? Math.min(99, Math.floor((receivedBytes / totalBytes) * 100)) : null;
+  if (setup.state !== "downloading" || setup.percent !== percent) setSetup({ state: "downloading", percent });
+});
+
+function setSetup(next: SetupView) {
+  setup = next;
+  broadcast(status());
+}
+
+function claude(): Promise<string> {
+  claudeExecutable ??= claudeCodeExecutable().then(
+    (resolved) => {
+      console.error(`[coach] running Claude Code at ${resolved}`);
+      setSetup({ state: "ready" });
+      return resolved;
+    },
+    (error: unknown) => {
+      console.error("[coach] could not set up Claude Code", { _e: errorText(error) });
+      setSetup({ state: "failed", message: errorText(error) });
+      throw error;
+    },
+  );
+  return claudeExecutable;
+}
+
+function retrySetup() {
+  claudeExecutable = null;
+  setSetup({ state: "checking" });
+  checkSignIn();
+  enqueue(() => openChat("startup"));
+}
 
 function checkSignIn() {
-  claudeSignedIn(options.pathToClaudeCodeExecutable).then(
-    (signedIn) => {
-      claudeSignedInNow = signedIn;
-    },
-    (error: unknown) => console.error("[coach] could not read the Claude sign-in", { _e: errorText(error) }),
+  claude().then(
+    (resolved) =>
+      claudeSignedIn(resolved).then(
+        (signedIn) => {
+          claudeSignedInNow = signedIn;
+        },
+        (error: unknown) => console.error("[coach] could not read the Claude sign-in", { _e: errorText(error) }),
+      ),
+    () => undefined,
   );
 }
 checkSignIn();
@@ -230,6 +272,7 @@ function status(): StatusEvent {
     appConnected: bridge !== null,
     meeting: chatSessionId !== undefined,
     proactive: proactiveView(),
+    setup,
   };
 }
 
@@ -282,10 +325,10 @@ function startProactive(sessionId: string | undefined) {
   if (proactive && proactiveMeeting === sessionId) return;
   proactiveMeeting = sessionId;
   const current = new Proactive(proactiveConfig, {
-    triage: (request) =>
+    triage: async (request) =>
       runTriage(request, {
         signal: AbortSignal.timeout(TRIAGE_TIMEOUT_MS),
-        claudePath: options.pathToClaudeCodeExecutable,
+        claudePath: await claude(),
       }),
     nudge: (request) => {
       if (!coach || busy || proactive !== current) return false;
@@ -308,11 +351,15 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
   askedAt = Date.now();
   feed({ type: "user", kind: "nudge", text: label });
   broadcast(status());
-  const result = await runNudge(request, {
-    instructions: options.instructions ?? "",
-    signal: AbortSignal.any([abort.signal, AbortSignal.timeout(NUDGE_TIMEOUT_MS)]),
-    claudePath: options.pathToClaudeCodeExecutable,
-  }).catch((error: unknown) => ({ ok: false as const, error: errorText(error), spend: NO_SPEND }));
+  const result = await claude()
+    .then((claudePath) =>
+      runNudge(request, {
+        instructions: options.instructions ?? "",
+        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(NUDGE_TIMEOUT_MS)]),
+        claudePath,
+      }),
+    )
+    .catch((error: unknown) => ({ ok: false as const, error: errorText(error), spend: NO_SPEND }));
   owner.spend("nudges", result.spend);
   if (nudgeAbort !== abort) return;
   nudgeAbort = null;
@@ -439,6 +486,8 @@ function rememberEdits(events: readonly CoachEvent[]) {
 }
 
 async function openChat(reason: OpenReason) {
+  const claudePath = await claude().catch(() => null);
+  if (!claudePath) return;
   const sessionId = attached?.sessionId;
   const nextProject = reason === "recover" ? project : await projectFor(sessionId);
   if (reason !== "recover") {
@@ -464,6 +513,7 @@ async function openChat(reason: OpenReason) {
   tracker.resumable = plan.resume;
   const session = startCoach({
     ...options,
+    pathToClaudeCodeExecutable: claudePath,
     project: project.path,
     meeting: () => sessionId,
     ...(bridge ? { edits: editHooks(bridge) } : {}),
@@ -581,11 +631,14 @@ function startWrapUp(transcript: LiveTranscript) {
   wrapUpMeeting = { sessionId: transcript.sessionId, transcriptId: transcript.transcriptId };
   const title = transcript.title;
   setWrapUp({ state: "running", title });
-  generateWrapUp(transcript, readMeetingInfo(db, transcript.sessionId), {
-    model,
-    claudePath: options.pathToClaudeCodeExecutable,
-    signal: abort.signal,
-  })
+  claude()
+    .then((claudePath) =>
+      generateWrapUp(transcript, readMeetingInfo(db, transcript.sessionId), {
+        model,
+        claudePath,
+        signal: abort.signal,
+      }),
+    )
     .then((result) => {
       if (wrapUpAbort !== abort) return;
       setWrapUp({
@@ -850,8 +903,17 @@ const server = Bun.serve({
       },
     },
     "/sign-in": {
+      POST: async () => {
+        const claudePath = await claude().catch(() => null);
+        if (!claudePath) return new Response("The coach is still setting up. Sign in once it's ready.", { status: 503 });
+        Bun.spawn(signInCommand(claudePath), { stdout: "ignore", stderr: "ignore" });
+        return new Response(null, { status: 204 });
+      },
+    },
+    "/setup/retry": {
       POST: () => {
-        Bun.spawn(signInCommand(options.pathToClaudeCodeExecutable), { stdout: "ignore", stderr: "ignore" });
+        if (setup.state !== "failed") return conflict("There's nothing to retry.");
+        retrySetup();
         return new Response(null, { status: 204 });
       },
     },

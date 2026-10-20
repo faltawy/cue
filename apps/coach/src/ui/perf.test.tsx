@@ -31,6 +31,7 @@ const api: CoachApi = {
   logToClients: ok,
   signIn: ok,
   chooseProjectFolder: ok,
+  retrySetup: ok,
   notify: () => {},
 };
 

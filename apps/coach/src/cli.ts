@@ -4,6 +4,7 @@ import { parseArgs } from "node:util";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
+import { claudeCodeFromArgs } from "./claude-code";
 import { startCoach } from "./session";
 
 const { values } = parseArgs({
@@ -11,7 +12,10 @@ const { values } = parseArgs({
 });
 
 const scripted = values.ask ?? [];
-const coach = startCoach(await coachOptionsFromArgs(values));
+const coach = startCoach({
+  ...(await coachOptionsFromArgs(values)),
+  pathToClaudeCodeExecutable: await claudeCodeFromArgs(values).executable(),
+});
 
 let askedAt = 0;
 

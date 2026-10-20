@@ -37,6 +37,13 @@ export type WrapUpView =
 
 export type TranscriptLineView = { speaker: string; you: boolean; text: string };
 
+/** Getting Claude Code ready: the person's own, or Cue's copy downloaded on first use. */
+export type SetupView =
+  | { state: "checking" }
+  | { state: "downloading"; percent: number | null }
+  | { state: "failed"; message: string }
+  | { state: "ready" };
+
 export type StatusEvent = {
   type: "status";
   project: ProjectView;
@@ -45,6 +52,7 @@ export type StatusEvent = {
   appConnected: boolean;
   meeting: boolean;
   proactive: ProactiveView;
+  setup: SetupView;
 };
 
 export type BlockItemRef = { id: string; index: number };
