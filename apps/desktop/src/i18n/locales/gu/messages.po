@@ -618,6 +618,7 @@ msgstr ""
 msgid "Checking migration..."
 msgstr ""
 
+#: src/settings/claude/claude-code.tsx
 #: src/settings/claude/sign-in.tsx
 #: src/settings/claude/tools.tsx
 msgid "Checking…"
@@ -730,6 +731,23 @@ msgstr ""
 #: src/settings/claude/index.tsx
 #: src/sidebar/settings-nav-groups.ts
 msgid "Claude"
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code"
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code didn't update: {lastLine}"
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code didn't update."
+msgstr ""
+
+#. placeholder {0}: update.data.status.min_version
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code updated to {after}, which is still older than {0}."
 msgstr ""
 
 #: src/settings/claude/connectors.tsx
@@ -2751,7 +2769,10 @@ msgstr ""
 msgid "Resume listening"
 msgstr ""
 
+#: src/onboarding/claude.tsx
 #: src/session/components/note-input/enhanced/enhance-error.tsx
+#: src/session/components/note-input/enhanced/streaming.tsx
+#: src/settings/claude/sign-in.tsx
 #: src/settings/general/storage/legacy-cleanup.tsx
 msgid "Retry"
 msgstr ""
@@ -2982,6 +3003,14 @@ msgstr ""
 #: src/templates/auto-form.tsx
 #: src/templates/details.tsx
 msgid "Set as default"
+msgstr ""
+
+#: src/ai/claude-setup-label.tsx
+msgid "Setting up Claude…"
+msgstr ""
+
+#: src/ai/claude-setup-label.tsx
+msgid "Setting up Claude… {percent}%"
 msgstr ""
 
 #: src/settings/dictation.tsx
@@ -3631,6 +3660,10 @@ msgstr ""
 msgid "Upcoming Event"
 msgstr ""
 
+#: src/settings/claude/claude-code.tsx
+msgid "Update Claude Code"
+msgstr ""
+
 #. placeholder {0}: status.version
 #: src/settings/general/updates.tsx
 msgid "Update ready — {0}"
@@ -3646,6 +3679,10 @@ msgstr ""
 
 #: src/settings/general/updates.tsx
 msgid "Updates are only available in release builds."
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Updating…"
 msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
@@ -3715,6 +3752,18 @@ msgstr ""
 
 #: src/settings/claude/tools.tsx
 msgid "User name"
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Uses Cue's copy of Claude Code {minVersion}. Install Claude Code to use your own."
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Uses Cue's copy of Claude Code {minVersion}. Your Claude Code {version} is older than {minVersion}; update it to use yours."
+msgstr ""
+
+#: src/settings/claude/claude-code.tsx
+msgid "Uses your Claude Code {version}."
 msgstr ""
 
 #: src/coach/nudges.tsx

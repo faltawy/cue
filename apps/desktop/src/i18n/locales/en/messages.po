@@ -618,6 +618,7 @@ msgstr "Checking for updates…"
 msgid "Checking migration..."
 msgstr "Checking migration..."
 
+#: src/settings/claude/claude-code.tsx
 #: src/settings/claude/sign-in.tsx
 #: src/settings/claude/tools.tsx
 msgid "Checking…"
@@ -731,6 +732,23 @@ msgstr "Choose…"
 #: src/sidebar/settings-nav-groups.ts
 msgid "Claude"
 msgstr "Claude"
+
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code"
+msgstr "Claude Code"
+
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code didn't update: {lastLine}"
+msgstr "Claude Code didn't update: {lastLine}"
+
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code didn't update."
+msgstr "Claude Code didn't update."
+
+#. placeholder {0}: update.data.status.min_version
+#: src/settings/claude/claude-code.tsx
+msgid "Claude Code updated to {after}, which is still older than {0}."
+msgstr "Claude Code updated to {after}, which is still older than {0}."
 
 #: src/settings/claude/connectors.tsx
 msgid "Claude connectors"
@@ -2751,7 +2769,10 @@ msgstr "Restore"
 msgid "Resume listening"
 msgstr "Resume listening"
 
+#: src/onboarding/claude.tsx
 #: src/session/components/note-input/enhanced/enhance-error.tsx
+#: src/session/components/note-input/enhanced/streaming.tsx
+#: src/settings/claude/sign-in.tsx
 #: src/settings/general/storage/legacy-cleanup.tsx
 msgid "Retry"
 msgstr "Retry"
@@ -2983,6 +3004,14 @@ msgstr "Set as current"
 #: src/templates/details.tsx
 msgid "Set as default"
 msgstr "Set as default"
+
+#: src/ai/claude-setup-label.tsx
+msgid "Setting up Claude…"
+msgstr "Setting up Claude…"
+
+#: src/ai/claude-setup-label.tsx
+msgid "Setting up Claude… {percent}%"
+msgstr "Setting up Claude… {percent}%"
 
 #: src/settings/dictation.tsx
 msgid "Setting up dictation…"
@@ -3631,6 +3660,10 @@ msgstr "Up to date · checked {ago}"
 msgid "Upcoming Event"
 msgstr "Upcoming Event"
 
+#: src/settings/claude/claude-code.tsx
+msgid "Update Claude Code"
+msgstr "Update Claude Code"
+
 #. placeholder {0}: status.version
 #: src/settings/general/updates.tsx
 msgid "Update ready — {0}"
@@ -3647,6 +3680,10 @@ msgstr "Updates"
 #: src/settings/general/updates.tsx
 msgid "Updates are only available in release builds."
 msgstr "Updates are only available in release builds."
+
+#: src/settings/claude/claude-code.tsx
+msgid "Updating…"
+msgstr "Updating…"
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
 #: src/session/components/outer-header/overflow/index.tsx
@@ -3716,6 +3753,18 @@ msgstr "Used for transcription and automatic summary language detection."
 #: src/settings/claude/tools.tsx
 msgid "User name"
 msgstr "User name"
+
+#: src/settings/claude/claude-code.tsx
+msgid "Uses Cue's copy of Claude Code {minVersion}. Install Claude Code to use your own."
+msgstr "Uses Cue's copy of Claude Code {minVersion}. Install Claude Code to use your own."
+
+#: src/settings/claude/claude-code.tsx
+msgid "Uses Cue's copy of Claude Code {minVersion}. Your Claude Code {version} is older than {minVersion}; update it to use yours."
+msgstr "Uses Cue's copy of Claude Code {minVersion}. Your Claude Code {version} is older than {minVersion}; update it to use yours."
+
+#: src/settings/claude/claude-code.tsx
+msgid "Uses your Claude Code {version}."
+msgstr "Uses your Claude Code {version}."
 
 #: src/coach/nudges.tsx
 msgid "Vague promise"
