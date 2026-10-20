@@ -17,6 +17,7 @@ import {
 
 import { ClaudeConnectorsGroup } from "./connectors";
 import { CoachInstructionsSection } from "./instructions";
+import { ClaudeSignInRow } from "./sign-in";
 import { SpendLimitInput } from "./spend-limit";
 import { CoachToolsSection } from "./tools";
 
@@ -102,6 +103,8 @@ export function SettingsClaude() {
           </Trans>
         </p>
       </div>
+
+      <ClaudeSignInRow />
 
       {settings && (
         <section className="flex flex-col gap-4">

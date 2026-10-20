@@ -228,17 +228,31 @@ impl Coach {
     }
 
     pub fn find_claude_connectors(&self) -> Result<Vec<FoundConnector>> {
-        let output = process::sidecar_command(process::list_connectors_args())?
-            .stdin(std::process::Stdio::null())
-            .output()?;
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(Error::Other(format!(
-                "couldn't list your Claude connectors: {}",
-                stderr.lines().rfind(|line| !line.trim().is_empty()).unwrap_or("")
-            )));
+        let stdout = run_sidecar(
+            process::list_connectors_args(),
+            "couldn't list your Claude connectors",
+        )?;
+        Ok(serde_json::from_slice(&stdout)?)
+    }
+
+    pub fn claude_signed_in(&self) -> Result<bool> {
+        #[derive(serde::Deserialize)]
+        struct AuthStatus {
+            signed_in: bool,
         }
-        Ok(serde_json::from_slice(&output.stdout)?)
+        let stdout = run_sidecar(
+            vec!["--auth-status".into()],
+            "couldn't check the Claude sign-in",
+        )?;
+        Ok(serde_json::from_slice::<AuthStatus>(&stdout)?.signed_in)
+    }
+
+    pub fn sign_in_to_claude(&self) -> Result<()> {
+        run_sidecar(
+            vec!["--sign-in".into()],
+            "couldn't start the Claude sign-in",
+        )?;
+        Ok(())
     }
 
     pub fn llm_endpoint(&self) -> Result<Endpoint> {
@@ -270,6 +284,23 @@ impl Coach {
             }
         }
     }
+}
+
+fn run_sidecar(args: Vec<std::ffi::OsString>, failure: &str) -> Result<Vec<u8>> {
+    let output = process::sidecar_command(args)?
+        .stdin(std::process::Stdio::null())
+        .output()?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(Error::Other(format!(
+            "{failure}: {}",
+            stderr
+                .lines()
+                .rfind(|line| !line.trim().is_empty())
+                .unwrap_or("")
+        )));
+    }
+    Ok(output.stdout)
 }
 
 fn report(app: &AppHandle, result: Result<()>) {
@@ -476,6 +507,8 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::find_claude_connectors,
             commands::add_knowledge,
             commands::show,
+            commands::claude_signed_in,
+            commands::sign_in_to_claude,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }

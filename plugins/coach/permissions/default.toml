@@ -11,4 +11,6 @@ permissions = [
   "allow-find-claude-connectors",
   "allow-add-knowledge",
   "allow-show",
+  "allow-claude-signed-in",
+  "allow-sign-in-to-claude",
 ]

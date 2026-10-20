@@ -1,8 +1,8 @@
 import type { SectionStatus } from "./shared";
 
-export type OnboardingStep = "permissions" | "calendar" | "final";
+export type OnboardingStep = "permissions" | "calendar" | "claude" | "final";
 
-const STEPS: OnboardingStep[] = ["permissions", "calendar", "final"];
+const STEPS: OnboardingStep[] = ["permissions", "calendar", "claude", "final"];
 
 export function getInitialStep(): OnboardingStep {
   return STEPS[0];
@@ -10,16 +10,24 @@ export function getInitialStep(): OnboardingStep {
 
 export function getNextStep(
   currentStep: OnboardingStep,
+  skipped: readonly OnboardingStep[] = [],
 ): OnboardingStep | null {
-  const idx = STEPS.indexOf(currentStep);
-  return idx < STEPS.length - 1 ? STEPS[idx + 1] : null;
+  return (
+    STEPS.slice(STEPS.indexOf(currentStep) + 1).find(
+      (step) => !skipped.includes(step),
+    ) ?? null
+  );
 }
 
 export function getPrevStep(
   currentStep: OnboardingStep,
+  skipped: readonly OnboardingStep[] = [],
 ): OnboardingStep | null {
-  const idx = STEPS.indexOf(currentStep);
-  return idx > 0 ? STEPS[idx - 1] : null;
+  return (
+    STEPS.slice(0, STEPS.indexOf(currentStep))
+      .reverse()
+      .find((step) => !skipped.includes(step)) ?? null
+  );
 }
 
 export function getStepStatus(

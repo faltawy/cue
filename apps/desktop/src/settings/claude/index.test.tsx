@@ -38,6 +38,8 @@ const coach = vi.hoisted(() => ({
   mcpStatuses: vi.fn(),
   findClaudeConnectors: vi.fn(),
   addKnowledge: vi.fn(),
+  claudeSignedIn: vi.fn(),
+  signInToClaude: vi.fn(),
 }));
 
 vi.mock("@anlg/plugin-coach", () => ({
@@ -50,6 +52,8 @@ vi.mock("@anlg/plugin-coach", () => ({
     mcpStatuses: coach.mcpStatuses,
     findClaudeConnectors: coach.findClaudeConnectors,
     addKnowledge: coach.addKnowledge,
+    claudeSignedIn: coach.claudeSignedIn,
+    signInToClaude: coach.signInToClaude,
   },
 }));
 
@@ -100,6 +104,8 @@ beforeEach(() => {
     web_access: true,
   };
   coach.findClaudeConnectors.mockResolvedValue({ status: "ok", data: [] });
+  coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
+  coach.signInToClaude.mockResolvedValue({ status: "ok", data: null });
   coach.getSettings.mockImplementation(async () => ({
     status: "ok",
     data: { ...coach.settings },
@@ -128,6 +134,20 @@ afterEach(() => {
 });
 
 describe("SettingsClaude", () => {
+  it("says when Claude isn't signed in, starts the sign-in, and picks up the new sign-in", async () => {
+    coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: false });
+    renderPage();
+
+    expect(await screen.findByText("Not signed in")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await waitFor(() => expect(coach.signInToClaude).toHaveBeenCalledTimes(1));
+
+    coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
+    expect(
+      await screen.findByText("Signed in", {}, { timeout: 5000 }),
+    ).not.toBeNull();
+  });
+
   it("shows the saved model, project, nudges switch and spend limit", async () => {
     coach.settings = { ...coach.settings, nudge_limit_cents: 125 };
     renderPage();

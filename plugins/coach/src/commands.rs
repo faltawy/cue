@@ -88,3 +88,15 @@ pub async fn mcp_statuses(
 ) -> std::result::Result<Vec<McpServerStatus>, String> {
     blocking(app, Coach::mcp_statuses).await
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn claude_signed_in(app: tauri::AppHandle) -> std::result::Result<bool, String> {
+    blocking(app, Coach::claude_signed_in).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn sign_in_to_claude(app: tauri::AppHandle) -> std::result::Result<(), String> {
+    blocking(app, Coach::sign_in_to_claude).await
+}

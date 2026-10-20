@@ -14,6 +14,8 @@ Default permissions for the plugin
 - `allow-find-claude-connectors`
 - `allow-add-knowledge`
 - `allow-show`
+- `allow-claude-signed-in`
+- `allow-sign-in-to-claude`
 
 ## Permission Table
 
@@ -72,6 +74,32 @@ Enables the choose_project command without any pre-configured scope.
 <td>
 
 Denies the choose_project command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-claude-signed-in`
+
+</td>
+<td>
+
+Enables the claude_signed_in command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-claude-signed-in`
+
+</td>
+<td>
+
+Denies the claude_signed_in command without any pre-configured scope.
 
 </td>
 </tr>
@@ -280,6 +308,32 @@ Enables the show command without any pre-configured scope.
 <td>
 
 Denies the show command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-sign-in-to-claude`
+
+</td>
+<td>
+
+Enables the sign_in_to_claude command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-sign-in-to-claude`
+
+</td>
+<td>
+
+Denies the sign_in_to_claude command without any pre-configured scope.
 
 </td>
 </tr>

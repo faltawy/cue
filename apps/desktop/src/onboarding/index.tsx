@@ -9,6 +9,7 @@ import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { cn } from "@anlg/utils";
 
 import { CalendarSection } from "./calendar";
+import { ClaudeSection } from "./claude";
 import {
   getInitialStep,
   getNextStep,
@@ -19,6 +20,7 @@ import { FinalDescription, FinalSection, finishOnboarding } from "./final";
 import { PermissionsSection } from "./permissions";
 import { OnboardingSection } from "./shared";
 
+import { useClaudeSignIn } from "~/settings/claude/sign-in";
 import { StandaloneWindowShell } from "~/shared/window-shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
 
@@ -83,20 +85,20 @@ function OnboardingScreenContent({
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const onboardingVideoRef = useRef<HTMLVideoElement>(null);
 
-  const goNext = useCallback(() => {
-    const next = getNextStep(currentStep);
-    if (next) setCurrentStep(next);
-  }, [currentStep]);
+  const claudeSignedIn = useClaudeSignIn().signedIn;
+  const skipped = claudeSignedIn ? (["claude"] as const) : [];
 
-  const skipCurrentStep = useCallback(() => {
-    const next = getNextStep(currentStep);
+  const goNext = () => {
+    const next = getNextStep(currentStep, skipped);
     if (next) setCurrentStep(next);
-  }, [currentStep]);
+  };
 
-  const goBack = useCallback(() => {
-    const prev = getPrevStep(currentStep);
+  const skipCurrentStep = goNext;
+
+  const goBack = () => {
+    const prev = getPrevStep(currentStep, skipped);
     if (prev) setCurrentStep(prev);
-  }, [currentStep]);
+  };
 
   useMountEffect(() => {
     sfxCommands.play("BGM").catch(console.error);
@@ -187,6 +189,29 @@ function OnboardingScreenContent({
               onSkip={skipCurrentStep}
             >
               <CalendarSection onContinue={goNext} />
+            </OnboardingSection>
+
+            <OnboardingSection
+              title={<Trans>Sign in to Claude</Trans>}
+              completedTitle={
+                claudeSignedIn ? (
+                  <Trans>Claude signed in</Trans>
+                ) : (
+                  <Trans>Claude sign-in skipped</Trans>
+                )
+              }
+              description={
+                <Trans>
+                  Summaries and the coach run on Claude, using your Claude
+                  sign-in on this Mac.
+                </Trans>
+              }
+              status={getStepStatus("claude", currentStep)}
+              onBack={goBack}
+              onNext={goNext}
+              onSkip={skipCurrentStep}
+            >
+              <ClaudeSection onContinue={goNext} />
             </OnboardingSection>
 
             <OnboardingSection

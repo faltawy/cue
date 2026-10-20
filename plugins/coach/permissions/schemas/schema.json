@@ -319,6 +319,18 @@
           "markdownDescription": "Denies the choose_project command without any pre-configured scope."
         },
         {
+          "description": "Enables the claude_signed_in command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-claude-signed-in",
+          "markdownDescription": "Enables the claude_signed_in command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the claude_signed_in command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-claude-signed-in",
+          "markdownDescription": "Denies the claude_signed_in command without any pre-configured scope."
+        },
+        {
           "description": "Enables the find_claude_connectors command without any pre-configured scope.",
           "type": "string",
           "const": "allow-find-claude-connectors",
@@ -415,10 +427,22 @@
           "markdownDescription": "Denies the show command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`",
+          "description": "Enables the sign_in_to_claude command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-sign-in-to-claude",
+          "markdownDescription": "Enables the sign_in_to_claude command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the sign_in_to_claude command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-sign-in-to-claude",
+          "markdownDescription": "Denies the sign_in_to_claude command without any pre-configured scope."
+        },
+        {
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`"
         }
       ]
     }

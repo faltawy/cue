@@ -9,6 +9,8 @@ const COMMANDS: &[&str] = &[
     "find_claude_connectors",
     "add_knowledge",
     "show",
+    "claude_signed_in",
+    "sign_in_to_claude",
 ];
 
 fn main() {
