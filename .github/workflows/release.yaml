@@ -56,6 +56,13 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Read the release notes
+        run: |
+          if ! node scripts/release-notes.mjs release "$TAG" > "$RUNNER_TEMP/notes.md"; then
+            echo "::error::No release notes for $TAG. Run pnpm release:version, commit, then tag (docs/RELEASING.md)."
+            exit 1
+          fi
+
       - uses: ./.github/actions/pnpm_install
       - uses: ./.github/actions/install_desktop_deps
       - uses: ./.github/actions/rust_install
@@ -165,14 +172,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
-          : > "$RUNNER_TEMP/notes.md"
-          if [ "$(git cat-file -t "$TAG")" = tag ]; then
-            git tag -l --format='%(contents)' "$TAG" | sed '/^-----BEGIN PGP SIGNATURE-----/,$d' > "$RUNNER_TEMP/notes.md"
-          fi
-          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/notes.md"; then
-            echo "Cue $VERSION" > "$RUNNER_TEMP/notes.md"
-          fi
           prerelease=()
           if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
 

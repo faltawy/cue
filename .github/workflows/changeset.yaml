@@ -1,0 +1,41 @@
+name: Changeset
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changeset:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a changeset for app changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          app=$(git diff --name-only "$BASE...HEAD" -- apps plugins crates)
+          if [ -z "$app" ]; then
+            echo "No app changes."
+            exit 0
+          fi
+          added=$(git diff --name-only --diff-filter=A "$BASE...HEAD" -- '.changeset/*.md' ':!.changeset/README.md')
+          if [ -z "$added" ]; then
+            echo "::error::This PR changes apps/, plugins/ or crates/ without a changeset. Run pnpm changeset, or add the no-changeset label if users won't notice."
+            exit 1
+          fi
+          # shellcheck disable=SC2086
+          if grep -lE '^"?@anlg/desktop"?: *major' $added; then
+            echo "::error::Cue releases are patch or minor only."
+            exit 1
+          fi
