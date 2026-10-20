@@ -50,9 +50,19 @@ pub(crate) async fn run_markdown_export_automation(pool: &sqlx::SqlitePool, meet
     if !enabled || directory.is_empty() {
         return;
     }
+    // Stored by the desktop settings layer as a JSON-encoded string.
+    let options = load_setting(pool, "automation_markdown_export_options")
+        .await
+        .and_then(|value| value.as_str().map(str::to_string))
+        .filter(|value| !value.trim().is_empty())
+        .and_then(|value| serde_json::from_str::<MarkdownExportOptions>(&value).ok());
 
     let result = match anlg_agent_access::get_meeting_export(pool, meeting_id.to_string()).await {
-        Ok(export) => write_markdown_export(std::path::Path::new(&directory), &export),
+        Ok(export) => write_markdown_export_with_options(
+            std::path::Path::new(&directory),
+            &export,
+            options.as_ref(),
+        ),
         Err(error) => Err(error.to_string()),
     };
     let (status, detail) = match result {
@@ -242,6 +252,7 @@ fn sanitize_filename_part(value: &str) -> String {
     sanitized[..end].trim_matches([' ', '.']).to_string()
 }
 
+#[cfg(test)]
 pub(crate) fn write_markdown_export(
     directory: &std::path::Path,
     export: &anlg_agent_access::MeetingExport,

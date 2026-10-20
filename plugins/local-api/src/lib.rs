@@ -180,6 +180,47 @@ mod test {
     }
 
     #[tokio::test]
+    async fn note_enhanced_reexport_uses_the_starter_options() {
+        let pool = seeded_pool().await;
+        let directory = std::env::temp_dir().join(format!("anlg-md-auto-{}", uuid::Uuid::new_v4()));
+        let options = serde_json::json!({
+            "include_memo": true,
+            "include_summary": true,
+            "include_transcript": false,
+            "include_action_items": true,
+            "filename": "Recap {title}",
+            "include_id_suffix": false,
+        });
+        for (id, value) in [
+            (
+                "automation_markdown_export_enabled",
+                serde_json::json!(true),
+            ),
+            (
+                "automation_markdown_export_directory",
+                serde_json::json!(directory.to_string_lossy()),
+            ),
+            (
+                "automation_markdown_export_options",
+                serde_json::Value::String(options.to_string()),
+            ),
+        ] {
+            sqlx::query("INSERT INTO app_settings (id, value_json) VALUES (?, ?)")
+                .bind(id)
+                .bind(value.to_string())
+                .execute(&pool)
+                .await
+                .unwrap();
+        }
+
+        commands::run_markdown_export_automation(&pool, "meeting-1").await;
+
+        assert!(directory.join("Recap Planning.md").exists());
+        assert!(!directory.join("2026-07-13 Planning [meeting-].md").exists());
+        std::fs::remove_dir_all(&directory).ok();
+    }
+
+    #[tokio::test]
     async fn configured_markdown_export_filters_every_content_combination() {
         let pool = seeded_pool().await;
         let mut export = anlg_agent_access::get_meeting_export(&pool, "meeting-1".to_string())

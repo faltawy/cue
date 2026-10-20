@@ -40,3 +40,17 @@ export function hasMarkdownExportContent(
     options.include_action_items
   );
 }
+
+// The starter keeps its options as a JSON setting; unset means the defaults.
+export function parseStoredMarkdownExportOptions(
+  value: string | undefined,
+): MarkdownExportOptions | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    return parseMarkdownExportOptions(JSON.parse(value));
+  } catch {
+    return null;
+  }
+}

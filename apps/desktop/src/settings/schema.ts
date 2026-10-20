@@ -301,6 +301,11 @@ export const SETTING_DEFINITIONS = {
     path: ["automations", "markdown_export_last_run"],
     default: "" as string,
   },
+  automation_markdown_export_options: {
+    type: "string",
+    path: ["automations", "markdown_export_options"],
+    default: "" as string,
+  },
   automation_markdown_export_files: {
     type: "string",
     path: ["automations", "markdown_export_files"],

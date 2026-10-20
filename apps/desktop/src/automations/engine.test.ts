@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_MARKDOWN_EXPORT_OPTIONS } from "./markdown-export";
 
 const mocks = vi.hoisted(() => ({
+  executeSql: vi.fn(),
   exportMeetingMarkdown: vi.fn(),
   getStoredSettingValues: vi.fn(),
   setSettingValue: vi.fn(),
@@ -14,6 +15,10 @@ vi.mock("@anlg/plugin-local-api", () => ({
   },
 }));
 
+vi.mock("~/db", () => ({
+  liveQueryClient: { execute: mocks.executeSql },
+}));
+
 vi.mock("~/settings/queries", () => ({
   getStoredSettingValues: mocks.getStoredSettingValues,
   setSettingValue: mocks.setSettingValue,
@@ -23,6 +28,7 @@ import {
   parseAutomationRunRecord,
   runMeetingCompletedAutomations,
   runNoteEnhancedAutomations,
+  testStarterMarkdownExport,
 } from "./engine";
 
 function storedSettings(values: Record<string, unknown>) {
@@ -118,6 +124,74 @@ describe("runMeetingCompletedAutomations (markdown export)", () => {
       status: "error",
       detail: "could not write markdown export: denied",
     });
+  });
+});
+
+describe("Markdown export starter options and test run", () => {
+  const options = {
+    ...DEFAULT_MARKDOWN_EXPORT_OPTIONS,
+    include_transcript: false,
+    filename: "{date} {title}",
+    include_id_suffix: false,
+  };
+
+  it("exports with the saved include and filename options", async () => {
+    storedSettings({
+      automation_markdown_export_enabled: true,
+      automation_markdown_export_directory: "/exports",
+      automation_markdown_export_options: JSON.stringify(options),
+    });
+    mocks.exportMeetingMarkdown.mockResolvedValue({
+      status: "ok",
+      data: { path: "/exports/2026-08-07 Standup.md", sha256: "hash" },
+    });
+
+    await runMeetingCompletedAutomations("session-1");
+
+    expect(mocks.exportMeetingMarkdown).toHaveBeenCalledWith(
+      "session-1",
+      "/exports",
+      options,
+      null,
+    );
+  });
+
+  it("test-runs the export on the latest note even before it is enabled", async () => {
+    storedSettings({
+      automation_markdown_export_enabled: false,
+      automation_markdown_export_directory: "/exports",
+      automation_markdown_export_options: JSON.stringify(options),
+    });
+    mocks.executeSql.mockResolvedValue([{ id: "latest-note" }]);
+    mocks.exportMeetingMarkdown.mockResolvedValue({
+      status: "ok",
+      data: { path: "/exports/2026-08-07 Standup.md", sha256: "hash" },
+    });
+
+    const record = await testStarterMarkdownExport();
+
+    expect(mocks.exportMeetingMarkdown).toHaveBeenCalledWith(
+      "latest-note",
+      "/exports",
+      options,
+      null,
+    );
+    expect(record).toMatchObject({
+      status: "success",
+      detail: "/exports/2026-08-07 Standup.md",
+    });
+    expect(recordedRun("automation_markdown_export_last_run")).toMatchObject({
+      status: "success",
+    });
+  });
+
+  it("refuses a test run until a folder is chosen", async () => {
+    storedSettings({ automation_markdown_export_directory: "  " });
+
+    await expect(testStarterMarkdownExport()).rejects.toThrow(
+      "choose an export folder first",
+    );
+    expect(mocks.exportMeetingMarkdown).not.toHaveBeenCalled();
   });
 });
 

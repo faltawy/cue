@@ -37,6 +37,13 @@ const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
   toastWarning: vi.fn(),
+  settingValues: {} as Record<string, unknown>,
+  storedWorkflows: "[]",
+  testStarterMarkdownExport: vi.fn(),
+}));
+
+vi.mock("~/automations/engine", () => ({
+  testStarterMarkdownExport: mocks.testStarterMarkdownExport,
 }));
 
 vi.mock("~/automations/actions", () => ({
@@ -65,11 +72,14 @@ vi.mock("~/settings/queries", () => ({
   setSettingValues: mocks.setSettingValue,
   getStoredSettingValues: () =>
     Promise.resolve({
-      values: { automation_workflows: "[]" },
+      values: { automation_workflows: mocks.storedWorkflows },
       hasValues: new Set(["automation_workflows"]),
     }),
   useStoredSettingValue: () => ({ value: "", hasValue: false }),
-  useStoredSettingValues: () => ({ values: {}, hasValues: new Set() }),
+  useStoredSettingValues: () => ({
+    values: mocks.settingValues,
+    hasValues: new Set(Object.keys(mocks.settingValues)),
+  }),
 }));
 
 vi.mock("./starter-config", () => ({
@@ -86,6 +96,13 @@ vi.mock("@anlg/ui/components/ui/toast", () => ({
 }));
 
 import { AutomationsContent } from ".";
+
+function lastSaved(key: string) {
+  const calls = mocks.setSettingValue.mock.calls.filter(
+    (call) => call[0] === key,
+  );
+  return JSON.parse(String(calls[calls.length - 1]?.[1]));
+}
 
 function renderAutomations() {
   const queryClient = new QueryClient({
@@ -118,6 +135,9 @@ describe("AutomationsContent", () => {
     mocks.toastError.mockClear();
     mocks.toastSuccess.mockClear();
     mocks.toastWarning.mockClear();
+    mocks.settingValues = {};
+    mocks.storedWorkflows = "[]";
+    mocks.testStarterMarkdownExport.mockReset();
   });
 
   it("shows the overview when nothing is selected", () => {
@@ -138,8 +158,9 @@ describe("AutomationsContent", () => {
     renderAutomations();
 
     expect(
-      screen.getByRole("heading", { name: "Untitled automation" }),
-    ).toBeTruthy();
+      screen.getByRole<HTMLInputElement>("textbox", { name: "Automation name" })
+        .placeholder,
+    ).toBe("Untitled automation");
     expect(
       screen.getByText("Add a trigger, then stack actions like Zapier."),
     ).toBeTruthy();
@@ -236,5 +257,66 @@ describe("AutomationsContent", () => {
     });
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Automation draft saved");
     expect(mocks.toastWarning).not.toHaveBeenCalled();
+  });
+  it("renames a workflow from its header", async () => {
+    const workflow = {
+      id: "wf-1",
+      title: "",
+      enabled: false,
+      trigger: "note_enhanced",
+      steps: [],
+      lastRun: null,
+      processedSessionIds: [],
+    };
+    mocks.workflows = [workflow];
+    mocks.storedWorkflows = JSON.stringify([workflow]);
+    mocks.selection = { kind: "workflow", workflowId: "wf-1" };
+    renderAutomations();
+
+    const name = screen.getByRole("textbox", { name: "Automation name" });
+    name.focus();
+    fireEvent.change(name, { target: { value: "  Weekly export " } });
+    fireEvent.keyDown(name, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(lastSaved("automation_workflows")).toMatchObject([
+        { id: "wf-1", title: "Weekly export" },
+      ]);
+    });
+  });
+
+  it("test-runs the starter export once a folder is chosen", async () => {
+    mocks.settingValues = {
+      automation_markdown_export_directory: "/exports",
+    };
+    mocks.testStarterMarkdownExport.mockResolvedValue({
+      at: "2026-10-20T10:00:00.000Z",
+      status: "success",
+      detail: "/exports/2026-10-20 Standup.md",
+    });
+    mocks.selection = { kind: "starter", starterId: "markdown-export" };
+    renderAutomations();
+
+    fireEvent.click(screen.getByRole("button", { name: "Test" }));
+
+    await waitFor(() => {
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(
+        "Test export saved to /exports/2026-10-20 Standup.md",
+      );
+    });
+  });
+
+  it("saves which sections the starter exports", async () => {
+    mocks.selection = { kind: "starter", starterId: "markdown-export" };
+    renderAutomations();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Transcript" }));
+
+    await waitFor(() => {
+      expect(lastSaved("automation_markdown_export_options")).toMatchObject({
+        include_memo: true,
+        include_transcript: false,
+      });
+    });
   });
 });

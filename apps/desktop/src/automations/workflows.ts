@@ -34,12 +34,16 @@ export type AutomationWorkflow = {
   processedSessionIds: string[];
 };
 
+// Workflows used to be saved with this English placeholder as their name,
+// before they could be renamed; read it as no name so the UI shows its own.
+const LEGACY_PLACEHOLDER_TITLE = "Untitled automation";
+
 export function createEmptyWorkflow(
   overrides: Partial<AutomationWorkflow> = {},
 ): AutomationWorkflow {
   return {
     id: overrides.id ?? id(),
-    title: overrides.title ?? "Untitled automation",
+    title: overrides.title ?? "",
     enabled: overrides.enabled ?? false,
     trigger: overrides.trigger ?? "note_enhanced",
     steps: overrides.steps ?? [],
@@ -128,7 +132,10 @@ function parseWorkflow(value: unknown): AutomationWorkflow | null {
   return {
     id: value.id,
     title:
-      typeof value.title === "string" ? value.title : "Untitled automation",
+      typeof value.title === "string" &&
+      value.title !== LEGACY_PLACEHOLDER_TITLE
+        ? value.title
+        : "",
     enabled: value.enabled === true,
     trigger,
     steps,

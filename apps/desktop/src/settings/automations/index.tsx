@@ -22,6 +22,7 @@ import {
 import { toast } from "@anlg/ui/components/ui/toast";
 import { cn } from "@anlg/utils";
 
+import { MarkdownExportOptionsConfig } from "./markdown-export-options";
 import { AutomationLastRunLine, MarkdownExportConfig } from "./starter-config";
 import { useSaveWorkflow, WorkflowBuilder } from "./workflow-builder";
 
@@ -29,6 +30,12 @@ import {
   useDeleteWorkflow,
   useRemoveStarterDraft,
 } from "~/automations/actions";
+import { testStarterMarkdownExport } from "~/automations/engine";
+import {
+  DEFAULT_MARKDOWN_EXPORT_OPTIONS,
+  hasMarkdownExportContent,
+  parseStoredMarkdownExportOptions,
+} from "~/automations/markdown-export";
 import {
   useAutomationSelection,
   useEffectiveAutomationSelection,
@@ -130,7 +137,6 @@ function DraftAutomationDetails({ draftId }: { draftId: string }) {
   return (
     <CustomWorkflowDetails
       workflow={workflow}
-      title={workflow.title.trim() || <Trans>Untitled automation</Trans>}
       description={<Trans>Add a trigger and actions.</Trans>}
       onDelete={() => removeDraft(draftId)}
     />
@@ -152,7 +158,11 @@ function AutomationDetailHeader({
         <span className="flex size-7 shrink-0 items-center justify-center">
           {icon}
         </span>
-        <h2 className="text-body min-w-0 truncate font-semibold">{title}</h2>
+        {typeof title === "string" ? (
+          <h2 className="text-body min-w-0 truncate font-semibold">{title}</h2>
+        ) : (
+          title
+        )}
       </div>
       {actions}
     </header>
@@ -221,14 +231,12 @@ function AutomationActionsMenu({
 }
 
 function PersistedWorkflowDetails({ workflowId }: { workflowId: string }) {
-  const { t } = useLingui();
   const deleteWorkflow = useDeleteWorkflow();
   const workflow = useEnsuredWorkflow({ id: workflowId });
 
   return (
     <CustomWorkflowDetails
       workflow={workflow}
-      title={workflow.title.trim() || t`Untitled automation`}
       description={<Trans>Add a trigger and actions.</Trans>}
       onDelete={() => deleteWorkflow.mutate(workflowId)}
     />
@@ -237,12 +245,10 @@ function PersistedWorkflowDetails({ workflowId }: { workflowId: string }) {
 
 function CustomWorkflowDetails({
   workflow,
-  title,
   description,
   onDelete,
 }: {
   workflow: AutomationWorkflow;
-  title: React.ReactNode;
   description: React.ReactNode;
   onDelete: () => void;
 }) {
@@ -261,7 +267,13 @@ function CustomWorkflowDetails({
   return (
     <AutomationDetailsLayout
       icon={<Lightning className="text-warm" size={16} />}
-      title={title}
+      title={
+        <AutomationNameInput
+          key={workflow.id}
+          name={workflow.title}
+          onRename={(title) => persist({ ...workflow, title })}
+        />
+      }
       description={description}
       actions={
         <div className="flex items-center gap-2">
@@ -300,6 +312,54 @@ function CustomWorkflowDetails({
     >
       <WorkflowBuilder workflow={workflow} onChange={persist} />
     </AutomationDetailsLayout>
+  );
+}
+
+function AutomationNameInput({
+  name,
+  onRename,
+}: {
+  name: string;
+  onRename: (name: string) => void;
+}) {
+  const { t } = useLingui();
+  const [draft, setDraft] = useState(name);
+  const [syncedName, setSyncedName] = useState(name);
+  if (syncedName !== name) {
+    setSyncedName(name);
+    setDraft(name);
+  }
+
+  const commit = () => {
+    const next = draft.trim();
+    if (next === name.trim()) {
+      setDraft(name);
+      return;
+    }
+    onRename(next);
+  };
+
+  return (
+    <input
+      type="text"
+      aria-label={t`Automation name`}
+      placeholder={t`Untitled automation`}
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+          setDraft(name);
+          requestAnimationFrame(() => event.currentTarget?.blur());
+        }
+      }}
+      className={cn([
+        "text-body min-w-0 flex-1 truncate rounded-sm bg-transparent font-semibold",
+        "placeholder:text-tertiary-foreground hover:bg-foreground/[0.04] focus-visible:bg-foreground/[0.04] -ms-1 px-1 outline-hidden",
+      ])}
+    />
   );
 }
 
@@ -343,6 +403,31 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
     onError: () => toast.error(t`Could not save the automation draft`),
   });
 
+  const saveOptionsMutation = useMutation({
+    mutationKey: ["automation-markdown-export-options"],
+    mutationFn: (options: typeof exportOptions) =>
+      setSettingValue(
+        "automation_markdown_export_options",
+        JSON.stringify(options),
+      ),
+    onError: () => toast.error(t`Could not update the automation`),
+  });
+
+  const testMutation = useMutation({
+    mutationKey: ["automation-starter-test"],
+    mutationFn: testStarterMarkdownExport,
+    onSuccess: (record) =>
+      record.status === "success"
+        ? toast.success(t`Test export saved to ${record.detail}`)
+        : toast.error(t`Test export failed: ${record.detail}`),
+    onError: (error) =>
+      toast.error(
+        error.message.includes("no notes")
+          ? t`There are no notes to export yet.`
+          : t`Could not run the test export`,
+      ),
+  });
+
   const setEnabledMutation = useMutation({
     mutationKey: ["automation-starter-enabled"],
     mutationFn: ({ enabled }: { enabled: boolean }) => {
@@ -360,9 +445,16 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
   }
 
   const isEnabled = Boolean(settingValues[starterKeys.enabledKey]);
-  const isReady =
+  const exportOptions =
+    parseStoredMarkdownExportOptions(
+      settingValues.automation_markdown_export_options,
+    ) ?? DEFAULT_MARKDOWN_EXPORT_OPTIONS;
+  const hasFolder =
     (settingValues[starterKeys.targetKey] ?? "").trim().length > 0;
-  const readinessHint = t`Choose an export folder first.`;
+  const isReady = hasFolder && hasMarkdownExportContent(exportOptions);
+  const readinessHint = hasFolder
+    ? t`Choose at least one section to export.`
+    : t`Choose an export folder first.`;
 
   return (
     <AutomationDetailsLayout
@@ -419,8 +511,13 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
               type="button"
               size="sm"
               variant="outline"
-              disabled
-              title={t`Test runs are not available yet.`}
+              onClick={() => testMutation.mutate()}
+              disabled={!isReady || testMutation.isPending}
+              title={
+                isReady
+                  ? t`Export your latest note now with these settings.`
+                  : readinessHint
+              }
             >
               <Play size={14} />
               <Trans>Test</Trans>
@@ -504,6 +601,10 @@ function StarterAutomationDetails({ starterId }: { starterId: StarterId }) {
 
         <div className="border-border border-t px-5 py-4">
           <MarkdownExportConfig />
+          <MarkdownExportOptionsConfig
+            options={exportOptions}
+            onChange={(options) => saveOptionsMutation.mutate(options)}
+          />
           <AutomationLastRunLine settingKey={starterKeys.lastRunKey} />
         </div>
 

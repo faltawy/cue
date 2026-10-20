@@ -4,7 +4,10 @@ import {
   type MarkdownExportOptions,
 } from "@anlg/plugin-local-api";
 
-import { hasMarkdownExportContent } from "./markdown-export";
+import {
+  hasMarkdownExportContent,
+  parseStoredMarkdownExportOptions,
+} from "./markdown-export";
 import { type AutomationRunRecord, parseAutomationRunRecord } from "./types";
 import {
   type AutomationWorkflow,
@@ -14,6 +17,7 @@ import {
   type WorkflowTrigger,
 } from "./workflows";
 
+import { liveQueryClient } from "~/db";
 import { getStoredSettingValues, setSettingValue } from "~/settings/queries";
 
 export type { AutomationRunRecord };
@@ -194,14 +198,32 @@ async function runMarkdownExport(sessionId: string): Promise<void> {
   if (!directory) {
     return;
   }
+  await runStarterMarkdownExport(
+    sessionId,
+    directory,
+    parseStoredMarkdownExportOptions(values.automation_markdown_export_options),
+  );
+}
 
+async function runStarterMarkdownExport(
+  sessionId: string,
+  directory: string,
+  options: MarkdownExportOptions | null,
+): Promise<AutomationRunRecord> {
   const record: AutomationRunRecord = {
     at: new Date().toISOString(),
     status: "success",
     detail: "",
   };
   try {
-    record.detail = await executeMarkdownExport(sessionId, directory);
+    if (options && !hasMarkdownExportContent(options)) {
+      throw new Error("choose at least one element to export");
+    }
+    record.detail = await executeMarkdownExport(
+      sessionId,
+      directory,
+      options ?? undefined,
+    );
   } catch (error) {
     record.status = "error";
     record.detail = error instanceof Error ? error.message : String(error);
@@ -210,6 +232,56 @@ async function runMarkdownExport(sessionId: string): Promise<void> {
   await setSettingValue(
     "automation_markdown_export_last_run",
     JSON.stringify(record),
+  );
+  return record;
+}
+
+// The most recent unlocked note, preferring ones with a transcript or summary,
+// so a test run shows what a real meeting export looks like.
+async function latestExportableSessionId(): Promise<string | null> {
+  const rows = await liveQueryClient.execute<{ id: string }>(
+    `
+      SELECT sessions.id
+      FROM sessions
+      WHERE sessions.deleted_at IS NULL
+        AND sessions.locked = 0
+      ORDER BY
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM transcripts
+            WHERE transcripts.session_id = sessions.id
+              AND transcripts.deleted_at IS NULL
+          ) OR EXISTS (
+            SELECT 1 FROM session_documents
+            WHERE session_documents.session_id = sessions.id
+              AND session_documents.kind IN ('summary', 'template_output')
+              AND session_documents.deleted_at IS NULL
+          ) THEN 0
+          ELSE 1
+        END,
+        sessions.created_at DESC
+      LIMIT 1
+    `,
+  );
+  return rows[0]?.id ?? null;
+}
+
+// Runs the Markdown export starter once, now, on the latest note, with the
+// folder and options as currently configured (enabled or not).
+export async function testStarterMarkdownExport(): Promise<AutomationRunRecord> {
+  const { values } = await getStoredSettingValues();
+  const directory = (values.automation_markdown_export_directory ?? "").trim();
+  if (!directory) {
+    throw new Error("choose an export folder first");
+  }
+  const sessionId = await latestExportableSessionId();
+  if (!sessionId) {
+    throw new Error("there are no notes to export yet");
+  }
+  return runStarterMarkdownExport(
+    sessionId,
+    directory,
+    parseStoredMarkdownExportOptions(values.automation_markdown_export_options),
   );
 }
 

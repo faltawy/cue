@@ -13,6 +13,21 @@ import {
 } from "./workflows";
 
 describe("automation workflows", () => {
+  it("reads the old saved placeholder name as no name, keeping real names", () => {
+    const workflows = parseAutomationWorkflows(
+      JSON.stringify([
+        { id: "old", title: "Untitled automation" },
+        { id: "named", title: "Weekly export" },
+      ]),
+    );
+
+    expect(workflows.map((workflow) => workflow.title)).toEqual([
+      "",
+      "Weekly export",
+    ]);
+    expect(createEmptyWorkflow().title).toBe("");
+  });
+
   it("parses persisted workflows and drops malformed entries", () => {
     const workflows = parseAutomationWorkflows(
       JSON.stringify([

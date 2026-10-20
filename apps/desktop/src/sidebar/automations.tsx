@@ -55,9 +55,11 @@ export function AutomationsNav() {
     query && !draftTitle.toLowerCase().includes(query) ? [] : draftIds;
   const filteredWorkflows = useMemo(() => {
     return workflows.filter(
-      (workflow) => !query || workflow.title.toLowerCase().includes(query),
+      (workflow) =>
+        !query ||
+        (workflow.title.trim() || draftTitle).toLowerCase().includes(query),
     );
-  }, [query, workflows]);
+  }, [draftTitle, query, workflows]);
   const isEmpty =
     filteredStarters.length === 0 &&
     filteredDraftIds.length === 0 &&
