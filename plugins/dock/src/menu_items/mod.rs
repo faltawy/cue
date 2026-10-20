@@ -1,12 +1,10 @@
 mod new_note;
 mod open;
-mod quit;
 mod restart;
 mod settings;
 
 pub use new_note::DockNewNote;
 pub use open::DockOpen;
-pub use quit::DockQuit;
 pub use restart::DockRestart;
 pub use settings::DockSettings;
 
@@ -99,5 +97,4 @@ dock_menu_items! {
     handleDockOpen => DockOpen,
     handleDockSettings => DockSettings,
     handleDockRestart => DockRestart,
-    handleDockQuit => DockQuit,
 }

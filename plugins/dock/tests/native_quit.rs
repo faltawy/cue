@@ -9,8 +9,8 @@ fn main() {
     };
     use tauri::Manager;
 
-    let hidden = Arc::new(AtomicBool::new(false));
-    let observed = hidden.clone();
+    let only_hidden = Arc::new(AtomicBool::new(false));
+    let observed = only_hidden.clone();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dock::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
@@ -44,16 +44,16 @@ fn main() {
             } else if !window.is_visible().unwrap() {
                 observed.store(true, Ordering::SeqCst);
                 anlg_intercept::set_force_quit();
-                app.exit(0);
+                app.exit(1);
             } else if started.elapsed() > std::time::Duration::from_secs(10) {
                 anlg_intercept::set_force_quit();
                 app.exit(1);
             }
         }
     });
-    assert_eq!(exit_code, 0);
     assert!(
-        hidden.load(Ordering::SeqCst),
-        "native Quit must hide the main window while the event loop remains running"
+        !only_hidden.load(Ordering::SeqCst),
+        "native Quit must quit the app, not only hide the main window"
     );
+    assert_eq!(exit_code, 0);
 }

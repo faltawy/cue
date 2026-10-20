@@ -3,6 +3,7 @@ mod appearance;
 mod commands;
 mod db;
 mod ext;
+mod quit;
 mod search_index;
 mod startup;
 mod store;
@@ -230,7 +231,9 @@ pub fn main() {
             db::desktop_db_path(&identifier),
             std::sync::Arc::new(recording_sessions),
         ))
-        .plugin(tauri_plugin_tray::init())
+        .plugin(tauri_plugin_tray::init(std::sync::Arc::new(
+            quit::request_quit,
+        )))
         .plugin(tauri_plugin_settings::init())
         .plugin(tauri_plugin_sfx::init())
         .plugin(tauri_plugin_shortcut::init())
@@ -413,9 +416,6 @@ pub fn main() {
     if let Err(error) = AppWindow::Main.show(app.handle()) {
         exit_after_startup_failure(&identifier, &error);
     }
-
-    #[cfg(target_os = "macos")]
-    anlg_intercept::setup_force_quit_handler();
 
     #[allow(unused_variables)]
     app.run(move |app, event| match event {

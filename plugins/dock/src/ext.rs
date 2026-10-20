@@ -123,9 +123,10 @@ extern "C" fn application_should_terminate(
         return NSApplicationTerminateReply::TerminateNow;
     }
 
-    // The system Dock Quit action bypasses Tauri's custom Quit menu item.
+    // The system Dock Quit action bypasses Tauri's Quit menu item; route it
+    // through the same quit flow so a recording is stopped before exiting.
     if let Some(app) = crate::APP_HANDLE.get() {
-        tauri_plugin_tray::AnlgMenuItem::TrayQuit.handle(app);
+        tauri_plugin_tray::request_quit(app);
     }
     NSApplicationTerminateReply::TerminateCancel
 }

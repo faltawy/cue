@@ -8,18 +8,33 @@ mod tray_icon;
 
 pub use events::*;
 pub use ext::*;
-pub use menu_items::{AnlgMenuItem, handle_agenda_menu_event, quit_completely};
+pub use menu_items::{AnlgMenuItem, handle_agenda_menu_event};
 
 const PLUGIN_NAME: &str = "anlg-tray";
 
-pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
+pub type QuitHandler = std::sync::Arc<dyn Fn(&tauri::AppHandle<tauri::Wry>) + Send + Sync>;
+
+struct QuitHandlerState(QuitHandler);
+
+pub fn request_quit(app: &tauri::AppHandle<tauri::Wry>) {
+    use tauri::Manager;
+
+    match app.try_state::<QuitHandlerState>() {
+        Some(handler) => (handler.0)(app),
+        None => app.exit(0),
+    }
+}
+
+pub fn init(quit: QuitHandler) -> tauri::plugin::TauriPlugin<tauri::Wry> {
     let specta_builder = make_specta_builder();
 
     tauri::plugin::Builder::<tauri::Wry>::new(PLUGIN_NAME)
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app, _api| {
+            use tauri::Manager;
             use tauri_specta::Event;
 
+            app.manage(QuitHandlerState(quit));
             specta_builder.mount_events(app);
             let handle = app.clone();
             tauri_plugin_updater2::UpdaterState::listen(app, move |_| {

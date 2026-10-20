@@ -6,7 +6,6 @@ mod tray_coach;
 mod tray_hide;
 mod tray_open;
 mod tray_quit;
-mod tray_quit_completely;
 mod tray_settings;
 mod tray_show_events;
 mod tray_start;
@@ -22,7 +21,6 @@ pub use tray_coach::{TrayCoach, TrayCoachProject};
 pub use tray_hide::TrayHide;
 pub use tray_open::TrayOpen;
 pub use tray_quit::TrayQuit;
-pub use tray_quit_completely::{TrayQuitCompletely, quit_completely};
 pub use tray_settings::TraySettings;
 pub use tray_show_events::TrayShowEvents;
 pub use tray_start::TrayStart;
@@ -92,7 +90,6 @@ menu_items! {
     TrayShowEvents => TrayShowEvents,
     TrayHide => TrayHide,
     TrayQuit => TrayQuit,
-    TrayQuitCompletely => TrayQuitCompletely,
     TrayVersion => TrayVersion,
     TrayUpdate => TrayUpdate,
     AppInfo => AppInfo,

@@ -649,7 +649,7 @@ fn tray_menu_items(recording: bool, update_ready: bool) -> Vec<Option<crate::Anl
         Some(TrayVersion),
         None,
         Some(TrayHide),
-        Some(TrayQuitCompletely),
+        Some(TrayQuit),
     ];
     if update_ready {
         let version = items.iter().position(|item| *item == Some(TrayVersion));
