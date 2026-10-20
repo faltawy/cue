@@ -9,6 +9,12 @@ on:
         description: Existing tag to build and release (e.g. v0.2.0)
         required: true
         type: string
+      runner:
+        description: macOS runner image (macos-15 has more capacity; it builds with its Xcode 26)
+        required: true
+        type: choice
+        options: [macos-26, macos-15]
+        default: macos-26
 
 concurrency:
   group: release
@@ -23,7 +29,7 @@ env:
 
 jobs:
   release:
-    runs-on: macos-26
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner || 'macos-26' }}
     timeout-minutes: 120
     defaults:
       run:
@@ -62,6 +68,19 @@ jobs:
             echo "::error::No release notes for $TAG. Run pnpm release:version, commit, then tag (docs/RELEASING.md)."
             exit 1
           fi
+
+      - name: Use Xcode 26
+        run: |
+          major=$(xcodebuild -version | awk 'NR == 1 { split($2, version, "."); print version[1] }')
+          if [ "$major" -lt 26 ]; then
+            xcode=$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' | sort -V | tail -1)
+            if [ -z "$xcode" ]; then
+              echo "::error::This runner has no Xcode 26; the app needs the macOS 26 SDK."
+              exit 1
+            fi
+            sudo xcode-select -s "$xcode/Contents/Developer"
+          fi
+          xcodebuild -version
 
       - uses: ./.github/actions/pnpm_install
       - uses: ./.github/actions/install_desktop_deps
