@@ -138,7 +138,8 @@ jobs:
           app="$bundle/macos/Cue.app"
           dmg=$(ls "$bundle"/dmg/*.dmg)
           mkdir -p dist
-          cp "$dmg" "dist/Cue_${VERSION}_aarch64.dmg"
+          hdiutil convert "$dmg" -format ULMO -o "dist/Cue_${VERSION}_aarch64.dmg"
+          codesign --force --sign "$APPLE_SIGNING_IDENTITY" --timestamp "dist/Cue_${VERSION}_aarch64.dmg"
           cp "$bundle/macos/Cue.app.tar.gz" "dist/Cue_${VERSION}_aarch64.app.tar.gz"
           cp "$bundle/macos/Cue.app.tar.gz.sig" "dist/Cue_${VERSION}_aarch64.app.tar.gz.sig"
           echo "APP=$app" >> "$GITHUB_ENV"
@@ -152,6 +153,8 @@ jobs:
             exit 1
           fi
           test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" = "$VERSION"
+          codesign --verify --strict --verbose=2 "dist/Cue_${VERSION}_aarch64.dmg"
+          hdiutil verify "dist/Cue_${VERSION}_aarch64.dmg"
 
       - name: Verify the updater signature
         run: |
