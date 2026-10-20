@@ -65,6 +65,16 @@ msgstr "{0, plural, one {Downloading # model} other {Downloading # models}}"
 msgid "{0, plural, one {Duplicate Contact Found} other {Duplicate Contacts Found}}"
 msgstr "{0, plural, one {Duplicate Contact Found} other {Duplicate Contacts Found}}"
 
+#. placeholder {0}: name.trim()
+#: src/contacts/use-delete-contact.ts
+msgid "{0} deleted"
+msgstr "{0} deleted"
+
+#. placeholder {0}: node.name
+#: src/sidebar/folder-nav.tsx
+msgid "{0} folder actions"
+msgstr "{0} folder actions"
+
 #. placeholder {0}: auth.name
 #: src/settings/claude/tools.tsx
 msgid "{0} header"
@@ -287,6 +297,10 @@ msgstr "Add server"
 msgid "Add spoken language"
 msgstr "Add spoken language"
 
+#: src/session/components/outer-header/metadata/tags.tsx
+msgid "Add tag"
+msgstr "Add tag"
+
 #: src/calendar/components/event-chip.tsx
 msgid "Add to folder"
 msgstr "Add to folder"
@@ -313,6 +327,10 @@ msgstr "After the meeting ends"
 msgid "After the meeting summary is ready"
 msgstr "After the meeting summary is ready"
 
+#: src/coach/nudges.tsx
+msgid "Agenda"
+msgstr "Agenda"
+
 #: src/settings/automations/index.tsx
 msgid "AI step"
 msgstr "AI step"
@@ -320,6 +338,10 @@ msgstr "AI step"
 #: src/contacts/details.tsx
 msgid "AI-generated summary of all interactions and notes with this contact will appear here. This will synthesize key discussion points, action items, and relationship context across all meetings and notes."
 msgstr "AI-generated summary of all interactions and notes with this contact will appear here. This will synthesize key discussion points, action items, and relationship context across all meetings and notes."
+
+#: src/sidebar/folder-nav.tsx
+msgid "All notes"
+msgstr "All notes"
 
 #. placeholder {0}: row.name
 #. placeholder {0}: server.name
@@ -455,6 +477,10 @@ msgstr "Automation draft saved"
 msgid "Automation enabled"
 msgstr "Automation enabled"
 
+#: src/settings/automations/index.tsx
+msgid "Automation name"
+msgstr "Automation name"
+
 #: src/automations/actions.ts
 msgid "Automation removed"
 msgstr "Automation removed"
@@ -502,6 +528,10 @@ msgstr "Build voiceprints from meeting audio so speakers you name in a transcrip
 #: src/calendar/components/event-chip.tsx
 msgid "Busy"
 msgstr "Busy"
+
+#: src/coach/nudges.tsx
+msgid "Buying signal"
+msgstr "Buying signal"
 
 #: src/settings/general/permissions.tsx
 #: src/sidebar/settings-nav-groups.ts
@@ -568,6 +598,10 @@ msgstr "Change the secret for {0}"
 msgid "Change…"
 msgstr "Change…"
 
+#: src/shared/open-note-dialog.tsx
+msgid "changelog"
+msgstr "changelog"
+
 #: src/settings/claude/tools.tsx
 msgid "Check"
 msgstr "Check"
@@ -584,6 +618,7 @@ msgstr "Checking for updates…"
 msgid "Checking migration..."
 msgstr "Checking migration..."
 
+#: src/settings/claude/sign-in.tsx
 #: src/settings/claude/tools.tsx
 msgid "Checking…"
 msgstr "Checking…"
@@ -624,6 +659,7 @@ msgstr "Choose an AI model before generating a format."
 msgid "Choose an export folder first."
 msgstr "Choose an export folder first."
 
+#: src/settings/automations/index.tsx
 #: src/settings/automations/markdown-export-options.tsx
 msgid "Choose at least one section to export."
 msgstr "Choose at least one section to export."
@@ -704,6 +740,18 @@ msgstr "Claude connectors"
 msgid "Claude isn’t available"
 msgstr "Claude isn’t available"
 
+#: src/settings/claude/sign-in.tsx
+msgid "Claude sign-in"
+msgstr "Claude sign-in"
+
+#: src/onboarding/index.tsx
+msgid "Claude sign-in skipped"
+msgstr "Claude sign-in skipped"
+
+#: src/onboarding/index.tsx
+msgid "Claude signed in"
+msgstr "Claude signed in"
+
 #: src/settings/general/storage/legacy-cleanup.tsx
 msgid "Clean Up"
 msgstr "Clean Up"
@@ -756,6 +804,7 @@ msgstr "Close changelog"
 msgid "Closed"
 msgstr "Closed"
 
+#: src/coach/nudges.tsx
 #: src/settings/general/index.tsx
 msgid "Coach"
 msgstr "Coach"
@@ -764,6 +813,10 @@ msgstr "Coach"
 msgid "Coach instructions"
 msgstr "Coach instructions"
 
+#: src/settings/general/notification.tsx
+msgid "Coach nudges"
+msgstr "Coach nudges"
+
 #: src/settings/claude/index.tsx
 msgid "Coach project"
 msgstr "Coach project"
@@ -771,6 +824,11 @@ msgstr "Coach project"
 #: src/coach/shortcut.tsx
 msgid "Coach shortcut"
 msgstr "Coach shortcut"
+
+#. placeholder {0}: node.name
+#: src/sidebar/folder-nav.tsx
+msgid "Collapse {0}"
+msgstr "Collapse {0}"
 
 #: src/settings/automations/markdown-export-options.tsx
 msgid "Collect action items"
@@ -818,6 +876,10 @@ msgstr "Connect calendar"
 msgid "Connectors on your Claude account. The coach only uses the ones you turn on, and only reads unless you allow changes."
 msgstr "Connectors on your Claude account. The coach only uses the ones you turn on, and only reads unless you allow changes."
 
+#: src/contacts/use-delete-contact.ts
+msgid "Contact deleted"
+msgstr "Contact deleted"
+
 #: src/contacts/contact-page-header.tsx
 msgid "Contact options"
 msgstr "Contact options"
@@ -831,6 +893,7 @@ msgid "Context"
 msgstr "Context"
 
 #: src/onboarding/calendar.tsx
+#: src/onboarding/claude.tsx
 msgid "Continue"
 msgstr "Continue"
 
@@ -867,6 +930,10 @@ msgstr "Could not create the pre-meeting brief. Try again."
 msgid "Could not delete the automation"
 msgstr "Could not delete the automation"
 
+#: src/contacts/use-delete-contact.ts
+msgid "Could not delete this contact. Please try again."
+msgstr "Could not delete this contact. Please try again."
+
 #: src/session/hooks/useDeleteSession.ts
 msgid "Could not delete this note. Please try again."
 msgstr "Could not delete this note. Please try again."
@@ -887,6 +954,14 @@ msgstr "Could not remove the automation"
 msgid "Could not restore deleted note"
 msgstr "Could not restore deleted note"
 
+#: src/contacts/use-delete-contact.ts
+msgid "Could not restore the contact"
+msgstr "Could not restore the contact"
+
+#: src/settings/automations/index.tsx
+msgid "Could not run the test export"
+msgstr "Could not run the test export"
+
 #: src/settings/automations/index.tsx
 msgid "Could not save the automation draft"
 msgstr "Could not save the automation draft"
@@ -894,6 +969,10 @@ msgstr "Could not save the automation draft"
 #: src/sidebar/folder-name-dialog.tsx
 msgid "Could not save the folder."
 msgstr "Could not save the folder."
+
+#: src/session/components/outer-header/metadata/tags.tsx
+msgid "Could not update tags."
+msgstr "Could not update tags."
 
 #: src/settings/automations/index.tsx
 #: src/settings/automations/workflow-builder.tsx
@@ -923,6 +1002,8 @@ msgid "create"
 msgstr "create"
 
 #: src/folders/sidebar.tsx
+#: src/session/components/outer-header/metadata/tags.tsx
+#: src/sidebar/folder-nav.tsx
 msgid "Create"
 msgstr "Create"
 
@@ -1000,6 +1081,10 @@ msgstr "Date"
 msgid "Date and time are required"
 msgstr "Date and time are required"
 
+#: src/coach/nudges.tsx
+msgid "Decision owner"
+msgstr "Decision owner"
+
 #: src/settings/appearance/app-icon.tsx
 msgid "Default"
 msgstr "Default"
@@ -1014,10 +1099,15 @@ msgstr "Default language for transcription and AI responses."
 #: src/session/components/outer-header/overflow/delete.tsx
 #: src/sidebar/automations.tsx
 #: src/sidebar/timeline/index.tsx
+#: src/templates/confirm-template-delete.tsx
 #: src/templates/sections-editor.tsx
 #: src/templates/template-form.tsx
 msgid "Delete"
 msgstr "Delete"
+
+#: src/templates/confirm-template-delete.tsx
+msgid "Delete “{title}”?"
+msgstr "Delete “{title}”?"
 
 #: src/sidebar/timeline/item.tsx
 msgid "Delete All Recurring Events"
@@ -1033,6 +1123,7 @@ msgstr "Delete Event"
 
 #: src/folders/folder-editor.tsx
 #: src/sidebar/folder-materials.tsx
+#: src/sidebar/folder-nav.tsx
 msgid "Delete folder"
 msgstr "Delete folder"
 
@@ -1051,6 +1142,10 @@ msgstr "Delete recording"
 #: src/sidebar/timeline/item.tsx
 msgid "Delete This Event"
 msgstr "Delete This Event"
+
+#: src/sidebar/folder-nav.tsx
+msgid "Delete…"
+msgstr "Delete…"
 
 #: src/settings/ai/stt/select.tsx
 msgid "Deprecated"
@@ -1265,6 +1360,11 @@ msgstr "Examples must be Markdown or plain text files."
 msgid "Exclude apps from detection"
 msgstr "Exclude apps from detection"
 
+#. placeholder {0}: node.name
+#: src/sidebar/folder-nav.tsx
+msgid "Expand {0}"
+msgstr "Expand {0}"
+
 #: src/settings/automations/index.tsx
 msgid "Expected output"
 msgstr "Expected output"
@@ -1289,6 +1389,10 @@ msgstr "Export location"
 #: src/settings/automations/workflow-builder.tsx
 msgid "Export the meeting as Markdown"
 msgstr "Export the meeting as Markdown"
+
+#: src/settings/automations/index.tsx
+msgid "Export your latest note now with these settings."
+msgstr "Export your latest note now with these settings."
 
 #: src/session/components/outer-header/overflow/export-modal.tsx
 msgid "Exporting..."
@@ -1317,6 +1421,14 @@ msgstr "Filename"
 #: src/settings/claude/instructions.tsx
 msgid "Files and folders the coach can read when they're relevant. They are read on demand, not sent with every message."
 msgstr "Files and folders the coach can read when they're relevant. They are read on demand, not sent with every message."
+
+#: src/settings/claude/sign-in.tsx
+msgid "Finish signing in in Terminal."
+msgstr "Finish signing in in Terminal."
+
+#: src/onboarding/claude.tsx
+msgid "Finish signing in in the Terminal window that opened, then come back here."
+msgstr "Finish signing in in the Terminal window that opened, then come back here."
 
 #: src/templates/template-icon-picker.tsx
 msgid "Flags"
@@ -1348,9 +1460,14 @@ msgstr "Folder name"
 msgid "Folder: {currentPath}"
 msgstr "Folder: {currentPath}"
 
+#: src/sidebar/folder-nav.tsx
 #: src/sidebar/settings-nav-groups.ts
 msgid "Folders"
 msgstr "Folders"
+
+#: src/onboarding/final.tsx
+msgid "Follow Cue's releases on GitHub:"
+msgstr "Follow Cue's releases on GitHub:"
 
 #: src/templates/template-icon-picker.tsx
 msgid "Food & Drink"
@@ -1402,6 +1519,10 @@ msgstr "Get started"
 #: src/settings/general/notification.tsx
 msgid "Get your attention when a summary is ready in the background."
 msgstr "Get your attention when a summary is ready in the background."
+
+#: src/coach/nudges.tsx
+msgid "Giving ground"
+msgstr "Giving ground"
 
 #: src/sidebar/timeline/index.tsx
 msgid "Go back to now"
@@ -1581,10 +1702,6 @@ msgstr "Join & record"
 msgid "Join meeting and record"
 msgstr "Join meeting and record"
 
-#: src/onboarding/final.tsx
-msgid "Join our community and stay updated:"
-msgstr "Join our community and stay updated:"
-
 #: src/settings/general/meeting-settings.tsx
 msgid "Join scheduled meetings"
 msgstr "Join scheduled meetings"
@@ -1752,6 +1869,7 @@ msgid "Meeting"
 msgstr "Meeting"
 
 #: src/session/components/note-input/meeting-chat-highlights.tsx
+#: src/shared/open-note-dialog.tsx
 msgid "Meeting chat"
 msgstr "Meeting chat"
 
@@ -1778,6 +1896,7 @@ msgid "Memo"
 msgstr "Memo"
 
 #: src/session/components/note-input/header-raw.tsx
+#: src/shared/open-note-dialog.tsx
 msgid "Memos"
 msgstr "Memos"
 
@@ -1852,6 +1971,10 @@ msgstr "Move down"
 msgid "Move this note"
 msgstr "Move this note"
 
+#: src/sidebar/folder-nav.tsx
+msgid "Move to"
+msgstr "Move to"
+
 #: src/templates/sections-editor.tsx
 msgid "Move up"
 msgstr "Move up"
@@ -1902,6 +2025,7 @@ msgid "New automation"
 msgstr "New automation"
 
 #: src/folders/sidebar.tsx
+#: src/sidebar/folder-nav.tsx
 msgid "New folder"
 msgstr "New folder"
 
@@ -1921,6 +2045,15 @@ msgstr "New password"
 #: src/settings/claude/tools.tsx
 msgid "New secret for {0}"
 msgstr "New secret for {0}"
+
+#: src/sidebar/folder-nav.tsx
+msgid "New subfolder"
+msgstr "New subfolder"
+
+#. placeholder {0}: dialog.parent
+#: src/sidebar/folder-nav.tsx
+msgid "New subfolder in {0}"
+msgstr "New subfolder in {0}"
 
 #: src/session/components/note-input/raw.tsx
 #: src/templates/details.tsx
@@ -2100,6 +2233,14 @@ msgstr "No transcript available"
 msgid "Not connected"
 msgstr "Not connected"
 
+#: src/settings/claude/sign-in.tsx
+msgid "Not signed in"
+msgstr "Not signed in"
+
+#: src/shared/open-note-dialog.tsx
+msgid "Note"
+msgstr "Note"
+
 #: src/lock/screen.tsx
 msgid "Note is Locked"
 msgstr "Note is Locked"
@@ -2116,6 +2257,7 @@ msgstr "Notes list"
 #. js-lingui-explicit-id
 #: src/folders/folder-editor.tsx
 #: src/sidebar/folder-materials.tsx
+#: src/sidebar/folder-nav.tsx
 msgid "Notes stay in All notes. Materials in this folder will be deleted."
 msgstr "Notes stay in All notes. This folder, its nested folders, and all their materials will be deleted."
 
@@ -2183,9 +2325,14 @@ msgstr "Open calendar account actions"
 msgid "Open Claude settings"
 msgstr "Open Claude settings"
 
+#: src/coach/nudges.tsx
 #: src/coach/open-button.tsx
 msgid "Open coach"
 msgstr "Open coach"
+
+#: src/coach/open-button.tsx
+msgid "Open coach, new nudge"
+msgstr "Open coach, new nudge"
 
 #: src/onboarding/final.tsx
 #: src/services/enhancer/summary-notification.ts
@@ -2212,6 +2359,10 @@ msgstr "Open meeting"
 #: src/task/resource-view.tsx
 msgid "Open on GitHub"
 msgstr "Open on GitHub"
+
+#: src/coach/nudges.tsx
+msgid "Open question"
+msgstr "Open question"
 
 #: src/calendar/components/apple/permission.tsx
 msgid "Open Settings"
@@ -2262,6 +2413,10 @@ msgstr "Other device's version"
 #: src/settings/general/permissions.tsx
 msgid "Others"
 msgstr "Others"
+
+#: src/coach/nudges.tsx
+msgid "Over-promise"
+msgstr "Over-promise"
 
 #: src/shared/control.tsx
 msgid "Page not found"
@@ -2369,6 +2524,10 @@ msgstr "Preview"
 msgid "Previous match"
 msgstr "Previous match"
 
+#: src/coach/nudges.tsx
+msgid "Pushback"
+msgstr "Pushback"
+
 #: src/session/components/note-input/header-transcript.tsx
 #: src/session/components/note-input/transcript/screens/empty.tsx
 msgid "Re-transcribe"
@@ -2385,10 +2544,6 @@ msgstr "Re-transcription failed"
 #: src/onboarding/permissions.tsx
 msgid "Read meeting controls and visible chat"
 msgstr "Read meeting controls and visible chat"
-
-#: src/settings/general/permissions.tsx
-msgid "Read meeting controls and visible chat."
-msgstr "Read meeting controls and visible chat."
 
 #: src/settings/ai/shared/index.tsx
 #: src/settings/claude/tools.tsx
@@ -2456,6 +2611,10 @@ msgstr "Regenerate"
 msgid "Related Notes"
 msgstr "Related Notes"
 
+#: src/shared/open-note-dialog.tsx
+msgid "release notes"
+msgstr "release notes"
+
 #: src/settings/general/audio-settings.tsx
 msgid "Remember speakers"
 msgstr "Remember speakers"
@@ -2503,13 +2662,23 @@ msgstr "Remove example {0}"
 msgid "Remove photo"
 msgstr "Remove photo"
 
+#: src/session/components/outer-header/metadata/tags.tsx
+msgid "Remove tag {tag}"
+msgstr "Remove tag {tag}"
+
 #: src/sidebar/folder-materials.tsx
+#: src/sidebar/folder-nav.tsx
 msgid "Rename"
 msgstr "Rename"
 
 #: src/sidebar/folder-materials.tsx
+#: src/sidebar/folder-nav.tsx
 msgid "Rename folder"
 msgstr "Rename folder"
+
+#: src/sidebar/folder-nav.tsx
+msgid "Rename…"
+msgstr "Rename…"
 
 #: src/automations/starters.tsx
 msgid "Render canonical Markdown"
@@ -2594,6 +2763,10 @@ msgstr "Retry setup"
 #: src/settings/shortcut-recorder.tsx
 msgid "Right Command"
 msgstr "Right Command"
+
+#: src/coach/nudges.tsx
+msgid "Risk"
+msgstr "Risk"
 
 #: src/shared/open-note-dialog.tsx
 msgid "Run"
@@ -2829,6 +3002,10 @@ msgstr "Shared screen at {time}"
 msgid "Shared screens"
 msgstr "Shared screens"
 
+#: src/sidebar/folder-materials.tsx
+msgid "Show all notes"
+msgstr "Show all notes"
+
 #: src/sidebar/timeline/item.tsx
 msgid "Show All Recurring Events"
 msgstr "Show All Recurring Events"
@@ -2863,6 +3040,11 @@ msgstr "Show in Finder"
 msgid "Show meeting times as 14:00 instead of 2:00 PM."
 msgstr "Show meeting times as 14:00 instead of 2:00 PM."
 
+#. placeholder {0}: tag.name
+#: src/sidebar/tag-nav.tsx
+msgid "Show notes tagged {0}"
+msgstr "Show notes tagged {0}"
+
 #: src/settings/appearance/sidebar-item-fields.tsx
 msgid "Show tags under the date and time."
 msgstr "Show tags under the date and time."
@@ -2884,6 +3066,10 @@ msgid "Show tray icon"
 msgstr "Show tray icon"
 
 #: src/settings/general/notification.tsx
+msgid "Show what the coach suggests when its window isn't in front."
+msgstr "Show what the coach suggests when its window isn't in front."
+
+#: src/settings/general/notification.tsx
 msgid "Show when a summary is ready."
 msgstr "Show when a summary is ready."
 
@@ -2894,6 +3080,23 @@ msgstr "Show words in the floating panel as you speak. Uses a live connection to
 #: src/contacts/self-name.tsx
 msgid "Shown for your voice in transcripts. Empty shows “You”."
 msgstr "Shown for your voice in transcripts. Empty shows “You”."
+
+#: src/settings/claude/sign-in.tsx
+msgid "Sign in"
+msgstr "Sign in"
+
+#: src/settings/claude/sign-in.tsx
+msgid "Sign in again"
+msgstr "Sign in again"
+
+#: src/onboarding/claude.tsx
+#: src/onboarding/index.tsx
+msgid "Sign in to Claude"
+msgstr "Sign in to Claude"
+
+#: src/settings/claude/sign-in.tsx
+msgid "Signed in"
+msgstr "Signed in"
 
 #: src/settings/appearance/app-icon.tsx
 msgid "Silver"
@@ -3050,6 +3253,11 @@ msgstr "Stop"
 msgid "Stop auto-add"
 msgstr "Stop auto-add"
 
+#. placeholder {0}: tag.name
+#: src/sidebar/tag-nav.tsx
+msgid "Stop filtering by {0}"
+msgstr "Stop filtering by {0}"
+
 #: src/session/components/outer-header/index.tsx
 #: src/sidebar/timeline/item.tsx
 msgid "Stop listening"
@@ -3079,6 +3287,10 @@ msgstr "Success"
 msgid "Suggested templates"
 msgstr "Suggested templates"
 
+#: src/onboarding/index.tsx
+msgid "Summaries and the coach run on Claude, using your Claude sign-in on this Mac."
+msgstr "Summaries and the coach run on Claude, using your Claude sign-in on this Mac."
+
 #: src/session/components/note-input/enhanced/config-error.tsx
 msgid "Summaries use Claude through the Claude sign-in on this Mac. Check the Claude settings, then try again."
 msgstr "Summaries use Claude through the Claude sign-in on this Mac. Check the Claude settings, then try again."
@@ -3090,6 +3302,7 @@ msgstr "Summaries, titles, briefs and the coach run on Claude, using the Claude 
 #: src/contacts/details.tsx
 #: src/session/components/outer-header/overflow/export-modal.tsx
 #: src/settings/automations/markdown-export-options.tsx
+#: src/shared/open-note-dialog.tsx
 msgid "Summary"
 msgstr "Summary"
 
@@ -3139,9 +3352,23 @@ msgstr "System audio"
 msgid "System audio enabled"
 msgstr "System audio enabled"
 
+#: src/session/components/outer-header/metadata/tags.tsx
+msgid "Tag suggestions"
+msgstr "Tag suggestions"
+
+#: src/session/components/outer-header/metadata/tags.tsx
 #: src/settings/appearance/sidebar-item-fields.tsx
+#: src/sidebar/tag-nav.tsx
 msgid "Tags"
 msgstr "Tags"
+
+#: src/session/components/outer-header/metadata/tags.tsx
+msgid "Tags can be up to 64 characters."
+msgstr "Tags can be up to 64 characters."
+
+#: src/coach/nudges.tsx
+msgid "Talk time"
+msgstr "Talk time"
 
 #: src/settings/general/meeting-settings.tsx
 msgid "Tell participants when listening starts; this does not confirm consent."
@@ -3170,9 +3397,15 @@ msgstr "Templates shape how your meeting notes are written."
 msgid "Test"
 msgstr "Test"
 
+#. placeholder {0}: record.detail
 #: src/settings/automations/index.tsx
-msgid "Test runs are not available yet."
-msgstr "Test runs are not available yet."
+msgid "Test export failed: {0}"
+msgstr "Test export failed: {0}"
+
+#. placeholder {0}: record.detail
+#: src/settings/automations/index.tsx
+msgid "Test export saved to {0}"
+msgstr "Test export saved to {0}"
 
 #: src/settings/claude/index.tsx
 msgid "The coach can search the web and read public pages when you ask about something mentioned in a meeting."
@@ -3181,6 +3414,10 @@ msgstr "The coach can search the web and read public pages when you ask about so
 #: src/shared/control.tsx
 msgid "The page you're looking for doesn't exist."
 msgstr "The page you're looking for doesn't exist."
+
+#: src/templates/confirm-template-delete.tsx
+msgid "The template is removed for good. Notes already written with it keep their content."
+msgstr "The template is removed for good. Notes already written with it keep their content."
 
 #: src/stt/live-transcript-interrupted.ts
 msgid "the transcription service"
@@ -3193,6 +3430,10 @@ msgstr "Theme"
 #: src/settings/automations/workflow-builder.tsx
 msgid "Then"
 msgstr "Then"
+
+#: src/settings/automations/index.tsx
+msgid "There are no notes to export yet."
+msgstr "There are no notes to export yet."
 
 #: src/settings/claude/instructions.tsx
 msgid "These are sent with every message, so long instructions use more of your Claude plan."
@@ -3256,6 +3497,10 @@ msgstr "Tool name"
 msgid "Tools"
 msgstr "Tools"
 
+#: src/sidebar/folder-nav.tsx
+msgid "Top level"
+msgstr "Top level"
+
 #: src/shared/open-note-dialog.tsx
 msgid "transcribe"
 msgstr "transcribe"
@@ -3267,6 +3512,7 @@ msgstr "Transcribing…"
 #: src/session/components/note-input/header-transcript.tsx
 #: src/session/components/outer-header/overflow/export-modal.tsx
 #: src/settings/automations/markdown-export-options.tsx
+#: src/shared/open-note-dialog.tsx
 msgid "Transcript"
 msgstr "Transcript"
 
@@ -3296,10 +3542,6 @@ msgstr "Travel & Places"
 msgid "Trigger"
 msgstr "Trigger"
 
-#: src/shared/open-note-dialog.tsx
-msgid "Try a note title, a person, or a setting."
-msgstr "Try a note title, a person, or a setting."
-
 #: src/contacts/details.tsx
 msgid "Try again"
 msgstr "Try again"
@@ -3308,10 +3550,19 @@ msgstr "Try again"
 msgid "Try dictation"
 msgstr "Try dictation"
 
+#: src/shared/open-note-dialog.tsx
+msgid "Try words from a note, a person, or a setting."
+msgstr "Try words from a note, a person, or a setting."
+
 #: src/calendar/components/apple/permission.tsx
 msgid "Turn on Cue in System Settings → Privacy & Security → Calendars, then return here."
 msgstr "Turn on Cue in System Settings → Privacy & Security → Calendars, then return here."
 
+#: src/settings/general/permissions.tsx
+msgid "Type dictation into other apps, and read meeting controls and visible chat."
+msgstr "Type dictation into other apps, and read meeting controls and visible chat."
+
+#: src/contacts/use-delete-contact.ts
 #: src/sidebar/toast/undo-delete-toast.tsx
 msgid "Undo"
 msgstr "Undo"
@@ -3357,6 +3608,7 @@ msgstr "Unpin"
 #: src/shared/ui/resource-list/preview-header.tsx
 #: src/sidebar/timeline/item.tsx
 #: src/sidebar/toast/undo-delete-toast.tsx
+#: src/templates/confirm-template-delete.tsx
 #: src/templates/details.tsx
 #: src/templates/sections-editor.tsx
 msgid "Untitled"
@@ -3383,6 +3635,10 @@ msgstr "Upcoming Event"
 #: src/settings/general/updates.tsx
 msgid "Update ready — {0}"
 msgstr "Update ready — {0}"
+
+#: src/shared/open-note-dialog.tsx
+msgid "updates"
+msgstr "updates"
 
 #: src/settings/general/updates.tsx
 msgid "Updates"
@@ -3461,6 +3717,10 @@ msgstr "Used for transcription and automatic summary language detection."
 msgid "User name"
 msgstr "User name"
 
+#: src/coach/nudges.tsx
+msgid "Vague promise"
+msgstr "Vague promise"
+
 #: src/settings/general/storage/legacy-cleanup.tsx
 msgid "Verifying the SQLite migration status"
 msgstr "Verifying the SQLite migration status"
@@ -3505,6 +3765,10 @@ msgstr "What the coach should know about you and how to answer. Markdown is fine
 #: src/folders/folder-editor.tsx
 msgid "What these notes are usually about"
 msgstr "What these notes are usually about"
+
+#: src/shared/open-note-dialog.tsx
+msgid "What's new"
+msgstr "What's new"
 
 #: src/changelog/index.tsx
 msgid "What's new in {version}?"
