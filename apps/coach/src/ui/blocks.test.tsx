@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { act, fireEvent, render, type RenderResult, within } from "@testing-library/react";
 
-import { loadChats, remember, saveChats } from "../chat-store";
+import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
 import { IMAGE_ERRORS } from "../image-limits";
 import type { CoachEvent } from "../protocol";
 import { CoachView } from "./app";
@@ -186,7 +186,7 @@ describe("images in the composer", () => {
       { type: "text", delta: "A missing env var." },
       done,
     ];
-    saveChats(file, remember({ meetings: {} }, "m1", { claudeSessionId: "c1", project: "/work", history, updatedAt: 1 }));
+    saveChats(file, remember(emptyStore(), "m1", { claudeSessionId: "c1", project: "/work", history, updatedAt: 1 }));
     const restored = loadChats(file).meetings.m1?.history ?? [];
     setup(stateFrom([status(), { type: "reset", reason: "sync" }, ...restored]));
     const images = within(view.getByTestId("sent-images")).getAllByRole("img");

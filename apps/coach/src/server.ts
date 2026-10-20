@@ -6,7 +6,18 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { type AppBridge, appBridgeFromEnv, type CoachEdit, type MeetingProject } from "./app-bridge";
 import { createAccess, loginUrl, randomToken, TOKEN_ENV, withAccess } from "./access";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
-import { type ChatStore, forget, loadChats, type OpenReason, planChat, remember, saveChats } from "./chat-store";
+import {
+  type ChatStore,
+  dropResume,
+  keepWrapUp,
+  loadChats,
+  type OpenReason,
+  planChat,
+  remember,
+  saveChats,
+  type SettledWrapUp,
+  wrappedTranscripts,
+} from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { coachError, GAVE_UP, StderrTail } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
@@ -104,14 +115,14 @@ let project = defaultProject;
 let attached: MeetingPointer | null = null;
 let recording: ReadonlySet<string> | undefined;
 let recordingUnknown = false;
-const wrapped = new Set<string>();
 let wrapUp: WrapUpView | null = null;
-let wrapUpSessionId: string | undefined;
+let wrapUpMeeting: { sessionId: string; transcriptId: string } | undefined;
 let wrapUpAbort: AbortController | null = null;
 const editSessions = new Map<string, string>();
 const addingBlockItems = new Set<string>();
 
 let store: ChatStore = loadChats(stateFile);
+const wrapped = wrappedTranscripts(store);
 let history: CoachEvent[] = [];
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -159,16 +170,16 @@ function feed(event: CoachEvent) {
 function persistNow() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = null;
-  const claudeSessionId = tracker.resumable;
-  if (!chatSessionId || !claudeSessionId) return;
+  if (!chatSessionId) return;
+  const before = store;
   store = remember(store, chatSessionId, {
-    claudeSessionId,
+    claudeSessionId: tracker.resumable,
     project: project.path,
     history,
     updatedAt: Date.now(),
     seen,
   });
-  saveStore();
+  if (store !== before) saveStore();
 }
 
 function saveStore() {
@@ -375,7 +386,7 @@ const supervisor = new Supervisor<SDKMessage>({
     console.error("[coach] Claude Code has no conversation to resume; starting a fresh one", { claudeSessionId: id });
     tracker.resumable = null;
     if (!chatSessionId) return;
-    store = forget(store, chatSessionId);
+    store = dropResume(store, chatSessionId);
     saveStore();
   },
   restart: () => enqueue(() => openChat("recover")),
@@ -453,8 +464,13 @@ async function openChat(reason: OpenReason) {
   if (plan.resume && reason !== "recover" && history.length > 0) {
     history = appendHistory(history, { type: "divider", text: "Picked up where you left off" });
   }
+  if (!wrapUp && plan.wrapUp && sessionId) {
+    const { view, transcriptId } = plan.wrapUp;
+    wrapUp = view.state === "ready" ? { ...view, actions: actionsFor(view.wrapUp) } : view;
+    wrapUpMeeting = { sessionId, transcriptId };
+  }
   if (reason !== "startup") broadcast({ type: "reset", reason: reason === "recover" ? "sync" : reason });
-  if (reason === "recover" || plan.resume) for (const event of history) broadcast(event);
+  for (const event of history) broadcast(event);
   if (reason !== "startup" && wrapUp) broadcast({ type: "wrapup", wrapUp });
   broadcast(status());
   supervisor.watch(session, plan.resume);
@@ -515,6 +531,12 @@ function transcriptEvent(transcript = readTranscript()): CoachEvent {
 function setWrapUp(next: WrapUpView | null) {
   wrapUp = next;
   broadcast({ type: "wrapup", wrapUp });
+  if (wrapUpMeeting && next && next.state !== "running") storeWrapUp(wrapUpMeeting, next);
+}
+
+function storeWrapUp(meeting: { sessionId: string; transcriptId: string }, view: SettledWrapUp) {
+  store = keepWrapUp(store, meeting.sessionId, { transcriptId: meeting.transcriptId, view, updatedAt: Date.now() });
+  saveStore();
 }
 
 function actionsFor(result: WrapUp): WrapUpActions {
@@ -531,7 +553,7 @@ function startWrapUp(transcript: LiveTranscript) {
   wrapUpAbort?.abort();
   const abort = new AbortController();
   wrapUpAbort = abort;
-  wrapUpSessionId = transcript.sessionId;
+  wrapUpMeeting = { sessionId: transcript.sessionId, transcriptId: transcript.transcriptId };
   const title = transcript.title;
   setWrapUp({ state: "running", title });
   generateWrapUp(transcript, readMeetingInfo(db, transcript.sessionId), {
@@ -562,7 +584,7 @@ function startWrapUp(transcript: LiveTranscript) {
 function cancelWrapUp() {
   wrapUpAbort?.abort();
   wrapUpAbort = null;
-  wrapUpSessionId = undefined;
+  wrapUpMeeting = undefined;
   if (wrapUp) setWrapUp(null);
 }
 
@@ -836,19 +858,20 @@ const server = Bun.serve({
         if (wrapUp?.state !== "ready" || !wrapUp.actions.addActionItems.enabled || wrapUp.added) {
           return conflict("There's nothing to add.");
         }
-        if (!bridge || !wrapUpSessionId) return conflict("Open the coach from the app to add action items.");
+        if (!bridge || !wrapUpMeeting) return conflict("Open the coach from the app to add action items.");
         const ready = wrapUp;
-        const sessionId = wrapUpSessionId;
+        const meeting = wrapUpMeeting;
         const hooks = editHooks(bridge);
         let added = 0;
         return bridgeCall(async () => {
           try {
             for (const commitment of ready.commitments) {
-              hooks.onEdit(await bridge.addActionItem(sessionId, commitment));
+              hooks.onEdit(await bridge.addActionItem(meeting.sessionId, commitment));
               added += 1;
             }
           } finally {
-            if (added > 0) setWrapUp({ ...ready, added: true });
+            if (added > 0 && wrapUpMeeting === meeting) setWrapUp({ ...ready, added: true });
+            else if (added > 0) storeWrapUp(meeting, { ...ready, added: true });
           }
           return new Response(null, { status: 204 });
         });

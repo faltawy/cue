@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { act, fireEvent, render, type RenderResult, within } from "@testing-library/react";
 
-import { loadChats, remember, saveChats } from "../chat-store";
+import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
 import type { Move } from "../move";
 import { appendHistory, type CoachEvent, type WrapUpView } from "../protocol";
 import type { TalkStats } from "../talk-time";
@@ -279,7 +279,7 @@ describe("history", () => {
     const events = [status(), ...nudge({ ...PUSHBACK, tag: "talk_time" }, [{ type: "talk", talk: TALK }])];
     const history = events.reduce<CoachEvent[]>(appendHistory, []);
     const file = join(mkdtempSync(join(tmpdir(), "coach-coaching-")), "chats.json");
-    saveChats(file, remember({ meetings: {} }, "m1", { claudeSessionId: "c1", project: "/p", history, updatedAt: 1 }));
+    saveChats(file, remember(emptyStore(), "m1", { claudeSessionId: "c1", project: "/p", history, updatedAt: 1 }));
     const restored = loadChats(file).meetings.m1?.history ?? [];
     expect(restored.filter((event) => event.type === "block" || event.type === "talk")).toHaveLength(2);
     setup(stateFrom([status(), ...restored]));
