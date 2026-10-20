@@ -1647,6 +1647,34 @@ msgstr "Listening…"
 msgid "Live"
 msgstr "Live"
 
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} is having an outage."
+msgstr "Live transcript paused because {providerName} is having an outage."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} rejected the transcription settings."
+msgstr "Live transcript paused because {providerName} rejected the transcription settings."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} rejected your API key. Check your transcription key in Settings."
+msgstr "Live transcript paused because {providerName} rejected your API key. Check your transcription key in Settings."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} stopped sending words."
+msgstr "Live transcript paused because {providerName} stopped sending words."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because Cue can't reach {providerName}."
+msgstr "Live transcript paused because Cue can't reach {providerName}."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because the local transcription model stopped responding."
+msgstr "Live transcript paused because the local transcription model stopped responding."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because you're offline."
+msgstr "Live transcript paused because you're offline."
+
 #: src/settings/dictation.tsx
 msgid "Live transcript preview"
 msgstr "Live transcript preview"
@@ -2875,6 +2903,10 @@ msgstr "Silver"
 msgid "Skip"
 msgstr "Skip"
 
+#: src/stt/live-transcript-interrupted.ts
+msgid "Slow connection to {providerName}. Live transcript is retrying."
+msgstr "Slow connection to {providerName}. Live transcript is retrying."
+
 #: src/templates/template-icon-picker.tsx
 msgid "Smileys & People"
 msgstr "Smileys & People"
@@ -3149,6 +3181,10 @@ msgstr "The coach can search the web and read public pages when you ask about so
 #: src/shared/control.tsx
 msgid "The page you're looking for doesn't exist."
 msgstr "The page you're looking for doesn't exist."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "the transcription service"
+msgstr "the transcription service"
 
 #: src/settings/appearance/theme.tsx
 msgid "Theme"
@@ -3525,6 +3561,10 @@ msgstr "You can undo this action for a short time."
 #: src/templates/auto-format-examples-dialog.tsx
 msgid "You can use up to three example summaries."
 msgstr "You can use up to three example summaries."
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Your audio is still being saved, and the missing part will be filled in from the recording."
+msgstr "Your audio is still being saved, and the missing part will be filled in from the recording."
 
 #: src/settings/dictionary/index.tsx
 msgid "Your dictionary is empty"

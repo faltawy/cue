@@ -1647,6 +1647,34 @@ msgstr ""
 msgid "Live"
 msgstr ""
 
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} is having an outage."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} rejected the transcription settings."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} rejected your API key. Check your transcription key in Settings."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because {providerName} stopped sending words."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because Cue can't reach {providerName}."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because the local transcription model stopped responding."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Live transcript paused because you're offline."
+msgstr ""
+
 #: src/settings/dictation.tsx
 msgid "Live transcript preview"
 msgstr ""
@@ -2875,6 +2903,10 @@ msgstr ""
 msgid "Skip"
 msgstr ""
 
+#: src/stt/live-transcript-interrupted.ts
+msgid "Slow connection to {providerName}. Live transcript is retrying."
+msgstr ""
+
 #: src/templates/template-icon-picker.tsx
 msgid "Smileys & People"
 msgstr ""
@@ -3148,6 +3180,10 @@ msgstr ""
 
 #: src/shared/control.tsx
 msgid "The page you're looking for doesn't exist."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "the transcription service"
 msgstr ""
 
 #: src/settings/appearance/theme.tsx
@@ -3524,6 +3560,10 @@ msgstr ""
 
 #: src/templates/auto-format-examples-dialog.tsx
 msgid "You can use up to three example summaries."
+msgstr ""
+
+#: src/stt/live-transcript-interrupted.ts
+msgid "Your audio is still being saved, and the missing part will be filled in from the recording."
 msgstr ""
 
 #: src/settings/dictionary/index.tsx

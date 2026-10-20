@@ -1,9 +1,8 @@
+import { t } from "@lingui/core/macro";
+
 import type { DegradedError } from "@anlg/plugin-transcription";
 
 import { PROVIDERS } from "~/settings/ai/stt/shared";
-
-const SAVED_AUDIO_NOTE =
-  "Your audio is still being saved, and the missing part will be filled in from the recording.";
 
 const LOCAL_PROVIDER_IDS = new Set(["soniqo", "apple_speech", "local_file"]);
 
@@ -23,7 +22,7 @@ function isProviderSideStreamError(message: string) {
   );
 }
 
-function getPauseCause({
+function getPauseReason({
   degraded,
   sttProvider,
   online,
@@ -33,37 +32,42 @@ function getPauseCause({
   online: boolean;
 }) {
   const providerName =
-    providerDisplayName(sttProvider) ?? "the transcription service";
+    providerDisplayName(sttProvider) ?? t`the transcription service`;
 
   const isLocal = !!sttProvider && LOCAL_PROVIDER_IDS.has(sttProvider);
 
   if (!online && !isLocal) {
-    return "you're offline";
+    return t`Live transcript paused because you're offline.`;
   }
 
   if (degraded?.type === "authentication_failed") {
-    return `${providerName} rejected your API key`;
+    return t`Live transcript paused because ${providerName} rejected your API key. Check your transcription key in Settings.`;
   }
 
   if (degraded?.type === "provider_configuration") {
-    return `${providerName} rejected the transcription settings`;
+    return t`Live transcript paused because ${providerName} rejected the transcription settings.`;
   }
 
   if (
     degraded?.type === "stream_error" &&
     isProviderSideStreamError(degraded.message)
   ) {
-    return `${providerName} is having an outage`;
+    return t`Live transcript paused because ${providerName} is having an outage.`;
+  }
+
+  if (degraded && isLocal) {
+    return t`Live transcript paused because the local transcription model stopped responding.`;
+  }
+
+  if (degraded?.type === "connection_timeout") {
+    return t`Slow connection to ${providerName}. Live transcript is retrying.`;
   }
 
   if (degraded) {
-    if (isLocal) {
-      return "the local transcription model stopped responding";
-    }
-    return `Cue can't reach ${providerName}`;
+    return t`Live transcript paused because Cue can't reach ${providerName}.`;
   }
 
-  return `${providerName} stopped sending words`;
+  return t`Live transcript paused because ${providerName} stopped sending words.`;
 }
 
 export function getLiveTranscriptPausedMessage({
@@ -75,6 +79,6 @@ export function getLiveTranscriptPausedMessage({
   sttProvider: string | null | undefined;
   online?: boolean;
 }) {
-  const cause = getPauseCause({ degraded, sttProvider, online });
-  return `Live transcript paused because ${cause}. ${SAVED_AUDIO_NOTE}`;
+  const reason = getPauseReason({ degraded, sttProvider, online });
+  return `${reason} ${t`Your audio is still being saved, and the missing part will be filled in from the recording.`}`;
 }
