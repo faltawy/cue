@@ -29,6 +29,8 @@ Default permissions for the plugin
 - `allow-update-folder-instructions`
 - `allow-update-folder-workspace`
 - `allow-update-folder-icon`
+- `allow-add-session-tag`
+- `allow-remove-session-tag`
 
 ## Permission Table
 
@@ -61,6 +63,32 @@ Enables the add_session_participant command without any pre-configured scope.
 <td>
 
 Denies the add_session_participant command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`session:allow-add-session-tag`
+
+</td>
+<td>
+
+Enables the add_session_tag command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`session:deny-add-session-tag`
+
+</td>
+<td>
+
+Denies the add_session_tag command without any pre-configured scope.
 
 </td>
 </tr>
@@ -373,6 +401,32 @@ Enables the remove_session_participant command without any pre-configured scope.
 <td>
 
 Denies the remove_session_participant command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`session:allow-remove-session-tag`
+
+</td>
+<td>
+
+Enables the remove_session_tag command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`session:deny-remove-session-tag`
+
+</td>
+<td>
+
+Denies the remove_session_tag command without any pre-configured scope.
 
 </td>
 </tr>

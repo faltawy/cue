@@ -2,7 +2,7 @@ use tauri::Manager;
 
 use crate::{
     attachments, conflicts, creation, deletion, folder_catalog, folder_materials, move_contents,
-    participants, proposals,
+    participants, proposals, tags,
 };
 
 macro_rules! session_write_command {
@@ -197,5 +197,19 @@ session_write_command!(
     folder_catalog,
     update_folder_icon,
     folder_catalog::UpdateFolderIconRequest,
+    ()
+);
+session_write_command!(
+    add_session_tag,
+    tags,
+    add_session_tag,
+    tags::SessionTagRequest,
+    String
+);
+session_write_command!(
+    remove_session_tag,
+    tags,
+    remove_session_tag,
+    tags::SessionTagRequest,
     ()
 );

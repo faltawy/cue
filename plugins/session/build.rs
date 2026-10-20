@@ -24,6 +24,8 @@ const COMMANDS: &[&str] = &[
     "update_folder_instructions",
     "update_folder_workspace",
     "update_folder_icon",
+    "add_session_tag",
+    "remove_session_tag",
 ];
 
 fn main() {

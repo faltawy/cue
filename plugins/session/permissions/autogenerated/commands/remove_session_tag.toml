@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-remove-session-tag"
+description = "Enables the remove_session_tag command without any pre-configured scope."
+commands.allow = ["remove_session_tag"]
+
+[[permission]]
+identifier = "deny-remove-session-tag"
+description = "Denies the remove_session_tag command without any pre-configured scope."
+commands.deny = ["remove_session_tag"]

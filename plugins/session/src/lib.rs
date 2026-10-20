@@ -10,6 +10,7 @@ mod folder_materials;
 mod move_contents;
 mod participants;
 mod proposals;
+mod tags;
 mod transaction_utils;
 
 #[cfg(test)]
@@ -48,6 +49,8 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::update_folder_instructions::<Wry>,
             commands::update_folder_workspace::<Wry>,
             commands::update_folder_icon::<Wry>,
+            commands::add_session_tag::<Wry>,
+            commands::remove_session_tag::<Wry>,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }

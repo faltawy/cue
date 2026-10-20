@@ -26,4 +26,6 @@ permissions = [
   "allow-update-folder-instructions",
   "allow-update-folder-workspace",
   "allow-update-folder-icon",
+  "allow-add-session-tag",
+  "allow-remove-session-tag",
 ]

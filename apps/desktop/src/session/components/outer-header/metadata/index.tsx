@@ -6,6 +6,7 @@ import { safeFormat, safeParseDate, TZDate } from "@anlg/utils";
 
 import { DateEditor } from "./date";
 import { ParticipantsDisplay } from "./participants";
+import { SessionTagsEditor } from "./tags";
 
 import { useSessionEvent } from "~/session/hooks/useSessionEvent";
 import { useConfigValue } from "~/shared/config";
@@ -51,6 +52,8 @@ function ContentInner({ sessionId }: { sessionId: string }) {
         </EventDisplay>
       )}
       {!eventDisplayData && <ParticipantsDisplay sessionId={sessionId} />}
+      <div className="bg-border h-px" />
+      <SessionTagsEditor sessionId={sessionId} />
     </div>
   );
 }

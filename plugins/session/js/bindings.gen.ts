@@ -205,6 +205,22 @@ async updateFolderIcon(request: UpdateFolderIconRequest) : Promise<Result<null, 
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async addSessionTag(request: SessionTagRequest) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:session|add_session_tag", { request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async removeSessionTag(request: SessionTagRequest) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:session|remove_session_tag", { request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -237,6 +253,7 @@ export type ResolveSessionConflictRequest = { conflict_id: string }
 export type ResolveSessionConflictsRequest = { session_id: string }
 export type RestoreDeletedSessionOutcome = "restored" | "alive" | "not_deleted"
 export type SessionAudioRequest = { session_id: string }
+export type SessionTagRequest = { session_id: string; tag_name: string }
 export type SetAttachmentCloudSyncEnabledRequest = { session_id: string; attachment_id: string; enabled: boolean }
 export type SetSessionProposalStatusRequest = { proposal_id: string; status: string }
 export type TombstoneFolderMaterialRequest = { folder_path: string; attachment_id: string }
