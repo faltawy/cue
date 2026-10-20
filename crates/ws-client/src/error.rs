@@ -23,6 +23,7 @@ pub enum Error {
         attempts: usize,
         last_error: String,
         retry_after_secs: Option<u64>,
+        timed_out: bool,
     },
     #[error("remote closed websocket{code_suffix}: {reason}")]
     RemoteClosed {
@@ -80,6 +81,7 @@ impl std::fmt::Debug for Error {
                 attempts,
                 last_error,
                 retry_after_secs,
+                ..
             } => write!(
                 f,
                 "ConnectRetriesExhausted({attempts}, retry_after={retry_after_secs:?}, {last_error})"
@@ -137,6 +139,19 @@ impl Error {
         }
     }
 
+    /// The provider never finished the handshake in time: the network is up but slow, as opposed
+    /// to a refused connection, a DNS failure or an HTTP rejection.
+    pub fn is_connect_timeout(&self) -> bool {
+        matches!(
+            self,
+            Error::ConnectTimeout { .. }
+                | Error::ConnectRetriesExhausted {
+                    timed_out: true,
+                    ..
+                }
+        )
+    }
+
     pub fn retry_after_secs(&self) -> Option<u64> {
         match self {
             Error::ConnectFailed {
@@ -151,13 +166,14 @@ impl Error {
 
     pub fn connect_retries_exhausted(
         attempts: usize,
-        last_error: impl Into<String>,
+        last_error: &Error,
         retry_after_secs: Option<u64>,
     ) -> Self {
         Self::ConnectRetriesExhausted {
             attempts,
-            last_error: last_error.into(),
+            last_error: last_error.to_string(),
             retry_after_secs,
+            timed_out: last_error.is_connect_timeout(),
         }
     }
 

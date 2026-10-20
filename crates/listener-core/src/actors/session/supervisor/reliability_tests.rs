@@ -340,3 +340,43 @@ async fn live_words_resume_after_stalled_streams_without_restarting_recorder() {
         );
     }
 }
+
+async fn wait_for_listener_registration(session_id: &str, registered: bool) {
+    while registry::where_is(ListenerActor::name(session_id)).is_some() != registered {
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+}
+
+#[tokio::test]
+async fn stopping_during_a_hung_provider_handshake_is_prompt() {
+    let socket = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = socket.local_addr().unwrap();
+    let vault = tempfile::tempdir().unwrap();
+    let mut ctx = test_ctx();
+    ctx.app_dir = vault.path().to_path_buf();
+    ctx.params.session_id = uuid::Uuid::new_v4().to_string();
+    ctx.params.base_url = format!("http://{address}/v1");
+    ctx.params.model = "nova-3".to_string();
+    let session_id = ctx.params.session_id.clone();
+    let (supervisor, supervisor_task) = Actor::spawn(None, SessionActor, ctx).await.unwrap();
+    timeout(
+        Duration::from_secs(5),
+        wait_for_listener_registration(&session_id, true),
+    )
+    .await
+    .expect("the listener should be connecting");
+
+    supervisor.cast(SessionMsg::Shutdown).unwrap();
+
+    timeout(Duration::from_secs(2), supervisor_task)
+        .await
+        .expect("stopping must not wait for the provider handshake")
+        .unwrap();
+    timeout(
+        Duration::from_secs(2),
+        wait_for_listener_registration(&session_id, false),
+    )
+    .await
+    .expect("the abandoned handshake should release the listener");
+    drop(socket);
+}

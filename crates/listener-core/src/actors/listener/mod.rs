@@ -74,6 +74,8 @@ pub struct ListenerArgs {
     /// The mic-isolation verdict the streams opened with: every playing output is a headphone
     /// and the mic was not swapped away from the user's Bluetooth headset.
     pub mic_isolated: bool,
+    /// Abandons the provider handshake when the session stops while it is still connecting.
+    pub connect_cancel: tokio_util::sync::CancellationToken,
 }
 
 pub struct ListenerState {
@@ -160,8 +162,12 @@ impl Actor for ListenerActor {
                     session_id: session_id.clone(),
                 });
 
-            let (tx, rx_task, shutdown_tx, adapter_name) =
-                spawn_rx_task(args.clone(), myself).await?;
+            let (tx, rx_task, shutdown_tx, adapter_name) = tokio::select! {
+                result = spawn_rx_task(args.clone(), myself) => result?,
+                () = args.connect_cancel.cancelled() => {
+                    return Err(actor_error("listener_connect_cancelled"));
+                }
+            };
             tracing::info!(
                 anarlog.stt.provider.name = %adapter_name,
                 channel_mode = ?args.mode,

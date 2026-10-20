@@ -6,7 +6,8 @@ mod reliability_tests;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use ractor::concurrency::Duration;
-use ractor::{Actor, ActorCell, ActorProcessingErr, ActorRef, SupervisionEvent};
+use ractor::{Actor, ActorCell, ActorId, ActorProcessingErr, ActorRef, SupervisionEvent};
+use tokio_util::sync::CancellationToken;
 use tracing::Instrument;
 
 use crate::DegradedError;
@@ -38,7 +39,31 @@ pub struct SessionState {
     mode: SessionModeState,
     listener_retry_attempt: usize,
     listener_mic_isolated: bool,
+    listener_connect: Option<ListenerConnect>,
     shutting_down: bool,
+}
+
+// The provider handshake can take tens of seconds on a slow network, so it runs off the
+// supervisor's mailbox; source and recorder restarts and Shutdown stay prompt meanwhile.
+struct ListenerConnect {
+    cancel: CancellationToken,
+    early_exit: Option<(ActorId, DegradedError)>,
+    // Changes that arrived mid-handshake, applied once the listener attaches.
+    refresh: bool,
+    forward_config: bool,
+    check_isolation: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ListenerConnectReason {
+    Start,
+    Refresh,
+    Retry,
+}
+
+pub struct ListenerConnectOutcome {
+    reason: ListenerConnectReason,
+    result: Result<(ActorCell, bool), ractor::SpawnErr>,
 }
 
 pub struct SessionActor;
@@ -50,6 +75,7 @@ pub enum SessionMsg {
     SourceHealthy,
     SourceRoutingChanged,
     UpdateConfig(SessionConfigUpdate),
+    ListenerConnected(ListenerConnectOutcome),
 }
 
 #[ractor::async_trait]
@@ -98,6 +124,7 @@ impl Actor for SessionActor {
                 mode,
                 listener_retry_attempt: 0,
                 listener_mic_isolated: false,
+                listener_connect: None,
                 shutting_down: false,
             })
         }
@@ -112,32 +139,10 @@ impl Actor for SessionActor {
         myself: ActorRef<Self::Msg>,
         state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
-        let span = session_span(&state.ctx.params.session_id);
-
-        async {
-            if !state.mode.should_spawn_listener() {
-                return Ok(());
-            }
-
-            match children::spawn_listener(myself.get_cell(), &state.ctx, None).await {
-                Ok((listener_cell, mic_isolated)) => {
-                    state.listener_cell = Some(listener_cell);
-                    state.listener_mic_isolated = mic_isolated;
-                    state.mode.on_listener_attached();
-                    children::attach_listener_to_source(state).await;
-                }
-                Err(error) => {
-                    tracing::warn!(?error, "listener_spawn_failed");
-                    let retry_after = listener_retry_after(&error);
-                    let degraded = classify_listener_spawn_failure(state, &error);
-                    handle_listener_failure(&myself, state, degraded, retry_after).await;
-                }
-            }
-
-            Ok(())
+        if state.mode.should_spawn_listener() {
+            start_listener_connect(&myself, state, None, ListenerConnectReason::Start);
         }
-        .instrument(span)
-        .await
+        Ok(())
     }
 
     async fn handle(
@@ -171,6 +176,12 @@ impl Actor for SessionActor {
             }
             SessionMsg::UpdateConfig(update) => {
                 update_config(myself, state, update).await;
+            }
+            SessionMsg::ListenerConnected(outcome) => {
+                let span = session_span(&state.ctx.params.session_id);
+                on_listener_connected(myself, state, outcome)
+                    .instrument(span)
+                    .await;
             }
         }
         Ok(())
@@ -207,6 +218,14 @@ impl Actor for SessionActor {
                                 None,
                             )
                             .await;
+                        }
+                        Some(ChildKind::ConnectingListener) => {
+                            tracing::info!(?reason, "connecting_listener_terminated");
+                            record_connecting_listener_exit(
+                                state,
+                                &cell,
+                                mode::parse_degraded_reason(reason.as_ref()),
+                            );
                         }
                         Some(ChildKind::Source) => {
                             tracing::info!(?reason, "source_terminated_attempting_restart");
@@ -254,6 +273,16 @@ impl Actor for SessionActor {
                                 None,
                             )
                             .await;
+                        }
+                        Some(ChildKind::ConnectingListener) => {
+                            tracing::info!(?error, "connecting_listener_failed");
+                            record_connecting_listener_exit(
+                                state,
+                                &cell,
+                                DegradedError::StreamError {
+                                    message: format!("{:?}", error),
+                                },
+                            );
                         }
                         Some(ChildKind::Source) => {
                             tracing::warn!(?error, "source_failed_attempting_restart");
@@ -358,19 +387,28 @@ async fn update_config(
         return;
     }
 
-    let should_refresh_listener = state.mode.should_spawn_listener()
-        && update_requires_listener_refresh(&state.ctx.params, &update);
+    let requires_refresh = update_requires_listener_refresh(&state.ctx.params, &update);
 
     state.ctx.params.languages = update.languages;
     state.ctx.params.participant_human_ids = update.participant_human_ids;
     state.ctx.params.self_human_id = update.self_human_id;
     state.ctx.params.speaker_assignments = update.speaker_assignments;
 
-    if should_refresh_listener {
+    if let Some(connect) = &mut state.listener_connect {
+        connect.refresh |= requires_refresh;
+        connect.forward_config = true;
+        return;
+    }
+
+    if requires_refresh && state.mode.should_spawn_listener() {
         refresh_listener(myself, state).await;
         return;
     }
 
+    forward_listener_config(state);
+}
+
+fn forward_listener_config(state: &SessionState) {
     if let Some(listener_cell) = &state.listener_cell {
         let listener_ref: ractor::ActorRef<ListenerMsg> = listener_cell.clone().into();
         if let Err(error) = listener_ref.cast(ListenerMsg::UpdateConfig(ListenerConfigUpdate {
@@ -385,6 +423,11 @@ async fn update_config(
 }
 
 async fn refresh_listener(myself: ActorRef<SessionMsg>, state: &mut SessionState) {
+    if let Some(connect) = &mut state.listener_connect {
+        connect.refresh = true;
+        return;
+    }
+
     let replay_duration_secs = children::stop_listener(state, "config_update").await;
 
     if !state.mode.should_spawn_listener() {
@@ -393,21 +436,12 @@ async fn refresh_listener(myself: ActorRef<SessionMsg>, state: &mut SessionState
 
     let replay_offset_secs =
         (state.ctx.started_at_instant.elapsed().as_secs_f64() - replay_duration_secs).max(0.0);
-
-    match children::spawn_listener(myself.get_cell(), &state.ctx, Some(replay_offset_secs)).await {
-        Ok((listener_cell, mic_isolated)) => {
-            state.listener_cell = Some(listener_cell);
-            state.listener_mic_isolated = mic_isolated;
-            state.mode.on_listener_attached();
-            children::attach_listener_to_source(state).await;
-        }
-        Err(error) => {
-            tracing::warn!(?error, "listener_refresh_failed");
-            let retry_after = listener_retry_after(&error);
-            let degraded = classify_listener_spawn_failure(state, &error);
-            handle_listener_failure(&myself, state, degraded, retry_after).await;
-        }
-    }
+    start_listener_connect(
+        &myself,
+        state,
+        Some(replay_offset_secs),
+        ListenerConnectReason::Refresh,
+    );
 }
 
 // A source restart can change audio routing (headphones unplugging, a mic swap),
@@ -417,6 +451,10 @@ async fn refresh_listener_on_isolation_change(
     myself: &ActorRef<SessionMsg>,
     state: &mut SessionState,
 ) {
+    if let Some(connect) = &mut state.listener_connect {
+        connect.check_isolation = true;
+        return;
+    }
     if state.listener_cell.is_none() {
         return;
     }
@@ -544,33 +582,131 @@ fn listener_retry_delay(
 }
 
 async fn retry_listener(myself: ActorRef<SessionMsg>, state: &mut SessionState) {
-    if state.shutting_down || state.listener_cell.is_some() || !state.mode.should_retry_listener() {
+    if state.shutting_down
+        || state.listener_cell.is_some()
+        || state.listener_connect.is_some()
+        || !state.mode.should_retry_listener()
+    {
         return;
     }
 
     let replay_duration_secs = children::prepare_listener_refresh(state).await;
     let replay_offset_secs =
         (state.ctx.started_at_instant.elapsed().as_secs_f64() - replay_duration_secs).max(0.0);
+    start_listener_connect(
+        &myself,
+        state,
+        Some(replay_offset_secs),
+        ListenerConnectReason::Retry,
+    );
+}
 
-    match children::spawn_listener(myself.get_cell(), &state.ctx, Some(replay_offset_secs)).await {
-        Ok((listener_cell, mic_isolated)) => {
-            tracing::info!(
-                attempts = state.listener_retry_attempt,
-                "listener_reconnected"
-            );
-            state.listener_cell = Some(listener_cell);
-            state.listener_mic_isolated = mic_isolated;
-            state.listener_retry_attempt = 0;
-            state.mode.on_listener_attached();
-            children::attach_listener_to_source(state).await;
-            emit_active_lifecycle_event(state, None).await;
+fn start_listener_connect(
+    myself: &ActorRef<SessionMsg>,
+    state: &mut SessionState,
+    stream_offset_secs: Option<f64>,
+    reason: ListenerConnectReason,
+) {
+    let cancel = CancellationToken::new();
+    state.listener_connect = Some(ListenerConnect {
+        cancel: cancel.clone(),
+        early_exit: None,
+        refresh: false,
+        forward_config: false,
+        check_isolation: false,
+    });
+
+    let session = myself.clone();
+    let ctx = state.ctx.clone();
+    let span = session_span(&ctx.params.session_id);
+    tokio::spawn(
+        async move {
+            let result =
+                children::spawn_listener(session.get_cell(), &ctx, stream_offset_secs, cancel)
+                    .await;
+            let listener = result.as_ref().ok().map(|(cell, _)| cell.clone());
+            let outcome = ListenerConnectOutcome { reason, result };
+            if session
+                .cast(SessionMsg::ListenerConnected(outcome))
+                .is_err()
+                && let Some(listener) = listener
+            {
+                listener.stop(Some("session_stopped".to_string()));
+            }
         }
+        .instrument(span),
+    );
+}
+
+fn record_connecting_listener_exit(
+    state: &mut SessionState,
+    cell: &ActorCell,
+    degraded: DegradedError,
+) {
+    if let Some(connect) = &mut state.listener_connect {
+        connect.early_exit = Some((cell.get_id(), degraded));
+    }
+}
+
+async fn on_listener_connected(
+    myself: ActorRef<SessionMsg>,
+    state: &mut SessionState,
+    outcome: ListenerConnectOutcome,
+) {
+    let ListenerConnectOutcome { reason, result } = outcome;
+    let Some(connect) = state.listener_connect.take() else {
+        if let Ok((listener, _)) = result {
+            listener.stop(Some("session_stopped".to_string()));
+        }
+        return;
+    };
+
+    let (listener, mic_isolated) = match result {
+        Ok(attached) => attached,
         Err(error) => {
-            tracing::warn!(?error, "listener_retry_failed");
+            match reason {
+                ListenerConnectReason::Start => tracing::warn!(?error, "listener_spawn_failed"),
+                ListenerConnectReason::Refresh => tracing::warn!(?error, "listener_refresh_failed"),
+                ListenerConnectReason::Retry => tracing::warn!(?error, "listener_retry_failed"),
+            }
             let retry_after = listener_retry_after(&error);
             let degraded = classify_listener_spawn_failure(state, &error);
             handle_listener_failure(&myself, state, degraded, retry_after).await;
+            return;
         }
+    };
+    if let Some((id, degraded)) = connect.early_exit
+        && id == listener.get_id()
+    {
+        tracing::warn!(?degraded, "listener_stopped_before_attach");
+        handle_listener_failure(&myself, state, degraded, None).await;
+        return;
+    }
+
+    if reason == ListenerConnectReason::Retry {
+        tracing::info!(
+            attempts = state.listener_retry_attempt,
+            "listener_reconnected"
+        );
+        state.listener_retry_attempt = 0;
+    }
+    state.listener_cell = Some(listener);
+    state.listener_mic_isolated = mic_isolated;
+    state.mode.on_listener_attached();
+    children::attach_listener_to_source(state).await;
+    if reason == ListenerConnectReason::Retry {
+        emit_active_lifecycle_event(state, None).await;
+    }
+
+    if connect.refresh {
+        refresh_listener(myself, state).await;
+        return;
+    }
+    if connect.forward_config {
+        forward_listener_config(state);
+    }
+    if connect.check_isolation {
+        refresh_listener_on_isolation_change(&myself, state).await;
     }
 }
 
@@ -815,6 +951,7 @@ mod tests {
             mode: SessionModeState::new(TranscriptionMode::Live, TranscriptionMode::Live),
             listener_retry_attempt: 0,
             listener_mic_isolated: false,
+            listener_connect: None,
             shutting_down: false,
         }
     }
@@ -1176,6 +1313,7 @@ mod tests {
             mode: SessionModeState::new(TranscriptionMode::Live, TranscriptionMode::Live),
             listener_retry_attempt: 0,
             listener_mic_isolated: false,
+            listener_connect: None,
             shutting_down: false,
         };
 

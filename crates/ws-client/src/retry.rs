@@ -101,7 +101,7 @@ pub(crate) async fn connect_with_retry(
             let retry_after_secs = error.retry_after_secs();
             Err(crate::Error::connect_retries_exhausted(
                 attempts,
-                error.to_string(),
+                &error,
                 retry_after_secs,
             ))
         }

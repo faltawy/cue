@@ -47,6 +47,9 @@ fn classify_ws_connect_failure(provider: &str, error: &anlg_ws_client::Error) ->
             provider: provider.to_string(),
         };
     }
+    if error.is_connect_timeout() {
+        return DegradedError::ConnectionTimeout;
+    }
 
     match error {
         anlg_ws_client::Error::InvalidRequest { message }
@@ -545,11 +548,13 @@ fn build_extra(args: &ListenerArgs) -> (f64, Extra) {
     (session_offset_secs, extra)
 }
 
+// On a slow network TCP, TLS and the WebSocket upgrade together take several seconds, so each
+// attempt gets room for all three and a dropped handshake is retried before the session degrades.
 fn desktop_connect_policy() -> anlg_ws_client::client::WebSocketConnectPolicy {
     anlg_ws_client::client::WebSocketConnectPolicy {
-        connect_timeout: Duration::from_secs(4),
-        max_attempts: 1,
-        retry_delay: Duration::from_secs(1),
+        connect_timeout: Duration::from_secs(12),
+        max_attempts: 3,
+        retry_delay: Duration::from_millis(500),
     }
 }
 
@@ -702,6 +707,7 @@ mod tests {
             speaker_assignments: vec![],
             live_transcript: Default::default(),
             mic_isolated: false,
+            connect_cancel: Default::default(),
         }
     }
 
@@ -829,6 +835,7 @@ mod tests {
             attempts: 3,
             last_error: "HTTP 503 Service Unavailable".to_string(),
             retry_after_secs: None,
+            timed_out: false,
         };
         assert!(matches!(
             classify_ws_connect_failure("deepgram", &error),
@@ -866,5 +873,66 @@ mod tests {
 
         let args = listener_args("http://localhost:50060/v1", "whisper-small");
         assert_eq!(soniqo_model_for_args(&args).unwrap(), None);
+    }
+
+    async fn spawn_listener(
+        address: std::net::SocketAddr,
+    ) -> Result<(ActorRef<ListenerMsg>, tokio::task::JoinHandle<()>), ractor::SpawnErr> {
+        ractor::Actor::spawn(
+            None,
+            super::super::ListenerActor,
+            listener_args(&format!("http://{address}/v1"), "nova-3"),
+        )
+        .await
+    }
+
+    // Measured on the owner's network: TCP 1 s and TLS 2 s to the provider, so the whole
+    // handshake can take several seconds and must not be cut off.
+    #[tokio::test]
+    async fn slow_provider_handshake_still_connects() {
+        let socket = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = socket.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (stream, _) = socket.accept().await.unwrap();
+            tokio::time::sleep(Duration::from_secs(6)).await;
+            let mut ws = tokio_tungstenite::accept_async(stream).await.unwrap();
+            while let Some(Ok(_)) = futures_util::StreamExt::next(&mut ws).await {}
+        });
+
+        let (listener, listener_task) = spawn_listener(address)
+            .await
+            .expect("a 6 s handshake should connect");
+
+        listener.stop(None);
+        listener_task.await.unwrap();
+        server.abort();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn unanswered_handshake_degrades_as_a_timeout_after_retrying() {
+        let socket = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = socket.local_addr().unwrap();
+        let started = tokio::time::Instant::now();
+
+        let error = spawn_listener(address)
+            .await
+            .expect_err("a provider that never answers should fail");
+
+        let elapsed = started.elapsed();
+        assert!(
+            (Duration::from_secs(36)..Duration::from_secs(38)).contains(&elapsed),
+            "three 12 s attempts and two 0.5 s pauses, took {elapsed:?}"
+        );
+        let ractor::SpawnErr::StartupFailed(error) = error else {
+            panic!("expected a startup failure, got {error:?}");
+        };
+        let error = error
+            .downcast_ref::<super::super::ListenerInitError>()
+            .expect("listener init error");
+        assert!(
+            matches!(error.degraded, Some(DegradedError::ConnectionTimeout)),
+            "{error:?}"
+        );
+        drop(socket);
     }
 }

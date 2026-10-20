@@ -14,6 +14,7 @@ use super::SessionState;
 pub(super) enum ChildKind {
     Source,
     Listener,
+    ConnectingListener,
     Recorder,
 }
 
@@ -67,6 +68,12 @@ pub(super) fn identify_child(state: &SessionState, cell: &ActorCell) -> Option<C
         .is_some_and(|c| c.get_id() == cell.get_id())
     {
         return Some(ChildKind::Recorder);
+    }
+    // A listener can stop between its handshake finishing and the supervisor learning about it.
+    if state.listener_connect.is_some()
+        && cell.get_name() == Some(ListenerActor::name(&state.ctx.params.session_id))
+    {
+        return Some(ChildKind::ConnectingListener);
     }
     None
 }
@@ -128,6 +135,7 @@ pub(super) async fn spawn_listener(
     supervisor_cell: ActorCell,
     ctx: &SessionContext,
     stream_offset_secs: Option<f64>,
+    connect_cancel: tokio_util::sync::CancellationToken,
 ) -> Result<(ActorCell, bool), ractor::SpawnErr> {
     let mode = ChannelMode::determine(ctx.params.onboarding);
     let mic_isolated = source_mic_isolated(ctx).await;
@@ -153,6 +161,7 @@ pub(super) async fn spawn_listener(
             speaker_assignments: ctx.params.speaker_assignments.clone(),
             live_transcript: ctx.live_transcript.clone(),
             mic_isolated,
+            connect_cancel,
         },
         supervisor_cell,
     )
@@ -310,6 +319,9 @@ pub(super) async fn sync_source_recorder(state: &SessionState) {
 }
 
 pub(super) async fn shutdown_children(state: &mut SessionState, reason: &str) {
+    if let Some(connect) = state.listener_connect.take() {
+        connect.cancel.cancel();
+    }
     if let Some(cell) = state.source_cell.take() {
         stop_child(&cell, reason, "source").await;
     }
