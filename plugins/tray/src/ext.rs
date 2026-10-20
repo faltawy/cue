@@ -25,7 +25,9 @@ use crate::{
 
 #[cfg(target_os = "macos")]
 use crate::menu_items::{AppInfo, AppNew, TrayQuit};
-use crate::menu_items::{MenuItemHandler, TraySettings, build_agenda_item};
+use crate::menu_items::{
+    MenuItemHandler, TraySettings, build_agenda_item, build_agenda_record_item,
+};
 use tauri_plugin_store2::Store2PluginExt;
 
 const TRAY_ID: &str = "anlg-tray";
@@ -337,8 +339,10 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
             menu.append(&heading)?;
 
             for event in &section.events {
-                let item = build_agenda_item(app, &event.id, &event.label)?;
-                menu.append(&item)?;
+                menu.append(&build_agenda_item(app, &event.id, &event.label)?)?;
+                if event.joinable {
+                    menu.append(&build_agenda_record_item(app, &event.id)?)?;
+                }
             }
         }
 

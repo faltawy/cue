@@ -21,6 +21,7 @@ pub struct TrayScheduleEvent {
 pub struct TrayAgendaEvent {
     pub id: String,
     pub label: String,
+    pub joinable: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -60,6 +61,10 @@ pub fn agenda_sections(
         sections.last_mut().unwrap().events.push(TrayAgendaEvent {
             id: event.id.clone(),
             label: compact_agenda_label(event),
+            joinable: event
+                .meeting_link
+                .as_deref()
+                .is_some_and(|link| !link.trim().is_empty()),
         });
     }
 
@@ -392,6 +397,8 @@ mod tests {
             event.day_start_ms = now + 1.0;
             event.previous_day_start_ms = now - 86_400_000.0;
         }
+        events[2].meeting_link = Some("https://meet.example.com/next".to_string());
+        events[3].meeting_link = Some("  ".to_string());
 
         assert_eq!(
             agenda_sections(&events, now, true),
@@ -401,6 +408,7 @@ mod tests {
                     events: vec![TrayAgendaEvent {
                         id: "active".to_string(),
                         label: "Active · 9:00 AM".to_string(),
+                        joinable: false,
                     }],
                 },
                 TrayAgendaSection {
@@ -409,10 +417,12 @@ mod tests {
                         TrayAgendaEvent {
                             id: "next".to_string(),
                             label: "Next · 9:00 AM".to_string(),
+                            joinable: true,
                         },
                         TrayAgendaEvent {
                             id: "tomorrow-one".to_string(),
                             label: "Tomorrow one · 9:00 AM".to_string(),
+                            joinable: false,
                         },
                     ],
                 },

@@ -15,7 +15,7 @@ mod tray_version;
 
 pub use app_info::AppInfo;
 pub use app_new::AppNew;
-pub use tray_agenda::{build_agenda_item, handle_agenda_menu_event};
+pub use tray_agenda::{build_agenda_item, build_agenda_record_item, handle_agenda_menu_event};
 pub use tray_coach::{TrayCoach, TrayCoachProject};
 pub use tray_hide::TrayHide;
 pub use tray_open::TrayOpen;
