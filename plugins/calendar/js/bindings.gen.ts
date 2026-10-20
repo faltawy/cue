@@ -137,9 +137,17 @@ async updateOrganization(request: UpdateOrganizationRequest) : Promise<Result<nu
     else return { status: "error", error: e  as any };
 }
 },
-async softDeleteContact(request: SoftDeleteContactRequest) : Promise<Result<null, string>> {
+async softDeleteContact(request: SoftDeleteContactRequest) : Promise<Result<string | null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:calendar|soft_delete_contact", { request }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async restoreContact(request: RestoreContactRequest) : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:calendar|restore_contact", { request }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -318,6 +326,7 @@ export type MergeHumansRequest = { selected_human_id: string; duplicate_human_id
 export type PinnedContactEntry = { kind: ContactKind; id: string }
 export type ProviderConnectionIds = { provider: CalendarProviderType; connection_ids: string[] }
 export type ReorderPinnedContactsRequest = { contacts: PinnedContactEntry[] }
+export type RestoreContactRequest = { kind: ContactKind; contact_id: string; tombstone: string }
 export type SavePersonalContactRequest = { human_id: string; name: string; email: string; phone: string; job_title: string; linkedin_username: string; memo: string; organization_id: string; avatar_data_url: string | null; remove_avatar: boolean }
 export type SelfAttendanceStatus = "organizer" | "accepted" | "tentative" | "pending" | "declined" | "unknown"
 export type SetCalendarEnabledRequest = { calendar_id: string; enabled: boolean }

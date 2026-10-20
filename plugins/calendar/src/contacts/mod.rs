@@ -15,9 +15,10 @@ pub use pin::{
     toggle_contact_pin,
 };
 pub use update::{
-    SoftDeleteContactRequest, UpdateContactAvatarRequest, UpdateHumanContactSummaryRequest,
-    UpdateHumanRequest, UpdateOrganizationRequest, soft_delete_contact, update_contact_avatar,
-    update_human, update_human_contact_summary, update_organization,
+    RestoreContactRequest, SoftDeleteContactRequest, UpdateContactAvatarRequest,
+    UpdateHumanContactSummaryRequest, UpdateHumanRequest, UpdateOrganizationRequest,
+    restore_contact, soft_delete_contact, update_contact_avatar, update_human,
+    update_human_contact_summary, update_organization,
 };
 
 use serde::{Deserialize, Serialize};
@@ -48,24 +49,26 @@ pub struct PinnedContactEntry {
     pub id: String,
 }
 
-type WriteFut<'a> =
-    std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), String>> + Send + 'a>>;
+type WriteFut<'a, T = ()> =
+    std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, String>> + Send + 'a>>;
 
-pub(crate) async fn run_write<F>(pool: &SqlitePool, write: F) -> Result<(), String>
+pub(crate) async fn run_write<T, F>(pool: &SqlitePool, write: F) -> Result<T, String>
 where
-    F: for<'a> FnOnce(&'a mut sqlx::SqliteConnection) -> WriteFut<'a>,
+    F: for<'a> FnOnce(&'a mut sqlx::SqliteConnection) -> WriteFut<'a, T>,
 {
     let mut transaction = pool
         .begin_with("BEGIN IMMEDIATE")
         .await
         .map_err(|error| error.to_string())?;
 
-    if let Err(error) = write(&mut transaction).await {
-        return Err(rollback_error(transaction, error).await);
-    }
+    let value = match write(&mut transaction).await {
+        Ok(value) => value,
+        Err(error) => return Err(rollback_error(transaction, error).await),
+    };
 
     transaction
         .commit()
         .await
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+    Ok(value)
 }

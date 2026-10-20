@@ -569,14 +569,6 @@ export function updateOrganization(
   });
 }
 
-export function deleteHuman(humanId: string): Promise<void> {
-  return softDeleteContact("human", humanId);
-}
-
-export function deleteOrganization(organizationId: string): Promise<void> {
-  return softDeleteContact("organization", organizationId);
-}
-
 export function updateContactAvatar(
   type: "human" | "organization",
   contactId: string,
@@ -790,10 +782,10 @@ function mapOrganizationRow(row: OrganizationSqlRow): OrganizationRecord {
   };
 }
 
-function softDeleteContact(
+export function deleteContact(
   type: "human" | "organization",
   contactId: string,
-): Promise<void> {
+): Promise<string | null> {
   const table = type === "human" ? "humans" : "organizations";
   return enqueueDatabaseWrite(`${table}:${contactId}`, async () => {
     const result = await calendarCommands.softDeleteContact({
@@ -803,5 +795,25 @@ function softDeleteContact(
     if (result.status === "error") {
       throw new Error(result.error);
     }
+    return result.data;
+  });
+}
+
+export function restoreContact(
+  type: "human" | "organization",
+  contactId: string,
+  tombstone: string,
+): Promise<boolean> {
+  const table = type === "human" ? "humans" : "organizations";
+  return enqueueDatabaseWrite(`${table}:${contactId}`, async () => {
+    const result = await calendarCommands.restoreContact({
+      kind: type,
+      contact_id: contactId,
+      tombstone,
+    });
+    if (result.status === "error") {
+      throw new Error(result.error);
+    }
+    return result.data;
   });
 }

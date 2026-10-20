@@ -33,6 +33,7 @@ fn make_specta_builder<R: tauri::Runtime>() -> tauri_specta::Builder<R> {
             commands::update_human::<tauri::Wry>,
             commands::update_organization::<tauri::Wry>,
             commands::soft_delete_contact::<tauri::Wry>,
+            commands::restore_contact::<tauri::Wry>,
             commands::update_contact_avatar::<tauri::Wry>,
             commands::update_human_contact_summary::<tauri::Wry>,
             commands::toggle_contact_pin::<tauri::Wry>,

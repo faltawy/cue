@@ -70,12 +70,15 @@ pub fn create_event<R: tauri::Runtime>(
 
 macro_rules! contacts_command {
     ($name:ident, $request:ty, $call:expr) => {
+        contacts_command!($name, $request, $call, ());
+    };
+    ($name:ident, $request:ty, $call:expr, $output:ty) => {
         #[tauri::command]
         #[specta::specta]
         pub async fn $name<R: tauri::Runtime>(
             app: tauri::AppHandle<R>,
             request: $request,
-        ) -> Result<(), String> {
+        ) -> Result<$output, String> {
             let runtime = app
                 .try_state::<tauri_plugin_db::ManagedState>()
                 .map(|state| state.inner().clone())
@@ -114,7 +117,14 @@ contacts_command!(
 contacts_command!(
     soft_delete_contact,
     crate::contacts::SoftDeleteContactRequest,
-    crate::contacts::soft_delete_contact
+    crate::contacts::soft_delete_contact,
+    Option<String>
+);
+contacts_command!(
+    restore_contact,
+    crate::contacts::RestoreContactRequest,
+    crate::contacts::restore_contact,
+    bool
 );
 contacts_command!(
     update_contact_avatar,

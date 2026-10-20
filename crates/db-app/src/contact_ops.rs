@@ -288,6 +288,27 @@ pub async fn soft_delete_contact(
     Ok(result.rows_affected())
 }
 
+pub async fn restore_contact(
+    conn: &mut SqliteConnection,
+    table: &'static str,
+    contact_id: &str,
+    tombstone: &str,
+    now: &str,
+) -> Result<u64, sqlx::Error> {
+    let sql = format!(
+        "UPDATE {table}
+          SET deleted_at = NULL, updated_at = ?
+          WHERE id = ? AND deleted_at = ?"
+    );
+    let result = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(now)
+        .bind(contact_id)
+        .bind(tombstone)
+        .execute(&mut *conn)
+        .await?;
+    Ok(result.rows_affected())
+}
+
 pub async fn update_contact_avatar(
     conn: &mut SqliteConnection,
     table: &'static str,

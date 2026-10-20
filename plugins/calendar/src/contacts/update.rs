@@ -155,14 +155,48 @@ pub struct SoftDeleteContactRequest {
 pub async fn soft_delete_contact(
     pool: &SqlitePool,
     request: SoftDeleteContactRequest,
-) -> Result<(), String> {
+) -> Result<Option<String>, String> {
     let now = js_iso8601_timestamp();
     run_write(pool, |conn| {
         Box::pin(async move {
-            anlg_db_app::soft_delete_contact(conn, request.kind.table(), &request.contact_id, &now)
-                .await
-                .map_err(|error| error.to_string())?;
-            Ok(())
+            let deleted = anlg_db_app::soft_delete_contact(
+                conn,
+                request.kind.table(),
+                &request.contact_id,
+                &now,
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+            Ok((deleted > 0).then_some(now))
+        })
+    })
+    .await
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct RestoreContactRequest {
+    pub kind: ContactKind,
+    pub contact_id: String,
+    pub tombstone: String,
+}
+
+pub async fn restore_contact(
+    pool: &SqlitePool,
+    request: RestoreContactRequest,
+) -> Result<bool, String> {
+    let now = js_iso8601_timestamp();
+    run_write(pool, |conn| {
+        Box::pin(async move {
+            let restored = anlg_db_app::restore_contact(
+                conn,
+                request.kind.table(),
+                &request.contact_id,
+                &request.tombstone,
+                &now,
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+            Ok(restored > 0)
         })
     })
     .await
@@ -509,6 +543,46 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(first, second);
+    }
+
+    #[tokio::test]
+    async fn undo_restores_only_the_delete_it_belongs_to() {
+        let db = test_db().await;
+        seed_human(&db, "human-1", false).await;
+        let delete = || {
+            soft_delete_contact(
+                db.pool(),
+                SoftDeleteContactRequest {
+                    kind: ContactKind::Human,
+                    contact_id: "human-1".to_string(),
+                },
+            )
+        };
+        let restore = |tombstone: &str| {
+            restore_contact(
+                db.pool(),
+                RestoreContactRequest {
+                    kind: ContactKind::Human,
+                    contact_id: "human-1".to_string(),
+                    tombstone: tombstone.to_string(),
+                },
+            )
+        };
+        let deleted_at = || async {
+            sqlx::query_scalar::<_, Option<String>>("SELECT deleted_at FROM humans WHERE id = 'human-1'")
+                .fetch_one(db.pool())
+                .await
+                .unwrap()
+        };
+
+        let tombstone = delete().await.unwrap().expect("first delete tombstones");
+        assert_eq!(delete().await.unwrap(), None);
+
+        assert!(!restore("2020-01-01T00:00:00.000Z").await.unwrap());
+        assert_eq!(deleted_at().await.as_deref(), Some(tombstone.as_str()));
+
+        assert!(restore(&tombstone).await.unwrap());
+        assert_eq!(deleted_at().await, None);
     }
 
     #[tokio::test]

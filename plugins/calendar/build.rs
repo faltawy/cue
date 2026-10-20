@@ -17,6 +17,7 @@ const COMMANDS: &[&str] = &[
     "update_human",
     "update_organization",
     "soft_delete_contact",
+    "restore_contact",
     "update_contact_avatar",
     "update_human_contact_summary",
     "toggle_contact_pin",

@@ -19,6 +19,7 @@ permissions = [
     "allow-update-human",
     "allow-update-organization",
     "allow-soft-delete-contact",
+    "allow-restore-contact",
     "allow-update-contact-avatar",
     "allow-update-human-contact-summary",
     "allow-toggle-contact-pin",

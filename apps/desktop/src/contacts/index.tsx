@@ -4,12 +4,8 @@ import type { ContactsSelection } from "@anlg/plugin-windows";
 
 import { DetailsColumn } from "./details";
 import { OrganizationDetailsColumn } from "./organization-details";
-import {
-  deleteHuman,
-  deleteOrganization,
-  useHumans,
-  useOrganizations,
-} from "./queries";
+import { useHumans, useOrganizations } from "./queries";
+import { useDeleteContact } from "./use-delete-contact";
 
 import { StandardContentWrapper } from "~/shared/main";
 import { useOwnerUserId } from "~/shared/owner-user";
@@ -32,7 +28,7 @@ function ContactView({ tab }: { tab: Extract<Tab, { type: "contacts" }> }) {
     (state) => state.updateContactsTabState,
   );
   const openCurrent = useTabs((state) => state.openCurrent);
-  const invalidateResource = useTabs((state) => state.invalidateResource);
+  const deleteContact = useDeleteContact();
 
   const selected = tab.state.selected;
   const ownerUserId = useOwnerUserId();
@@ -56,24 +52,27 @@ function ContactView({ tab }: { tab: Extract<Tab, { type: "contacts" }> }) {
 
   const handleDeletePerson = useCallback(
     (id: string) => {
-      invalidateResource("humans", id);
-      void deleteHuman(id).catch((error) => {
-        console.error("[contacts] failed to delete contact", error);
-      });
+      deleteContact(
+        "human",
+        id,
+        humans.find((human) => human.id === id)?.name ?? "",
+      );
       setSelected(null);
     },
-    [invalidateResource, setSelected],
+    [deleteContact, humans, setSelected],
   );
 
   const handleDeleteOrganization = useCallback(
     (id: string) => {
-      invalidateResource("organizations", id);
-      void deleteOrganization(id).catch((error) => {
-        console.error("[contacts] failed to delete organization", error);
-      });
+      deleteContact(
+        "organization",
+        id,
+        organizations.find((organization) => organization.id === id)?.name ??
+          "",
+      );
       setSelected(null);
     },
-    [invalidateResource, setSelected],
+    [deleteContact, organizations, setSelected],
   );
 
   const effectiveSelection =

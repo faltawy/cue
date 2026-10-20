@@ -8,8 +8,6 @@ import { NewPersonForm } from "~/contacts/new-person-form";
 import { OrganizationItem } from "~/contacts/organization-item";
 import { PersonItem } from "~/contacts/person-item";
 import {
-  deleteHuman,
-  deleteOrganization,
   type HumanRecord,
   type OrganizationRecord,
   reorderPinnedContacts,
@@ -17,6 +15,7 @@ import {
   useOrganizations,
 } from "~/contacts/queries";
 import { ColumnHeader, type SortOption } from "~/contacts/shared";
+import { useDeleteContact } from "~/contacts/use-delete-contact";
 import { useOwnerUserId } from "~/shared/owner-user";
 import { useTabs } from "~/store/zustand/tabs";
 
@@ -33,7 +32,6 @@ export function ContactsNav() {
   const updateContactsTabState = useTabs(
     (state) => state.updateContactsTabState,
   );
-  const invalidateResource = useTabs((state) => state.invalidateResource);
 
   const selected =
     currentTab?.type === "contacts" ? currentTab.state.selected : null;
@@ -47,48 +45,15 @@ export function ContactsNav() {
     [currentTab, updateContactsTabState],
   );
 
-  const handleDeletePerson = useCallback(
-    (id: string) => {
-      invalidateResource("humans", id);
-      void deleteHuman(id).catch((error) => {
-        console.error("[contacts] failed to delete contact", error);
-      });
-      setSelected(null);
-    },
-    [invalidateResource, setSelected],
-  );
-
-  const handleDeleteOrganization = useCallback(
-    (id: string) => {
-      invalidateResource("organizations" as const, id);
-      void deleteOrganization(id).catch((error) => {
-        console.error("[contacts] failed to delete organization", error);
-      });
-      setSelected(null);
-    },
-    [invalidateResource, setSelected],
-  );
-
-  return (
-    <ContactsList
-      selected={selected}
-      setSelected={setSelected}
-      onDeletePerson={handleDeletePerson}
-      onDeleteOrganization={handleDeleteOrganization}
-    />
-  );
+  return <ContactsList selected={selected} setSelected={setSelected} />;
 }
 
 function ContactsList({
   selected,
   setSelected,
-  onDeletePerson,
-  onDeleteOrganization,
 }: {
   selected: ContactsSelection | null;
   setSelected: (value: ContactsSelection | null) => void;
-  onDeletePerson: (id: string) => void;
-  onDeleteOrganization: (id: string) => void;
 }) {
   const [showNewPerson, setShowNewPerson] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -109,6 +74,32 @@ function ContactsList({
   const humans = useHumans();
   const self = humans.find((human) => human.id === ownerUserId);
   const organizations = useOrganizations();
+  const deleteContact = useDeleteContact();
+
+  const onDeletePerson = useCallback(
+    (id: string) => {
+      deleteContact(
+        "human",
+        id,
+        humans.find((human) => human.id === id)?.name ?? "",
+      );
+      setSelected(null);
+    },
+    [deleteContact, humans, setSelected],
+  );
+
+  const onDeleteOrganization = useCallback(
+    (id: string) => {
+      deleteContact(
+        "organization",
+        id,
+        organizations.find((organization) => organization.id === id)?.name ??
+          "",
+      );
+      setSelected(null);
+    },
+    [deleteContact, organizations, setSelected],
+  );
 
   const { pinnedItems, nonPinnedItems } = useMemo(() => {
     const q = searchValue.toLowerCase().trim();

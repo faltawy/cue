@@ -22,6 +22,7 @@ Default permissions for the plugin
 - `allow-update-human`
 - `allow-update-organization`
 - `allow-soft-delete-contact`
+- `allow-restore-contact`
 - `allow-update-contact-avatar`
 - `allow-update-human-contact-summary`
 - `allow-toggle-contact-pin`
@@ -372,6 +373,32 @@ Enables the reorder_pinned_contacts command without any pre-configured scope.
 <td>
 
 Denies the reorder_pinned_contacts command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`calendar:allow-restore-contact`
+
+</td>
+<td>
+
+Enables the restore_contact command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`calendar:deny-restore-contact`
+
+</td>
+<td>
+
+Denies the restore_contact command without any pre-configured scope.
 
 </td>
 </tr>
