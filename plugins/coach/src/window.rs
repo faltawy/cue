@@ -5,6 +5,8 @@ use crate::{Endpoint, Error, Result, access};
 pub const LABEL: &str = "coach";
 const WIDTH: f64 = 440.0;
 const HEIGHT: f64 = 680.0;
+const MAX_WIDTH: f64 = 640.0;
+const MAX_HEIGHT: f64 = 10_000.0;
 const MARGIN: f64 = 24.0;
 
 pub fn is_visible(app: &AppHandle) -> bool {
@@ -50,6 +52,7 @@ pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
         .title("Coach")
         .inner_size(WIDTH, HEIGHT)
         .min_inner_size(360.0, 420.0)
+        .max_inner_size(MAX_WIDTH, MAX_HEIGHT)
         .always_on_top(true)
         .visible_on_all_workspaces(true)
         .skip_taskbar(true)

@@ -240,7 +240,7 @@ pub fn main() {
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(tauri_plugin_windows::persisted_window_state_flags())
-                .with_denylist(&["dictation-overlay"])
+                .with_denylist(&["dictation-overlay", "coach"])
                 .build(),
         )
         .plugin(tauri_plugin_transcription::init())
