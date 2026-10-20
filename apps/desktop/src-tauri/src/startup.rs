@@ -153,6 +153,38 @@ pub fn exit_for_already_running_instance() -> ! {
     std::process::exit(0);
 }
 
+pub fn migrate_release_data_folder(identifier: &str) -> Option<String> {
+    use anlg_storage::global::FolderMigration;
+
+    let message = match anlg_storage::global::migrate_release_app_folder(identifier) {
+        FolderMigration::NotNeeded => return None,
+        FolderMigration::Moved {
+            from,
+            to,
+            downgrade_link_error: None,
+        } => format!("moved app data from {} to {}", from.display(), to.display()),
+        FolderMigration::Moved {
+            from,
+            to,
+            downgrade_link_error: Some(error),
+        } => format!(
+            "moved app data from {} to {}, but could not link the old path for older versions: {error}",
+            from.display(),
+            to.display()
+        ),
+        FolderMigration::NewFolderExists { kept } => format!(
+            "kept app data in {} because the new data folder already exists",
+            kept.display()
+        ),
+        FolderMigration::Failed { kept, error } => format!(
+            "failed to move app data, still using {}: {error}",
+            kept.display()
+        ),
+    };
+    eprintln!("{message}");
+    Some(message)
+}
+
 // Older versions let users point notes and recordings at a custom folder,
 // typically an Obsidian vault, while the database stayed in the app data
 // directory. Everything now lives in the app data directory; the first launch

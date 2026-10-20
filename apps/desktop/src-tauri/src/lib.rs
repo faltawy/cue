@@ -121,16 +121,20 @@ pub fn main() {
     };
     // Held until run() returns so Nightly and stable never share the open
     // database at the same time.
-    let _channel_lock = match startup::acquire_channel_lock(&identifier) {
-        startup::ChannelLockState::Acquired(lock) => lock,
+    let (_channel_lock, peer_excluded) = match startup::acquire_channel_lock(&identifier) {
+        startup::ChannelLockState::Acquired(lock) => (lock, true),
         startup::ChannelLockState::PeerRunning { peer } => {
             startup::exit_for_running_peer_channel(&identifier, peer)
         }
         startup::ChannelLockState::Unavailable(reason) => {
             eprintln!("starting without the channel lock: {reason}");
-            None
+            (None, false)
         }
     };
+    // Moving the data folder is only safe when no other instance can have it open.
+    let data_folder_migration = (launch_lock.is_some() && peer_excluded)
+        .then(|| startup::migrate_release_data_folder(&identifier))
+        .flatten();
 
     let (root_supervisor_ctx, root_supervisor_handle, db) = runtime.block_on(async {
         let (root_supervisor_ctx, root_supervisor_handle) =
@@ -286,6 +290,9 @@ pub fn main() {
         .invoke_handler(specta_builder.invoke_handler())
         .on_window_event(tauri_plugin_windows::on_window_event)
         .setup(move |app| {
+            if let Some(message) = &data_folder_migration {
+                tracing::info!(target: "startup", "{message}");
+            }
             let app_handle = app.handle().clone();
             tauri_plugin_shortcut::initialize_global_shortcuts(&app_handle);
 
