@@ -13,4 +13,6 @@ permissions = [
   "allow-show",
   "allow-claude-signed-in",
   "allow-sign-in-to-claude",
+  "allow-claude-code-status",
+  "allow-update-claude-code",
 ]

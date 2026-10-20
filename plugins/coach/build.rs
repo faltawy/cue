@@ -11,6 +11,8 @@ const COMMANDS: &[&str] = &[
     "show",
     "claude_signed_in",
     "sign_in_to_claude",
+    "claude_code_status",
+    "update_claude_code",
 ];
 
 fn main() {

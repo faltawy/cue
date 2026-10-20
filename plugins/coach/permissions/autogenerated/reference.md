@@ -16,6 +16,8 @@ Default permissions for the plugin
 - `allow-show`
 - `allow-claude-signed-in`
 - `allow-sign-in-to-claude`
+- `allow-claude-code-status`
+- `allow-update-claude-code`
 
 ## Permission Table
 
@@ -74,6 +76,32 @@ Enables the choose_project command without any pre-configured scope.
 <td>
 
 Denies the choose_project command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-claude-code-status`
+
+</td>
+<td>
+
+Enables the claude_code_status command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-claude-code-status`
+
+</td>
+<td>
+
+Denies the claude_code_status command without any pre-configured scope.
 
 </td>
 </tr>
@@ -334,6 +362,32 @@ Enables the sign_in_to_claude command without any pre-configured scope.
 <td>
 
 Denies the sign_in_to_claude command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-update-claude-code`
+
+</td>
+<td>
+
+Enables the update_claude_code command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-update-claude-code`
+
+</td>
+<td>
+
+Denies the update_claude_code command without any pre-configured scope.
 
 </td>
 </tr>

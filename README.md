@@ -1,6 +1,6 @@
 # Cue
 
-Cue is a macOS meeting notepad with a live coach. It captures your device audio without a bot joining the call, transcribes it, and keeps sessions, notes and transcripts in a local SQLite database on your Mac. The coach is a side panel that follows the meeting and nudges you while it happens; it runs Claude through the bundled Claude Code runtime and your Claude Code sign-in.
+Cue is a macOS meeting notepad with a live coach. It captures your device audio without a bot joining the call, transcribes it, and keeps sessions, notes and transcripts in a local SQLite database on your Mac. The coach is a side panel that follows the meeting and nudges you while it happens; it runs Claude through your own Claude Code when it is up to date, or a copy Cue downloads the first time, with your Claude Code sign-in.
 
 This repository holds only the desktop app and the coach; there is no Cue server.
 
@@ -17,7 +17,7 @@ Requirements: macOS 15+, Xcode with the Metal toolchain, Node 22, pnpm (version 
 
 ```sh
 pnpm install
-(cd apps/coach && bun install && bun run build:sidecar)   # builds the coach and Claude runtime sidecars
+(cd apps/coach && bun install && bun run build:sidecar)   # builds the coach sidecar
 pnpm dev                                                   # builds shared UI, then runs the app with the dev feature
 ```
 

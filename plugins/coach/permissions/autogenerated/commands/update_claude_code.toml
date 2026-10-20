@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-update-claude-code"
+description = "Enables the update_claude_code command without any pre-configured scope."
+commands.allow = ["update_claude_code"]
+
+[[permission]]
+identifier = "deny-update-claude-code"
+description = "Denies the update_claude_code command without any pre-configured scope."
+commands.deny = ["update_claude_code"]

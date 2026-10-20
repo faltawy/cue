@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@anlg/ui/components/ui/select";
 
+import { ClaudeCodeRow } from "./claude-code";
 import { ClaudeConnectorsGroup } from "./connectors";
 import { CoachInstructionsSection } from "./instructions";
 import { ClaudeSignInRow } from "./sign-in";
@@ -105,6 +106,8 @@ export function SettingsClaude() {
       </div>
 
       <ClaudeSignInRow />
+
+      <ClaudeCodeRow />
 
       {settings && (
         <section className="flex flex-col gap-4">

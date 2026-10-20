@@ -1,4 +1,3 @@
-import { copyFileSync } from "node:fs";
 import path from "node:path";
 
 import tailwind from "bun-plugin-tailwind";
@@ -18,10 +17,5 @@ if (!result.success) {
   for (const log of result.logs) console.error(log);
   process.exit(1);
 }
-
-copyFileSync(
-  path.join(root, "node_modules/@anthropic-ai/claude-agent-sdk-darwin-arm64/claude"),
-  path.join(binaries, "anarlog-claude-aarch64-apple-darwin"),
-);
 
 console.error(`built ${result.outputs.map((output) => path.relative(root, output.path)).join(", ")}`);

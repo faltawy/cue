@@ -2,6 +2,7 @@ mod access;
 mod auth;
 mod bridge;
 mod busy;
+mod claude_code;
 mod commands;
 mod edits;
 mod error;
@@ -25,6 +26,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
 pub use bridge::RecordingFuture;
+pub use claude_code::{ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, InstalledClaudeCode};
 pub use error::{Error, Result};
 pub use events::{CoachFocused, CoachNudged};
 use mcp::ResolvedServer;
@@ -243,6 +245,7 @@ impl Coach {
 
     pub fn find_claude_connectors(&self) -> Result<Vec<FoundConnector>> {
         let stdout = run_sidecar(
+            &self.app,
             process::list_connectors_args(),
             "couldn't list your Claude connectors",
         )?;
@@ -255,6 +258,7 @@ impl Coach {
             signed_in: bool,
         }
         let stdout = run_sidecar(
+            &self.app,
             vec!["--auth-status".into()],
             "couldn't check the Claude sign-in",
         )?;
@@ -263,16 +267,36 @@ impl Coach {
 
     pub fn sign_in_to_claude(&self) -> Result<()> {
         run_sidecar(
+            &self.app,
             vec!["--sign-in".into()],
             "couldn't start the Claude sign-in",
         )?;
         Ok(())
     }
 
+    pub fn claude_code_status(&self) -> Result<ClaudeCodeStatus> {
+        let stdout = run_sidecar(
+            &self.app,
+            vec!["--claude-code-status".into()],
+            "couldn't check which Claude Code the coach uses",
+        )?;
+        Ok(serde_json::from_slice(&stdout)?)
+    }
+
+    pub fn update_claude_code(&self) -> Result<ClaudeCodeUpdate> {
+        let stdout = run_sidecar(
+            &self.app,
+            vec!["--update-claude-code".into()],
+            "couldn't update Claude Code",
+        )?;
+        Ok(serde_json::from_slice(&stdout)?)
+    }
+
     pub fn llm_endpoint(&self) -> Result<Endpoint> {
         let state = self.app.state::<CoachState>();
+        let claude_dir = claude_dir(&self.app)?;
         ensure(&state.llm, process::LLM_KEY.to_string(), |port| {
-            process::sidecar_command(process::llm_args(port))
+            process::sidecar_command(process::llm_args(port), &claude_dir)
         })
     }
 
@@ -300,8 +324,12 @@ impl Coach {
     }
 }
 
-fn run_sidecar(args: Vec<std::ffi::OsString>, failure: &str) -> Result<Vec<u8>> {
-    let output = process::sidecar_command(args)?
+fn claude_dir(app: &AppHandle) -> Result<PathBuf> {
+    Ok(app.path().app_cache_dir()?.join("claude-code"))
+}
+
+fn run_sidecar(app: &AppHandle, args: Vec<std::ffi::OsString>, failure: &str) -> Result<Vec<u8>> {
+    let output = process::sidecar_command(args, &claude_dir(app)?)?
         .stdin(std::process::Stdio::null())
         .output()?;
     if !output.status.success() {
@@ -450,10 +478,13 @@ fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -
         let mcp_config =
             mcp::write_config(&mcp_config_dir(), &servers, &settings.claude_connectors)?;
         let instructions = mcp::write_instructions(&instructions_dir(), &settings.instructions)?;
-        let mut command = process::sidecar_command(process::server_args(&process::Launch {
-            protected: protected_dirs(app),
-            ..coach_launch(state, settings, &servers, port, mcp_config, instructions)?
-        }))?;
+        let mut command = process::sidecar_command(
+            process::server_args(&process::Launch {
+                protected: protected_dirs(app),
+                ..coach_launch(state, settings, &servers, port, mcp_config, instructions)?
+            }),
+            &claude_dir(app)?,
+        )?;
         bridge.apply(&mut command);
         Ok(command)
     })
@@ -531,6 +562,8 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::show,
             commands::claude_signed_in,
             commands::sign_in_to_claude,
+            commands::claude_code_status,
+            commands::update_claude_code,
         ])
         .events(tauri_specta::collect_events![CoachNudged, CoachFocused])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)

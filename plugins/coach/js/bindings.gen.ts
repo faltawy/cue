@@ -101,6 +101,22 @@ async signInToClaude() : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async claudeCodeStatus() : Promise<Result<ClaudeCodeStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|claude_code_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateClaudeCode() : Promise<Result<ClaudeCodeUpdate, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|update_claude_code") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -121,6 +137,32 @@ coachNudged: "plugin:coach:coach-nudged"
 
 /** user-defined types **/
 
+/**
+ * Which Claude Code the coach runs.
+ */
+export type ClaudeCodeSource = 
+/**
+ * The person's own Claude Code, at least the version the coach needs.
+ */
+"installed" | 
+/**
+ * Cue's copy, downloaded on first use.
+ */
+"cue"
+export type ClaudeCodeStatus = { using: ClaudeCodeSource; 
+/**
+ * The newest native Claude Code found on this Mac, whatever its version.
+ */
+installed: InstalledClaudeCode | null; 
+/**
+ * The oldest installed version the coach runs; also Cue's copy's version.
+ */
+min_version: string }
+export type ClaudeCodeUpdate = { 
+/**
+ * What `claude update` printed.
+ */
+output: string; status: ClaudeCodeStatus }
 export type ClaudeConnector = { name: string; id: string; url: string; allow_changes?: boolean }
 export type ClaudeModel = "sonnet" | "opus" | "haiku"
 export type CoachFocused = Record<string, never>
@@ -128,6 +170,10 @@ export type CoachNudged = { session_id: string; tag: string; line: string }
 export type CoachSettings = { project: string | null; model: ClaudeModel; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
 export type Endpoint = { url: string; token: string }
 export type FoundConnector = { name: string; id: string; url: string }
+/**
+ * A Claude Code the person installed themselves.
+ */
+export type InstalledClaudeCode = { executable_path: string; command_path: string; version: string }
 export type McpAuth = { kind: "none" } | { kind: "bearer" } | { kind: "basic"; username: string } | { kind: "header"; name: string }
 export type McpAuthState = "ready" | "needs_secret"
 export type McpProbe = { kind: "none"; server_name: string | null; server_version: string | null } | { kind: "bearer"; browser_sign_in: boolean } | { kind: "basic" } | { kind: "unreachable"; reason: string } | { kind: "not_mcp"; status: number; message: string }

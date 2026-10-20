@@ -31,8 +31,7 @@
     "targets": "all",
     "externalBin": [
       "binaries/check-permissions",
-      "binaries/anarlog-coach",
-      "binaries/anarlog-claude"
+      "binaries/anarlog-coach"
     ],
     "icon": [
       "icons/dev/32x32.png",

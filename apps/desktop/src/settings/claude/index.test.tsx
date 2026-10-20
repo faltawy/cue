@@ -40,6 +40,8 @@ const coach = vi.hoisted(() => ({
   addKnowledge: vi.fn(),
   claudeSignedIn: vi.fn(),
   signInToClaude: vi.fn(),
+  claudeCodeStatus: vi.fn(),
+  updateClaudeCode: vi.fn(),
 }));
 
 vi.mock("@anlg/plugin-coach", () => ({
@@ -54,6 +56,8 @@ vi.mock("@anlg/plugin-coach", () => ({
     addKnowledge: coach.addKnowledge,
     claudeSignedIn: coach.claudeSignedIn,
     signInToClaude: coach.signInToClaude,
+    claudeCodeStatus: coach.claudeCodeStatus,
+    updateClaudeCode: coach.updateClaudeCode,
   },
 }));
 
@@ -106,6 +110,10 @@ beforeEach(() => {
   coach.findClaudeConnectors.mockResolvedValue({ status: "ok", data: [] });
   coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
   coach.signInToClaude.mockResolvedValue({ status: "ok", data: null });
+  coach.claudeCodeStatus.mockResolvedValue({
+    status: "ok",
+    data: { using: "cue", installed: null, min_version: "2.1.302" },
+  });
   coach.getSettings.mockImplementation(async () => ({
     status: "ok",
     data: { ...coach.settings },
@@ -145,6 +153,112 @@ describe("SettingsClaude", () => {
     coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
     expect(
       await screen.findByText("Signed in", {}, { timeout: 5000 }),
+    ).not.toBeNull();
+  });
+
+  it("says the coach uses your own Claude Code when it is new enough, with nothing to update", async () => {
+    const installed = {
+      executable_path: "/Users/me/.local/share/claude/versions/2.1.310",
+      command_path: "/Users/me/.local/bin/claude",
+      version: "2.1.310",
+    };
+    coach.claudeCodeStatus.mockResolvedValue({
+      status: "ok",
+      data: { using: "installed", installed, min_version: "2.1.302" },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByText("Uses your Claude Code 2.1.310."),
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Update Claude Code" }),
+    ).toBeNull();
+  });
+
+  it("without an install, the coach uses Cue's copy and offers no update", async () => {
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        /Uses Cue's copy of Claude Code 2\.1\.302\. Install Claude Code/,
+      ),
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Update Claude Code" }),
+    ).toBeNull();
+  });
+
+  it("an install older than the coach needs is updated only when Update is pressed", async () => {
+    const installed = {
+      executable_path: "/Users/me/.local/share/claude/versions/2.1.250",
+      command_path: "/Users/me/.local/bin/claude",
+      version: "2.1.250",
+    };
+    coach.claudeCodeStatus.mockResolvedValue({
+      status: "ok",
+      data: { using: "cue", installed, min_version: "2.1.302" },
+    });
+    coach.updateClaudeCode.mockResolvedValue({
+      status: "ok",
+      data: {
+        output: "Successfully updated from 2.1.250 to version 2.1.320",
+        status: {
+          using: "installed",
+          installed: { ...installed, version: "2.1.320" },
+          min_version: "2.1.302",
+        },
+      },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        /Your Claude Code 2\.1\.250 is older than 2\.1\.302; update it to use yours\./,
+      ),
+    ).not.toBeNull();
+    expect(coach.updateClaudeCode).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Update Claude Code" }));
+
+    expect(
+      await screen.findByText("Uses your Claude Code 2.1.320."),
+    ).not.toBeNull();
+    expect(coach.updateClaudeCode).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Update Claude Code" }),
+    ).toBeNull();
+  });
+
+  it("an update that lands below the minimum says so", async () => {
+    const installed = {
+      executable_path: "/Users/me/.local/share/claude/versions/2.1.250",
+      command_path: "/Users/me/.local/bin/claude",
+      version: "2.1.250",
+    };
+    coach.claudeCodeStatus.mockResolvedValue({
+      status: "ok",
+      data: { using: "cue", installed, min_version: "2.1.302" },
+    });
+    coach.updateClaudeCode.mockResolvedValue({
+      status: "ok",
+      data: {
+        output: "Successfully updated from 2.1.250 to version 2.1.290",
+        status: {
+          using: "cue",
+          installed: { ...installed, version: "2.1.290" },
+          min_version: "2.1.302",
+        },
+      },
+    });
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Update Claude Code" }),
+    );
+    expect(
+      await screen.findByText(
+        "Claude Code updated to 2.1.290, which is still older than 2.1.302.",
+      ),
     ).not.toBeNull();
   });
 

@@ -150,26 +150,24 @@ pub fn llm_args(port: u16) -> Vec<OsString> {
 }
 
 const BUNDLED_COACH: &str = "anarlog-coach";
-const BUNDLED_CLAUDE: &str = "anarlog-claude";
 
-fn bundled_dir() -> Option<PathBuf> {
-    let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    (dir.join(BUNDLED_COACH).is_file() && dir.join(BUNDLED_CLAUDE).is_file()).then_some(dir)
+fn bundled_coach() -> Option<PathBuf> {
+    let coach = std::env::current_exe().ok()?.parent()?.join(BUNDLED_COACH);
+    coach.is_file().then_some(coach)
 }
 
-pub fn sidecar_command(args: Vec<OsString>) -> Result<Command> {
-    if std::env::var_os(SERVER_ENV).is_none()
-        && let Some(dir) = bundled_dir()
-    {
-        let mut command = Command::new(dir.join(BUNDLED_COACH));
-        command
-            .args(args)
-            .arg("--claude")
-            .arg(dir.join(BUNDLED_CLAUDE));
-        return Ok(command);
-    }
-    let mut command = Command::new(bun_path()?);
-    command.arg(server_script()?).args(args);
+/// The coach runs the person's own Claude Code when it is new enough, else
+/// Cue's copy, downloaded once into `claude_dir`.
+pub fn sidecar_command(args: Vec<OsString>, claude_dir: &Path) -> Result<Command> {
+    let mut command = match bundled_coach().filter(|_| std::env::var_os(SERVER_ENV).is_none()) {
+        Some(coach) => Command::new(coach),
+        None => {
+            let mut command = Command::new(bun_path()?);
+            command.arg(server_script()?);
+            command
+        }
+    };
+    command.args(args).arg("--claude-dir").arg(claude_dir);
     Ok(command)
 }
 
