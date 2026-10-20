@@ -1,0 +1,26 @@
+# Source: pykeio/earshot, earshot@0.1.0 (BSD-3-Clause).
+
+[package]
+edition = "2021"
+name = "earshot"
+version = "0.1.0"
+authors = ["Carson M <carson@pyke.io>"]
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "Ridiculously fast voice activity detection in pure #[no_std] Rust"
+license = "BSD-3-Clause"
+repository = "https://github.com/pykeio/earshot"
+
+[lib]
+name = "earshot"
+path = "src/lib.rs"
+
+[features]
+alloc = []
+default = [
+    "std",
+    "alloc",
+]
+std = []
