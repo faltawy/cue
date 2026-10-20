@@ -2,6 +2,7 @@ import { useRouteContext } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef } from "react";
 
 import { useLanguageModel } from "~/ai/hooks";
+import { openWhatsNewAfterUpdate } from "~/changelog/whats-new";
 import { CoachNudgeLifecycle } from "~/coach/nudges";
 import { CoachShortcutLifecycle } from "~/coach/shortcut";
 import { SelfNameBackfill } from "~/contacts/self-name";
@@ -24,16 +25,19 @@ export function useClassicMainLifecycle() {
     openNew({ type: "empty" });
   }, [openNew]);
 
-  const openPendingWelcomeTab = useCallback(() => {
+  const openInitialTabs = useCallback(() => {
     const welcomeSessionId = takePendingWelcomeSession();
     if (welcomeSessionId) {
       openNew({ type: "sessions", id: welcomeSessionId });
     }
+    void openWhatsNewAfterUpdate(openNew).catch((error) => {
+      console.error("[whats-new] failed to check for an update", error);
+    });
   }, [openNew]);
 
   useDesktopTabLifecycle({
     onEmpty: openDefaultEmptyTab,
-    onInitialized: openPendingWelcomeTab,
+    onInitialized: openInitialTabs,
     onZeroTabs: openDefaultEmptyTab,
   });
 }

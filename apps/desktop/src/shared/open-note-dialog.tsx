@@ -17,6 +17,7 @@ import {
   FileText,
   Gear,
   MagnifyingGlass,
+  Megaphone,
   Microphone,
   NotePencil,
   User,
@@ -30,6 +31,7 @@ import {
 import { Kbd } from "@anlg/ui/components/ui/kbd";
 import { cn } from "@anlg/utils";
 
+import { openWhatsNew } from "~/changelog/whats-new";
 import { useHumans } from "~/contacts/queries";
 import { type NoteSearchHit, useSearchEngine } from "~/search/contexts/engine";
 import { useSessionSummaries } from "~/session/queries";
@@ -225,6 +227,20 @@ export function OpenNoteDialog({
         opensTab: true,
         topLevel: true,
         run: () => openNew({ type: "settings", state: { tab: "app" } }),
+      },
+      {
+        id: "page-whats-new",
+        group: "pages" as const,
+        label: t`What's new`,
+        keywords: [t`changelog`, t`release notes`, t`updates`],
+        icon: Megaphone,
+        opensTab: true,
+        topLevel: true,
+        run: () => {
+          void openWhatsNew(openNew).catch((error) => {
+            console.error("[whats-new] failed to open", error);
+          });
+        },
       },
     ],
     [settingsNavGroups, openNew, t],

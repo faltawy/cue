@@ -1,5 +1,6 @@
 mod app_info;
 mod app_new;
+mod app_whats_new;
 mod tray_agenda;
 mod tray_coach;
 mod tray_hide;
@@ -15,6 +16,7 @@ mod tray_version;
 
 pub use app_info::AppInfo;
 pub use app_new::AppNew;
+pub use app_whats_new::AppWhatsNew;
 pub use tray_agenda::{build_agenda_item, build_agenda_record_item, handle_agenda_menu_event};
 pub use tray_coach::{TrayCoach, TrayCoachProject};
 pub use tray_hide::TrayHide;
@@ -95,4 +97,5 @@ menu_items! {
     TrayUpdate => TrayUpdate,
     AppInfo => AppInfo,
     AppNew => AppNew,
+    AppWhatsNew => AppWhatsNew,
 }
