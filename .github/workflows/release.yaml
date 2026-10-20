@@ -10,11 +10,11 @@ on:
         required: true
         type: string
       runner:
-        description: macOS runner image (macos-15 has more capacity; it builds with its Xcode 26)
+        description: macOS runner image (macos-15 has more capacity and builds with its Xcode 26)
         required: true
         type: choice
-        options: [macos-26, macos-15]
-        default: macos-26
+        options: [macos-15, macos-26]
+        default: macos-15
 
 concurrency:
   group: release
@@ -29,7 +29,7 @@ env:
 
 jobs:
   release:
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner || 'macos-26' }}
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner || 'macos-15' }}
     timeout-minutes: 120
     defaults:
       run:
