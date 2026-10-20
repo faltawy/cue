@@ -1,5 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  cleanup,
+  fireEvent,
+  render as renderWithoutQueries,
+  screen,
+} from "@testing-library/react";
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { NoteSearchHit } from "~/search/contexts/engine";
 
 const mocks = vi.hoisted(() => ({
   openCurrent: vi.fn(),
@@ -8,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   newNote: vi.fn(),
   newNoteAndListen: vi.fn(),
   recentlyOpenedSessionIds: [] as string[],
+  searchNotes: vi.fn(async (_query: string): Promise<NoteSearchHit[]> => []),
   sessions: [] as Array<{
     id: string;
     title: string;
@@ -28,6 +38,10 @@ vi.mock("~/session/queries", () => ({
 
 vi.mock("~/contacts/queries", () => ({
   useHumans: () => mocks.humans,
+}));
+
+vi.mock("~/search/contexts/engine", () => ({
+  useSearchEngine: () => ({ searchNotes: mocks.searchNotes }),
 }));
 
 vi.mock("~/shared/useNewNote", () => ({
@@ -52,6 +66,17 @@ vi.mock("~/store/zustand/tabs", () => ({
 
 import { OpenNoteDialog } from "./open-note-dialog";
 
+const render = (ui: ReactElement) =>
+  renderWithoutQueries(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      {ui}
+    </QueryClientProvider>,
+  );
+
 const search = (value: string) =>
   fireEvent.change(screen.getByPlaceholderText("Search or jump to…"), {
     target: { value },
@@ -68,6 +93,7 @@ describe("OpenNoteDialog", () => {
     mocks.sessions = [];
     mocks.humans = [];
     mocks.recentlyOpenedSessionIds = [];
+    mocks.searchNotes.mockResolvedValue([]);
     globalThis.ResizeObserver = class {
       observe() {}
       unobserve() {}
@@ -97,7 +123,9 @@ describe("OpenNoteDialog", () => {
 
     render(<OpenNoteDialog open onOpenChange={mocks.onOpenChange} />);
 
-    expect(screen.getByRole("dialog", { name: "Search or jump to…" })).toBeTruthy();
+    expect(
+      screen.getByRole("dialog", { name: "Search or jump to…" }),
+    ).toBeTruthy();
     expect(
       document.querySelector("[data-open-note-dialog-drag-region]"),
     ).toBeTruthy();
@@ -190,9 +218,21 @@ describe("OpenNoteDialog", () => {
 
   it("ranks a title that starts with the query above one that only contains it", () => {
     mocks.sessions = [
-      { id: "async", title: "Async planning", created_at: "2026-07-17T09:00:00Z" },
-      { id: "weekly", title: "Weekly sync", created_at: "2026-07-16T09:00:00Z" },
-      { id: "sync", title: "Sync with Sara", created_at: "2026-07-15T09:00:00Z" },
+      {
+        id: "async",
+        title: "Async planning",
+        created_at: "2026-07-17T09:00:00Z",
+      },
+      {
+        id: "weekly",
+        title: "Weekly sync",
+        created_at: "2026-07-16T09:00:00Z",
+      },
+      {
+        id: "sync",
+        title: "Sync with Sara",
+        created_at: "2026-07-15T09:00:00Z",
+      },
     ];
     render(<OpenNoteDialog open onOpenChange={mocks.onOpenChange} />);
 
@@ -203,7 +243,11 @@ describe("OpenNoteDialog", () => {
 
   it("opens the highlighted note in a new tab with mod+enter", () => {
     mocks.sessions = [
-      { id: "sync", title: "Sync with Sara", created_at: "2026-07-15T09:00:00Z" },
+      {
+        id: "sync",
+        title: "Sync with Sara",
+        created_at: "2026-07-15T09:00:00Z",
+      },
     ];
     render(<OpenNoteDialog open onOpenChange={mocks.onOpenChange} />);
 
@@ -213,13 +257,20 @@ describe("OpenNoteDialog", () => {
       metaKey: true,
     });
 
-    expect(mocks.openNew).toHaveBeenCalledWith({ type: "sessions", id: "sync" });
+    expect(mocks.openNew).toHaveBeenCalledWith({
+      type: "sessions",
+      id: "sync",
+    });
     expect(mocks.openCurrent).not.toHaveBeenCalled();
   });
 
   it("shows an empty state when nothing matches", () => {
     mocks.sessions = [
-      { id: "sync", title: "Sync with Sara", created_at: "2026-07-15T09:00:00Z" },
+      {
+        id: "sync",
+        title: "Sync with Sara",
+        created_at: "2026-07-15T09:00:00Z",
+      },
     ];
     render(<OpenNoteDialog open onOpenChange={mocks.onOpenChange} />);
 
@@ -228,5 +279,74 @@ describe("OpenNoteDialog", () => {
 
     expect(screen.getByText("No results for “zzzz”")).toBeTruthy();
     expect(screen.queryAllByRole("option")).toHaveLength(0);
+  });
+  it("finds a note by what was said and shows the matching passage", async () => {
+    mocks.sessions = [
+      {
+        id: "weekly",
+        title: "Weekly sync",
+        created_at: "2026-07-16T09:00:00Z",
+      },
+      { id: "retro", title: "Retro", created_at: "2026-07-15T09:00:00Z" },
+    ];
+    mocks.searchNotes.mockResolvedValue([
+      {
+        id: "weekly",
+        section: "transcript",
+        snippet: [
+          { text: "…we agreed the ", highlighted: false },
+          { text: "pricing", highlighted: true },
+          { text: " is final", highlighted: false },
+        ],
+      },
+    ]);
+    render(<OpenNoteDialog open onOpenChange={mocks.onOpenChange} />);
+
+    search("pricing");
+
+    const option = await screen.findByRole("option", { name: /Weekly sync/ });
+    expect(option.textContent).toContain("Transcript");
+    expect(option.querySelector("mark")?.textContent).toBe("pricing");
+    expect(mocks.searchNotes).toHaveBeenLastCalledWith("pricing");
+    expect(screen.queryByRole("option", { name: /Retro/ })).toBeNull();
+
+    fireEvent.click(option);
+    expect(mocks.openCurrent).toHaveBeenCalledWith({
+      type: "sessions",
+      id: "weekly",
+    });
+  });
+
+  it("lists title matches before notes that only mention the query", async () => {
+    mocks.sessions = [
+      {
+        id: "weekly",
+        title: "Weekly sync",
+        created_at: "2026-07-16T09:00:00Z",
+      },
+      {
+        id: "pricing",
+        title: "Pricing review",
+        created_at: "2026-07-15T09:00:00Z",
+      },
+    ];
+    mocks.searchNotes.mockResolvedValue([
+      {
+        id: "weekly",
+        section: "summary",
+        snippet: [{ text: "pricing", highlighted: true }],
+      },
+      {
+        id: "pricing",
+        section: "memos",
+        snippet: [{ text: "pricing", highlighted: true }],
+      },
+    ]);
+    render(<OpenNoteDialog open onOpenChange={mocks.onOpenChange} />);
+
+    search("pricing");
+    await screen.findByRole("option", { name: /Weekly sync/ });
+
+    expect(optionNames()).toEqual(["note-pricing", "note-weekly"]);
   });
 });

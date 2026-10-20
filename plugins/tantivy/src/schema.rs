@@ -1,10 +1,10 @@
-use tantivy::TantivyDocument;
 use tantivy::schema::{
-    DateOptions, DateTimePrecision, FAST, FacetOptions, Field, STORED, STRING, Schema,
+    DateOptions, DateTimePrecision, FAST, Facet, FacetOptions, Field, STORED, STRING, Schema,
     TextFieldIndexing, TextOptions, Value,
 };
+use tantivy::{DateTime, TantivyDocument};
 
-use crate::SearchDocument;
+use crate::{SearchDocument, SearchSectionKind};
 
 pub struct SchemaFields {
     pub id: Field,
@@ -14,6 +14,23 @@ pub struct SchemaFields {
     pub content: Field,
     pub created_at: Field,
     pub facets: Field,
+    pub sections: [(SearchSectionKind, Field); SearchSectionKind::ALL.len()],
+}
+
+impl SchemaFields {
+    pub fn text_fields(&self) -> Vec<Field> {
+        let mut fields = vec![self.title, self.content];
+        fields.extend(self.sections.iter().map(|(_, field)| *field));
+        fields
+    }
+
+    pub fn section(&self, kind: SearchSectionKind) -> Field {
+        self.sections
+            .iter()
+            .find(|(section_kind, _)| *section_kind == kind)
+            .map(|(_, field)| *field)
+            .expect("every section kind has a schema field")
+    }
 }
 
 pub fn build_schema() -> Schema {
@@ -30,7 +47,10 @@ pub fn build_schema() -> Schema {
         .set_stored();
 
     schema_builder.add_text_field("title", text_options.clone());
-    schema_builder.add_text_field("content", text_options);
+    schema_builder.add_text_field("content", text_options.clone());
+    for kind in SearchSectionKind::ALL {
+        schema_builder.add_text_field(kind.field_name(), text_options.clone());
+    }
     schema_builder.add_date_field(
         "created_at",
         DateOptions::from(FAST | STORED).set_precision(DateTimePrecision::Milliseconds),
@@ -48,7 +68,31 @@ pub fn get_fields(schema: &Schema) -> SchemaFields {
         content: schema.get_field("content").unwrap(),
         created_at: schema.get_field("created_at").unwrap(),
         facets: schema.get_field("facets").unwrap(),
+        sections: SearchSectionKind::ALL
+            .map(|kind| (kind, schema.get_field(kind.field_name()).unwrap())),
     }
+}
+
+pub fn build_tantivy_document(fields: &SchemaFields, document: &SearchDocument) -> TantivyDocument {
+    let mut doc = TantivyDocument::new();
+    doc.add_text(fields.id, &document.id);
+    doc.add_text(fields.doc_type, &document.doc_type);
+    doc.add_text(fields.language, document.language.as_deref().unwrap_or(""));
+    doc.add_text(fields.title, &document.title);
+    doc.add_text(fields.content, &document.content);
+    for section in &document.sections {
+        doc.add_text(fields.section(section.kind), &section.text);
+    }
+    doc.add_date(
+        fields.created_at,
+        DateTime::from_timestamp_millis(document.created_at),
+    );
+    for facet_path in &document.facets {
+        if let Ok(facet) = Facet::from_text(facet_path) {
+            doc.add_facet(fields.facets, facet);
+        }
+    }
+    doc
 }
 
 pub fn extract_search_document(
@@ -82,13 +126,13 @@ pub fn extract_search_document(
         content,
         created_at,
         facets,
+        sections: Vec::new(),
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tantivy::DateTime;
 
     #[test]
     fn test_build_schema_stores_created_at_as_date_field() {

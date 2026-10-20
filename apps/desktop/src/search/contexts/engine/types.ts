@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { SearchSectionKind, SnippetSegment } from "@anlg/plugin-tantivy";
+
 const searchEntityTypeSchema = z.enum(["session", "human", "organization"]);
 export type SearchEntityType = z.infer<typeof searchEntityTypeSchema>;
 
@@ -32,4 +34,10 @@ export type SearchFilters = z.infer<typeof searchFiltersSchema>;
 export type SearchHit = {
   score: number;
   document: SearchDocument;
+};
+
+export type NoteSearchHit = {
+  id: string;
+  section: SearchSectionKind | null;
+  snippet: SnippetSegment[];
 };

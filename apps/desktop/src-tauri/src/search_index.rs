@@ -6,11 +6,12 @@ use serde_json::{Map, Value};
 use sqlx::{Connection, Row, SqlitePool};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_tantivy::{
-    SearchDocument, SearchFilters, SearchOptions, SearchRequest, TantivyPluginExt,
+    SearchDocument, SearchFilters, SearchOptions, SearchRequest, SearchSection, SearchSectionKind,
+    TantivyPluginExt,
 };
 
 // Increment when the SQLite-to-Tantivy document shape changes so existing indexes are rebuilt.
-const PROJECTION_VERSION: i64 = 4;
+const PROJECTION_VERSION: i64 = 5;
 const BATCH_SIZE: i64 = 64;
 const DIRTY_DEBOUNCE: Duration = Duration::from_millis(250);
 const RETRY_INTERVAL: Duration = Duration::from_secs(5);
@@ -368,6 +369,7 @@ async fn build_session_document(
             content: String::new(),
             created_at: session_search_timestamp(&event_json, &created_at),
             facets: Vec::new(),
+            sections: Vec::new(),
         }));
     }
 
@@ -416,25 +418,40 @@ async fn build_session_document(
     .await?;
 
     let source_apps_json: String = session.get("source_apps_json");
-
-    let mut content_parts = Vec::with_capacity(
-        2 + enhanced_bodies.len() + meeting_chat_messages.len() + transcripts.len(),
-    );
-    if let Some(raw_body) = raw_body {
-        content_parts.push(extract_plain_text(&raw_body));
-    }
-    content_parts.extend(enhanced_bodies.iter().map(|body| extract_plain_text(body)));
-    content_parts.extend(
-        meeting_chat_messages
-            .iter()
-            .map(|message| flatten_meeting_chat(message)),
-    );
-    content_parts.extend(
-        transcripts
-            .iter()
-            .map(|transcript| flatten_transcript(transcript)),
-    );
-    content_parts.push(flatten_source_apps(&source_apps_json));
+    let memos = raw_body
+        .map(|body| extract_plain_text(&body))
+        .unwrap_or_default();
+    let summary = enhanced_bodies
+        .iter()
+        .map(|body| extract_plain_text(body))
+        .collect::<Vec<_>>();
+    let chat = meeting_chat_messages
+        .iter()
+        .map(|message| flatten_meeting_chat(message))
+        .collect::<Vec<_>>();
+    let transcript = transcripts
+        .iter()
+        .map(|transcript| flatten_transcript(transcript))
+        .collect::<Vec<_>>();
+    let sections = [
+        (SearchSectionKind::Memos, merge_content([memos.as_str()])),
+        (
+            SearchSectionKind::Summary,
+            merge_content(summary.iter().map(String::as_str)),
+        ),
+        (
+            SearchSectionKind::Transcript,
+            merge_content(transcript.iter().map(String::as_str)),
+        ),
+        (
+            SearchSectionKind::Chat,
+            merge_content(chat.iter().map(String::as_str)),
+        ),
+    ]
+    .into_iter()
+    .filter(|(_, text)| !text.is_empty())
+    .map(|(kind, text)| SearchSection { kind, text })
+    .collect();
 
     let title: String = session.get("title");
     let created_at: String = session.get("created_at");
@@ -445,9 +462,10 @@ async fn build_session_document(
         doc_type: "session".to_string(),
         language: None,
         title: fallback_title(&title, "Untitled"),
-        content: merge_content(content_parts.iter().map(String::as_str)),
+        content: flatten_source_apps(&source_apps_json),
         created_at: session_search_timestamp(&event_json, &created_at),
         facets: Vec::new(),
+        sections,
     }))
 }
 
@@ -486,6 +504,7 @@ async fn build_human_document(
         ),
         created_at: to_epoch_ms(&Value::String(created_at)),
         facets: Vec::new(),
+        sections: Vec::new(),
     }))
 }
 
@@ -516,6 +535,7 @@ async fn build_organization_document(
         content: String::new(),
         created_at: to_epoch_ms(&Value::String(created_at)),
         facets: Vec::new(),
+        sections: Vec::new(),
     }))
 }
 
@@ -904,19 +924,95 @@ mod tests {
             panic!("expected the session to be indexed");
         };
 
-        let first = document.content.find("first message").unwrap();
-        let second = document.content.find("second message").unwrap();
+        let chat = section_text(&document, SearchSectionKind::Chat);
+        let first = chat.find("first message").unwrap();
+        let second = chat.find("second message").unwrap();
         assert!(first < second);
-        assert!(document.content.contains("Ada"));
-        assert!(document.content.contains("Grace"));
-        assert!(document.content.contains("https://example.com/second"));
-        assert!(!document.content.contains("deleted message"));
+        assert!(chat.contains("Ada"));
+        assert!(chat.contains("Grace"));
+        assert!(chat.contains("https://example.com/second"));
+        assert!(!chat.contains("deleted message"));
+        assert!(chat.contains("plain fallback message"));
 
         assert!(document.content.contains("com.google.Chrome"));
         assert!(document.content.contains("Google Chrome"));
         assert!(document.content.contains("Google Meet"));
         assert!(document.content.contains("legacy"));
-        assert!(document.content.contains("plain fallback message"));
+    }
+
+    fn section_text(document: &SearchDocument, kind: SearchSectionKind) -> String {
+        document
+            .sections
+            .iter()
+            .filter(|section| section.kind == kind)
+            .map(|section| section.text.as_str())
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+
+    #[tokio::test]
+    async fn session_projection_keeps_memos_summary_and_transcript_apart_unless_locked() {
+        let db = anlg_db_core::Db::connect_memory_plain().await.unwrap();
+        anlg_db_app::prepare_schema(&db).await.unwrap();
+        sqlx::query(
+            "INSERT INTO sessions (id, title, locked) VALUES
+               ('open', 'Planning', 0),
+               ('locked', 'Board', 1)",
+        )
+        .execute(db.pool())
+        .await
+        .unwrap();
+        for session_id in ["open", "locked"] {
+            sqlx::query(
+                r#"INSERT INTO session_documents (id, session_id, kind, body_format, body, sort_order)
+                   VALUES
+                     (?1, ?2, 'note', 'text', 'memo about pricing', 0),
+                     (?1 || '-summary', ?2, 'summary', 'text', 'summary of pricing', 1)"#,
+            )
+            .bind(session_id)
+            .bind(session_id)
+            .execute(db.pool())
+            .await
+            .unwrap();
+            sqlx::query(
+                r#"INSERT INTO transcripts (id, session_id, words_json)
+                   VALUES (?1 || '-transcript', ?1, '[{"text":"spoken pricing"}]')"#,
+            )
+            .bind(session_id)
+            .execute(db.pool())
+            .await
+            .unwrap();
+        }
+
+        let mut connection = db.pool().acquire().await.unwrap();
+        let IndexAction::Upsert(open) = build_session_document(&mut connection, "open")
+            .await
+            .unwrap()
+        else {
+            panic!("expected the open session to be indexed");
+        };
+        let IndexAction::Upsert(locked) = build_session_document(&mut connection, "locked")
+            .await
+            .unwrap()
+        else {
+            panic!("expected the locked session to be indexed");
+        };
+
+        assert_eq!(
+            section_text(&open, SearchSectionKind::Memos),
+            "memo about pricing"
+        );
+        assert_eq!(
+            section_text(&open, SearchSectionKind::Summary),
+            "summary of pricing"
+        );
+        assert_eq!(
+            section_text(&open, SearchSectionKind::Transcript),
+            "spoken pricing"
+        );
+        assert_eq!(locked.title, "Board");
+        assert!(locked.sections.is_empty());
+        assert!(locked.content.is_empty());
     }
 
     #[test]

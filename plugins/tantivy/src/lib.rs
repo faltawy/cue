@@ -1,8 +1,10 @@
 mod commands;
 mod error;
 mod ext;
+mod normalize;
 mod query;
 mod schema;
+mod snippet;
 mod tokenizer;
 
 use serde::{Deserialize, Serialize};
@@ -29,18 +31,50 @@ pub struct SearchDocument {
     pub created_at: i64,
     #[serde(default)]
     pub facets: Vec<String>,
+    // Indexed and searchable, but left out of search hits: transcripts are
+    // too large to send back on every keystroke.
+    #[serde(default)]
+    pub sections: Vec<SearchSection>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum SearchSectionKind {
+    Memos,
+    Summary,
+    Transcript,
+    Chat,
+}
+
+impl SearchSectionKind {
+    // Also the order a snippet prefers when several sections match equally.
+    pub const ALL: [Self; 4] = [Self::Memos, Self::Summary, Self::Transcript, Self::Chat];
+
+    pub fn field_name(self) -> &'static str {
+        match self {
+            Self::Memos => "memos",
+            Self::Summary => "summary",
+            Self::Transcript => "transcript",
+            Self::Chat => "chat",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+pub struct SearchSection {
+    pub kind: SearchSectionKind,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 pub struct Snippet {
-    pub fragment: String,
-    pub highlights: Vec<HighlightRange>,
+    pub segments: Vec<SnippetSegment>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-pub struct HighlightRange {
-    pub start: usize,
-    pub end: usize,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+pub struct SnippetSegment {
+    pub text: String,
+    pub highlighted: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -49,6 +83,7 @@ pub struct SearchHit {
     pub document: SearchDocument,
     pub title_snippet: Option<Snippet>,
     pub content_snippet: Option<Snippet>,
+    pub matched_section: Option<SearchSectionKind>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -99,7 +134,7 @@ pub struct SearchRequest {
     pub options: SearchOptions,
 }
 
-pub const SCHEMA_VERSION: u32 = 2;
+pub const SCHEMA_VERSION: u32 = 3;
 
 #[derive(Clone)]
 pub struct CollectionConfig {

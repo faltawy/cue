@@ -1,18 +1,27 @@
-import { createContext, useCallback, useContext } from "react";
+import { createContext, useCallback, useContext, useMemo } from "react";
 
 import { commands as tantivy } from "@anlg/plugin-tantivy";
 
 import { buildTantivyFilters } from "./filters";
-import type { SearchEntityType, SearchFilters, SearchHit } from "./types";
+import type {
+  NoteSearchHit,
+  SearchEntityType,
+  SearchFilters,
+  SearchHit,
+} from "./types";
 import { normalizeQuery } from "./utils";
 
-export type { SearchFilters, SearchHit } from "./types";
+export type { NoteSearchHit, SearchFilters, SearchHit } from "./types";
+
+const NOTE_SEARCH_LIMIT = 30;
+const NOTE_SNIPPET_MAX_CHARS = 120;
 
 const SearchEngineContext = createContext<{
   search: (
     query: string,
     filters?: SearchFilters | null,
   ) => Promise<SearchHit[]>;
+  searchNotes: (query: string) => Promise<NoteSearchHit[]>;
 } | null>(null);
 
 export function SearchEngineProvider({
@@ -58,9 +67,39 @@ export function SearchEngineProvider({
     [],
   );
 
-  const value = {
-    search,
-  };
+  const searchNotes = useCallback(
+    async (query: string): Promise<NoteSearchHit[]> => {
+      const result = await tantivy.search({
+        query: normalizeQuery(query),
+        filters: { created_at: null, doc_type: "session", facet: null },
+        limit: NOTE_SEARCH_LIMIT,
+        options: {
+          fuzzy: null,
+          distance: null,
+          snippets: true,
+          snippet_max_chars: NOTE_SNIPPET_MAX_CHARS,
+          phrase_slop: null,
+        },
+      });
+      if (result.status === "error") {
+        throw new Error(result.error);
+      }
+      return result.data.hits.flatMap((hit) =>
+        hit.content_snippet
+          ? [
+              {
+                id: hit.document.id,
+                section: hit.matched_section,
+                snippet: hit.content_snippet.segments,
+              },
+            ]
+          : [],
+      );
+    },
+    [],
+  );
+
+  const value = useMemo(() => ({ search, searchNotes }), [search, searchNotes]);
 
   return (
     <SearchEngineContext.Provider value={value}>

@@ -1,3 +1,4 @@
+use crate::normalize::NormalizingTokenizer;
 use anlg_language::ISO639;
 use tantivy::Index;
 use tantivy::tokenizer::{
@@ -56,11 +57,13 @@ pub fn get_tokenizer_name_for_language(lang: &anlg_language::Language) -> &'stat
 pub fn register_tokenizers(index: &Index) {
     let tokenizer_manager = index.tokenizers();
 
-    let multilang_tokenizer = TextAnalyzer::builder(NgramTokenizer::new(1, 3, false).unwrap())
-        .filter(RemoveLongFilter::limit(40))
-        .filter(LowerCaser)
-        .filter(AsciiFoldingFilter)
-        .build();
+    let multilang_tokenizer = TextAnalyzer::builder(NormalizingTokenizer::new(
+        NgramTokenizer::new(1, 3, false).unwrap(),
+    ))
+    .filter(RemoveLongFilter::limit(40))
+    .filter(LowerCaser)
+    .filter(AsciiFoldingFilter)
+    .build();
     tokenizer_manager.register("multilang", multilang_tokenizer);
 
     let languages = [
@@ -144,6 +147,31 @@ mod tests {
                 iso639, tokenizer_name
             );
         }
+    }
+
+    fn multilang_tokens(text: &str) -> Vec<String> {
+        let index = Index::create_in_ram(build_schema());
+        register_tokenizers(&index);
+        let mut tokenizer = index.tokenizers().get("multilang").unwrap();
+        let mut stream = tokenizer.token_stream(text);
+        let mut tokens = Vec::new();
+        while let Some(token) = stream.next() {
+            tokens.push(token.text.clone());
+        }
+        tokens
+    }
+
+    #[test]
+    fn multilang_matches_arabic_with_or_without_diacritics_and_hamza() {
+        let voweled = multilang_tokens("مُحَمَّد أحمد");
+        for expected in ["محم", "حمد", "احم"] {
+            assert!(
+                voweled.contains(&expected.to_string()),
+                "expected {expected:?} in {voweled:?}"
+            );
+        }
+        assert_eq!(multilang_tokens("محمد"), multilang_tokens("مُحَمَّد"));
+        assert_eq!(multilang_tokens("Résumé"), multilang_tokens("resume"));
     }
 
     #[test]

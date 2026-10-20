@@ -1,4 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Command as CommandPrimitive } from "cmdk";
 import {
   createContext,
@@ -11,6 +12,7 @@ import {
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
+import type { SearchSectionKind, SnippetSegment } from "@anlg/plugin-tantivy";
 import {
   FileText,
   Gear,
@@ -29,6 +31,7 @@ import { Kbd } from "@anlg/ui/components/ui/kbd";
 import { cn } from "@anlg/utils";
 
 import { useHumans } from "~/contacts/queries";
+import { type NoteSearchHit, useSearchEngine } from "~/search/contexts/engine";
 import { useSessionSummaries } from "~/session/queries";
 import {
   type CommandGroupId,
@@ -43,6 +46,8 @@ import { useSettingsNavGroups } from "~/sidebar/settings-nav-groups";
 import { type TabInput, useTabs } from "~/store/zustand/tabs";
 
 const MAX_RECENT_DISPLAY = 5;
+const MAX_CONTENT_MATCHES = 6;
+const MIN_CONTENT_QUERY_LENGTH = 2;
 const RECENT_BOOST = 0.1;
 const ARIA_KEY_NAMES: Record<string, string> = {
   mod: "Meta",
@@ -66,6 +71,7 @@ type MenuCommand = RankableCommand & {
   shortcut?: readonly ShortcutKey[];
   run: (target: "current" | "new") => void;
   opensTab: boolean;
+  match?: { section: SearchSectionKind | null; snippet: SnippetSegment[] };
 };
 
 const OpenNoteDialogContext = createContext<OpenNoteDialogContextValue | null>(
@@ -280,13 +286,39 @@ export function OpenNoteDialog({
   const rankedQuery = useDeferredValue(query);
   const isQueryEmpty = !rankedQuery.trim();
 
+  const { searchNotes } = useSearchEngine();
+  const contentQuery = rankedQuery.trim();
+  const { data: contentHits } = useQuery({
+    queryKey: ["open-note-dialog", "content-search", contentQuery],
+    queryFn: () => searchNotes(contentQuery),
+    enabled: open && contentQuery.length >= MIN_CONTENT_QUERY_LENGTH,
+    placeholderData: keepPreviousData,
+  });
+
   const groups = useMemo<
     { id: CommandGroupId | "recent"; items: MenuCommand[] }[]
   >(() => {
     if (!isQueryEmpty) {
-      return rankCommands(
+      const ranked = rankCommands(
         [...actions, ...notes, ...people, ...pages],
         rankedQuery,
+      );
+      const contentMatches = contentNotes(
+        notes,
+        contentQuery.length >= MIN_CONTENT_QUERY_LENGTH ? contentHits : [],
+        new Set(ranked.flatMap((group) => group.items.map((item) => item.id))),
+      );
+      if (contentMatches.length === 0) {
+        return ranked;
+      }
+      const titleNotes = ranked.find((group) => group.id === "notes");
+      if (!titleNotes) {
+        return [...ranked, { id: "notes" as const, items: contentMatches }];
+      }
+      return ranked.map((group) =>
+        group === titleNotes
+          ? { ...group, items: [...group.items, ...contentMatches] }
+          : group,
       );
     }
     const byId = new Map(notes.map((note) => [note.id, note]));
@@ -299,7 +331,17 @@ export function OpenNoteDialog({
       { id: "actions" as const, items: actions },
       { id: "pages" as const, items: pages.filter((page) => page.topLevel) },
     ].filter((group) => group.items.length > 0);
-  }, [isQueryEmpty, actions, notes, people, pages, rankedQuery, recentIds]);
+  }, [
+    isQueryEmpty,
+    actions,
+    notes,
+    people,
+    pages,
+    rankedQuery,
+    recentIds,
+    contentQuery,
+    contentHits,
+  ]);
 
   const commandsById = useMemo(
     () =>
@@ -411,7 +453,7 @@ export function OpenNoteDialog({
                   <Trans>No results for “{rankedQuery.trim()}”</Trans>
                 </span>
                 <span className="text-muted-foreground text-label">
-                  <Trans>Try a note title, a person, or a setting.</Trans>
+                  <Trans>Try words from a note, a person, or a setting.</Trans>
                 </span>
               </CommandPrimitive.Empty>
             ) : (
@@ -461,6 +503,39 @@ export function OpenNoteDialog({
   );
 }
 
+function contentNotes(
+  notes: MenuCommand[],
+  hits: NoteSearchHit[] | undefined,
+  shownIds: Set<string>,
+): MenuCommand[] {
+  if (!hits) return [];
+  const byId = new Map(notes.map((note) => [note.id, note]));
+  return hits
+    .flatMap((hit) => {
+      const note = byId.get(`note-${hit.id}`);
+      if (!note || shownIds.has(note.id)) return [];
+      return [
+        { ...note, match: { section: hit.section, snippet: hit.snippet } },
+      ];
+    })
+    .slice(0, MAX_CONTENT_MATCHES);
+}
+
+function SectionLabel({ section }: { section: SearchSectionKind | null }) {
+  switch (section) {
+    case "memos":
+      return <Trans>Memos</Trans>;
+    case "summary":
+      return <Trans>Summary</Trans>;
+    case "transcript":
+      return <Trans>Transcript</Trans>;
+    case "chat":
+      return <Trans>Meeting chat</Trans>;
+    default:
+      return <Trans>Note</Trans>;
+  }
+}
+
 function CommandRow({
   command,
   onSelect,
@@ -469,6 +544,56 @@ function CommandRow({
   onSelect: () => void;
 }) {
   const CommandIcon = command.icon;
+  if (command.match) {
+    return (
+      <CommandPrimitive.Item
+        value={command.id}
+        onSelect={onSelect}
+        className={cn([
+          "group flex cursor-pointer items-start gap-2.5 rounded-md px-2.5 py-1.5",
+          "text-foreground text-ui",
+          "data-[selected=true]:bg-muted",
+        ])}
+      >
+        <CommandIcon className="text-muted-foreground group-data-[selected=true]:text-foreground mt-0.5 size-4 shrink-0" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <span className="min-w-0 truncate [unicode-bidi:plaintext]">
+              {command.label}
+            </span>
+            {command.meta ? (
+              <span
+                aria-hidden
+                className="text-muted-foreground text-label ms-auto shrink-0"
+              >
+                {command.meta}
+              </span>
+            ) : null}
+          </span>
+          <span className="text-muted-foreground text-label min-w-0 truncate">
+            <span className="text-foreground font-medium">
+              <SectionLabel section={command.match.section} />
+            </span>
+            {" · "}
+            <bdi>
+              {command.match.snippet.map((segment, index) =>
+                segment.highlighted ? (
+                  <mark
+                    key={index}
+                    className="bg-warm/30 text-foreground rounded-sm"
+                  >
+                    {segment.text}
+                  </mark>
+                ) : (
+                  <span key={index}>{segment.text}</span>
+                ),
+              )}
+            </bdi>
+          </span>
+        </span>
+      </CommandPrimitive.Item>
+    );
+  }
   return (
     <CommandPrimitive.Item
       value={command.id}

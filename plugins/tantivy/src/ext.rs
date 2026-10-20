@@ -4,18 +4,21 @@ use tantivy::query::{
     AllQuery, BooleanQuery, BoostQuery, FuzzyTermQuery, Occur, PhraseQuery, Query, QueryParser,
     TermQuery,
 };
-use tantivy::schema::{Facet, IndexRecordOption};
-use tantivy::snippet::SnippetGenerator;
-use tantivy::{DateTime, Index, ReloadPolicy, TantivyDocument, Term};
+use tantivy::schema::{Facet, Field, IndexRecordOption, Value};
+use tantivy::{Index, ReloadPolicy, TantivyDocument, Term};
 use tauri_plugin_settings::SettingsPluginExt;
 
 use crate::query::build_created_at_range_query;
-use crate::schema::{extract_search_document, get_fields};
+use crate::schema::{SchemaFields, build_tantivy_document, extract_search_document, get_fields};
+use crate::snippet::{find_matches, query_terms};
 use crate::tokenizer::register_tokenizers;
 use crate::{
-    CollectionConfig, CollectionIndex, HighlightRange, IndexState, SearchDocument, SearchHit,
-    SearchRequest, SearchResult, Snippet,
+    CollectionConfig, CollectionIndex, IndexState, SearchDocument, SearchHit, SearchRequest,
+    SearchResult,
 };
+
+// Title matches outrank body matches (Orama's title:3, content:1).
+const TITLE_BOOST: f32 = 3.0;
 
 fn create_index_writer(index: &Index) -> tantivy::Result<tantivy::IndexWriter> {
     index.writer_with_options(
@@ -78,6 +81,182 @@ fn parse_query_parts(query: &str) -> (Vec<&str>, Vec<&str>) {
     }
 
     (phrases, regular_terms)
+}
+
+// The term must match in the title or any body field.
+fn any_text_field(
+    fields: &SchemaFields,
+    query_for: impl Fn(Field) -> Box<dyn Query>,
+) -> Box<dyn Query> {
+    let mut alternatives: Vec<(Occur, Box<dyn Query>)> = vec![(
+        Occur::Should,
+        Box::new(BoostQuery::new(query_for(fields.title), TITLE_BOOST)),
+    )];
+    for field in fields.text_fields().into_iter().skip(1) {
+        alternatives.push((Occur::Should, query_for(field)));
+    }
+    Box::new(BooleanQuery::new(alternatives))
+}
+
+fn build_text_query(
+    index: &Index,
+    fields: &SchemaFields,
+    request: &SearchRequest,
+) -> Box<dyn Query> {
+    if request.query.trim().is_empty() {
+        return Box::new(AllQuery);
+    }
+
+    if !request.options.fuzzy.unwrap_or(false) {
+        let mut parser = QueryParser::for_index(index, fields.text_fields());
+        parser.set_conjunction_by_default();
+        parser.set_field_boost(fields.title, TITLE_BOOST);
+        let (query, _errors) = parser.parse_query_lenient(&request.query);
+        return query;
+    }
+
+    let distance = request.options.distance.unwrap_or(1);
+    let phrase_slop = request.options.phrase_slop.unwrap_or(0);
+    let (phrases, regular_terms) = parse_query_parts(&request.query);
+    let mut term_queries: Vec<(Occur, Box<dyn Query>)> = Vec::new();
+
+    for phrase in phrases {
+        let words: Vec<&str> = phrase.split_whitespace().collect();
+        if words.len() > 1 {
+            term_queries.push((
+                Occur::Must,
+                any_text_field(fields, |field| {
+                    let terms = words
+                        .iter()
+                        .map(|word| Term::from_field_text(field, word))
+                        .collect();
+                    let mut phrase_query = PhraseQuery::new(terms);
+                    phrase_query.set_slop(phrase_slop);
+                    Box::new(phrase_query)
+                }),
+            ));
+        } else if let Some(word) = words.first() {
+            term_queries.push((
+                Occur::Must,
+                any_text_field(fields, |field| {
+                    Box::new(FuzzyTermQuery::new(
+                        Term::from_field_text(field, word),
+                        distance,
+                        true,
+                    ))
+                }),
+            ));
+        }
+    }
+
+    for term in regular_terms {
+        term_queries.push((
+            Occur::Must,
+            any_text_field(fields, |field| {
+                Box::new(FuzzyTermQuery::new(
+                    Term::from_field_text(field, term),
+                    distance,
+                    true,
+                ))
+            }),
+        ));
+    }
+
+    Box::new(BooleanQuery::new(term_queries))
+}
+
+pub(crate) fn search_collection(
+    collection: &CollectionIndex,
+    request: &SearchRequest,
+) -> Result<SearchResult, crate::Error> {
+    let schema = &collection.schema;
+    let fields = get_fields(schema);
+    let searcher = collection.reader.searcher();
+
+    let mut combined_query = build_text_query(&collection.index, &fields, request);
+
+    if let Some(ref created_at_filter) = request.filters.created_at
+        && let Some(range_query) =
+            build_created_at_range_query(fields.created_at, created_at_filter)
+    {
+        combined_query = Box::new(BooleanQuery::new(vec![
+            (Occur::Must, combined_query),
+            (Occur::Must, range_query),
+        ]));
+    }
+
+    if let Some(ref doc_type) = request.filters.doc_type {
+        let doc_type_term = Term::from_field_text(fields.doc_type, doc_type);
+        let doc_type_query = TermQuery::new(doc_type_term, IndexRecordOption::Basic);
+        combined_query = Box::new(BooleanQuery::new(vec![
+            (Occur::Must, combined_query),
+            (Occur::Must, Box::new(doc_type_query)),
+        ]));
+    }
+
+    if let Some(ref facet_path) = request.filters.facet
+        && let Ok(facet) = Facet::from_text(facet_path)
+    {
+        let facet_term = Term::from_facet(fields.facets, &facet);
+        let facet_query = TermQuery::new(facet_term, IndexRecordOption::Basic);
+        combined_query = Box::new(BooleanQuery::new(vec![
+            (Occur::Must, combined_query),
+            (Occur::Must, Box::new(facet_query)),
+        ]));
+    }
+
+    let (top_docs, count) = searcher.search(
+        &combined_query,
+        &(TopDocs::with_limit(request.limit), Count),
+    )?;
+
+    let snippet_terms = if request.options.snippets.unwrap_or(false) {
+        let (phrases, regular_terms) = parse_query_parts(&request.query);
+        Some(query_terms(&phrases, &regular_terms))
+    } else {
+        None
+    };
+    let snippet_max_chars = request.options.snippet_max_chars.unwrap_or(150);
+
+    let mut hits = Vec::new();
+    for (score, doc_address) in top_docs {
+        let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
+        let Some(search_doc) = extract_search_document(schema, &fields, &retrieved_doc) else {
+            continue;
+        };
+
+        let matches = snippet_terms.as_ref().map(|terms| {
+            let mut bodies: Vec<_> = fields
+                .sections
+                .iter()
+                .flat_map(|(kind, field)| {
+                    retrieved_doc
+                        .get_all(*field)
+                        .filter_map(|value| value.as_str())
+                        .map(|text| (Some(*kind), text))
+                })
+                .collect();
+            bodies.push((None, search_doc.content.as_str()));
+            find_matches(terms, &search_doc.title, &bodies, snippet_max_chars)
+        });
+        let (title_snippet, body) = matches
+            .map(|matches| (matches.title, matches.body))
+            .unwrap_or_default();
+        let (matched_section, content_snippet) = match body {
+            Some((kind, snippet)) => (kind, Some(snippet)),
+            None => (None, None),
+        };
+
+        hits.push(SearchHit {
+            score,
+            document: search_doc,
+            title_snippet,
+            content_snippet,
+            matched_section,
+        });
+    }
+
+    Ok(SearchResult { hits, count })
 }
 
 pub struct Tantivy<'a, R: tauri::Runtime, M: tauri::Manager<R>> {
@@ -163,7 +342,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Tantivy<'a, R, M> {
     }
 
     pub async fn search(&self, request: SearchRequest) -> Result<SearchResult, crate::Error> {
-        let collection_name = Self::get_collection_name(request.collection);
+        let collection_name = Self::get_collection_name(request.collection.clone());
         let state = self.manager.state::<IndexState>();
         let guard = state.inner.read().await;
 
@@ -172,221 +351,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Tantivy<'a, R, M> {
             .get(&collection_name)
             .ok_or_else(|| crate::Error::CollectionNotFound(collection_name.clone()))?;
 
-        let schema = &collection_index.schema;
-        let index = &collection_index.index;
-        let reader = &collection_index.reader;
-
-        let fields = get_fields(schema);
-        let searcher = reader.searcher();
-
-        let use_fuzzy = request.options.fuzzy.unwrap_or(false);
-        let phrase_slop = request.options.phrase_slop.unwrap_or(0);
-        let has_query = !request.query.trim().is_empty();
-
-        // Title boost factor (3x) to match Orama's title:3, content:1 behavior
-        const TITLE_BOOST: f32 = 3.0;
-
-        let mut combined_query: Box<dyn Query> = if !has_query {
-            Box::new(AllQuery)
-        } else if use_fuzzy {
-            let distance = request.options.distance.unwrap_or(1);
-
-            // Parse query to extract phrases (quoted) and regular terms
-            let (phrases, regular_terms) = parse_query_parts(&request.query);
-
-            let mut term_queries: Vec<(Occur, Box<dyn Query>)> = Vec::new();
-
-            // Handle quoted phrases with PhraseQuery
-            for phrase in phrases {
-                let words: Vec<&str> = phrase.split_whitespace().collect();
-                if words.len() > 1 {
-                    // Create phrase query for title field
-                    let title_terms: Vec<Term> = words
-                        .iter()
-                        .map(|w| Term::from_field_text(fields.title, w))
-                        .collect();
-                    let mut title_phrase = PhraseQuery::new(title_terms);
-                    title_phrase.set_slop(phrase_slop);
-
-                    // Create phrase query for content field
-                    let content_terms: Vec<Term> = words
-                        .iter()
-                        .map(|w| Term::from_field_text(fields.content, w))
-                        .collect();
-                    let mut content_phrase = PhraseQuery::new(content_terms);
-                    content_phrase.set_slop(phrase_slop);
-
-                    // Boost title matches by 3x
-                    let boosted_title: Box<dyn Query> =
-                        Box::new(BoostQuery::new(Box::new(title_phrase), TITLE_BOOST));
-                    let content_query: Box<dyn Query> = Box::new(content_phrase);
-
-                    // Phrase must match in at least one field (title OR content)
-                    let phrase_field_query = BooleanQuery::new(vec![
-                        (Occur::Should, boosted_title),
-                        (Occur::Should, content_query),
-                    ]);
-
-                    term_queries.push((Occur::Must, Box::new(phrase_field_query)));
-                } else if !words.is_empty() {
-                    // Single word "phrase" - treat as regular term
-                    let word = words[0];
-                    let title_fuzzy = FuzzyTermQuery::new(
-                        Term::from_field_text(fields.title, word),
-                        distance,
-                        true,
-                    );
-                    let content_fuzzy = FuzzyTermQuery::new(
-                        Term::from_field_text(fields.content, word),
-                        distance,
-                        true,
-                    );
-
-                    let boosted_title: Box<dyn Query> =
-                        Box::new(BoostQuery::new(Box::new(title_fuzzy), TITLE_BOOST));
-                    let content_query: Box<dyn Query> = Box::new(content_fuzzy);
-
-                    let term_field_query = BooleanQuery::new(vec![
-                        (Occur::Should, boosted_title),
-                        (Occur::Should, content_query),
-                    ]);
-
-                    term_queries.push((Occur::Must, Box::new(term_field_query)));
-                }
-            }
-
-            // Handle regular (unquoted) terms with fuzzy matching
-            for term in regular_terms {
-                let title_fuzzy =
-                    FuzzyTermQuery::new(Term::from_field_text(fields.title, term), distance, true);
-                let content_fuzzy = FuzzyTermQuery::new(
-                    Term::from_field_text(fields.content, term),
-                    distance,
-                    true,
-                );
-
-                // Boost title matches by 3x
-                let boosted_title: Box<dyn Query> =
-                    Box::new(BoostQuery::new(Box::new(title_fuzzy), TITLE_BOOST));
-                let content_query: Box<dyn Query> = Box::new(content_fuzzy);
-
-                // Each term must match in at least one field (title OR content)
-                let term_field_query = BooleanQuery::new(vec![
-                    (Occur::Should, boosted_title),
-                    (Occur::Should, content_query),
-                ]);
-
-                // All terms must be present (Must for each term)
-                term_queries.push((Occur::Must, Box::new(term_field_query)));
-            }
-
-            Box::new(BooleanQuery::new(term_queries))
-        } else {
-            let query_parser = QueryParser::for_index(index, vec![fields.title, fields.content]);
-            query_parser.parse_query(&request.query)?
-        };
-
-        // Apply created_at filter
-        if let Some(ref created_at_filter) = request.filters.created_at {
-            let range_query = build_created_at_range_query(fields.created_at, created_at_filter);
-            if let Some(rq) = range_query {
-                combined_query = Box::new(BooleanQuery::new(vec![
-                    (Occur::Must, combined_query),
-                    (Occur::Must, rq),
-                ]));
-            }
-        }
-
-        // Apply doc_type filter
-        if let Some(ref doc_type) = request.filters.doc_type {
-            let doc_type_term = Term::from_field_text(fields.doc_type, doc_type);
-            let doc_type_query = TermQuery::new(doc_type_term, IndexRecordOption::Basic);
-            combined_query = Box::new(BooleanQuery::new(vec![
-                (Occur::Must, combined_query),
-                (Occur::Must, Box::new(doc_type_query)),
-            ]));
-        }
-
-        // Apply facet filter
-        if let Some(ref facet_path) = request.filters.facet
-            && let Ok(facet) = Facet::from_text(facet_path)
-        {
-            let facet_term = Term::from_facet(fields.facets, &facet);
-            let facet_query = TermQuery::new(facet_term, IndexRecordOption::Basic);
-            combined_query = Box::new(BooleanQuery::new(vec![
-                (Occur::Must, combined_query),
-                (Occur::Must, Box::new(facet_query)),
-            ]));
-        }
-
-        // Use tuple collector to get both top docs and total count
-        let (top_docs, count) = searcher.search(
-            &combined_query,
-            &(TopDocs::with_limit(request.limit), Count),
-        )?;
-
-        let generate_snippets = request.options.snippets.unwrap_or(false);
-        let snippet_max_chars = request.options.snippet_max_chars.unwrap_or(150);
-
-        let (title_snippet_gen, content_snippet_gen) = if generate_snippets {
-            let mut title_gen =
-                SnippetGenerator::create(&searcher, &*combined_query, fields.title)?;
-            title_gen.set_max_num_chars(snippet_max_chars);
-
-            let mut content_gen =
-                SnippetGenerator::create(&searcher, &*combined_query, fields.content)?;
-            content_gen.set_max_num_chars(snippet_max_chars);
-
-            (Some(title_gen), Some(content_gen))
-        } else {
-            (None, None)
-        };
-
-        let mut hits = Vec::new();
-        for (score, doc_address) in top_docs {
-            let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
-
-            if let Some(search_doc) = extract_search_document(schema, &fields, &retrieved_doc) {
-                let title_snippet = title_snippet_gen.as_ref().map(|generator| {
-                    let snippet = generator.snippet_from_doc(&retrieved_doc);
-                    Snippet {
-                        fragment: snippet.fragment().to_string(),
-                        highlights: snippet
-                            .highlighted()
-                            .iter()
-                            .map(|range| HighlightRange {
-                                start: range.start,
-                                end: range.end,
-                            })
-                            .collect(),
-                    }
-                });
-
-                let content_snippet = content_snippet_gen.as_ref().map(|generator| {
-                    let snippet = generator.snippet_from_doc(&retrieved_doc);
-                    Snippet {
-                        fragment: snippet.fragment().to_string(),
-                        highlights: snippet
-                            .highlighted()
-                            .iter()
-                            .map(|range| HighlightRange {
-                                start: range.start,
-                                end: range.end,
-                            })
-                            .collect(),
-                    }
-                });
-
-                hits.push(SearchHit {
-                    score,
-                    document: search_doc,
-                    title_snippet,
-                    content_snippet,
-                });
-            }
-        }
-
-        Ok(SearchResult { hits, count })
+        search_collection(collection_index, &request)
     }
 
     pub async fn reindex(&self, collection: Option<String>) -> Result<(), crate::Error> {
@@ -435,24 +400,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Tantivy<'a, R, M> {
         let writer = &mut collection_index.writer;
         let fields = get_fields(schema);
 
-        let mut doc = TantivyDocument::new();
-        doc.add_text(fields.id, &document.id);
-        doc.add_text(fields.doc_type, &document.doc_type);
-        doc.add_text(fields.language, document.language.as_deref().unwrap_or(""));
-        doc.add_text(fields.title, &document.title);
-        doc.add_text(fields.content, &document.content);
-        doc.add_date(
-            fields.created_at,
-            DateTime::from_timestamp_millis(document.created_at),
-        );
-
-        for facet_path in &document.facets {
-            if let Ok(facet) = Facet::from_text(facet_path) {
-                doc.add_facet(fields.facets, facet);
-            }
-        }
-
-        writer.add_document(doc)?;
+        writer.add_document(build_tantivy_document(&fields, &document))?;
         writer.commit()?;
 
         tracing::debug!(
@@ -485,24 +433,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Tantivy<'a, R, M> {
         let id_term = Term::from_field_text(fields.id, &document.id);
         writer.delete_term(id_term);
 
-        let mut doc = TantivyDocument::new();
-        doc.add_text(fields.id, &document.id);
-        doc.add_text(fields.doc_type, &document.doc_type);
-        doc.add_text(fields.language, document.language.as_deref().unwrap_or(""));
-        doc.add_text(fields.title, &document.title);
-        doc.add_text(fields.content, &document.content);
-        doc.add_date(
-            fields.created_at,
-            DateTime::from_timestamp_millis(document.created_at),
-        );
-
-        for facet_path in &document.facets {
-            if let Ok(facet) = Facet::from_text(facet_path) {
-                doc.add_facet(fields.facets, facet);
-            }
-        }
-
-        writer.add_document(doc)?;
+        writer.add_document(build_tantivy_document(&fields, &document))?;
         writer.commit()?;
 
         tracing::debug!(
@@ -538,24 +469,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Tantivy<'a, R, M> {
             let id_term = Term::from_field_text(fields.id, &document.id);
             writer.delete_term(id_term);
 
-            let mut doc = TantivyDocument::new();
-            doc.add_text(fields.id, &document.id);
-            doc.add_text(fields.doc_type, &document.doc_type);
-            doc.add_text(fields.language, document.language.as_deref().unwrap_or(""));
-            doc.add_text(fields.title, &document.title);
-            doc.add_text(fields.content, &document.content);
-            doc.add_date(
-                fields.created_at,
-                DateTime::from_timestamp_millis(document.created_at),
-            );
-
-            for facet_path in &document.facets {
-                if let Ok(facet) = Facet::from_text(facet_path) {
-                    doc.add_facet(fields.facets, facet);
-                }
-            }
-
-            writer.add_document(doc)?;
+            writer.add_document(build_tantivy_document(&fields, &document))?;
         }
 
         writer.commit()?;
@@ -597,24 +511,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Tantivy<'a, R, M> {
         for document in documents {
             writer.delete_term(Term::from_field_text(fields.id, &document.id));
 
-            let mut doc = TantivyDocument::new();
-            doc.add_text(fields.id, &document.id);
-            doc.add_text(fields.doc_type, &document.doc_type);
-            doc.add_text(fields.language, document.language.as_deref().unwrap_or(""));
-            doc.add_text(fields.title, &document.title);
-            doc.add_text(fields.content, &document.content);
-            doc.add_date(
-                fields.created_at,
-                DateTime::from_timestamp_millis(document.created_at),
-            );
-
-            for facet_path in &document.facets {
-                if let Ok(facet) = Facet::from_text(facet_path) {
-                    doc.add_facet(fields.facets, facet);
-                }
-            }
-
-            writer.add_document(doc)?;
+            writer.add_document(build_tantivy_document(&fields, &document))?;
         }
 
         writer.commit()?;
@@ -683,6 +580,7 @@ impl<R: tauri::Runtime, T: tauri::Manager<R>> TantivyPluginExt<R> for T {
 mod tests {
     use super::*;
     use crate::tokenizer::get_tokenizer_name_for_language;
+    use crate::{SearchFilters, SearchOptions, SearchSection, SearchSectionKind};
     use tantivy::schema::{STORED, Schema, TEXT};
 
     #[test]
@@ -691,6 +589,141 @@ mod tests {
         let lang = detect_language(text);
         let tokenizer_name = get_tokenizer_name_for_language(&lang);
         assert_eq!(tokenizer_name, "lang_en");
+    }
+
+    fn session(id: &str, title: &str, sections: &[(SearchSectionKind, &str)]) -> SearchDocument {
+        SearchDocument {
+            id: id.to_string(),
+            doc_type: "session".to_string(),
+            language: None,
+            title: title.to_string(),
+            content: String::new(),
+            created_at: 0,
+            facets: Vec::new(),
+            sections: sections
+                .iter()
+                .map(|(kind, text)| SearchSection {
+                    kind: *kind,
+                    text: text.to_string(),
+                })
+                .collect(),
+        }
+    }
+
+    fn collection(documents: &[SearchDocument]) -> CollectionIndex {
+        let schema = crate::schema::build_schema();
+        let index = Index::create_in_ram(schema.clone());
+        register_tokenizers(&index);
+        let mut writer = create_index_writer(&index).unwrap();
+        let fields = get_fields(&schema);
+        for document in documents {
+            writer
+                .add_document(build_tantivy_document(&fields, document))
+                .unwrap();
+        }
+        writer.commit().unwrap();
+        let reader = index.reader().unwrap();
+        CollectionIndex {
+            schema,
+            index,
+            reader,
+            writer,
+        }
+    }
+
+    fn search_notes(collection: &CollectionIndex, query: &str) -> Vec<SearchHit> {
+        search_collection(
+            collection,
+            &SearchRequest {
+                query: query.to_string(),
+                collection: None,
+                filters: SearchFilters::default(),
+                limit: 10,
+                options: SearchOptions {
+                    snippets: Some(true),
+                    ..Default::default()
+                },
+            },
+        )
+        .unwrap()
+        .hits
+    }
+
+    #[test]
+    fn finds_notes_by_section_text_and_names_the_section() {
+        let notes = collection(&[
+            session(
+                "transcript",
+                "Weekly sync",
+                &[
+                    (SearchSectionKind::Memos, "agenda items"),
+                    (SearchSectionKind::Transcript, "قال مُحَمَّد إن الميزانية جاهزة"),
+                ],
+            ),
+            session(
+                "summary",
+                "Planning",
+                &[(SearchSectionKind::Summary, "Pricing review for Q3")],
+            ),
+            session("locked", "Locked board meeting", &[]),
+        ]);
+
+        let arabic = search_notes(&notes, "محمد");
+        assert_eq!(arabic.len(), 1);
+        assert_eq!(arabic[0].document.id, "transcript");
+        assert_eq!(
+            arabic[0].matched_section,
+            Some(SearchSectionKind::Transcript)
+        );
+        assert!(arabic[0].document.sections.is_empty());
+
+        let pricing = search_notes(&notes, "pricing q3");
+        assert_eq!(pricing.len(), 1);
+        assert_eq!(pricing[0].matched_section, Some(SearchSectionKind::Summary));
+        let highlighted: Vec<_> = pricing[0]
+            .content_snippet
+            .as_ref()
+            .unwrap()
+            .segments
+            .iter()
+            .filter(|segment| segment.highlighted)
+            .map(|segment| segment.text.as_str())
+            .collect();
+        assert_eq!(highlighted, ["Pricing", "Q3"]);
+
+        let board = search_notes(&notes, "board");
+        assert_eq!(board.len(), 1);
+        assert_eq!(board[0].document.id, "locked");
+        assert!(board[0].title_snippet.is_some());
+        assert!(board[0].content_snippet.is_none());
+    }
+
+    #[test]
+    fn title_matches_outrank_body_matches() {
+        let notes = collection(&[
+            session(
+                "body",
+                "Standup",
+                &[(SearchSectionKind::Memos, "talked about the roadmap")],
+            ),
+            session("title", "Roadmap", &[]),
+        ]);
+
+        let hits = search_notes(&notes, "roadmap");
+
+        assert_eq!(
+            hits.iter()
+                .map(|hit| hit.document.id.as_str())
+                .collect::<Vec<_>>(),
+            ["title", "body"]
+        );
+    }
+
+    #[test]
+    fn malformed_query_syntax_still_searches() {
+        let notes = collection(&[session("note", "Budget (draft", &[])]);
+
+        assert_eq!(search_notes(&notes, "budget (draft").len(), 1);
     }
 
     #[test]

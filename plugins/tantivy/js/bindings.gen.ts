@@ -67,14 +67,16 @@ async removeDocument(id: string, collection: string | null) : Promise<Result<nul
 /** user-defined types **/
 
 export type CreatedAtFilter = { gte: number | null; lte: number | null; gt: number | null; lt: number | null; eq: number | null }
-export type HighlightRange = { start: number; end: number }
-export type SearchDocument = { id: string; doc_type: string; language: string | null; title: string; content: string; created_at: number; facets?: string[] }
+export type SearchDocument = { id: string; doc_type: string; language: string | null; title: string; content: string; created_at: number; facets?: string[]; sections?: SearchSection[] }
 export type SearchFilters = { created_at: CreatedAtFilter | null; doc_type: string | null; facet: string | null }
-export type SearchHit = { score: number; document: SearchDocument; title_snippet: Snippet | null; content_snippet: Snippet | null }
+export type SearchHit = { score: number; document: SearchDocument; title_snippet: Snippet | null; content_snippet: Snippet | null; matched_section: SearchSectionKind | null }
 export type SearchOptions = { fuzzy: boolean | null; distance: number | null; snippets: boolean | null; snippet_max_chars: number | null; phrase_slop: number | null }
 export type SearchRequest = { query: string; collection?: string | null; filters?: SearchFilters; limit?: number; options?: SearchOptions }
 export type SearchResult = { hits: SearchHit[]; count: number }
-export type Snippet = { fragment: string; highlights: HighlightRange[] }
+export type SearchSection = { kind: SearchSectionKind; text: string }
+export type SearchSectionKind = "memos" | "summary" | "transcript" | "chat"
+export type Snippet = { segments: SnippetSegment[] }
+export type SnippetSegment = { text: string; highlighted: boolean }
 
 /** tauri-specta globals **/
 
