@@ -19,7 +19,7 @@ use crate::library::{
 };
 use crate::series::{self, MeetingProject};
 use crate::settings::{self, SeriesProject};
-use crate::{Error, Result};
+use crate::{CoachNudged, Error, Result};
 
 pub const URL_ENV: &str = "ANARLOG_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "ANARLOG_COACH_APP_TOKEN";
@@ -33,6 +33,7 @@ pub trait Host: Send + Sync + 'static {
     fn default_project(&self) -> Result<PathBuf>;
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>>;
     fn choose_default_project(&self) -> Result<()>;
+    fn nudged(&self, nudge: CoachNudged);
 }
 
 struct BridgeState {
@@ -93,6 +94,7 @@ fn router(token: &str, host: impl Host) -> Router {
             "/meeting/{session_id}/series-project",
             post(choose_series_project).delete(clear_series_project),
         )
+        .route("/meeting/{session_id}/nudge", post(nudged))
         .route("/meeting/{session_id}/notes", post(append_note))
         .route("/meeting/{session_id}/action-items", post(add_action_item))
         .route(
@@ -308,6 +310,25 @@ async fn clear_series_project(
         settings::set_series_project(&state.host.config_dir()?, &series.key, None)?;
     }
     Ok(Json(resolve_project(&state, &session_id).await?))
+}
+
+#[derive(serde::Deserialize)]
+struct NudgeBody {
+    tag: String,
+    line: String,
+}
+
+async fn nudged(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<NudgeBody>,
+) -> StatusCode {
+    state.host.nudged(CoachNudged {
+        session_id,
+        tag: body.tag,
+        line: body.line,
+    });
+    StatusCode::NO_CONTENT
 }
 
 #[derive(serde::Deserialize)]
@@ -563,6 +584,7 @@ mod tests {
         fn choose_default_project(&self) -> Result<()> {
             Ok(())
         }
+        fn nudged(&self, _nudge: CoachNudged) {}
     }
 
     const TOKEN: &str = "test-token";

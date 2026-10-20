@@ -139,6 +139,11 @@ export const SETTING_DEFINITIONS = {
     path: ["notification", "summary_complete"],
     default: true as boolean,
   },
+  notification_coach_nudges: {
+    type: "boolean",
+    path: ["notification", "coach_nudges"],
+    default: true as boolean,
+  },
   notification_recording: {
     type: "boolean",
     path: ["notification", "recording"],

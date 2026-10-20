@@ -15,6 +15,12 @@ pub fn is_visible(app: &AppHandle) -> bool {
         .unwrap_or(false)
 }
 
+pub fn is_focused(app: &AppHandle) -> bool {
+    app.get_webview_window(LABEL).is_some_and(|window| {
+        window.is_visible().unwrap_or(false) && window.is_focused().unwrap_or(false)
+    })
+}
+
 pub fn hide(app: &AppHandle) -> Result<()> {
     if let Some(window) = app.get_webview_window(LABEL) {
         window.hide()?;
@@ -63,11 +69,18 @@ pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
     join_full_screen_spaces(&window);
 
     let hide_on_close = window.clone();
-    window.on_window_event(move |event| {
-        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+    let focus_app = app.clone();
+    window.on_window_event(move |event| match event {
+        tauri::WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
             let _ = hide_on_close.hide();
         }
+        tauri::WindowEvent::Focused(true) => {
+            if let Err(error) = tauri_specta::Event::emit(&crate::CoachFocused {}, &focus_app) {
+                tracing::warn!(%error, "coach_focus_emit_failed");
+            }
+        }
+        _ => {}
     });
 
     window.show()?;

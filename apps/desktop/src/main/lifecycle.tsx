@@ -2,6 +2,7 @@ import { useRouteContext } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef } from "react";
 
 import { useLanguageModel } from "~/ai/hooks";
+import { CoachNudgeLifecycle } from "~/coach/nudges";
 import { CoachShortcutLifecycle } from "~/coach/shortcut";
 import { SelfNameBackfill } from "~/contacts/self-name";
 import { DictationLifecycle } from "~/dictation/lifecycle";
@@ -47,6 +48,7 @@ export function ClassicMainServices() {
       <DictationLifecycle />
       <DictationOverlay />
       <CoachShortcutLifecycle />
+      <CoachNudgeLifecycle />
       <SelfNameBackfill />
       <EnhancerInit />
     </>

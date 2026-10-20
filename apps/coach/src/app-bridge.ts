@@ -123,6 +123,8 @@ export function appBridge(url: string, token: string) {
     recordingSessions: async (): Promise<ReadonlySet<string>> =>
       new Set((await required(call("GET", "/recording", recordingSchema))).session_ids),
     chooseDefaultProject: () => call("POST", "/project", z.null()),
+    nudged: (sessionId: string, nudge: { tag: string; line: string }) =>
+      call("POST", `${meeting(sessionId)}/nudge`, z.null(), nudge),
     meetingProject: (sessionId: string) =>
       required(call("GET", `${meeting(sessionId)}/project`, meetingProjectSchema)),
     chooseSeriesProject: (sessionId: string) =>

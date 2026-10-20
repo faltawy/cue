@@ -59,6 +59,7 @@ export function NotificationSettingsView() {
     "notification_event",
     "notification_detect",
     "notification_summary_complete",
+    "notification_coach_nudges",
     "notification_recording",
     "notification_completion_sound",
     "notification_completion_sound_name",
@@ -115,6 +116,7 @@ export function NotificationSettingsView() {
       notification_event: configs.notification_event,
       notification_detect: configs.notification_detect,
       notification_summary_complete: configs.notification_summary_complete,
+      notification_coach_nudges: configs.notification_coach_nudges,
       notification_recording: configs.notification_recording,
       notification_completion_sound: configs.notification_completion_sound,
       notification_completion_sound_name: normalizeCompletionSoundName(
@@ -137,6 +139,7 @@ export function NotificationSettingsView() {
         notification_event: value.notification_event,
         notification_detect: value.notification_detect,
         notification_summary_complete: value.notification_summary_complete,
+        notification_coach_nudges: value.notification_coach_nudges,
         notification_recording: value.notification_recording,
         notification_completion_sound: value.notification_completion_sound,
         notification_completion_sound_name:
@@ -207,6 +210,23 @@ export function NotificationSettingsView() {
                 <SettingSwitchRow
                   title={<Trans>Summary complete</Trans>}
                   description={<Trans>Show when a summary is ready.</Trans>}
+                  checked={field.state.value}
+                  onChange={field.handleChange}
+                  disabled={notificationsDisabled}
+                />
+              )}
+            </form.Field>
+
+            <form.Field name="notification_coach_nudges">
+              {(field) => (
+                <SettingSwitchRow
+                  title={<Trans>Coach nudges</Trans>}
+                  description={
+                    <Trans>
+                      Show what the coach suggests when its window isn't in
+                      front.
+                    </Trans>
+                  }
                   checked={field.state.value}
                   onChange={field.handleChange}
                   disabled={notificationsDisabled}

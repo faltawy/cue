@@ -5,6 +5,7 @@ mod busy;
 mod commands;
 mod edits;
 mod error;
+mod events;
 mod library;
 mod mcp;
 mod probe;
@@ -25,6 +26,7 @@ use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
 pub use bridge::RecordingFuture;
 pub use error::{Error, Result};
+pub use events::{CoachFocused, CoachNudged};
 use mcp::ResolvedServer;
 pub use probe::McpProbe;
 pub use process::Endpoint;
@@ -76,6 +78,15 @@ impl bridge::Host for AppHost {
 
     fn choose_default_project(&self) -> Result<()> {
         self.0.coach().pick_project().map(|_| ())
+    }
+
+    fn nudged(&self, nudge: CoachNudged) {
+        if window::is_focused(&self.0) {
+            return;
+        }
+        if let Err(error) = tauri_specta::Event::emit(&nudge, &self.0) {
+            tracing::warn!(%error, "coach_nudge_emit_failed");
+        }
     }
 
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>> {
@@ -521,6 +532,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::claude_signed_in,
             commands::sign_in_to_claude,
         ])
+        .events(tauri_specta::collect_events![CoachNudged, CoachFocused])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 
@@ -533,6 +545,7 @@ pub fn init(
     tauri::plugin::Builder::new(PLUGIN_NAME)
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app, _api| {
+            specta_builder.mount_events(app);
             app.manage(CoachState {
                 db: db.clone(),
                 recording: recording.clone(),

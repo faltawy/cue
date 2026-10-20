@@ -300,6 +300,7 @@ function startProactive(sessionId: string | undefined) {
 }
 
 async function runLightNudge(owner: Proactive, request: NudgeRequest) {
+  const sessionId = proactiveMeeting;
   const abort = new AbortController();
   nudgeAbort = abort;
   const label = `${nudgeLabel(request.hits)} · ${clockTime()}`;
@@ -326,6 +327,11 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
   }
   if (result.move) {
     feed({ type: "block", id: crypto.randomUUID(), block: { kind: "move", ...result.move } });
+    if (bridge && sessionId) {
+      bridge.nudged(sessionId, { tag: result.move.tag, line: result.move.line }).catch((error: unknown) => {
+        console.error("[coach] could not tell the app about a nudge", { _e: errorText(error), sessionId });
+      });
+    }
     if (result.talk) feed({ type: "talk", talk: result.talk });
     nudgeNotes = rememberNote(nudgeNotes, nudgeNote(label, moveText(result.move)));
   }

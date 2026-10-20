@@ -107,6 +107,13 @@ async signInToClaude() : Promise<Result<null, string>> {
 /** user-defined events **/
 
 
+export const events = __makeEvents__<{
+coachFocused: CoachFocused,
+coachNudged: CoachNudged
+}>({
+coachFocused: "plugin:coach:coach-focused",
+coachNudged: "plugin:coach:coach-nudged"
+})
 
 /** user-defined constants **/
 
@@ -116,6 +123,8 @@ async signInToClaude() : Promise<Result<null, string>> {
 
 export type ClaudeConnector = { name: string; id: string; url: string; allow_changes?: boolean }
 export type ClaudeModel = "sonnet" | "opus" | "haiku"
+export type CoachFocused = Record<string, never>
+export type CoachNudged = { session_id: string; tag: string; line: string }
 export type CoachSettings = { project: string | null; model: ClaudeModel; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
 export type Endpoint = { url: string; token: string }
 export type FoundConnector = { name: string; id: string; url: string }

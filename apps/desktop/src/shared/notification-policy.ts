@@ -4,7 +4,9 @@ import {
 } from "~/settings/queries";
 import { resolveConfigValue } from "~/shared/config";
 
-export type NotificationSettingKey = "notification_summary_complete";
+export type NotificationSettingKey =
+  | "notification_summary_complete"
+  | "notification_coach_nudges";
 
 export async function shouldShowNotification(
   settingKey: NotificationSettingKey,
