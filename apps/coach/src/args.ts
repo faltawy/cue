@@ -1,6 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 
+import { expandProtectedRoots } from "./guard";
 import { loadMcpConfig } from "./mcp-config";
 import { type CoachOptions } from "./session";
 import { openAppDb } from "./transcript";
@@ -61,6 +62,6 @@ export async function coachOptionsFromArgs(values: CoachArgValues): Promise<Coac
     instructions: values.instructions ? await Bun.file(values.instructions).text() : "",
     knowledge: (values.knowledge ?? []).map((entry) => path.resolve(entry)),
     webAccess: values.web ?? false,
-    protectedDirs: [path.dirname(path.resolve(values.db)), ...(values.protect ?? []).map((dir) => path.resolve(dir))],
+    protectedDirs: expandProtectedRoots([path.dirname(path.resolve(values.db)), ...(values.protect ?? [])]),
   };
 }

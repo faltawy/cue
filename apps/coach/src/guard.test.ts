@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
+import fs from "node:fs";
 import os from "node:os";
+import path from "node:path";
 
 import { parseServerList } from "./args";
 import { sessionEnv } from "./env";
-import { decide, isReadOnlyCommand } from "./guard";
+import { decide, expandProtectedRoots, isReadOnlyCommand } from "./guard";
 import {
   ASK_PROMPT,
   ASK_USER_TOOL,
@@ -453,5 +455,28 @@ describe("web access", () => {
       behavior: "allow",
     });
     expect(JSON.stringify([options.tools, options.systemPrompt])).toBe(before);
+  });
+});
+
+describe("a data folder reached through a symlink", () => {
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "coach-guard-")));
+  const dataFolder = path.join(base, "Cue");
+  const link = path.join(base, "anarlog");
+  fs.mkdirSync(dataFolder);
+  fs.writeFileSync(path.join(dataFolder, "app.db"), "");
+  fs.writeFileSync(path.join(base, "notes.md"), "");
+  fs.symlinkSync("Cue", link);
+  const read = (tool: string, input: Record<string, unknown>) =>
+    decide(tool, input, [base], [], [], false, expandProtectedRoots([dataFolder]));
+
+  test("file tools refuse the database through the old folder name", () => {
+    expect(read("Read", { file_path: path.join(link, "app.db") }).allow).toBe(false);
+    expect(read("Grep", { pattern: "x", path: link }).allow).toBe(false);
+    expect(read("Read", { file_path: path.join(base, "notes.md") })).toEqual({ allow: true });
+  });
+
+  test("shell commands refuse the database through the old folder name", () => {
+    expect(read("Bash", { command: `cat ${path.join(link, "app.db")}` }).allow).toBe(false);
+    expect(read("Bash", { command: `cat ${path.join(base, "notes.md")}` })).toEqual({ allow: true });
   });
 });

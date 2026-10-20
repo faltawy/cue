@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 
 export type GuardDecision = { allow: true } | { allow: false; reason: string };
@@ -74,8 +75,42 @@ function pathOf(input: Record<string, unknown>): string | undefined {
 const PROTECTED_REASON =
   "The app's own data, settings, recordings and secrets are off-limits to the coach; use the meeting tools for notes and contacts.";
 
+function realPath(target: string): string {
+  try {
+    return fs.realpathSync(target);
+  } catch {
+    return path.resolve(target);
+  }
+}
+
+// Shell commands are matched by text, so a symlink next to a protected folder
+// (the old "anarlog" data folder name, for one) is protected under its own name.
+export function expandProtectedRoots(roots: readonly string[]): string[] {
+  const expanded = new Set<string>();
+  for (const root of roots) {
+    const resolved = path.resolve(root);
+    const real = realPath(resolved);
+    expanded.add(resolved).add(real);
+    let siblings: fs.Dirent[] = [];
+    try {
+      siblings = fs.readdirSync(path.dirname(real), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const sibling of siblings) {
+      if (!sibling.isSymbolicLink()) continue;
+      const link = path.join(path.dirname(real), sibling.name);
+      if (isInside(real, realPath(link))) expanded.add(link);
+    }
+  }
+  return [...expanded];
+}
+
 function touchesProtected(target: string, protectedRoots: readonly string[], recursive: boolean): boolean {
-  return protectedRoots.some((root) => isInside(root, target) || (recursive && isInside(target, root)));
+  const targets = [target, realPath(target)];
+  return protectedRoots.some((root) =>
+    targets.some((candidate) => isInside(root, candidate) || (recursive && isInside(candidate, root))),
+  );
 }
 
 function homeForms(root: string): string[] {
