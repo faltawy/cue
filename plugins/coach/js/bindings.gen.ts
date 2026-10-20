@@ -117,6 +117,22 @@ async updateClaudeCode() : Promise<Result<ClaudeCodeUpdate, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async claudeSetup() : Promise<Result<ClaudeSetup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|claude_setup") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async retryClaudeSetup() : Promise<Result<ClaudeSetup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|retry_claude_setup") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -165,6 +181,15 @@ export type ClaudeCodeUpdate = {
 output: string; status: ClaudeCodeStatus }
 export type ClaudeConnector = { name: string; id: string; url: string; allow_changes?: boolean }
 export type ClaudeModel = "sonnet" | "opus" | "haiku"
+/**
+ * Getting the coach's Claude Code ready: the person's own when it is new
+ * enough, else Cue's copy, downloaded in the background from app launch.
+ */
+export type ClaudeSetup = 
+/**
+ * Looking for an installed Claude Code, or downloading Cue's copy.
+ */
+{ state: "preparing"; percent: number | null } | { state: "ready" } | { state: "failed"; message: string }
 export type CoachFocused = Record<string, never>
 export type CoachNudged = { session_id: string; tag: string; line: string }
 export type CoachSettings = { project: string | null; model: ClaudeModel; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }

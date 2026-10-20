@@ -4,9 +4,9 @@ import { Button } from "./primitives";
 export function setupLabel(setup: SetupView): string | null {
   switch (setup.state) {
     case "checking":
-      return "Setting up the coach…";
+      return "Setting up Claude…";
     case "downloading":
-      return setup.percent === null ? "Setting up the coach…" : `Setting up the coach… ${setup.percent}%`;
+      return setup.percent === null ? "Setting up Claude…" : `Setting up Claude… ${setup.percent}%`;
     case "failed":
       return "The coach couldn't set up.";
     case "ready":

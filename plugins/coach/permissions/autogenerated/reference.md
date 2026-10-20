@@ -18,6 +18,8 @@ Default permissions for the plugin
 - `allow-sign-in-to-claude`
 - `allow-claude-code-status`
 - `allow-update-claude-code`
+- `allow-claude-setup`
+- `allow-retry-claude-setup`
 
 ## Permission Table
 
@@ -102,6 +104,32 @@ Enables the claude_code_status command without any pre-configured scope.
 <td>
 
 Denies the claude_code_status command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-claude-setup`
+
+</td>
+<td>
+
+Enables the claude_setup command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-claude-setup`
+
+</td>
+<td>
+
+Denies the claude_setup command without any pre-configured scope.
 
 </td>
 </tr>
@@ -258,6 +286,32 @@ Enables the probe_mcp_server command without any pre-configured scope.
 <td>
 
 Denies the probe_mcp_server command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-retry-claude-setup`
+
+</td>
+<td>
+
+Enables the retry_claude_setup command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-retry-claude-setup`
+
+</td>
+<td>
+
+Denies the retry_claude_setup command without any pre-configured scope.
 
 </td>
 </tr>

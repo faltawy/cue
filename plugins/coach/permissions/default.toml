@@ -15,4 +15,6 @@ permissions = [
   "allow-sign-in-to-claude",
   "allow-claude-code-status",
   "allow-update-claude-code",
+  "allow-claude-setup",
+  "allow-retry-claude-setup",
 ]

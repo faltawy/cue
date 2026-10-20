@@ -2,11 +2,13 @@ import { Trans } from "@lingui/react/macro";
 import { Streamdown } from "streamdown";
 
 import { streamdownIcons } from "@anlg/ui/components/streamdown-icons";
+import { Button } from "@anlg/ui/components/ui/button";
 import { cn } from "@anlg/utils";
 
 import { streamdownComponents } from "../../streamdown";
 
-import { useAITaskTask } from "~/ai/hooks";
+import { ClaudeSetupLabel } from "~/ai/claude-setup-label";
+import { useAITaskTask, useClaudeSetup } from "~/ai/hooks";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 import { getPersistableGeneratedTitle } from "~/store/zustand/ai-task/task-configs/title-success";
 
@@ -54,9 +56,39 @@ export function StreamingView({
   const generatedTitle = isGeneratingTitle
     ? ""
     : getPersistableGeneratedTitle(streamedTitle);
+  const claudeSetup = useClaudeSetup();
   const visibleTitle = title || generatedTitle;
 
   if (streamedText.trim().length === 0) {
+    if (claudeSetup.setup && !claudeSetup.ready) {
+      const failed = claudeSetup.setup.state === "failed";
+      return (
+        <div
+          role={failed ? "alert" : "status"}
+          aria-live="polite"
+          className="text-muted-foreground text-body flex flex-col items-start gap-2 pb-2"
+        >
+          <p
+            className={
+              failed ? "text-destructive leading-5" : "coach-sheen leading-5"
+            }
+          >
+            <ClaudeSetupLabel setup={claudeSetup.setup} />
+          </p>
+          {failed && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={claudeSetup.retrying}
+              onClick={claudeSetup.retry}
+            >
+              <Trans>Retry</Trans>
+            </Button>
+          )}
+        </div>
+      );
+    }
     return (
       <div
         role="status"

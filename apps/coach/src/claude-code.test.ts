@@ -138,6 +138,55 @@ describe("ClaudeCode.resolve", () => {
     expect(second.requests).toEqual([]);
   });
 
+  test("while another process downloads, a waiter reports that download's progress", async () => {
+    const dir = mkdtempSync(path.join(root, "store-"));
+    writeFileSync(path.join(dir, ".install.lock"), String(process.pid));
+    writeFileSync(path.join(dir, ".install.progress"), JSON.stringify({ receivedBytes: 45, totalBytes: 100 }));
+    const { fetchImpl } = serving(archive);
+    const { instance } = claudeCode({ dir, fetchImpl });
+    const progress: Array<{ receivedBytes: number; totalBytes: number }> = [];
+    instance.onProgress((tick) => progress.push(tick));
+    const resolving = instance.resolve();
+    await Bun.sleep(400);
+    expect(progress).toContainEqual({ receivedBytes: 45, totalBytes: 100 });
+    rmSync(path.join(dir, ".install.lock"));
+    expect((await resolving).source).toBe("cue");
+  });
+
+  test("the downloading process shares its progress with other processes, and clears it when done", async () => {
+    const dir = mkdtempSync(path.join(root, "store-"));
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const chunk = Math.ceil(archive.byteLength / 2);
+    const { instance } = claudeCode({
+      dir,
+      fetchImpl: serving(() =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            async start(controller) {
+              controller.enqueue(new Uint8Array(archive.subarray(0, chunk)));
+              await gate;
+              controller.enqueue(new Uint8Array(archive.subarray(chunk)));
+              controller.close();
+            },
+          }),
+          { headers: { "content-length": String(archive.byteLength) } },
+        ),
+      ).fetchImpl,
+    });
+    const resolving = instance.resolve();
+    await Bun.sleep(300);
+    expect(JSON.parse(readFileSync(path.join(dir, ".install.progress"), "utf8"))).toEqual({
+      receivedBytes: chunk,
+      totalBytes: archive.byteLength,
+    });
+    release();
+    await resolving;
+    expect(existsSync(path.join(dir, ".install.progress"))).toBe(false);
+  });
+
   test("a lock left by a process that died doesn't block the download", async () => {
     const dir = mkdtempSync(path.join(root, "store-"));
     const dead = Bun.spawnSync(["true"]).pid;

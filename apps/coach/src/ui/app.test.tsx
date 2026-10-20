@@ -218,7 +218,7 @@ describe("empty and offline states", () => {
   test("while Claude Code downloads, the composer shows the progress and waits", () => {
     setup(stateFrom([status({ setup: { state: "downloading", percent: 45 } })]));
     const box = view.getByRole("textbox", { name: "Ask the coach" });
-    expect(box.getAttribute("placeholder")).toBe("Setting up the coach… 45%");
+    expect(box.getAttribute("placeholder")).toBe("Setting up Claude… 45%");
     expect(view.getByRole("button", { name: "Waiting for the coach" })).toBeTruthy();
     cleanup();
 

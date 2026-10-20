@@ -9,3 +9,4 @@ export {
   useLLMConnectionStatus,
 } from "./useLLMConnection";
 export { useTitleGenerating } from "./useTitleGenerating";
+export { CLAUDE_SETUP_QUERY_KEY, useClaudeSetup } from "./useClaudeSetup";

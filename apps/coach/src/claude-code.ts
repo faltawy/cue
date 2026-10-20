@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
+import { writeFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+
+import { z } from "zod";
 
 import sdkPackage from "@anthropic-ai/claude-agent-sdk/package.json" with { type: "json" };
 
@@ -21,6 +24,7 @@ const MAX_ARCHIVE_BYTES = 512 * 1024 * 1024;
 const STALE_STAGING_MS = 24 * 60 * 60 * 1000;
 const INTEGRITY_MARKER = ".integrity";
 const INSTALL_LOCK = ".install.lock";
+const INSTALL_PROGRESS = ".install.progress";
 const LOCK_POLL_MS = 250;
 const UNCLAIMED_LOCK_MS = 10_000;
 
@@ -179,6 +183,7 @@ export class ClaudeCode {
           await handle.close();
           return (await this.downloaded(artifact)) ?? (await this.download(artifact));
         } finally {
+          await fs.rm(path.join(this.rootDir, INSTALL_PROGRESS), { force: true });
           await fs.rm(lock, { force: true });
         }
       }
@@ -189,6 +194,8 @@ export class ClaudeCode {
       await Bun.sleep(LOCK_POLL_MS);
       const installed = await this.downloaded(artifact);
       if (installed) return installed;
+      const shared = await readProgress(path.join(this.rootDir, INSTALL_PROGRESS));
+      if (shared) this.emit(shared);
     }
   }
 
@@ -201,7 +208,11 @@ export class ClaudeCode {
       assertTrustedArtifact(artifact);
       const response = await this.fetchImpl(artifact.tarballUrl, { redirect: "error" });
       if (!response.ok || !response.body) throw new Error(`the download returned HTTP ${response.status}`);
-      await writeVerifiedArchive(response, archive, artifact.integrity, (progress) => this.emit(progress));
+      const progressFile = path.join(this.rootDir, INSTALL_PROGRESS);
+      await writeVerifiedArchive(response, archive, artifact.integrity, (progress) => {
+        writeFileSync(progressFile, JSON.stringify(progress));
+        this.emit(progress);
+      });
       await fs.mkdir(payload);
       await extractExecutable(archive, payload);
       const executable = this.executableIn(payload).executablePath;
@@ -357,3 +368,17 @@ export const CLAUDE_ARGS = {
   claude: { type: "string" },
   "claude-dir": { type: "string" },
 } as const;
+
+const progressSchema = z.object({ receivedBytes: z.number(), totalBytes: z.number() });
+
+/** The download progress another coach process shares while it holds the lock. */
+async function readProgress(file: string): Promise<ClaudeCodeProgress | null> {
+  const text = await fs.readFile(file, "utf8").catch(() => undefined);
+  if (text === undefined) return null;
+  try {
+    const parsed = progressSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}

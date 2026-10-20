@@ -4,6 +4,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { commands as coachCommands } from "@anlg/plugin-coach";
 import { Button } from "@anlg/ui/components/ui/button";
 
+import { ClaudeSetupLabel } from "~/ai/claude-setup-label";
+import { useClaudeSetup } from "~/ai/hooks";
 import { SettingRow } from "~/settings/setting-row";
 
 const CLAUDE_SIGN_IN_QUERY_KEY = ["claude-signed-in"] as const;
@@ -23,10 +25,12 @@ async function signInToClaude() {
 }
 
 export function useClaudeSignIn() {
+  const setup = useClaudeSetup();
   const signIn = useMutation({ mutationFn: signInToClaude });
   const status = useQuery({
     queryKey: CLAUDE_SIGN_IN_QUERY_KEY,
     queryFn: claudeSignedIn,
+    enabled: setup.ready,
     refetchOnWindowFocus: "always",
     refetchInterval: (query) =>
       signIn.isSuccess &&
@@ -36,15 +40,17 @@ export function useClaudeSignIn() {
         : false,
   });
   return {
+    setup,
     signedIn: status.data,
-    error: status.error ?? signIn.error,
+    error: setup.error ?? status.error ?? signIn.error,
     signingIn: signIn.isPending || (signIn.isSuccess && status.data === false),
     signIn: () => signIn.mutate(),
   };
 }
 
 export function ClaudeSignInRow() {
-  const { signedIn, error, signingIn, signIn } = useClaudeSignIn();
+  const { setup, signedIn, error, signingIn, signIn } = useClaudeSignIn();
+  const failed = setup.setup?.state === "failed";
   return (
     <SettingRow
       title={<Trans>Claude sign-in</Trans>}
@@ -52,6 +58,13 @@ export function ClaudeSignInRow() {
         error ? (
           <span role="alert" className="text-destructive">
             {error.message}
+          </span>
+        ) : setup.setup && !setup.ready ? (
+          <span
+            role={failed ? "alert" : "status"}
+            className={failed ? "text-destructive" : undefined}
+          >
+            <ClaudeSetupLabel setup={setup.setup} />
           </span>
         ) : signedIn === undefined ? (
           <Trans>Checking…</Trans>
@@ -65,18 +78,31 @@ export function ClaudeSignInRow() {
       }
       controlWidth="content"
     >
-      {({ "aria-describedby": describedBy }) => (
-        <Button
-          type="button"
-          variant={signedIn === false ? "default" : "outline"}
-          size="sm"
-          aria-describedby={describedBy}
-          disabled={signingIn}
-          onClick={signIn}
-        >
-          {signedIn ? <Trans>Sign in again</Trans> : <Trans>Sign in</Trans>}
-        </Button>
-      )}
+      {({ "aria-describedby": describedBy }) =>
+        failed ? (
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            aria-describedby={describedBy}
+            disabled={setup.retrying}
+            onClick={setup.retry}
+          >
+            <Trans>Retry</Trans>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant={signedIn === false ? "default" : "outline"}
+            size="sm"
+            aria-describedby={describedBy}
+            disabled={signingIn || !setup.ready}
+            onClick={signIn}
+          >
+            {signedIn ? <Trans>Sign in again</Trans> : <Trans>Sign in</Trans>}
+          </Button>
+        )
+      }
     </SettingRow>
   );
 }

@@ -41,6 +41,11 @@ const hoisted = vi.hoisted(() => ({
   sessionTitle: "",
   enhancedEditorMountCount: 0,
   generate: vi.fn(),
+  claudeSetup: { state: "ready" } as
+    | { state: "ready" }
+    | { state: "preparing"; percent: number | null }
+    | { state: "failed"; message: string },
+  retryClaudeSetup: vi.fn(),
 }));
 
 vi.mock("~/services/enhancer", () => ({
@@ -74,6 +79,13 @@ vi.mock("~/ai/hooks", () => ({
     };
   },
   useLLMConnectionStatus: () => hoisted.llmStatus,
+  useClaudeSetup: () => ({
+    setup: hoisted.claudeSetup,
+    error: null,
+    ready: hoisted.claudeSetup.state === "ready",
+    retry: hoisted.retryClaudeSetup,
+    retrying: false,
+  }),
 }));
 
 vi.mock("~/session/queries", () => ({
@@ -160,6 +172,8 @@ describe("Enhanced", () => {
     hoisted.sessionTitle = "";
     hoisted.enhancedEditorMountCount = 0;
     hoisted.generate.mockReset();
+    hoisted.claudeSetup = { state: "ready" };
+    hoisted.retryClaudeSetup.mockReset();
   });
 
   it("renders an empty editor before the auto-enhance task is visible", () => {
@@ -188,6 +202,39 @@ describe("Enhanced", () => {
     expect(
       screen.getByText("Tip: The Cue team loves our users!"),
     ).not.toBeNull();
+  });
+
+  it("a summary requested while Claude downloads says it is waiting for it", () => {
+    hoisted.claudeSetup = { state: "preparing", percent: 45 };
+    hoisted.enhanceTask = {
+      status: "generating",
+      error: undefined,
+      streamedText: "",
+      currentStep: undefined,
+      isGenerating: true,
+    };
+
+    render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
+
+    expect(screen.getByText("Setting up Claude… 45%")).not.toBeNull();
+    expect(screen.queryByText("Analyzing structure...")).toBeNull();
+  });
+
+  it("a summary waiting on a failed Claude download says why and offers Retry", () => {
+    hoisted.claudeSetup = { state: "failed", message: "Offline." };
+    hoisted.enhanceTask = {
+      status: "generating",
+      error: undefined,
+      streamedText: "",
+      currentStep: undefined,
+      isGenerating: true,
+    };
+
+    render(<Enhanced sessionId="session-1" enhancedNoteId="note-1" />);
+
+    expect(screen.getByText("Offline.")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(hoisted.retryClaudeSetup).toHaveBeenCalledTimes(1);
   });
 
   it("renders streamed summary in the generating view", () => {

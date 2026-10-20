@@ -26,7 +26,9 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
 pub use bridge::RecordingFuture;
-pub use claude_code::{ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, InstalledClaudeCode};
+pub use claude_code::{
+    ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup, InstalledClaudeCode,
+};
 pub use error::{Error, Result};
 pub use events::{CoachFocused, CoachNudged};
 use mcp::ResolvedServer;
@@ -48,6 +50,13 @@ struct CoachState {
     llm: Mutex<Option<Sidecar>>,
     opening: Mutex<()>,
     bridge: Mutex<Option<bridge::Bridge>>,
+    setup: Mutex<SetupSlot>,
+}
+
+#[derive(Default)]
+struct SetupSlot {
+    running: Option<(std::process::Child, std::process::ChildStdin)>,
+    last: Option<ClaudeSetup>,
 }
 
 struct AppHost(AppHandle);
@@ -292,6 +301,35 @@ impl Coach {
         Ok(serde_json::from_slice(&stdout)?)
     }
 
+    /// Where getting Claude Code ready stands. The first call (at launch)
+    /// starts it: a no-op when the person's own Claude Code is new enough,
+    /// else Cue's copy downloads in the background.
+    pub fn claude_setup(&self) -> Result<ClaudeSetup> {
+        let state = self.app.state::<CoachState>();
+        let mut slot = state
+            .setup
+            .lock()
+            .map_err(|error| Error::Other(error.to_string()))?;
+        if slot.running.is_none() && slot.last.is_none() {
+            start_claude_setup(&self.app, &mut slot)?;
+        }
+        poll_claude_setup(&self.app, &mut slot)
+    }
+
+    /// Start again after a failure; joins a setup that is still running.
+    pub fn retry_claude_setup(&self) -> Result<ClaudeSetup> {
+        let state = self.app.state::<CoachState>();
+        let mut slot = state
+            .setup
+            .lock()
+            .map_err(|error| Error::Other(error.to_string()))?;
+        if poll_claude_setup(&self.app, &mut slot)? != ClaudeSetup::Ready && slot.running.is_none()
+        {
+            start_claude_setup(&self.app, &mut slot)?;
+        }
+        poll_claude_setup(&self.app, &mut slot)
+    }
+
     pub fn llm_endpoint(&self) -> Result<Endpoint> {
         let state = self.app.state::<CoachState>();
         let claude_dir = claude_dir(&self.app)?;
@@ -322,6 +360,53 @@ impl Coach {
             }
         }
     }
+}
+
+fn start_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<()> {
+    let mut child = process::sidecar_command(
+        vec!["--prepare-claude-code".into(), "--exit-with-stdin".into()],
+        &claude_dir(app)?,
+    )?
+    .stdin(std::process::Stdio::piped())
+    .stdout(std::process::Stdio::null())
+    .stderr(std::process::Stdio::piped())
+    .spawn()?;
+    let stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| Error::Other("the Claude Code setup has no input".into()))?;
+    slot.running = Some((child, stdin));
+    slot.last = None;
+    Ok(())
+}
+
+fn poll_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<ClaudeSetup> {
+    if let Some((child, _)) = slot.running.as_mut() {
+        match child.try_wait()? {
+            None => {
+                let percent = std::fs::read_to_string(claude_dir(app)?.join(".install.progress"))
+                    .ok()
+                    .and_then(|progress| claude_code::download_percent(&progress));
+                return Ok(ClaudeSetup::Preparing { percent });
+            }
+            Some(status) => {
+                let mut stderr = String::new();
+                if let Some(mut pipe) = child.stderr.take() {
+                    std::io::Read::read_to_string(&mut pipe, &mut stderr)?;
+                }
+                let finished = claude_code::finished(status.success(), &stderr);
+                if let ClaudeSetup::Failed { message } = &finished {
+                    tracing::error!(%message, "claude_setup_failed");
+                }
+                slot.last = Some(finished);
+                slot.running = None;
+            }
+        }
+    }
+    Ok(slot
+        .last
+        .clone()
+        .unwrap_or(ClaudeSetup::Preparing { percent: None }))
 }
 
 fn claude_dir(app: &AppHandle) -> Result<PathBuf> {
@@ -564,6 +649,8 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::sign_in_to_claude,
             commands::claude_code_status,
             commands::update_claude_code,
+            commands::claude_setup,
+            commands::retry_claude_setup,
         ])
         .events(tauri_specta::collect_events![CoachNudged, CoachFocused])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
@@ -586,7 +673,11 @@ pub fn init(
                 llm: Mutex::new(None),
                 opening: Mutex::new(()),
                 bridge: Mutex::new(None),
+                setup: Mutex::new(SetupSlot::default()),
             });
+            if let Err(error) = app.coach().claude_setup() {
+                tracing::error!(%error, "claude_setup_start_failed");
+            }
             Ok(())
         })
         .on_event(|app, event| {
@@ -596,6 +687,14 @@ pub fn init(
                 for slot in [&state.coach, &state.llm] {
                     if let Ok(mut slot) = slot.lock() {
                         slot.take();
+                    }
+                }
+                if let Ok(mut setup) = state.setup.lock()
+                    && let Some((mut child, stdin)) = setup.running.take()
+                {
+                    drop(stdin);
+                    if let Err(error) = child.kill() {
+                        tracing::warn!(%error, "claude_setup_stop_failed");
                     }
                 }
             }
@@ -633,6 +732,7 @@ mod test {
             llm: Mutex::new(None),
             opening: Mutex::new(()),
             bridge: Mutex::new(None),
+            setup: Mutex::new(SetupSlot::default()),
         };
         let launch = coach_launch(&state, &CoachSettings::default(), &[], 0, None, None).unwrap();
         assert!(launch.project.is_dir());

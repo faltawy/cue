@@ -42,6 +42,8 @@ const coach = vi.hoisted(() => ({
   signInToClaude: vi.fn(),
   claudeCodeStatus: vi.fn(),
   updateClaudeCode: vi.fn(),
+  claudeSetup: vi.fn(),
+  retryClaudeSetup: vi.fn(),
 }));
 
 vi.mock("@anlg/plugin-coach", () => ({
@@ -58,6 +60,8 @@ vi.mock("@anlg/plugin-coach", () => ({
     signInToClaude: coach.signInToClaude,
     claudeCodeStatus: coach.claudeCodeStatus,
     updateClaudeCode: coach.updateClaudeCode,
+    claudeSetup: coach.claudeSetup,
+    retryClaudeSetup: coach.retryClaudeSetup,
   },
 }));
 
@@ -110,6 +114,10 @@ beforeEach(() => {
   coach.findClaudeConnectors.mockResolvedValue({ status: "ok", data: [] });
   coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
   coach.signInToClaude.mockResolvedValue({ status: "ok", data: null });
+  coach.claudeSetup.mockResolvedValue({
+    status: "ok",
+    data: { state: "ready" },
+  });
   coach.claudeCodeStatus.mockResolvedValue({
     status: "ok",
     data: { using: "cue", installed: null, min_version: "2.1.302" },
@@ -154,6 +162,54 @@ describe("SettingsClaude", () => {
     expect(
       await screen.findByText("Signed in", {}, { timeout: 5000 }),
     ).not.toBeNull();
+  });
+
+  it("while Claude downloads, the sign-in row shows the progress instead of checking, then the sign-in", async () => {
+    coach.claudeSetup.mockResolvedValue({
+      status: "ok",
+      data: { state: "preparing", percent: 45 },
+    });
+    renderPage();
+
+    expect(await screen.findByText("Setting up Claude… 45%")).not.toBeNull();
+    expect(screen.queryByText("Checking…")).toBeNull();
+    expect(coach.claudeSignedIn).not.toHaveBeenCalled();
+
+    coach.claudeSetup.mockResolvedValue({
+      status: "ok",
+      data: { state: "ready" },
+    });
+    expect(
+      await screen.findByText("Signed in", {}, { timeout: 5000 }),
+    ).not.toBeNull();
+    expect(coach.claudeSignedIn).toHaveBeenCalled();
+  });
+
+  it("a failed Claude download says why and Retry starts it again", async () => {
+    coach.claudeSetup.mockResolvedValue({
+      status: "ok",
+      data: {
+        state: "failed",
+        message: "The coach needs a one-time download of Claude Code. Offline.",
+      },
+    });
+    coach.retryClaudeSetup.mockResolvedValue({
+      status: "ok",
+      data: { state: "preparing", percent: null },
+    });
+    renderPage();
+
+    expect(
+      await screen.findByText(
+        "The coach needs a one-time download of Claude Code. Offline.",
+      ),
+    ).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() =>
+      expect(coach.retryClaudeSetup).toHaveBeenCalledTimes(1),
+    );
+    expect(await screen.findByText("Setting up Claude…")).not.toBeNull();
+    expect(coach.claudeSignedIn).not.toHaveBeenCalled();
   });
 
   it("says the coach uses your own Claude Code when it is new enough, with nothing to update", async () => {
