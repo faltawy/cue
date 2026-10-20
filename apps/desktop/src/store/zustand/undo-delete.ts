@@ -11,7 +11,7 @@ export type DeletedSessionData = {
   deletedAt: number;
 };
 
-export const UNDO_TIMEOUT_MS = 5000;
+export const UNDO_TIMEOUT_MS = 10_000;
 
 type PendingDeletion = {
   data: DeletedSessionData;
