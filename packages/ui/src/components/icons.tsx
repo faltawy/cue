@@ -78,6 +78,7 @@ import {
   GripVerticalIcon,
   HammerIcon,
   HandshakeIcon,
+  HashtagIcon,
   HardDriveIcon,
   Heading01Icon,
   Heading02Icon,
@@ -561,6 +562,7 @@ export const GraduationCap = /* @__PURE__ */ createIcon(
 );
 export const Hammer = /* @__PURE__ */ createIcon(HammerIcon, "Hammer");
 export const Handshake = /* @__PURE__ */ createIcon(HandshakeIcon, "Handshake");
+export const Hash = /* @__PURE__ */ createIcon(HashtagIcon, "Hash");
 export const HardDrive = /* @__PURE__ */ createIcon(HardDriveIcon, "HardDrive");
 export const Headphones = /* @__PURE__ */ createIcon(
   HeadphonesIcon,

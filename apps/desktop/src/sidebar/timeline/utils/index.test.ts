@@ -4,7 +4,7 @@ import {
   buildTimelineBuckets,
   calculateTodayIndicatorPlacement,
   deriveTimelineWindowData,
-  filterTimelineTablesByFolder,
+  filterTimelineTables,
   filterTimelineTablesUpToTomorrow,
   getBucketInfo,
   hasTimelineItemsAfterTomorrow,
@@ -628,8 +628,8 @@ describe("timeline utils", () => {
     ]);
   });
 
-  test("filterTimelineTablesByFolder keeps matching sessions and hides calendar events", () => {
-    const filtered = filterTimelineTablesByFolder({
+  test("filterTimelineTables keeps matching sessions and hides calendar events", () => {
+    const filtered = filterTimelineTables({
       folderFilter: "CS 101",
       timelineEventsTable: {
         "event-1": {
@@ -669,8 +669,8 @@ describe("timeline utils", () => {
     expect(filtered.timelineEventsTable).toEqual({});
   });
 
-  test("filterTimelineTablesByFolder can isolate unfiled notes", () => {
-    const filtered = filterTimelineTablesByFolder({
+  test("filterTimelineTables can isolate unfiled notes", () => {
+    const filtered = filterTimelineTables({
       folderFilter: "",
       timelineEventsTable: {},
       timelineSessionsTable: {
@@ -690,6 +690,45 @@ describe("timeline utils", () => {
     expect(Object.keys(filtered.timelineSessionsTable ?? {})).toEqual([
       "session-unfiled",
     ]);
+  });
+
+  test("filterTimelineTables keeps notes carrying the tag inside the folder", () => {
+    const filtered = filterTimelineTables({
+      folderFilter: "Clients",
+      tagFilter: "pricing",
+      timelineEventsTable: {
+        "event-1": {
+          title: "Pricing call",
+          started_at: "2024-01-16T09:00:00.000Z",
+          has_recurrence_rules: false,
+        },
+      },
+      timelineSessionsTable: {
+        "session-tagged": {
+          title: "Northwind",
+          created_at: "2024-01-15T11:00:00.000Z",
+          folder_id: "Clients/Northwind",
+          tags: ["Pricing", "q3"],
+        },
+        "session-untagged": {
+          title: "Contoso",
+          created_at: "2024-01-15T12:00:00.000Z",
+          folder_id: "Clients",
+          tags: ["hiring"],
+        },
+        "session-elsewhere": {
+          title: "Internal",
+          created_at: "2024-01-15T13:00:00.000Z",
+          folder_id: "Inbox",
+          tags: ["pricing"],
+        },
+      },
+    });
+
+    expect(Object.keys(filtered.timelineSessionsTable ?? {})).toEqual([
+      "session-tagged",
+    ]);
+    expect(filtered.timelineEventsTable).toEqual({});
   });
 
   test("buildTimelineBuckets can reverse date order", () => {

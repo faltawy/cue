@@ -2,15 +2,17 @@ import { create } from "zustand";
 
 export type SidebarNotesGroupBy = "date" | "folder";
 type SidebarNotesSortOrder = "newest" | "oldest";
-type SidebarSectionId = "folders";
+type SidebarSectionId = "folders" | "tags";
 
 type SidebarNotesState = {
   folderFilter: string | null;
+  tagFilter: string | null;
   groupBy: SidebarNotesGroupBy;
   sortOrder: SidebarNotesSortOrder;
   collapsedSections: SidebarSectionId[];
   expandedFolders: string[];
   setFolderFilter: (folderFilter: string | null) => void;
+  setTagFilter: (tagFilter: string | null) => void;
   setGroupBy: (groupBy: SidebarNotesGroupBy) => void;
   setSortOrder: (sortOrder: SidebarNotesSortOrder) => void;
   setSectionExpanded: (section: SidebarSectionId, expanded: boolean) => void;
@@ -19,6 +21,7 @@ type SidebarNotesState = {
 
 const defaultSidebarNotes = {
   folderFilter: null,
+  tagFilter: null,
   groupBy: "date" as const,
   sortOrder: "newest" as const,
   collapsedSections: [],
@@ -28,6 +31,7 @@ const defaultSidebarNotes = {
 export const useSidebarNotes = create<SidebarNotesState>((set) => ({
   ...defaultSidebarNotes,
   setFolderFilter: (folderFilter) => set({ folderFilter }),
+  setTagFilter: (tagFilter) => set({ tagFilter }),
   setGroupBy: (groupBy) => set({ groupBy }),
   setSortOrder: (sortOrder) => set({ sortOrder }),
   setSectionExpanded: (section, expanded) =>

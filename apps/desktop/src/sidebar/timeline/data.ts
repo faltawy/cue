@@ -4,7 +4,7 @@ import { useSmartCurrentTime } from "./realtime";
 import {
   buildTimelineBuckets,
   deriveTimelineWindowData,
-  filterTimelineTablesByFolder,
+  filterTimelineTables,
   getItemTimestamp,
   type TimelineBucket,
   type TimelineEventsTable,
@@ -75,6 +75,7 @@ function isFutureBucketLabel(label: string) {
 
 export function useTimelineData({
   folderFilter = null,
+  tagFilter = null,
   groupBy = "date",
   isEventIgnored,
   showIgnored,
@@ -84,6 +85,7 @@ export function useTimelineData({
   timezone,
 }: {
   folderFilter?: string | null;
+  tagFilter?: string | null;
   groupBy?: TimelineGroupBy;
   isEventIgnored: (
     trackingId: string | null | undefined,
@@ -100,12 +102,13 @@ export function useTimelineData({
 } {
   const folderScopedTables = useMemo(
     () =>
-      filterTimelineTablesByFolder({
+      filterTimelineTables({
         folderFilter,
+        tagFilter,
         timelineEventsTable,
         timelineSessionsTable,
       }),
-    [folderFilter, timelineEventsTable, timelineSessionsTable],
+    [folderFilter, tagFilter, timelineEventsTable, timelineSessionsTable],
   );
   const windowData = useMemo(() => {
     if (groupBy === "folder") {

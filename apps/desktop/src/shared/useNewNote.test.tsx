@@ -3,10 +3,15 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
+  addSessionTag: vi.fn(),
 }));
 
 vi.mock("~/session/queries", () => ({
   createSession: mocks.createSession,
+}));
+
+vi.mock("~/session/tags", () => ({
+  addSessionTag: mocks.addSessionTag,
 }));
 
 import {
@@ -37,6 +42,26 @@ it("creates a note in the active sidebar folder", async () => {
   await vi.waitFor(() => {
     expect(mocks.createSession).toHaveBeenCalledWith("", undefined, {
       folder_id: "CS 101",
+    });
+  });
+});
+
+it("tags a new note with the active sidebar tag so it stays in view", async () => {
+  mocks.createSession.mockResolvedValueOnce("tagged-session");
+  mocks.addSessionTag.mockResolvedValueOnce("pricing");
+  useSidebarNotes.getState().setTagFilter("pricing");
+  const { result } = renderHook(() => useNewNote());
+
+  act(() => result.current());
+
+  await vi.waitFor(() => {
+    expect(mocks.addSessionTag).toHaveBeenCalledWith(
+      "tagged-session",
+      "pricing",
+    );
+    expect(useTabs.getState().currentTab).toMatchObject({
+      type: "sessions",
+      id: "tagged-session",
     });
   });
 });

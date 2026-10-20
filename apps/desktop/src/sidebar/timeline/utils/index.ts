@@ -325,26 +325,34 @@ function sessionMatchesFolderFilter(
   return folderPathMatchesFilter(folderId, folderFilter);
 }
 
-export function filterTimelineTablesByFolder({
+export function filterTimelineTables({
   timelineEventsTable,
   timelineSessionsTable,
   folderFilter,
+  tagFilter = null,
 }: {
   timelineEventsTable: TimelineEventsTable;
   timelineSessionsTable: TimelineSessionsTable;
   folderFilter: string | null;
+  tagFilter?: string | null;
 }): {
   timelineEventsTable: TimelineEventsTable;
   timelineSessionsTable: TimelineSessionsTable;
 } {
-  if (folderFilter === null) {
+  if (folderFilter === null && tagFilter === null) {
     return { timelineEventsTable, timelineSessionsTable };
   }
 
+  const tag = tagFilter?.toLocaleLowerCase();
   const filteredSessions = timelineSessionsTable
     ? Object.fromEntries(
-        Object.entries(timelineSessionsTable).filter(([, row]) =>
-          sessionMatchesFolderFilter(row.folder_id, folderFilter),
+        Object.entries(timelineSessionsTable).filter(
+          ([, row]) =>
+            sessionMatchesFolderFilter(row.folder_id, folderFilter) &&
+            (tag === undefined ||
+              (row.tags ?? []).some(
+                (name) => name.toLocaleLowerCase() === tag,
+              )),
         ),
       )
     : timelineSessionsTable;

@@ -67,6 +67,7 @@ export const TimelineView = memo(function TimelineView({
   const { timelineEventsTable, timelineSessionsTable } = useTimelineTables();
   const groupBy = useSidebarNotes((state) => state.groupBy);
   const sortOrder = useSidebarNotes((state) => state.sortOrder);
+  const tagFilter = useSidebarNotes((state) => state.tagFilter);
   const isDateTimeline = groupBy === "date";
   const [uncontrolledShowIgnored, setUncontrolledShowIgnored] = useState(false);
   const showIgnored = showIgnoredEvents ?? uncontrolledShowIgnored;
@@ -75,6 +76,7 @@ export const TimelineView = memo(function TimelineView({
   const { isIgnored } = useIgnoredEvents();
   const { buckets, hasMoreFutureItems } = useTimelineData({
     folderFilter,
+    tagFilter,
     groupBy,
     isEventIgnored: isIgnored,
     showIgnored,

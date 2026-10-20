@@ -21,6 +21,10 @@ vi.mock("~/sidebar/folder-nav", () => ({
   SidebarFolderNav: () => <div data-testid="folder-nav" />,
 }));
 
+vi.mock("~/sidebar/tag-nav", () => ({
+  SidebarTagNav: () => <div data-testid="tag-nav" />,
+}));
+
 vi.mock("~/sidebar/timeline", () => ({
   TimelineView: ({ folderFilter = null }: { folderFilter?: string | null }) => (
     <div data-testid="timeline-view" data-folder-filter={folderFilter ?? ""} />

@@ -2,15 +2,22 @@ import { useCallback } from "react";
 import { useShallow } from "zustand/shallow";
 
 import { createSession } from "~/session/queries";
+import { addSessionTag } from "~/session/tags";
 import { useSidebarNotes } from "~/sidebar/note-filter";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import { useTabs } from "~/store/zustand/tabs";
 
-function createNoteSession() {
-  const { folderFilter } = useSidebarNotes.getState();
-  return folderFilter === null
+async function createNoteSession() {
+  const { folderFilter, tagFilter } = useSidebarNotes.getState();
+  const sessionId = await (folderFilter === null
     ? createSession()
-    : createSession("", undefined, { folder_id: folderFilter });
+    : createSession("", undefined, { folder_id: folderFilter }));
+  if (tagFilter !== null) {
+    await addSessionTag(sessionId, tagFilter).catch((error: unknown) => {
+      console.error("[session] failed to tag new note", error);
+    });
+  }
+  return sessionId;
 }
 
 export function useNewNote({

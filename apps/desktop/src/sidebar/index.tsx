@@ -9,6 +9,7 @@ import { FolderMaterialsPanel } from "./folder-materials";
 import { SidebarFolderNav } from "./folder-nav";
 import { FoldersNav } from "./folders";
 import { SettingsNav } from "./settings";
+import { SidebarTagNav } from "./tag-nav";
 import { TemplatesNav } from "./templates";
 import { TimelineView } from "./timeline";
 import { hasOwnSidebarHeaderTab } from "./use-custom-sidebar";
@@ -73,6 +74,7 @@ export function LeftSidebar({
           ) : (
             <div className="flex h-full min-h-0 flex-col">
               <SidebarFolderNav />
+              <SidebarTagNav />
               {folderFilter ? (
                 <FolderMaterialsPanel folderPath={folderFilter} />
               ) : null}
