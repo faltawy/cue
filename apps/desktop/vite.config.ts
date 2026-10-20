@@ -94,7 +94,7 @@ const tauri: UserConfig = {
   build: {
     outDir: "./dist",
     chunkSizeWarningLimit: 500 * 10,
-    target: "safari13",
+    target: "safari18",
     minify: process.env.TAURI_ENV_DEBUG ? false : "terser",
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
