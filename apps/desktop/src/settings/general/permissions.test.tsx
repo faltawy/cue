@@ -70,7 +70,9 @@ describe("Permissions", () => {
     const accessibility = renderPermissions("denied");
 
     expect(
-      screen.getByText(/Read meeting controls and visible chat/),
+      screen.getByText(
+        /Type dictation into other apps, and read meeting controls/,
+      ),
     ).toBeTruthy();
 
     fireEvent.click(

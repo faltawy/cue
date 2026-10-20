@@ -151,7 +151,7 @@ export function Permissions() {
         description={
           accessibilityGuidance
             ? t`Opens System Settings and guides you to add Cue to the ${accessibilityGuidance.paneTitle ?? "Privacy"} list.`
-            : t`Read meeting controls and visible chat.`
+            : t`Type dictation into other apps, and read meeting controls and visible chat.`
         }
         status={accessibility.status}
         isPending={accessibility.isPending}
