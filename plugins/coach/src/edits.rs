@@ -110,30 +110,61 @@ pub(crate) struct UndoEntry {
     pub(crate) change: Change,
 }
 
+pub(crate) type RecordingSource =
+    std::sync::Arc<dyn Fn() -> crate::bridge::RecordingFuture + Send + Sync>;
+
 #[derive(Default)]
 pub struct Edits {
     pub(crate) log: Mutex<Vec<UndoEntry>>,
+    recording: Option<RecordingSource>,
 }
 
-pub async fn current_meeting(pool: &SqlitePool) -> EditResult<Option<String>> {
+impl Edits {
+    pub(crate) fn following(recording: RecordingSource) -> Self {
+        Self {
+            log: Mutex::default(),
+            recording: Some(recording),
+        }
+    }
+
+    pub(crate) async fn ensure_current(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+    ) -> EditResult<()> {
+        let recording = match &self.recording {
+            Some(source) => source().await,
+            None => None,
+        };
+        if current_meeting(pool, recording).await?.as_deref() != Some(session_id) {
+            return Err(EditError::NotCurrentMeeting);
+        }
+        let exists: Option<String> =
+            sqlx::query_scalar("SELECT id FROM sessions WHERE id = ? AND deleted_at IS NULL")
+                .bind(session_id)
+                .fetch_optional(pool)
+                .await?;
+        exists.map(|_| ()).ok_or(EditError::NoMeeting)
+    }
+}
+
+async fn current_meeting(
+    pool: &SqlitePool,
+    recording: Option<Vec<String>>,
+) -> EditResult<Option<String>> {
+    let recording = recording
+        .map(|ids| serde_json::to_string(&ids))
+        .transpose()?;
     Ok(sqlx::query_scalar(
         "SELECT session_id FROM transcripts WHERE deleted_at IS NULL
-         ORDER BY (ended_at_ms IS NULL) DESC, started_at_ms DESC LIMIT 1",
+         ORDER BY (ended_at_ms IS NULL
+                   AND session_id IN (SELECT value FROM json_each(?))) DESC,
+                  started_at_ms DESC
+         LIMIT 1",
     )
+    .bind(recording)
     .fetch_optional(pool)
     .await?)
-}
-
-pub(crate) async fn ensure_current(pool: &SqlitePool, session_id: &str) -> EditResult<()> {
-    if current_meeting(pool).await?.as_deref() != Some(session_id) {
-        return Err(EditError::NotCurrentMeeting);
-    }
-    let exists: Option<String> =
-        sqlx::query_scalar("SELECT id FROM sessions WHERE id = ? AND deleted_at IS NULL")
-            .bind(session_id)
-            .fetch_optional(pool)
-            .await?;
-    exists.map(|_| ()).ok_or(EditError::NoMeeting)
 }
 
 fn note_row(row: SqliteRow) -> EditResult<NoteRow> {
@@ -434,7 +465,7 @@ impl Edits {
         style: NoteStyle,
     ) -> EditResult<CoachEdit> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let before = read_note(&mut tx, session_id).await?;
         let mut doc = parse_doc(before.as_ref())?;
@@ -472,7 +503,7 @@ impl Edits {
             return Err(EditError::Invalid("an action item needs text".into()));
         }
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let task_id = uuid::Uuid::new_v4().to_string();
         let edit = new_edit(
             session_id,
@@ -536,7 +567,7 @@ impl Edits {
         task_id: &str,
     ) -> EditResult<CoachEdit> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let before = read_note(&mut tx, session_id).await?;
         let mut doc = parse_doc(before.as_ref())?;
@@ -592,7 +623,7 @@ impl Edits {
         edit_id: Option<&str>,
     ) -> EditResult<CoachEdit> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let index = log
             .iter()
             .rposition(|entry| entry.edit.session_id == session_id)
@@ -908,6 +939,30 @@ mod tests {
             .await
             .unwrap();
         assert_ne!(note(&pool, MEETING).await.body, other_before.body);
+    }
+
+    #[tokio::test]
+    async fn edits_follow_the_app_not_a_transcript_left_open_by_a_crash() {
+        let pool = pool().await;
+        sqlx::query("UPDATE transcripts SET ended_at_ms = 3_000 WHERE session_id = ?")
+            .bind(MEETING)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let edits = Edits::following(std::sync::Arc::new(|| Box::pin(async { Some(Vec::new()) })));
+        let zombie_before = note(&pool, OTHER).await;
+
+        let zombie = edits.add_action_item(&pool, OTHER, "Leaked").await;
+        let stopped = edits
+            .add_action_item(&pool, MEETING, "Send the proposal")
+            .await;
+
+        assert!(
+            matches!(zombie, Err(EditError::NotCurrentMeeting)),
+            "{zombie:?}"
+        );
+        assert_eq!(stopped.unwrap().session_id, MEETING);
+        assert_eq!(note(&pool, OTHER).await, zombie_before);
     }
 
     #[tokio::test]

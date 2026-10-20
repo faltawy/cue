@@ -3,8 +3,7 @@ use serde_json::{Map, Value};
 use sqlx::{Row, SqliteConnection, SqlitePool};
 
 use crate::edits::{
-    Change, CoachEdit, EditError, EditKind, EditResult, Edits, UndoEntry, ensure_current, new_edit,
-    now, preview,
+    Change, CoachEdit, EditError, EditKind, EditResult, Edits, UndoEntry, new_edit, now, preview,
 };
 
 const MANUAL_SOURCE: &str = "manual";
@@ -811,7 +810,7 @@ impl Edits {
             None => String::new(),
         };
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let folder = resolve_folder(&mut tx, input.folder.as_deref().unwrap_or_default()).await?;
         let owner = owner_of(&mut tx, session_id).await?;
@@ -859,7 +858,7 @@ impl Edits {
         changes: NoteChanges,
     ) -> EditResult<LibraryChange> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let before = open_note(&mut tx, note_id).await?;
         let old_title = text_of(&before, "title");
@@ -1075,7 +1074,7 @@ impl Edits {
                 EditError::Invalid(format!("{} is not a valid folder path", quoted(path)))
             })?;
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let mut folders = Vec::new();
         for ancestor in ancestors(&path) {
@@ -1133,7 +1132,7 @@ impl Edits {
             .ok_or_else(|| EditError::Invalid("a contact needs a name".into()))?;
         let email = clean(fields.email.as_deref());
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         if let Some(existing) = find_person(&mut tx, &name, email.as_deref()).await? {
             return Ok(unchanged(
@@ -1213,7 +1212,7 @@ impl Edits {
         fields: PersonFields,
     ) -> EditResult<LibraryChange> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let before = snapshot(&mut tx, &HUMANS, person_id)
             .await?
@@ -1302,7 +1301,7 @@ impl Edits {
         let name = clean(fields.name.as_deref())
             .ok_or_else(|| EditError::Invalid("an organization needs a name".into()))?;
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         if let Some(id) = find_organization(&mut tx, &name).await? {
             return Ok(unchanged(
@@ -1335,7 +1334,7 @@ impl Edits {
         fields: OrganizationFields,
     ) -> EditResult<LibraryChange> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let before = snapshot(&mut tx, &ORGANIZATIONS, organization_id)
             .await?
@@ -1418,7 +1417,7 @@ impl Edits {
             .filter(|id| !id.is_empty())
             .unwrap_or(session_id);
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let note = open_note(&mut tx, note_id).await?;
         let person = snapshot(&mut tx, &HUMANS, person_id)
@@ -1529,7 +1528,7 @@ impl Edits {
             .ok_or_else(|| EditError::Invalid("a template needs a title".into()))?;
         let sections = template_sections(fields.sections.unwrap_or_default())?;
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let id = uuid::Uuid::new_v4().to_string();
         sqlx::query(
@@ -1570,7 +1569,7 @@ impl Edits {
         fields: TemplateFields,
     ) -> EditResult<LibraryChange> {
         let mut log = self.log.lock().await;
-        ensure_current(pool, session_id).await?;
+        self.ensure_current(pool, session_id).await?;
         let mut tx = pool.begin().await?;
         let before = snapshot(&mut tx, &TEMPLATES, template_id)
             .await?

@@ -35,7 +35,7 @@ pub trait Host: Send + Sync + 'static {
 }
 
 struct BridgeState {
-    host: Box<dyn Host>,
+    host: Arc<dyn Host>,
     token: String,
     edits: Edits,
 }
@@ -77,10 +77,12 @@ pub fn start(host: impl Host) -> Result<Bridge> {
 }
 
 fn router(token: &str, host: impl Host) -> Router {
+    let host: Arc<dyn Host> = Arc::new(host);
+    let source = host.clone();
     let state = Arc::new(BridgeState {
-        host: Box::new(host),
+        host,
         token: token.to_string(),
-        edits: Edits::default(),
+        edits: Edits::following(Arc::new(move || source.recording_sessions())),
     });
     Router::new()
         .route("/recording", get(recording))
