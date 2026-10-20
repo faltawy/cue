@@ -1,6 +1,8 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 
+import { appDb, seedNote } from "./fixtures/app-db";
+import { meetingChange, meetingPointer } from "./meeting-state";
 import {
   foldDeltas,
   type LiveDelta,
@@ -33,7 +35,8 @@ function schema() {
     words_json TEXT NOT NULL DEFAULT '[]', speaker_hints_json TEXT NOT NULL DEFAULT '[]', deleted_at TEXT
   )`);
   db.run(`CREATE TABLE transcript_live_deltas (
-    id TEXT PRIMARY KEY, transcript_id TEXT NOT NULL, sequence INTEGER NOT NULL, delta_json TEXT NOT NULL
+    id TEXT PRIMARY KEY, transcript_id TEXT NOT NULL, sequence INTEGER NOT NULL, delta_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )`);
   db.run(`CREATE TABLE session_participants (
     id TEXT PRIMARY KEY, session_id TEXT NOT NULL, human_id TEXT NOT NULL DEFAULT '', display_name TEXT, email TEXT,
@@ -92,7 +95,7 @@ describe("readLiveTranscript", () => {
        ('t-old', 's-old', 2000, 3000, ?), ('t-live', 's-live', 1000, NULL, ?)`,
       [JSON.stringify([word("o", " finished", 0)]), JSON.stringify([word("a", " What's", 0)])],
     );
-    db.run(`INSERT INTO transcript_live_deltas VALUES ('d2', 't-live', 2, ?), ('d1', 't-live', 1, ?)`, [
+    db.run(`INSERT INTO transcript_live_deltas (id, transcript_id, sequence, delta_json) VALUES ('d2', 't-live', 2, ?), ('d1', 't-live', 1, ?)`, [
       delta([word("c", " ETA?", 600)], [], [{ text: " for", start_ms: 900, end_ms: 1_000, channel: 1 }]),
       delta([word("b", " the", 300)]),
     ]);
@@ -121,6 +124,60 @@ describe("readLiveTranscript", () => {
     expect(transcript?.transcriptId).toBe("t1");
     expect(transcript?.live).toBe(false);
     expect(transcript?.lines).toEqual([{ speaker: "You", channel: 0, start_ms: 0, end_ms: 300, text: "kept" }]);
+  });
+});
+
+describe("a recording left open by a crash", () => {
+  const NOW = Date.parse("2026-10-20T12:00:00.000Z");
+  const ZOMBIE_START = Date.parse("2026-10-18T21:37:00.000Z");
+  const REAL_START = Date.parse("2026-10-20T11:00:00.000Z");
+
+  async function zombieAndRealMeeting() {
+    const db = await appDb();
+    seedNote(db, { id: "s-zombie", title: "" });
+    seedNote(db, { id: "s-real", title: "Pricing sync" });
+    db.run(
+      `INSERT INTO transcripts (id, session_id, owner_user_id, started_at_ms, ended_at_ms, words_json) VALUES
+       ('t-zombie', 's-zombie', 'me', ?, NULL, ?), ('t-real', 's-real', 'me', ?, NULL, ?)`,
+      [ZOMBIE_START, JSON.stringify([word("z", " hello", 0)]), REAL_START, JSON.stringify([word("a", " What's", 0)])],
+    );
+    db.run(`INSERT INTO transcript_live_state (transcript_id) VALUES ('t-zombie'), ('t-real')`);
+    db.run(
+      `INSERT INTO transcript_live_deltas (id, transcript_id, sequence, delta_json, created_at) VALUES
+       ('dz', 't-zombie', 0, ?, '2026-10-18T21:40:00.000Z'), ('dr', 't-real', 0, ?, '2026-10-20T11:59:30.000Z')`,
+      [delta([word("y", " there", 300)]), delta([word("b", " the ETA?", 300)])],
+    );
+    return db;
+  }
+
+  test("the meeting the user just stopped gets its wrap-up and the zombie never opens a chat", async () => {
+    const db = await zombieAndRealMeeting();
+    const wrapped = new Set<string>();
+
+    const recording = readLiveTranscript(db, { recording: new Set(["s-real"]), nowMs: NOW });
+    const attached = meetingPointer(recording);
+    expect(attached).toEqual({ sessionId: "s-real", transcriptId: "t-real", live: true });
+
+    db.run(`UPDATE transcripts SET ended_at_ms = ? WHERE id = 't-real'`, [NOW]);
+    const stopped = readLiveTranscript(db, { recording: new Set(), nowMs: NOW + 1_000 });
+    const change = meetingChange(attached, meetingPointer(stopped), wrapped);
+
+    expect(stopped?.transcriptId).toBe("t-real");
+    expect(change).toEqual({ newChat: false, wrapUp: true });
+    expect(stopped?.lines.map((line) => line.text)).toEqual(["What's the ETA?"]);
+  });
+
+  test("with no word from the app, only an open transcript with recent speech counts as recording", async () => {
+    const db = await zombieAndRealMeeting();
+
+    const live = readLiveTranscript(db, { nowMs: NOW });
+    const zombie = readLiveTranscript(db, { sessionId: "s-zombie", nowMs: NOW });
+    const later = readLiveTranscript(db, { sessionId: "s-real", nowMs: NOW + 10 * 60_000 });
+
+    expect(meetingPointer(live)).toEqual({ sessionId: "s-real", transcriptId: "t-real", live: true });
+    expect(zombie?.transcriptId).toBe("t-zombie");
+    expect(zombie?.live).toBe(false);
+    expect(later?.live).toBe(false);
   });
 });
 

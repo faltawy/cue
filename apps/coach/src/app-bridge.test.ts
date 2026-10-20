@@ -86,3 +86,12 @@ describe("library bridge calls", () => {
     expect(refused).rejects.toThrow("this note is locked in the app");
   });
 });
+
+describe("recording state", () => {
+  test("the app names the meetings it is capturing", async () => {
+    const { seen, bridge } = fakeApp(() => Response.json({ session_ids: ["m1"] }));
+
+    expect(await bridge.recordingSessions()).toEqual(new Set(["m1"]));
+    expect(seen.map(({ method, path }) => [method, path])).toEqual([["GET", "/recording"]]);
+  });
+});

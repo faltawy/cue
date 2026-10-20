@@ -2,6 +2,14 @@ import type { WrapUpView } from "./protocol";
 
 export type MeetingPointer = { sessionId: string; transcriptId: string; live: boolean };
 
+export function meetingPointer(
+  transcript: { sessionId: string; transcriptId: string; live: boolean } | null,
+): MeetingPointer | null {
+  return transcript
+    ? { sessionId: transcript.sessionId, transcriptId: transcript.transcriptId, live: transcript.live }
+    : null;
+}
+
 export type MeetingChange = { newChat: boolean; wrapUp: boolean };
 
 export function meetingChange(

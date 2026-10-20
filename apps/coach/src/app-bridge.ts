@@ -66,6 +66,8 @@ const meetingProjectSchema = z.object({
 
 export type MeetingProject = z.infer<typeof meetingProjectSchema>;
 
+const recordingSchema = z.object({ session_ids: z.array(z.string()) });
+
 export type NoteStyle = "paragraphs" | "bullets";
 
 export class BridgeError extends Error {
@@ -118,6 +120,8 @@ export function appBridge(url: string, token: string) {
     );
 
   return {
+    recordingSessions: async (): Promise<ReadonlySet<string>> =>
+      new Set((await required(call("GET", "/recording", recordingSchema))).session_ids),
     meetingProject: (sessionId: string) =>
       required(call("GET", `${meeting(sessionId)}/project`, meetingProjectSchema)),
     chooseSeriesProject: (sessionId: string) =>

@@ -79,6 +79,21 @@ fn update_busy_reason(
     })
 }
 
+fn recording_sessions(app: tauri::AppHandle) -> tauri_plugin_coach::RecordingFuture {
+    Box::pin(async move {
+        use tauri_plugin_transcription::ListenerPluginExt;
+
+        let snapshot = app.listener().get_capture_snapshot().await.ok()?;
+        Some(
+            snapshot
+                .active_session_id
+                .into_iter()
+                .chain(snapshot.finalizing_session_ids)
+                .collect(),
+        )
+    })
+}
+
 pub fn main() {
     // A process-wide Tokio runtime shared by Tauri plugins and db-sync.
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -211,7 +226,10 @@ pub fn main() {
         .plugin(tauri_plugin_updater2::init(std::sync::Arc::new(
             update_busy_reason,
         )))
-        .plugin(tauri_plugin_coach::init(db::desktop_db_path(&identifier)))
+        .plugin(tauri_plugin_coach::init(
+            db::desktop_db_path(&identifier),
+            std::sync::Arc::new(recording_sessions),
+        ))
         .plugin(tauri_plugin_tray::init())
         .plugin(tauri_plugin_settings::init())
         .plugin(tauri_plugin_sfx::init())

@@ -13,6 +13,7 @@ mod batch_transcript;
 mod capture_gaps;
 mod capture_markers;
 mod error;
+mod interrupted_transcripts;
 mod listener;
 mod listener2;
 mod live_journal;
@@ -257,6 +258,7 @@ pub fn init() -> tauri::plugin::TauriPlugin<tauri::Wry> {
                 .map(|_| tracing::info!("root_actor_spawned"))
                 .map_err(|e| tracing::error!(?e, "failed_to_spawn_root_actor"))
             });
+            interrupted_transcripts::spawn(app_handle.clone());
             audio_retention::spawn(app_handle);
 
             Ok(())

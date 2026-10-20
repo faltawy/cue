@@ -11,7 +11,15 @@ import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { coachError, GAVE_UP, StderrTail } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
-import { isAnswering, type MeetingPointer, meetingChange, stripView, type WrapUpActions, wrapUpActions } from "./meeting-state";
+import {
+  isAnswering,
+  type MeetingPointer,
+  meetingChange,
+  meetingPointer,
+  stripView,
+  type WrapUpActions,
+  wrapUpActions,
+} from "./meeting-state";
 import { moveText } from "./move";
 import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from "./nudge";
 import { NO_SPEND, spendOf } from "./pricing";
@@ -86,6 +94,8 @@ const stderr = new StderrTail();
 let chatSessionId: string | undefined;
 let project = defaultProject;
 let attached: MeetingPointer | null = null;
+let recording: ReadonlySet<string> | undefined;
+let recordingUnknown = false;
 const wrapped = new Set<string>();
 let wrapUp: WrapUpView | null = null;
 let wrapUpSessionId: string | undefined;
@@ -432,13 +442,19 @@ function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
 }
 
 function readTranscript() {
-  return readLiveTranscript(db, { sessionId: values.session });
+  return readLiveTranscript(db, { sessionId: values.session, recording });
 }
 
-function pointer(transcript: LiveTranscript | null): MeetingPointer | null {
-  return transcript
-    ? { sessionId: transcript.sessionId, transcriptId: transcript.transcriptId, live: transcript.live }
-    : null;
+async function refreshRecording() {
+  if (!bridge) return;
+  try {
+    recording = await bridge.recordingSessions();
+    recordingUnknown = false;
+  } catch (error) {
+    recording = undefined;
+    if (!recordingUnknown) console.error("[coach] could not ask the app what it is recording", { _e: errorText(error) });
+    recordingUnknown = true;
+  }
 }
 
 function transcriptEvent(transcript = readTranscript()): CoachEvent {
@@ -510,10 +526,21 @@ function cancelWrapUp() {
   if (wrapUp) setWrapUp(null);
 }
 
-attached = pointer(readTranscript());
+await refreshRecording();
+attached = meetingPointer(readTranscript());
 enqueue(() => openChat("startup"));
 
+let polling = false;
 setInterval(() => {
+  if (polling) return;
+  polling = true;
+  void poll().finally(() => {
+    polling = false;
+  });
+}, 1_000);
+
+async function poll() {
+  await refreshRecording();
   const transcript = readTranscript();
   const event = transcriptEvent(transcript);
   const serialized = JSON.stringify(event);
@@ -522,7 +549,7 @@ setInterval(() => {
     broadcast(event);
   }
 
-  const next = pointer(transcript);
+  const next = meetingPointer(transcript);
   const change = meetingChange(attached, next, wrapped);
   if (next) attached = next;
   if (change.newChat) {
@@ -537,7 +564,7 @@ setInterval(() => {
 
   if (!transcript || !coach || transcript.sessionId !== chatSessionId) return;
   proactive?.observe({ lines: transcript.lines, pending: transcript.pending, live: transcript.live, selfName });
-}, 1_000);
+}
 
 function handle(message: SDKMessage) {
   if (message.type === "result") {

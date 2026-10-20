@@ -1,5 +1,7 @@
+use std::future::Future;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::process::Command;
 use std::sync::Arc;
 
@@ -22,8 +24,11 @@ use crate::{Error, Result};
 pub const URL_ENV: &str = "ANARLOG_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "ANARLOG_COACH_APP_TOKEN";
 
+pub type RecordingFuture = Pin<Box<dyn Future<Output = Option<Vec<String>>> + Send>>;
+
 pub trait Host: Send + Sync + 'static {
     fn pool(&self) -> Result<SqlitePool>;
+    fn recording_sessions(&self) -> RecordingFuture;
     fn config_dir(&self) -> Result<PathBuf>;
     fn default_project(&self) -> Result<PathBuf>;
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>>;
@@ -78,6 +83,7 @@ fn router(token: &str, host: impl Host) -> Router {
         edits: Edits::default(),
     });
     Router::new()
+        .route("/recording", get(recording))
         .route("/meeting/{session_id}/project", get(meeting_project))
         .route(
             "/meeting/{session_id}/series-project",
@@ -209,6 +215,21 @@ impl IntoResponse for BridgeError {
 }
 
 type Reply<T> = std::result::Result<Json<T>, BridgeError>;
+
+#[derive(serde::Serialize)]
+struct Recording {
+    session_ids: Vec<String>,
+}
+
+async fn recording(State(state): State<Arc<BridgeState>>) -> Response {
+    match state.host.recording_sessions().await {
+        Some(session_ids) => Json(Recording { session_ids }).into_response(),
+        None => failure(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "the app could not tell what it is recording",
+        ),
+    }
+}
 
 async fn resolve_project(
     state: &BridgeState,
@@ -504,11 +525,16 @@ mod tests {
         config: tempfile::TempDir,
         default_project: tempfile::TempDir,
         picks: Mutex<Vec<Option<PathBuf>>>,
+        recording: Mutex<Option<Vec<String>>>,
     }
 
     impl Host for Arc<TestHost> {
         fn pool(&self) -> Result<SqlitePool> {
             Ok(self.pool.clone())
+        }
+        fn recording_sessions(&self) -> RecordingFuture {
+            let recording = self.recording.lock().unwrap().clone();
+            Box::pin(async move { recording })
         }
         fn config_dir(&self) -> Result<PathBuf> {
             Ok(self.config.path().to_path_buf())
@@ -555,6 +581,7 @@ mod tests {
             config: tempfile::tempdir().unwrap(),
             default_project: tempfile::tempdir().unwrap(),
             picks: Mutex::new(Vec::new()),
+            recording: Mutex::new(Some(Vec::new())),
         });
         let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
             .await
@@ -598,6 +625,33 @@ mod tests {
         assert_eq!(wrong.status(), StatusCode::UNAUTHORIZED);
         assert_eq!(note.status(), StatusCode::UNAUTHORIZED);
         assert_eq!(right.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn the_coach_learns_what_the_app_is_recording_or_that_it_cannot_tell() {
+        let (url, host) = serve().await;
+        let ask = || {
+            client()
+                .get(format!("{url}/recording"))
+                .bearer_auth(TOKEN)
+                .send()
+        };
+        *host.recording.lock().unwrap() = Some(vec!["thursday".to_string()]);
+
+        let recording = ask()
+            .await
+            .unwrap()
+            .json::<serde_json::Value>()
+            .await
+            .unwrap();
+        *host.recording.lock().unwrap() = None;
+        let unknown = ask().await.unwrap();
+
+        assert_eq!(
+            recording,
+            serde_json::json!({ "session_ids": ["thursday"] })
+        );
+        assert_eq!(unknown.status(), StatusCode::SERVICE_UNAVAILABLE);
     }
 
     #[tokio::test]

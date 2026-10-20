@@ -120,6 +120,56 @@ pub async fn append_live_transcript_deltas(
     Ok(AppendOutcome { transcript_exists })
 }
 
+pub async fn close_interrupted_transcripts(
+    pool: &SqlitePool,
+    started_before_ms: i64,
+) -> Result<u64, sqlx::Error> {
+    let mut transaction = pool.begin_with("BEGIN IMMEDIATE").await?;
+
+    let session_ids: Vec<String> = sqlx::query_scalar(
+        "UPDATE transcripts
+         SET ended_at_ms = MAX(
+               started_at_ms,
+               COALESCE((
+                 SELECT CAST(ROUND((julianday(MAX(delta.created_at)) - 2440587.5) * 86400000) AS INTEGER)
+                 FROM transcript_live_deltas AS delta
+                 WHERE delta.transcript_id = transcripts.id
+               ), started_at_ms),
+               started_at_ms + COALESCE((
+                 SELECT MAX(CAST(json_extract(word.value, '$.end_ms') AS INTEGER))
+                 FROM json_each(CASE WHEN json_valid(words_json) THEN words_json ELSE '[]' END) AS word
+               ), 0)
+             ),
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         WHERE ended_at_ms IS NULL AND deleted_at IS NULL AND started_at_ms < ?
+         RETURNING session_id",
+    )
+    .bind(started_before_ms)
+    .fetch_all(&mut *transaction)
+    .await?;
+
+    sqlx::query(
+        "UPDATE sessions
+         SET started_at = CASE WHEN started_at = '' THEN
+               strftime('%Y-%m-%dT%H:%M:%fZ', (
+                 SELECT MIN(started_at_ms) FROM transcripts
+                 WHERE session_id = sessions.id AND deleted_at IS NULL
+               ) / 1000.0, 'unixepoch') ELSE started_at END,
+             ended_at = strftime('%Y-%m-%dT%H:%M:%fZ', (
+               SELECT MAX(ended_at_ms) FROM transcripts
+               WHERE session_id = sessions.id AND deleted_at IS NULL
+             ) / 1000.0, 'unixepoch'),
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         WHERE id IN (SELECT value FROM json_each(?)) AND deleted_at IS NULL",
+    )
+    .bind(serde_json::to_string(&session_ids).map_err(|error| sqlx::Error::Encode(error.into()))?)
+    .execute(&mut *transaction)
+    .await?;
+
+    transaction.commit().await?;
+    Ok(session_ids.len() as u64)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -264,5 +314,93 @@ mod tests {
             .unwrap();
         assert_eq!(state_count, 0);
         assert_eq!(delta_count, 0);
+    }
+
+    #[tokio::test]
+    async fn startup_closes_transcripts_left_open_at_their_last_activity() {
+        let db = test_db().await;
+        let pool = db.pool();
+        sqlx::query(
+            "INSERT INTO sessions (id, workspace_id, owner_user_id) VALUES
+                ('session-2', 'workspace-1', 'session-owner'),
+                ('session-3', 'workspace-1', 'session-owner')",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            "INSERT INTO transcripts (id, session_id, started_at_ms, ended_at_ms, words_json, updated_at, deleted_at) VALUES
+                ('spoken', 'session-1', 1792359420000, NULL, '[{\"id\":\"w\",\"end_ms\":60000}]', '2026-10-18T21:37:00.000Z', NULL),
+                ('deleted', 'session-1', 1, NULL, '[]', '2026-10-18T21:37:00.000Z', '2026-10-18T21:38:00.000Z'),
+                ('words-only', 'session-2', 1792359420000, NULL, '[{\"id\":\"w\",\"end_ms\":90000}]', '2026-10-18T21:37:00.000Z', NULL),
+                ('silent', 'session-2', 1792359420005, NULL, '[]', '2026-10-18T21:37:00.000Z', NULL),
+                ('closed', 'session-3', 1792359420000, 1792359999000, '[]', '2026-10-18T00:00:00.000Z', NULL),
+                ('this-launch', 'session-3', 1792494000000, NULL, '[]', '2026-10-20T11:00:00.000Z', NULL)",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+        sqlx::query("INSERT INTO transcript_live_state (transcript_id) VALUES ('spoken')")
+            .execute(pool)
+            .await
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO transcript_live_deltas (id, transcript_id, sequence, delta_json, created_at) VALUES
+                ('d0', 'spoken', 0, '{}', '2026-10-18T21:50:00.000Z'),
+                ('d1', 'spoken', 1, '{}', '2026-10-18T22:10:00.250Z')",
+        )
+        .execute(pool)
+        .await
+        .unwrap();
+
+        let closed = close_interrupted_transcripts(pool, 1792494000000)
+            .await
+            .unwrap();
+
+        let transcripts: Vec<(String, Option<i64>, String)> =
+            sqlx::query_as("SELECT id, ended_at_ms, updated_at FROM transcripts ORDER BY id")
+                .fetch_all(pool)
+                .await
+                .unwrap();
+        let ended = |id: &str| {
+            transcripts
+                .iter()
+                .find(|row| row.0 == id)
+                .map(|row| (row.1, row.2.as_str()))
+                .unwrap()
+        };
+        assert_eq!(closed, 3);
+        assert_eq!(ended("spoken").0, Some(1792361400250));
+        assert_eq!(ended("words-only").0, Some(1792359510000));
+        assert_eq!(ended("silent").0, Some(1792359420005));
+        assert_ne!(ended("spoken").1, "2026-10-18T21:37:00.000Z");
+        assert_eq!(
+            ended("closed"),
+            (Some(1792359999000), "2026-10-18T00:00:00.000Z")
+        );
+        assert_eq!(ended("deleted").0, None);
+        assert_eq!(ended("this-launch").0, None);
+
+        let sessions: Vec<(String, String, String)> =
+            sqlx::query_as("SELECT id, started_at, ended_at FROM sessions ORDER BY id")
+                .fetch_all(pool)
+                .await
+                .unwrap();
+        assert_eq!(
+            sessions,
+            [
+                (
+                    "session-1".to_string(),
+                    "2026-10-18T21:37:00.000Z".to_string(),
+                    "2026-10-18T22:10:00.250Z".to_string()
+                ),
+                (
+                    "session-2".to_string(),
+                    "2026-10-18T21:37:00.000Z".to_string(),
+                    "2026-10-18T21:38:30.000Z".to_string()
+                ),
+                ("session-3".to_string(), String::new(), String::new()),
+            ]
+        );
     }
 }

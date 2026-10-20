@@ -92,9 +92,31 @@ type TranscriptRow = {
   started_at_ms: number | null;
   ended_at_ms: number | null;
   title: string | null;
+  recording: number;
 };
 
-const TRANSCRIPT_COLUMNS = `t.id, t.session_id, t.owner_user_id, t.words_json, t.speaker_hints_json, t.started_at_ms, t.ended_at_ms, s.title`;
+const RECENT_SPEECH_MS = 5 * 60_000;
+
+const RECORDING = `t.ended_at_ms IS NULL AND CASE
+  WHEN $recording IS NOT NULL THEN t.session_id IN (SELECT value FROM json_each($recording))
+  ELSE t.started_at_ms >= $activeSinceMs OR (
+    SELECT MAX(d.created_at) FROM transcript_live_deltas d WHERE d.transcript_id = t.id
+  ) >= $activeSinceIso
+END`;
+
+const TRANSCRIPT_COLUMNS = `t.id, t.session_id, t.owner_user_id, t.words_json, t.speaker_hints_json, t.started_at_ms, t.ended_at_ms, s.title,
+  (${RECORDING}) AS recording`;
+
+type RecordingParams = { $recording: string | null; $activeSinceMs: number; $activeSinceIso: string };
+
+function recordingParams(recording: ReadonlySet<string> | undefined, nowMs: number): RecordingParams {
+  const since = nowMs - RECENT_SPEECH_MS;
+  return {
+    $recording: recording ? JSON.stringify([...recording]) : null,
+    $activeSinceMs: since,
+    $activeSinceIso: new Date(since).toISOString(),
+  };
+}
 
 function readSpeakerContext(db: Database, sessionId: string, selfHumanId: string) {
   const names = new Map(
@@ -119,26 +141,27 @@ export function openAppDb(path: string): Database {
 
 export function readLiveTranscript(
   db: Database,
-  options: { sessionId?: string; sinceMs?: number } = {},
+  options: { sessionId?: string; sinceMs?: number; recording?: ReadonlySet<string>; nowMs?: number } = {},
 ): LiveTranscript | null {
+  const params = recordingParams(options.recording, options.nowMs ?? Date.now());
   return db.transaction(() => {
     const row = options.sessionId
       ? db
-          .query<TranscriptRow, [string]>(
+          .query<TranscriptRow, [RecordingParams & { $sessionId: string }]>(
             `SELECT ${TRANSCRIPT_COLUMNS}
              FROM transcripts t LEFT JOIN sessions s ON s.id = t.session_id
-             WHERE t.session_id = ? AND t.deleted_at IS NULL
+             WHERE t.session_id = $sessionId AND t.deleted_at IS NULL
              ORDER BY t.started_at_ms DESC LIMIT 1`,
           )
-          .get(options.sessionId)
+          .get({ ...params, $sessionId: options.sessionId })
       : db
-          .query<TranscriptRow, []>(
+          .query<TranscriptRow, [RecordingParams]>(
             `SELECT ${TRANSCRIPT_COLUMNS}
              FROM transcripts t LEFT JOIN sessions s ON s.id = t.session_id
              WHERE t.deleted_at IS NULL
-             ORDER BY (t.ended_at_ms IS NULL) DESC, t.started_at_ms DESC LIMIT 1`,
+             ORDER BY recording DESC, t.started_at_ms DESC LIMIT 1`,
           )
-          .get();
+          .get(params);
     if (!row) return null;
 
     const base: Word[] = row.words_json ? JSON.parse(row.words_json) : [];
@@ -162,7 +185,7 @@ export function readLiveTranscript(
       sessionId: row.session_id,
       transcriptId: row.id,
       title: row.title,
-      live: row.ended_at_ms === null,
+      live: row.recording === 1,
       startedAtMs: row.started_at_ms,
       endedAtMs: row.ended_at_ms,
       lines: toLines(words, labels, options.sinceMs),

@@ -23,6 +23,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
+pub use bridge::RecordingFuture;
 pub use error::{Error, Result};
 use mcp::ResolvedServer;
 pub use probe::McpProbe;
@@ -34,8 +35,11 @@ const PLUGIN_NAME: &str = "coach";
 const START_TIMEOUT: Duration = Duration::from_secs(20);
 const DEFAULT_PICK_TITLE: &str = "Choose the project the coach can read";
 
+pub type RecordingProbe = std::sync::Arc<dyn Fn(AppHandle) -> RecordingFuture + Send + Sync>;
+
 struct CoachState {
     db: Option<PathBuf>,
+    recording: RecordingProbe,
     coach: Mutex<Option<Sidecar>>,
     llm: Mutex<Option<Sidecar>>,
     opening: Mutex<()>,
@@ -50,6 +54,13 @@ impl bridge::Host for AppHost {
             .try_state::<tauri_plugin_db::ManagedState>()
             .map(|state| state.pool().clone())
             .ok_or_else(|| Error::Other("the database is not ready yet".into()))
+    }
+
+    fn recording_sessions(&self) -> RecordingFuture {
+        match self.0.try_state::<CoachState>() {
+            Some(state) => (state.recording)(self.0.clone()),
+            None => Box::pin(async { None }),
+        }
     }
 
     fn config_dir(&self) -> Result<PathBuf> {
@@ -464,7 +475,10 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 
-pub fn init(db: Option<PathBuf>) -> tauri::plugin::TauriPlugin<tauri::Wry> {
+pub fn init(
+    db: Option<PathBuf>,
+    recording: RecordingProbe,
+) -> tauri::plugin::TauriPlugin<tauri::Wry> {
     let specta_builder = make_specta_builder();
 
     tauri::plugin::Builder::new(PLUGIN_NAME)
@@ -472,6 +486,7 @@ pub fn init(db: Option<PathBuf>) -> tauri::plugin::TauriPlugin<tauri::Wry> {
         .setup(move |app, _api| {
             app.manage(CoachState {
                 db: db.clone(),
+                recording: recording.clone(),
                 coach: Mutex::new(None),
                 llm: Mutex::new(None),
                 opening: Mutex::new(()),
