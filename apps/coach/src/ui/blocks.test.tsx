@@ -43,6 +43,7 @@ function setup(state: CoachState) {
     addActionItems: mock(ok),
     logToClients: mock(ok),
     signIn: mock(ok),
+    chooseProjectFolder: mock(ok),
     notify: mock(() => {}),
   } satisfies CoachApi;
   view = render(<CoachView state={state} api={api} />);

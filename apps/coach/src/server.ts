@@ -73,6 +73,7 @@ const { values } = parseArgs({
     ...COACH_ARGS,
     port: { type: "string", default: "4747" },
     "no-nudges": { type: "boolean", default: false },
+    "no-project": { type: "boolean", default: false },
     "nudge-limit": { type: "string", default: String(PROACTIVE_DEFAULTS.capUsd) },
     state: { type: "string" },
     "exit-with-stdin": { type: "boolean", default: false },
@@ -97,11 +98,14 @@ const model = values.model ?? "sonnet";
 const { db } = options;
 const stateFile = values.state ?? path.join(path.dirname(values.db), "coach-chats.json");
 
+const noProject = values["no-project"];
+
 const defaultProject: ProjectView = {
   path: options.project,
   source: "default",
   series: null,
   defaultProject: options.project,
+  needsFolder: noProject,
 };
 
 const clients = new Set<ReadableStreamDefaultController<string>>();
@@ -338,6 +342,7 @@ function projectView(resolved: MeetingProject): ProjectView {
     source: resolved.source,
     series: resolved.series?.label ?? null,
     defaultProject: resolved.default_project,
+    needsFolder: noProject && resolved.source === "default",
   };
 }
 
@@ -848,6 +853,16 @@ const server = Bun.serve({
       POST: () => {
         enqueue(() => openChat("manual"));
         return new Response(null, { status: 204 });
+      },
+    },
+    "/project": {
+      POST: () => {
+        if (!bridge) return conflict("Open the coach from the app to choose a folder.");
+        const app = bridge;
+        return bridgeCall(async () => {
+          await app.chooseDefaultProject();
+          return new Response(null, { status: 204 });
+        });
       },
     },
     "/project/series": {

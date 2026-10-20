@@ -7,6 +7,7 @@ import {
   Copy,
   FilePen,
   FilePlus,
+  Folder,
   FolderPlus,
   Info,
   LayoutTemplate,
@@ -584,6 +585,7 @@ const EMPTY_COPY: Record<MeetingPhase, { heading: string; body: string }> = {
 export function EmptyState({
   phase,
   onSuggestion,
+  onChooseFolder,
   disabled,
   suggestions,
   compact = false,
@@ -591,6 +593,7 @@ export function EmptyState({
   phase: MeetingPhase;
   compact?: boolean;
   onSuggestion(text: string): void;
+  onChooseFolder?: () => void;
   disabled: boolean;
   suggestions: string[];
 }) {
@@ -618,6 +621,15 @@ export function EmptyState({
           </button>
         ))}
       </div>
+      {onChooseFolder && (
+        <div className="mt-2 flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-2.5" data-testid="choose-folder">
+          <p className="text-[13px] text-balance text-muted-foreground">Choose a project folder to give the coach context.</p>
+          <Button tone="outline" onClick={onChooseFolder}>
+            <Folder aria-hidden className="size-3.5" />
+            Choose folder…
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

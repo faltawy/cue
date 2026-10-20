@@ -122,6 +122,7 @@ export function appBridge(url: string, token: string) {
   return {
     recordingSessions: async (): Promise<ReadonlySet<string>> =>
       new Set((await required(call("GET", "/recording", recordingSchema))).session_ids),
+    chooseDefaultProject: () => call("POST", "/project", z.null()),
     meetingProject: (sessionId: string) =>
       required(call("GET", `${meeting(sessionId)}/project`, meetingProjectSchema)),
     chooseSeriesProject: (sessionId: string) =>

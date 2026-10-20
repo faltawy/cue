@@ -68,11 +68,14 @@ impl bridge::Host for AppHost {
     }
 
     fn default_project(&self) -> Result<PathBuf> {
-        self.0
-            .coach()
-            .settings()?
-            .project_dir()
-            .ok_or_else(|| Error::Other("choose a project folder for the coach first".into()))
+        match self.0.coach().settings()?.project_dir() {
+            Some(project) => Ok(project),
+            None => no_project_dir(),
+        }
+    }
+
+    fn choose_default_project(&self) -> Result<()> {
+        self.0.coach().pick_project().map(|_| ())
     }
 
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>> {
@@ -387,14 +390,16 @@ fn coach_launch(
     mcp_config: Option<PathBuf>,
     instructions: Option<PathBuf>,
 ) -> Result<Launch> {
-    let project = settings
-        .project_dir()
-        .ok_or_else(|| Error::Other("choose a project folder for the coach first".into()))?;
+    let project = match settings.project_dir() {
+        Some(project) => project,
+        None => no_project_dir()?,
+    };
     let db = state
         .db
         .clone()
         .ok_or_else(|| Error::Other("the application database location is unknown".into()))?;
     Ok(Launch {
+        project_chosen: settings.project_dir().is_some(),
         project,
         db,
         port,
@@ -443,6 +448,13 @@ fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -
     })
 }
 
+// Without a chosen folder the coach still runs, in an empty folder of its own, and offers to pick one.
+fn no_project_dir() -> Result<PathBuf> {
+    let dir = std::env::temp_dir().join("anarlog-coach-no-project");
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
+}
+
 fn mcp_config_dir() -> PathBuf {
     std::env::temp_dir().join("anarlog-coach-mcp")
 }
@@ -456,7 +468,7 @@ fn restart_running_coach(app: &AppHandle, settings: &CoachSettings) -> Result<()
     let running = lock(&state.coach)?
         .as_mut()
         .is_some_and(|sidecar| sidecar.is_running());
-    if !running || settings.project_dir().is_none() {
+    if !running {
         return Ok(());
     }
     let endpoint = ensure_coach(app, &state, settings)?;
@@ -471,10 +483,9 @@ fn open(app: &AppHandle, choose: bool) -> Result<()> {
 
     let coach = app.coach();
     let mut current = coach.settings()?;
-    if choose || current.project_dir().is_none() {
-        let Some(project) = pick_folder(app, DEFAULT_PICK_TITLE)? else {
-            return Ok(());
-        };
+    if (choose || current.project_dir().is_none())
+        && let Some(project) = pick_folder(app, DEFAULT_PICK_TITLE)?
+    {
         current.project = Some(project.to_string_lossy().into_owned());
         settings::save(&app.path().app_config_dir()?, &current)?;
     }
@@ -565,5 +576,20 @@ mod test {
 
         let content = std::fs::read_to_string(OUTPUT_FILE).unwrap();
         std::fs::write(OUTPUT_FILE, format!("// @ts-nocheck\n{content}")).unwrap();
+    }
+
+    #[test]
+    fn a_coach_with_no_project_folder_still_launches_and_asks_for_one() {
+        let state = CoachState {
+            db: Some("/data/app.db".into()),
+            recording: std::sync::Arc::new(|_| Box::pin(async { None })),
+            coach: Mutex::new(None),
+            llm: Mutex::new(None),
+            opening: Mutex::new(()),
+            bridge: Mutex::new(None),
+        };
+        let launch = coach_launch(&state, &CoachSettings::default(), &[], 0, None, None).unwrap();
+        assert!(launch.project.is_dir());
+        assert!(process::server_args(&launch).contains(&"--no-project".into()));
     }
 }

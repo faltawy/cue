@@ -20,6 +20,7 @@ const STOP_GRACE: Duration = Duration::from_secs(3);
 
 pub struct Launch {
     pub project: PathBuf,
+    pub project_chosen: bool,
     pub db: PathBuf,
     pub port: u16,
     pub model: &'static str,
@@ -105,6 +106,9 @@ pub fn server_args(launch: &Launch) -> Vec<OsString> {
     ];
     if !launch.nudges {
         args.push("--no-nudges".into());
+    }
+    if !launch.project_chosen {
+        args.push("--no-project".into());
     }
     if let Some(config) = &launch.mcp_config {
         args.push("--mcp-config".into());
@@ -281,6 +285,7 @@ mod tests {
     fn server_args_carry_project_db_port_model_nudge_limit_and_stdin_exit() {
         let launch = Launch {
             project: "/work/project".into(),
+            project_chosen: true,
             db: "/data/app.db".into(),
             port: 4747,
             model: "opus",
@@ -383,6 +388,7 @@ mod tests {
     fn launch(project: &str, model: &'static str, nudges: bool, port: u16) -> Launch {
         Launch {
             project: project.into(),
+            project_chosen: true,
             db: "/db".into(),
             port,
             model,

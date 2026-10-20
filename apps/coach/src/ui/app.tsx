@@ -48,7 +48,8 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
   const ready = state.connection === "open" && state.status !== null;
   const phase = meetingPhase(state);
   const live = phase === "live";
-  const projectName = state.status ? folderName(state.status.project.path) : "this project";
+  const needsFolder = state.status?.project.needsFolder ?? false;
+  const projectName = state.status && !needsFolder ? folderName(state.status.project.path) : null;
   const latestAsk = lastAsk(state);
   const chips = suggestions(phase, state.wrapUp?.state === "ready" && hasFollowUp(state.wrapUp.wrapUp.follow_up_draft));
 
@@ -164,7 +165,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
       ? "Type your own answer…"
       : live || phase === "ended"
         ? "Ask about this meeting…"
-        : `Ask about ${projectName}…`;
+        : projectName
+          ? `Ask about ${projectName}…`
+          : "Ask the coach…";
 
   const submit = useCallback(
     async (text: string, images: readonly PreparedImage[]) => {
@@ -240,6 +243,7 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
             suggestions={glance ? chips.slice(0, 2) : chips}
             disabled={!ready || busy}
             onSuggestion={(text) => void ask(text)}
+            onChooseFolder={needsFolder ? () => void api.chooseProjectFolder() : undefined}
           />
         }
       />
@@ -276,6 +280,7 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         recall={() => latestAsk?.prompt ?? null}
         onChooseFolder={() => void api.chooseSeriesFolder()}
         onDefaultFolder={() => void api.useDefaultFolder()}
+        onChooseProject={() => void api.chooseProjectFolder()}
       />
       {palette && <Palette commands={commands} onClose={() => setPalette(false)} />}
     </div>

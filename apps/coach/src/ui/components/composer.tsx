@@ -113,9 +113,10 @@ export const Composer = forwardRef<
     recall(): string | null;
     onChooseFolder(): void;
     onDefaultFolder(): void;
+    onChooseProject(): void;
   }
 >(function Composer(
-  { busy, ready, placeholder, status, chips, above, onSubmit, onStop, recall, onChooseFolder, onDefaultFolder },
+  { busy, ready, placeholder, status, chips, above, onSubmit, onStop, recall, onChooseFolder, onDefaultFolder, onChooseProject },
   ref,
 ) {
   const [text, setText] = useState("");
@@ -270,7 +271,12 @@ export const Composer = forwardRef<
             aria-keyshortcuts="Enter"
             className="coach-scroll block w-full resize-none bg-transparent px-3 pt-2.5 pb-1 text-[14px] leading-[1.5] outline-none placeholder:text-muted-foreground focus-visible:outline-none"          />
           <div className="flex items-center gap-1 px-1.5 pb-1.5">
-            <ProjectMenu status={status} onChooseFolder={onChooseFolder} onDefaultFolder={onDefaultFolder} />
+            <ProjectMenu
+              status={status}
+              onChooseFolder={onChooseFolder}
+              onDefaultFolder={onDefaultFolder}
+              onChooseProject={onChooseProject}
+            />
             <span className="flex-1" />
             {canAttach && (
               <>
@@ -336,10 +342,12 @@ function ProjectMenu({
   status,
   onChooseFolder,
   onDefaultFolder,
+  onChooseProject,
 }: {
   status: StatusEvent | null;
   onChooseFolder(): void;
   onDefaultFolder(): void;
+  onChooseProject(): void;
 }) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -378,6 +386,17 @@ function ProjectMenu({
   if (!status) return <span className="coach-skeleton ml-1 h-4 w-20" />;
   const { project } = status;
   const series = project.source === "series";
+  const triggerClass =
+    "flex max-w-[180px] min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground";
+
+  if (project.needsFolder) {
+    return (
+      <button type="button" onClick={onChooseProject} title="Choose a project folder for the coach" className={triggerClass}>
+        <Folder aria-hidden className="size-3.5 shrink-0" />
+        <span className="truncate">No folder</span>
+      </button>
+    );
+  }
 
   const item = (label: string, detail: string, run: () => void) => (
     <button
@@ -405,9 +424,7 @@ function ProjectMenu({
         aria-expanded={open}
         aria-controls={menuId}
         title={project.path}
-        className={cx(
-          "flex max-w-[180px] min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground",
-        )}
+        className={triggerClass}
       >
         <Folder aria-hidden className="size-3.5 shrink-0" />
         <span dir="auto" className="truncate">

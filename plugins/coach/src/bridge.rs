@@ -32,6 +32,7 @@ pub trait Host: Send + Sync + 'static {
     fn config_dir(&self) -> Result<PathBuf>;
     fn default_project(&self) -> Result<PathBuf>;
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>>;
+    fn choose_default_project(&self) -> Result<()>;
 }
 
 struct BridgeState {
@@ -86,6 +87,7 @@ fn router(token: &str, host: impl Host) -> Router {
     });
     Router::new()
         .route("/recording", get(recording))
+        .route("/project", post(choose_default_project))
         .route("/meeting/{session_id}/project", get(meeting_project))
         .route(
             "/meeting/{session_id}/series-project",
@@ -248,6 +250,17 @@ async fn resolve_project(
         &projects,
         &state.host.default_project()?,
     ))
+}
+
+// Picking the folder restarts the coach with it, so the caller may not see this answer.
+async fn choose_default_project(
+    State(state): State<Arc<BridgeState>>,
+) -> std::result::Result<Response, BridgeError> {
+    let host = state.clone();
+    tokio::task::spawn_blocking(move || host.host.choose_default_project())
+        .await
+        .map_err(|error| Error::Other(error.to_string()))??;
+    Ok(StatusCode::NO_CONTENT.into_response())
 }
 
 async fn meeting_project(
@@ -546,6 +559,9 @@ mod tests {
         }
         fn pick_folder(&self, _title: &str) -> Result<Option<PathBuf>> {
             Ok(self.picks.lock().unwrap().pop().flatten())
+        }
+        fn choose_default_project(&self) -> Result<()> {
+            Ok(())
         }
     }
 

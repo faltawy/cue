@@ -30,6 +30,7 @@ const api: CoachApi = {
   addActionItems: ok,
   logToClients: ok,
   signIn: ok,
+  chooseProjectFolder: ok,
   notify: () => {},
 };
 

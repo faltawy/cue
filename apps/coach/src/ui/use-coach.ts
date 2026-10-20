@@ -36,6 +36,7 @@ export type CoachApi = {
   addActionItems(): Promise<ActionResult>;
   logToClients(): Promise<ActionResult>;
   signIn(): Promise<ActionResult>;
+  chooseProjectFolder(): Promise<ActionResult>;
   notify(message: string): void;
 };
 
@@ -181,6 +182,7 @@ export function useCoach(): [CoachState, CoachApi] {
       addActionItems: () => withNotice(post("/wrapup/action-items")),
       logToClients: () => withNotice(post("/wrapup/log-clients")),
       signIn: () => withNotice(post("/sign-in")),
+      chooseProjectFolder: () => withNotice(post("/project")),
       notify,
     }),
     [ask, notify, withNotice],

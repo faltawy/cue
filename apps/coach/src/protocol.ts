@@ -18,6 +18,7 @@ export type ProjectView = {
   source: MeetingProject["source"];
   series: string | null;
   defaultProject: string;
+  needsFolder: boolean;
 };
 
 export type WrapUpView =

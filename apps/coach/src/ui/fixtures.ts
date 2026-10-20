@@ -9,6 +9,7 @@ export const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
     source: "series",
     series: "Wafeq weekly sync",
     defaultProject: "/Users/falta/work/northwind",
+    needsFolder: false,
   },
   model: "sonnet",
   busy: false,

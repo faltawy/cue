@@ -44,6 +44,7 @@ function setup(scenario: Scenario | CoachState) {
     addActionItems: mock(ok),
     logToClients: mock(ok),
     signIn: mock(ok),
+    chooseProjectFolder: mock(ok),
     notify: mock(() => {}),
   } satisfies CoachApi;
   view = render(<CoachView state={typeof scenario === "string" ? fixtureState(scenario) : scenario} api={api} />);
@@ -300,7 +301,7 @@ describe("worst-case data", () => {
 
   test("the project menu names the folder, the long path, and plain choices with the series as a second line", () => {
     const path = "/Users/aleksandra.wisniewska-kowalczyk/work/clients/northwind-industries-holdings/customer-success-playbooks";
-    setup(stateFrom([status({ project: { path, source: "series", series: "Northwind weekly", defaultProject: "/Users/a/northwind" } })]));
+    setup(stateFrom([status({ project: { path, source: "series", series: "Northwind weekly", defaultProject: "/Users/a/northwind", needsFolder: false } })]));
     fireEvent.click(view.getByRole("button", { name: /customer-success-playbooks/ }));
     const menu = view.getByRole("menu", { name: "Project folder" });
     expect(within(menu).getByTestId("project-folder").textContent).toBe("customer-success-playbooks");
@@ -308,6 +309,15 @@ describe("worst-case data", () => {
     expect(within(menu).getByTestId("project-source").textContent).toBe("Set for this series");
     expect(within(menu).getByRole("menuitem", { name: /^Choose folder for this series…\s*Northwind weekly$/ })).toBeTruthy();
     expect(within(menu).getByRole("menuitem", { name: /^Use default folder\s*northwind$/ })).toBeTruthy();
+  });
+
+  test("with no project folder chosen, the coach still opens and offers to choose one", () => {
+    const path = "/tmp/anarlog-coach-no-project";
+    const api = setup(stateFrom([status({ meeting: false, project: { path, source: "default", series: null, defaultProject: path, needsFolder: true } })]));
+    expect(view.getByText("Choose a project folder to give the coach context.")).toBeTruthy();
+    expect(view.queryByText(/anarlog-coach-no-project/)).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Choose folder…" }));
+    expect(api.chooseProjectFolder).toHaveBeenCalledTimes(1);
   });
 
   test("with several questions, a single-choice one uses radio buttons and a multi-choice one uses checkboxes", () => {

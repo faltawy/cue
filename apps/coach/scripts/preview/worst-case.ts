@@ -23,6 +23,7 @@ const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
     source: "series",
     series: "Northwind Industries Holdings × Contoso — Weekly implementation sync (EMEA, rescheduled)",
     defaultProject: "/Users/aleksandra.wisniewska-kowalczyk/work/contoso-platform-monorepo-main",
+    needsFolder: false,
   },
   model: "sonnet",
   busy: true,
@@ -435,14 +436,14 @@ function empty(phase: Phase): CoachEvent[] {
     ];
   }
   return [
-    status({ busy: false, project: { path: "/", source: "default", series: null, defaultProject: "/" } }),
+    status({ busy: false, project: { path: "/", source: "default", series: null, defaultProject: "/", needsFolder: false } }),
     { type: "transcript", strip: { state: "live", title: "Untitled", startedAt: null }, lines: [], pending: "" },
   ];
 }
 
 function one(phase: Phase): CoachEvent[] {
   const base: CoachEvent[] = [
-    status({ busy: phase === "live", project: { path: "/Users/jo/a", source: "default", series: "J", defaultProject: "/Users/jo/a" } }),
+    status({ busy: phase === "live", project: { path: "/Users/jo/a", source: "default", series: "J", defaultProject: "/Users/jo/a", needsFolder: false } }),
     phase === "live"
       ? { type: "transcript", strip: { state: "live", title: "J", startedAt: Date.now() - 5_000 }, lines: [{ speaker: "Jo", you: false, text: "Ok." }], pending: "" }
       : waiting("J"),
