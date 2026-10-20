@@ -1,7 +1,11 @@
 import { commands as fsSyncCommands } from "@anlg/plugin-fs-sync";
 import { commands } from "@anlg/plugin-session";
 
-import { ancestorFolderPaths, normalizeFolderPath } from "./folders";
+import {
+  ancestorFolderPaths,
+  isFolderOrDescendant,
+  normalizeFolderPath,
+} from "./folders";
 
 import {
   clearSeriesFolderRulesForFolder,
@@ -42,6 +46,9 @@ export async function renameNamedFolder(
   const newPath = requireNamedFolderPath(newFolderPath);
   if (oldPath === newPath) {
     return newPath;
+  }
+  if (isFolderOrDescendant(newPath, oldPath)) {
+    throw new Error("folder_target_inside_source");
   }
 
   if (await folderNameTaken(newPath)) {

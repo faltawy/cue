@@ -27,6 +27,7 @@ export {
 export {
   loadSessionSummariesByFolder,
   useFolderIcons,
+  useFolderNoteCounts,
   useFolderPaths,
 } from "./queries/folders";
 export {

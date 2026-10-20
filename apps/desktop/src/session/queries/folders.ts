@@ -52,6 +52,28 @@ export async function loadFolderPaths(): Promise<string[]> {
   return mapFolderPathRows(rows);
 }
 
+const EMPTY_FOLDER_NOTE_COUNTS: Record<string, number> = {};
+
+// Notes filed directly in each folder ("" is unfiled), keyed by folder path.
+export function useFolderNoteCounts(): Record<string, number> {
+  const { data = EMPTY_FOLDER_NOTE_COUNTS } = useLiveQuery<
+    { folder_path: string; note_count: number },
+    Record<string, number>
+  >({
+    sql: `
+      SELECT folder_path, COUNT(*) AS note_count
+      FROM sessions
+      WHERE deleted_at IS NULL
+      GROUP BY folder_path
+    `,
+    mapRows: (rows) =>
+      Object.fromEntries(
+        rows.map((row) => [row.folder_path, Number(row.note_count)]),
+      ),
+  });
+  return data;
+}
+
 type FolderIconSqlRow = {
   path: string;
   icon_json?: unknown;

@@ -6,6 +6,7 @@ import { AutomationsNav } from "./automations";
 import { CalendarNav } from "./calendar";
 import { ContactsNav } from "./contacts";
 import { FolderMaterialsPanel } from "./folder-materials";
+import { SidebarFolderNav } from "./folder-nav";
 import { FoldersNav } from "./folders";
 import { SettingsNav } from "./settings";
 import { TemplatesNav } from "./templates";
@@ -71,6 +72,7 @@ export function LeftSidebar({
             <FoldersNav />
           ) : (
             <div className="flex h-full min-h-0 flex-col">
+              <SidebarFolderNav />
               {folderFilter ? (
                 <FolderMaterialsPanel folderPath={folderFilter} />
               ) : null}
