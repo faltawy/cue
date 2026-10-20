@@ -1,5 +1,39 @@
 # @anlg/desktop
 
+## 0.2.0
+
+### Minor Changes
+
+- The coach now steps in when the other side pushes back on price, timing, a current tool, a decision maker or doubt, and when you have been talking for a while, with a question to hand the floor back.
+- You can now add and remove a note's tags yourself under Meeting info, with suggestions from the tags you already use.
+- The Markdown export automation lets you choose what each file includes (memo, summary, transcript, action items) and how files are named, using the meeting date and title.
+- ⌘K now finds notes by what's in them, not only their titles: it searches memos, summaries and transcripts, shows the matching passage with the words highlighted, and matches Arabic with or without diacritics. Locked notes are still found by title only.
+- The sidebar now lists your folders with note counts. Click one to show only its notes, or All notes to see everything again, and use a folder's menu to add a subfolder, rename it, move it into another folder, or delete it.
+- The sidebar lists your tags with note counts; click one to show only notes with that tag, and click it again to show everything. A new note made while a tag is selected gets that tag.
+
+### Patch Changes
+
+- The Accessibility permission now says that dictation needs it to type into other apps.
+- Settings and onboarding now show whether Claude is signed in on this Mac and let you sign in from there, and the coach asks you to sign in instead of saying your sign-in expired when you never signed in.
+- The coach stays out of Cue's own data folder even when it is reached through the old folder name.
+- The coach now answers in the language you write to it in, and its nudges, wrap-up and follow-up draft use the language the meeting was held in.
+- When the coach window is hidden or behind other windows, a new nudge now shows as a notification with the line to say, and the coach button in the note gets a dot until you open the coach.
+- The coach now opens even if you close the folder picker, and offers to choose a project folder from inside the coach.
+- If a new coach shortcut can't be set, the previous one keeps working and the reason is shown.
+- Deleting a contact or organization now shows an Undo button for 10 seconds.
+- The dictation Accessibility hint, the assistant's name, recording error messages and the onboarding link now say Cue and point to Cue's own release page.
+- Cue's data folder in Application Support is now named Cue. Existing data moves there automatically on the first launch, and the old folder name keeps pointing to it.
+- Live transcription now connects on slow networks instead of pausing, and when the connection is slow it says so while it keeps retrying.
+- Deleted notes can now be brought back with Undo for 10 seconds instead of 5.
+- ⌘Q, Quit in the Dock and Quit in the menu bar now quit Cue. If a recording is running, Cue asks first, then stops and saves it before quitting. Closing the window still keeps Cue in the menu bar.
+- Automations can be renamed by clicking their name at the top of the page, instead of all showing as Untitled automation.
+- Renaming a folder keeps its subfolders inside it, and renaming a subfolder no longer moves it to the top level.
+- Cue's download is smaller: the installer drops from 307 MB to about 221 MB, and updates from 312 MB to about 299 MB.
+- Deleting a template now asks for confirmation first.
+- The Test button on the Markdown export automation now works: it exports your latest note to the chosen folder right away, so you can check the result before turning the automation on.
+- Clicking a meeting in the menu bar now opens its note instead of joining and recording right away; a separate Join & record item does that when the meeting has a link.
+- What's new can now be opened from the Help menu and the ⌘K menu, and it opens once on its own after Cue updates.
+
 ## 0.1.4
 
 ### Patch Changes
