@@ -7,6 +7,10 @@ debug = true
 opt-level = 1
 debug = false
 
+[profile.release]
+lto = "thin"
+strip = true
+
 [workspace]
 resolver = "2"
 exclude = ["crates/tiptap/vendor/mdast_util_to_markdown"]
