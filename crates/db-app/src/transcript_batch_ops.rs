@@ -16,6 +16,7 @@ pub struct BatchTranscriptInsert {
     pub owner_user_id: String,
     pub created_at: String,
     pub started_at_ms: f64,
+    pub ended_at_ms: f64,
     pub memo: String,
     pub provider: String,
     pub model: String,
@@ -139,7 +140,7 @@ pub async fn insert_batch_transcript(
          )
          SELECT ?, session.workspace_id,
                 COALESCE(NULLIF(?, ''), session.owner_user_id),
-                session.id, 'batch_transcription', ?, ?, '', ?, NULL, '',
+                session.id, 'batch_transcription', ?, ?, '', ?, ?, '',
                 ?, ?, ?, '{}', ?,
                 strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), NULL
          FROM sessions AS session
@@ -150,6 +151,7 @@ pub async fn insert_batch_transcript(
     .bind(&insert.provider)
     .bind(&insert.model)
     .bind(insert.started_at_ms)
+    .bind(insert.ended_at_ms)
     .bind(&insert.memo)
     .bind(&insert.words_json)
     .bind(&insert.speaker_hints_json)
@@ -263,6 +265,7 @@ mod tests {
             owner_user_id: String::new(),
             created_at: "2026-08-15T12:00:00.000Z".to_string(),
             started_at_ms: 2000.0,
+            ended_at_ms: 2500.0,
             memo: "meeting memo".to_string(),
             provider: "soniox".to_string(),
             model: "stt-batch-v1".to_string(),
@@ -321,7 +324,7 @@ mod tests {
         assert_eq!(new.get::<String, _>("source"), "batch_transcription");
         assert_eq!(new.get::<String, _>("language"), "");
         assert_eq!(new.get::<i64, _>("started_at_ms"), 2000);
-        assert_eq!(new.get::<Option<i64>, _>("ended_at_ms"), None);
+        assert_eq!(new.get::<Option<i64>, _>("ended_at_ms"), Some(2500));
         assert_eq!(new.get::<String, _>("audio_attachment_id"), "");
         assert_eq!(new.get::<String, _>("memo"), "meeting memo");
         assert_eq!(new.get::<String, _>("metadata_json"), "{}");

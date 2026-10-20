@@ -403,6 +403,8 @@ describe("useUploadFile", () => {
         ],
       }),
     );
+    const [imported] = createTranscriptMock.mock.calls[0];
+    expect(imported.endedAt).toBe(imported.startedAt + 500);
     expect(createTranscriptMock.mock.invocationCallOrder[0]).toBeLessThan(
       enhanceMock.mock.invocationCallOrder[0],
     );

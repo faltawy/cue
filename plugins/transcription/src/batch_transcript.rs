@@ -124,12 +124,18 @@ pub async fn save_batch_transcript(
 
     let inserted_transcript_id =
         if let Some(transcript_id) = transcript_id.filter(|_| !words.is_empty()) {
+            let started_at_ms = refined_started_at.unwrap_or(started_at);
+            let last_word_end_ms = words
+                .iter()
+                .filter_map(|word| word.end_ms)
+                .fold(0.0, f64::max);
             let insert = BatchTranscriptInsert {
                 id: transcript_id.clone(),
                 session_id: session_id.clone(),
                 owner_user_id,
                 created_at,
-                started_at_ms: refined_started_at.unwrap_or(started_at),
+                started_at_ms,
+                ended_at_ms: (started_at_ms + last_word_end_ms).round(),
                 memo,
                 provider,
                 model,
@@ -303,6 +309,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn an_uploaded_recording_is_saved_finished_at_its_last_word() {
+        let db = test_db().await;
+        insert_transcript(&db, "earlier", "session-1", 1000, &[]).await;
+        let mut upload = request(BatchTranscriptPromotion::PreserveExisting);
+        upload.words.push(stored_word(
+            "last-word",
+            "done".to_string(),
+            61_000.0,
+            61_500.0,
+        ));
+
+        save_batch_transcript(db.pool(), upload).await.unwrap();
+
+        let ended: Vec<(String, Option<i64>)> =
+            sqlx::query_as("SELECT id, ended_at_ms FROM transcripts ORDER BY id")
+                .fetch_all(db.pool())
+                .await
+                .unwrap();
+        assert_eq!(
+            ended,
+            [
+                ("earlier".to_string(), None),
+                ("transcript-new".to_string(), Some(70_500)),
+            ]
+        );
+    }
+
+    #[tokio::test]
     async fn whole_session_replacement_updates_transcripts_markers_and_audio_atomically() {
         let db = test_db().await;
         insert_transcript(&db, "old-1", "session-1", 1000, &[]).await;
@@ -369,7 +403,7 @@ mod tests {
         assert_eq!(inserted.get::<String, _>("model"), "batch-v1");
         assert_eq!(inserted.get::<String, _>("language"), "");
         assert_eq!(inserted.get::<i64, _>("started_at_ms"), 9000);
-        assert_eq!(inserted.get::<Option<i64>, _>("ended_at_ms"), None);
+        assert_eq!(inserted.get::<Option<i64>, _>("ended_at_ms"), Some(9200));
         assert_eq!(inserted.get::<String, _>("audio_attachment_id"), "");
         assert_eq!(inserted.get::<String, _>("memo"), "new memo");
         assert_eq!(

@@ -271,6 +271,10 @@ export function useUploadFile(sessionId: string) {
 
             const transcriptId = crypto.randomUUID();
             const createdAt = new Date().toISOString();
+            const startedAt = Date.now();
+            const endedAt =
+              startedAt +
+              Math.max(...subtitle.tokens.map((token) => token.end_time));
 
             const words = subtitle.tokens.map((token) => ({
               id: crypto.randomUUID(),
@@ -290,7 +294,8 @@ export function useUploadFile(sessionId: string) {
                   sessionId,
                   ownerUserId: session?.user_id ?? "",
                   createdAt,
-                  startedAt: Date.now(),
+                  startedAt,
+                  endedAt,
                   memo: session?.raw_md ?? "",
                   source: "subtitle_import",
                   words,
