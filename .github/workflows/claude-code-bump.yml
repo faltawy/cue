@@ -1,0 +1,77 @@
+name: Claude Code bump
+
+# Opens a pull request when a new Claude Agent SDK is published: the SDK,
+# the Claude Code version it ships with and every platform's integrity for
+# Cue's download move together. CI and review decide; pins never float.
+on:
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Claude Agent SDK version to pin (default latest)
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  # Pull requests opened with this token start no workflows, so CI is
+  # dispatched on the branch instead.
+  actions: write
+
+concurrency:
+  group: claude-code-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/coach
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Pin the release
+        id: bump
+        env:
+          VERSION: ${{ inputs.version || 'latest' }}
+        run: bun scripts/claude-code-bump.ts "$VERSION" --output "$GITHUB_OUTPUT"
+      - name: Look for an existing pull request
+        id: existing
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: automation/claude-code-${{ steps.bump.outputs.sdk }}
+        run: |
+          # One for this version, open or closed, is the answer already.
+          count=$(gh pr list --head "$BRANCH" --state all --json number --jq length)
+          echo "found=$([ "$count" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Check the pins
+        if: steps.bump.outputs.changed == 'true' && steps.existing.outputs.found == 'false'
+        run: bun test scripts/claude-code-bump.test.ts src/claude-code.test.ts
+      - name: Open the pull request
+        if: steps.bump.outputs.changed == 'true' && steps.existing.outputs.found == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: automation/claude-code-${{ steps.bump.outputs.sdk }}
+          FROM: ${{ steps.bump.outputs.from }}
+          SDK: ${{ steps.bump.outputs.sdk }}
+          CLI: ${{ steps.bump.outputs.cli }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add package.json bun.lock src/claude-code-pin.ts
+          git commit -m "Bump Claude Code to $CLI (Claude Agent SDK $SDK)"
+          git push origin "$BRANCH"
+          body="Moves the Claude Agent SDK from $FROM to $SDK, which ships Claude Code $CLI. The coach runs a person's own Claude Code when it is $CLI or newer, and downloads this pinned copy otherwise. Updated together by \`scripts/claude-code-bump.ts\`: \`package.json\`, \`bun.lock\` and \`src/claude-code-pin.ts\`. Read the SDK's release notes before merging."
+          gh pr create --base main --head "$BRANCH" --title "Bump Claude Code to $CLI" --body "$body"
+          gh workflow run desktop_ci.yaml --ref "$BRANCH"
+          gh pr list --state open --json number,headRefName \
+            --jq ".[] | select(.headRefName | startswith(\"automation/claude-code-\")) | select(.headRefName != \"$BRANCH\") | .number" |
+            while read -r number; do
+              gh pr close "$number" --delete-branch --comment "Superseded by the bump to $CLI."
+            done
