@@ -1,7 +1,9 @@
 use crate::Store2PluginExt;
 use crate::chunked::{self, ChunkedError};
+use crate::secrets_file::{SECRETS_FILENAME, SecretsFile};
 
 const SECURE_STORE_SUFFIX: &str = "secure-store";
+const DEV_IDENTIFIER: &str = "com.hyprnote.dev";
 const NATIVE_SECRET_ACCOUNT_PREFIXES: &[&str] = &["e2ee:"];
 #[cfg(target_os = "macos")]
 const MACOS_KEYCHAIN_ACCESS_ERROR_PREFIX: &str = "macOS couldn't access your login Keychain.";
@@ -28,6 +30,25 @@ fn validate_secret_coordinate(caller: SecretCaller, scope: &str, key: &str) -> R
     Ok(())
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum SecretBackend {
+    File,
+    Keychain,
+}
+
+fn secret_backend(identifier: &str) -> SecretBackend {
+    if identifier == DEV_IDENTIFIER {
+        SecretBackend::File
+    } else {
+        SecretBackend::Keychain
+    }
+}
+
+fn secrets_file<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<SecretsFile, String> {
+    let dir = crate::ext::resolve_store_dir(app).map_err(|error| error.to_string())?;
+    Ok(SecretsFile::new(dir.join(SECRETS_FILENAME)))
+}
+
 fn secure_store_service(identifier: &str) -> String {
     let identifier = match identifier {
         "com.hyprnote.dev" => "com.anarlog.dev",
@@ -41,7 +62,7 @@ fn secure_store_service(identifier: &str) -> String {
 
 fn secure_store_account(identifier: &str, scope: &str, key: &str) -> String {
     let account = format!("{scope}:{key}");
-    if identifier == "com.hyprnote.dev" {
+    if identifier == DEV_IDENTIFIER {
         // Rotate away from dev items whose ACLs captured unstable ad-hoc signatures.
         format!("v2:{account}")
     } else {
@@ -341,13 +362,28 @@ fn read_secret_blocking_for<R: tauri::Runtime>(
 ) -> Result<Option<String>, String> {
     validate_secret_coordinate(caller, scope, key)?;
     let location = secret_location(app, scope, key)?;
+    match secret_backend(&app.config().identifier) {
+        SecretBackend::File => secrets_file(app)?.read(&format!("{scope}:{key}"), || {
+            read_keychain_secret(app, &location, scope, key, false)
+        }),
+        SecretBackend::Keychain => read_keychain_secret(app, &location, scope, key, true),
+    }
+}
+
+fn read_keychain_secret<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    location: &SecretLocation,
+    scope: &str,
+    key: &str,
+    relocate_legacy: bool,
+) -> Result<Option<String>, String> {
     match location.read() {
         Ok(secret) => Ok(Some(secret)),
         Err(ChunkedError::Keyring(keyring::Error::NoEntry)) => {
             for legacy_entry in legacy_secret_entries(app, scope, key)? {
                 match legacy_entry.get_password() {
                     Ok(secret) => {
-                        if location.write(&secret).is_ok() {
+                        if relocate_legacy && location.write(&secret).is_ok() {
                             let _ = legacy_entry.delete_credential();
                         }
                         return Ok(Some(secret));
@@ -414,7 +450,11 @@ fn write_secret_blocking_for<R: tauri::Runtime>(
     value: &str,
 ) -> Result<(), String> {
     validate_secret_coordinate(caller, scope, key)?;
-    secret_location(app, scope, key)?.write(value)?;
+    let location = secret_location(app, scope, key)?;
+    if secret_backend(&app.config().identifier) == SecretBackend::File {
+        return secrets_file(app)?.write(&format!("{scope}:{key}"), value);
+    }
+    location.write(value)?;
     for legacy_entry in legacy_secret_entries(app, scope, key)? {
         let _ = legacy_entry.delete_credential();
     }
@@ -460,13 +500,17 @@ fn delete_secret_blocking_for<R: tauri::Runtime>(
     key: &str,
 ) -> Result<(), String> {
     validate_secret_coordinate(caller, scope, key)?;
+    let location = secret_location(app, scope, key)?;
+    if secret_backend(&app.config().identifier) == SecretBackend::File {
+        return secrets_file(app)?.delete(&format!("{scope}:{key}"));
+    }
     for legacy_entry in legacy_secret_entries(app, scope, key)? {
         match legacy_entry.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry | keyring::Error::PlatformFailure(_)) => {}
             Err(error) => return Err(secure_store_error(error)),
         }
     }
-    secret_location(app, scope, key)?.delete()
+    location.delete()
 }
 
 #[cfg(test)]
@@ -486,6 +530,25 @@ mod tests {
                 secure_store_service(identifier),
                 expected,
                 "unexpected service for {identifier}"
+            );
+        }
+    }
+
+    #[test]
+    fn only_the_dev_identifier_keeps_secrets_in_a_file() {
+        assert_eq!(secret_backend("com.hyprnote.dev"), SecretBackend::File);
+        for identifier in [
+            "com.hyprnote.stable",
+            "com.hyprnote.Hyprnote",
+            "com.hyprnote.staging",
+            "com.hyprnote.nightly",
+            "com.hyprnote.dev.extra",
+            "com.example.app",
+        ] {
+            assert_eq!(
+                secret_backend(identifier),
+                SecretBackend::Keychain,
+                "unexpected backend for {identifier}"
             );
         }
     }

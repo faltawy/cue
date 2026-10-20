@@ -2,6 +2,7 @@ mod chunked;
 mod commands;
 mod error;
 mod ext;
+mod secrets_file;
 
 pub use commands::{
     delete_secret_blocking, read_secret, read_secret_blocking, write_secret, write_secret_blocking,
@@ -315,6 +316,80 @@ mod test {
         assert_eq!(persisted_scope.as_object().unwrap().len(), num_threads);
 
         drop(app);
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dev_secrets_round_trip_through_an_owner_only_file() -> anyhow::Result<()> {
+        use std::os::unix::fs::PermissionsExt;
+        use tauri::async_runtime::block_on;
+
+        let _guard = TEST_MUTEX.lock().unwrap();
+        let vault = TestVault::new("dev-secrets");
+        let app = create_app(tauri::test::mock_builder(), "com.hyprnote.dev");
+        let app = app.handle().clone();
+        let secrets_path = ext::resolve_store_dir(&app)?.join(secrets_file::SECRETS_FILENAME);
+        assert!(secrets_path.starts_with(&vault.paths[0]));
+        let (scope, key) = ("provider".to_string(), "deepgram".to_string());
+
+        block_on(commands::set_secret(
+            app.clone(),
+            scope.clone(),
+            key.clone(),
+            "sk-dev".to_string(),
+        ))
+        .unwrap();
+        assert_eq!(
+            block_on(commands::get_secret(
+                app.clone(),
+                scope.clone(),
+                key.clone()
+            ))
+            .unwrap(),
+            Some("sk-dev".to_string())
+        );
+        assert_eq!(
+            std::fs::metadata(&secrets_path)?.permissions().mode() & 0o777,
+            0o600
+        );
+
+        let (native_scope, native_key) =
+            ("e2ee".to_string(), "account:user-a:recovery-v1".to_string());
+        assert_eq!(
+            block_on(commands::set_secret(
+                app.clone(),
+                native_scope.clone(),
+                native_key.clone(),
+                "replacement".to_string(),
+            ))
+            .unwrap_err(),
+            "secure-store account is reserved for native use"
+        );
+        assert_eq!(
+            block_on(commands::get_secret(
+                app.clone(),
+                native_scope.clone(),
+                native_key.clone()
+            ))
+            .unwrap_err(),
+            "secure-store account is reserved for native use"
+        );
+        assert_eq!(
+            block_on(commands::delete_secret(
+                app.clone(),
+                native_scope,
+                native_key
+            ))
+            .unwrap_err(),
+            "secure-store account is reserved for native use"
+        );
+        assert!(!std::fs::read_to_string(&secrets_path)?.contains("e2ee"));
+
+        block_on(commands::delete_secret(app, scope, key)).unwrap();
+        let persisted: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&secrets_path)?)?;
+        assert_eq!(persisted, serde_json::json!({ "provider:deepgram": null }));
         Ok(())
     }
 

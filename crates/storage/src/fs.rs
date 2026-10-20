@@ -4,12 +4,37 @@ use std::path::Path;
 use tempfile::NamedTempFile;
 
 pub fn atomic_write(target: &Path, content: &str) -> std::io::Result<()> {
+    write_through_temp_file(target, content, &tempfile::Builder::new())
+}
+
+/// Like [`atomic_write`], readable and writable by the owner only, with the
+/// rename itself flushed to disk.
+pub fn atomic_write_private(target: &Path, content: &str) -> std::io::Result<()> {
+    let mut builder = tempfile::Builder::new();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        builder.permissions(std::fs::Permissions::from_mode(0o600));
+    }
+    write_through_temp_file(target, content, &builder)?;
+    #[cfg(unix)]
+    if let Some(parent) = target.parent() {
+        std::fs::File::open(parent)?.sync_all()?;
+    }
+    Ok(())
+}
+
+fn write_through_temp_file(
+    target: &Path,
+    content: &str,
+    builder: &tempfile::Builder,
+) -> std::io::Result<()> {
     let parent = target.parent().ok_or_else(|| {
         std::io::Error::new(std::io::ErrorKind::InvalidInput, "target has no parent")
     })?;
     std::fs::create_dir_all(parent)?;
 
-    let mut temp = NamedTempFile::new_in(parent)?;
+    let mut temp: NamedTempFile = builder.tempfile_in(parent)?;
     temp.write_all(content.as_bytes())?;
     temp.as_file().sync_all()?;
     temp.persist(target)?;
@@ -81,6 +106,26 @@ mod tests {
         atomic_write(&target, "new").unwrap();
 
         assert_eq!(fs::read_to_string(&target).unwrap(), "new");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_write_private_is_owner_only_even_over_a_shared_file() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp = tempdir().unwrap();
+        let target = temp.path().join("secrets.json");
+        fs::write(&target, "old").unwrap();
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o644)).unwrap();
+
+        atomic_write_private(&target, "new").unwrap();
+
+        assert_eq!(fs::read_to_string(&target).unwrap(), "new");
+        assert_eq!(
+            fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 1);
     }
 
     #[tokio::test]
