@@ -117,6 +117,10 @@ impl Coach {
             }
             return;
         }
+        self.show();
+    }
+
+    pub fn show(&self) {
         let app = self.app.clone();
         tauri::async_runtime::spawn_blocking(move || report(&app, open(&app, false)));
     }
@@ -471,6 +475,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::mcp_statuses,
             commands::find_claude_connectors,
             commands::add_knowledge,
+            commands::show,
         ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }

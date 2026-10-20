@@ -8,6 +8,7 @@ const COMMANDS: &[&str] = &[
     "mcp_statuses",
     "find_claude_connectors",
     "add_knowledge",
+    "show",
 ];
 
 fn main() {

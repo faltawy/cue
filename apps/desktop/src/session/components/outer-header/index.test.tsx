@@ -41,6 +41,10 @@ vi.mock("./overflow", () => ({
   OverflowButton: () => <button type="button">More</button>,
 }));
 
+vi.mock("~/coach/open-button", () => ({
+  CoachButton: () => null,
+}));
+
 vi.mock("../shared", () => ({
   RecordingIcon: () => <div />,
   useHasTranscript: (sessionId: string) =>

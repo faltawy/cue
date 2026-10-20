@@ -76,6 +76,13 @@ pub async fn find_claude_connectors(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn show(app: tauri::AppHandle) -> std::result::Result<(), String> {
+    app.coach().show();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn mcp_statuses(
     app: tauri::AppHandle,
 ) -> std::result::Result<Vec<McpServerStatus>, String> {

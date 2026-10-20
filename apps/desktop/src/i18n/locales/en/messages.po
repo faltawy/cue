@@ -2155,6 +2155,10 @@ msgstr "Open calendar account actions"
 msgid "Open Claude settings"
 msgstr "Open Claude settings"
 
+#: src/coach/open-button.tsx
+msgid "Open coach"
+msgstr "Open coach"
+
 #: src/onboarding/final.tsx
 #: src/services/enhancer/summary-notification.ts
 msgid "Open Cue"

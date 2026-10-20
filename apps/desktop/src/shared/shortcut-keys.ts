@@ -23,6 +23,22 @@ function rank(key: ShortcutKey) {
   return index === -1 ? MODIFIER_ORDER.length : index;
 }
 
+const ACCELERATOR_KEYS: Record<string, ShortcutKey> = {
+  Control: "ctrl",
+  Alt: "alt",
+  Shift: "shift",
+  Super: "mod",
+  Meta: "mod",
+};
+
+/** Keys of a stored global shortcut such as `Super+Shift+KeyK`. */
+export function acceleratorKeys(accelerator: string): ShortcutKey[] {
+  if (!accelerator) return [];
+  return accelerator
+    .split("+")
+    .map((key) => ACCELERATOR_KEYS[key] ?? key.replace(/^(Key|Digit)/, ""));
+}
+
 /** macOS order (⌃⌥⇧⌘, then the key), as in the coach's `Kbd`. */
 export function shortcutLabels(keys: readonly ShortcutKey[]): string[] {
   return [...keys]
