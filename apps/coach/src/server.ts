@@ -11,6 +11,7 @@ import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { coachError, GAVE_UP, StderrTail } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
+import { type MeetingNow, type MeetingSeen, meetingUpdate, userTurn } from "./meeting-context";
 import {
   isAnswering,
   type MeetingPointer,
@@ -25,7 +26,7 @@ import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from ".
 import { NO_SPEND, spendOf } from "./pricing";
 import { type NudgeRequest, PROACTIVE_DEFAULTS, Proactive, type ProactiveView } from "./proactive";
 import { actionItemText, blockItemCount } from "./blocks";
-import { type AskImage, askContent, parseAskImages, thumbsOf } from "./images";
+import { type AskImage, parseAskImages } from "./images";
 import {
   addedBlockItem,
   appendHistory,
@@ -43,7 +44,13 @@ import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
 import { Supervisor } from "./supervisor";
 import { talkStats } from "./talk-time";
-import { type LiveTranscript, readLiveTranscript, readMeetingInfo, readSelfName } from "./transcript";
+import {
+  type LiveTranscript,
+  readLiveTranscript,
+  readMeetingInfo,
+  readMeetingStatus,
+  readSelfName,
+} from "./transcript";
 import { runTriage } from "./triage";
 import { TurnTracker } from "./turn-events";
 import page from "./ui/index.html";
@@ -92,6 +99,7 @@ let tracker = new TurnTracker();
 let interrupter: Interrupter | null = null;
 const stderr = new StderrTail();
 let chatSessionId: string | undefined;
+let seen: MeetingSeen | undefined;
 let project = defaultProject;
 let attached: MeetingPointer | null = null;
 let recording: ReadonlySet<string> | undefined;
@@ -153,7 +161,13 @@ function persistNow() {
   persistTimer = null;
   const claudeSessionId = tracker.resumable;
   if (!chatSessionId || !claudeSessionId) return;
-  store = remember(store, chatSessionId, { claudeSessionId, project: project.path, history, updatedAt: Date.now() });
+  store = remember(store, chatSessionId, {
+    claudeSessionId,
+    project: project.path,
+    history,
+    updatedAt: Date.now(),
+    seen,
+  });
   saveStore();
 }
 
@@ -203,13 +217,35 @@ function proactiveView(): ProactiveView {
   );
 }
 
-function meetingContext(sessionId: string): string {
+function meetingBasics(sessionId: string): { title: string; people: string[] } {
   const info = readMeetingInfo(db, sessionId);
   const people = (info?.participants ?? [])
     .map((participant) => participant.name || participant.email)
     .filter((name): name is string => Boolean(name) && name !== selfName)
     .slice(0, CONTEXT_PEOPLE_MAX);
-  return `${info?.title || "Untitled"}${people.length > 0 ? ` · with ${people.join(", ")}` : ""}`;
+  return { title: info?.title || "Untitled", people };
+}
+
+function meetingContext(sessionId: string): string {
+  const { title, people } = meetingBasics(sessionId);
+  return `${title}${people.length > 0 ? ` · with ${people.join(", ")}` : ""}`;
+}
+
+function meetingNow(): MeetingNow | null {
+  if (!chatSessionId) return null;
+  const chat = readMeetingStatus(db, { sessionId: chatSessionId, recording });
+  const latest = readMeetingStatus(db, { recording });
+  return {
+    id: chatSessionId,
+    ...meetingBasics(chatSessionId),
+    live: chat?.live ?? false,
+    startedAtMs: chat?.startedAtMs ?? null,
+    endedAtMs: chat?.endedAtMs ?? null,
+    elsewhere:
+      latest?.live && latest.sessionId !== chatSessionId
+        ? { id: latest.sessionId, title: latest.title || "Untitled" }
+        : null,
+  };
 }
 
 function startProactive(sessionId: string | undefined) {
@@ -378,7 +414,7 @@ async function openChat(reason: OpenReason) {
     store,
     meeting: attached,
     project: nextProject.path,
-    current: { claudeSessionId: tracker.resumable, project: project.path, history },
+    current: { claudeSessionId: tracker.resumable, project: project.path, history, seen },
   });
   coach?.close();
   questions.dismissAll("The chat was closed.");
@@ -386,6 +422,7 @@ async function openChat(reason: OpenReason) {
   project = nextProject;
   chatSessionId = sessionId;
   history = plan.history;
+  seen = plan.seen;
   rememberEdits(history);
   tracker = new TurnTracker();
   tracker.resumable = plan.resume;
@@ -427,9 +464,12 @@ function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt:
   busy = true;
   askedAt = Date.now();
   tracker.beginTurn();
-  feed({ type: "user", kind, text: label, ...(images.length > 0 ? { images: thumbsOf(images) } : {}) });
+  const update = meetingUpdate(seen, meetingNow(), askedAt);
+  seen = update.seen;
+  const turn = userTurn({ kind, label, prompt: withNudgeNotes(nudgeNotes, prompt), line: update.line, images });
+  feed(turn.event);
   broadcast(status());
-  session.ask(askContent(withNudgeNotes(nudgeNotes, prompt), images));
+  session.ask(turn.content);
   nudgeNotes = [];
 }
 

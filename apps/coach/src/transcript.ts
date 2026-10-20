@@ -139,29 +139,50 @@ export function openAppDb(path: string): Database {
   return new Database(path, { readonly: true });
 }
 
+type TranscriptQuery = { sessionId?: string; recording?: ReadonlySet<string>; nowMs?: number };
+
+function transcriptRow(db: Database, options: TranscriptQuery): TranscriptRow | null {
+  const params = recordingParams(options.recording, options.nowMs ?? Date.now());
+  return options.sessionId
+    ? db
+        .query<TranscriptRow, [RecordingParams & { $sessionId: string }]>(
+          `SELECT ${TRANSCRIPT_COLUMNS}
+           FROM transcripts t LEFT JOIN sessions s ON s.id = t.session_id
+           WHERE t.session_id = $sessionId AND t.deleted_at IS NULL
+           ORDER BY t.started_at_ms DESC LIMIT 1`,
+        )
+        .get({ ...params, $sessionId: options.sessionId })
+    : db
+        .query<TranscriptRow, [RecordingParams]>(
+          `SELECT ${TRANSCRIPT_COLUMNS}
+           FROM transcripts t LEFT JOIN sessions s ON s.id = t.session_id
+           WHERE t.deleted_at IS NULL
+           ORDER BY recording DESC, t.started_at_ms DESC LIMIT 1`,
+        )
+        .get(params);
+}
+
+export type MeetingStatus = Pick<LiveTranscript, "sessionId" | "title" | "live" | "startedAtMs" | "endedAtMs">;
+
+export function readMeetingStatus(db: Database, options: TranscriptQuery = {}): MeetingStatus | null {
+  const row = transcriptRow(db, options);
+  return row
+    ? {
+        sessionId: row.session_id,
+        title: row.title,
+        live: row.recording === 1,
+        startedAtMs: row.started_at_ms,
+        endedAtMs: row.ended_at_ms,
+      }
+    : null;
+}
+
 export function readLiveTranscript(
   db: Database,
-  options: { sessionId?: string; sinceMs?: number; recording?: ReadonlySet<string>; nowMs?: number } = {},
+  options: TranscriptQuery & { sinceMs?: number } = {},
 ): LiveTranscript | null {
-  const params = recordingParams(options.recording, options.nowMs ?? Date.now());
   return db.transaction(() => {
-    const row = options.sessionId
-      ? db
-          .query<TranscriptRow, [RecordingParams & { $sessionId: string }]>(
-            `SELECT ${TRANSCRIPT_COLUMNS}
-             FROM transcripts t LEFT JOIN sessions s ON s.id = t.session_id
-             WHERE t.session_id = $sessionId AND t.deleted_at IS NULL
-             ORDER BY t.started_at_ms DESC LIMIT 1`,
-          )
-          .get({ ...params, $sessionId: options.sessionId })
-      : db
-          .query<TranscriptRow, [RecordingParams]>(
-            `SELECT ${TRANSCRIPT_COLUMNS}
-             FROM transcripts t LEFT JOIN sessions s ON s.id = t.session_id
-             WHERE t.deleted_at IS NULL
-             ORDER BY recording DESC, t.started_at_ms DESC LIMIT 1`,
-          )
-          .get(params);
+    const row = transcriptRow(db, options);
     if (!row) return null;
 
     const base: Word[] = row.words_json ? JSON.parse(row.words_json) : [];

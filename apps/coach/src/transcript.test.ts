@@ -8,6 +8,7 @@ import {
   type LiveDelta,
   readLiveTranscript,
   readMeetingInfo,
+  readMeetingStatus,
   readSelfName,
   renderTranscript,
   toLines,
@@ -178,6 +179,26 @@ describe("a recording left open by a crash", () => {
     expect(zombie?.transcriptId).toBe("t-zombie");
     expect(zombie?.live).toBe(false);
     expect(later?.live).toBe(false);
+  });
+
+  test("a chat about one meeting can tell which other meeting the app is recording", async () => {
+    const db = await zombieAndRealMeeting();
+    const recording = new Set(["s-real"]);
+
+    expect(readMeetingStatus(db, { sessionId: "s-zombie", recording, nowMs: NOW })).toEqual({
+      sessionId: "s-zombie",
+      title: "",
+      live: false,
+      startedAtMs: ZOMBIE_START,
+      endedAtMs: null,
+    });
+    expect(readMeetingStatus(db, { recording, nowMs: NOW })).toEqual({
+      sessionId: "s-real",
+      title: "Pricing sync",
+      live: true,
+      startedAtMs: REAL_START,
+      endedAtMs: null,
+    });
   });
 });
 

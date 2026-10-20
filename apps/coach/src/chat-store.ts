@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { z } from "zod";
 
+import { type MeetingSeen, meetingSeenSchema } from "./meeting-context";
 import type { CoachEvent, ResetReason } from "./protocol";
 
 export const MAX_MEETINGS = 20;
@@ -13,6 +14,7 @@ const chatSchema = z.object({
   project: z.string().min(1),
   updatedAt: z.number(),
   history: z.array(z.custom<CoachEvent>((value) => typeof value === "object" && value !== null && "type" in value)),
+  seen: meetingSeenSchema.optional(),
 });
 
 const storeSchema = z.object({ meetings: z.record(z.string(), chatSchema) });
@@ -78,6 +80,7 @@ export type ChatPlan = {
   store: ChatStore;
   resume: string | null;
   history: CoachEvent[];
+  seen?: MeetingSeen;
 };
 
 export function planChat(input: {
@@ -85,18 +88,25 @@ export function planChat(input: {
   store: ChatStore;
   meeting: { sessionId: string; live: boolean } | null;
   project: string;
-  current: { claudeSessionId: string | null; project: string; history: CoachEvent[] };
+  current: { claudeSessionId: string | null; project: string; history: CoachEvent[]; seen?: MeetingSeen };
 }): ChatPlan {
   const { reason, meeting, project, current } = input;
   if (reason === "recover") {
     const same = current.project === project;
+    const resume = same ? current.claudeSessionId : null;
     return {
       store: input.store,
-      resume: same ? current.claudeSessionId : null,
+      resume,
       history: same ? current.history : [],
+      seen: resume ? current.seen : undefined,
     };
   }
   const store = reason === "manual" && meeting ? forget(input.store, meeting.sessionId) : input.store;
   const stored = reason === "manual" ? null : resumeFor(store, meeting, project);
-  return { store, resume: stored?.claudeSessionId ?? null, history: stored ? [...stored.history] : [] };
+  return {
+    store,
+    resume: stored?.claudeSessionId ?? null,
+    history: stored ? [...stored.history] : [],
+    seen: stored?.seen,
+  };
 }
