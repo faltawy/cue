@@ -13,6 +13,7 @@ import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { type WebTemplate } from "./codec";
+import { useConfirmTemplateDelete } from "./confirm-template-delete";
 import { getTemplateCopyTitle, type UserTemplate } from "./queries";
 import { TemplateIconGlyph } from "./template-icon";
 import { AUTO_TEMPLATE_ID, useTemplateTab } from "./utils";
@@ -78,6 +79,10 @@ export function TemplatesSidebarContent({
       }
     },
     [deleteTemplate, effectiveSelectedMineId, setSelectedMineId],
+  );
+  const { requestDelete, dialog: deleteDialog } = useConfirmTemplateDelete(
+    userTemplates,
+    handleDeleteTemplate,
   );
 
   const handleToggleFavorite = useCallback(
@@ -330,6 +335,7 @@ export function TemplatesSidebarContent({
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
+      {deleteDialog}
       <div>
         <CustomSidebarHeader>
           {userTemplates.length > 1 && (
@@ -440,7 +446,7 @@ export function TemplatesSidebarContent({
                       onSelect={setSelectedMineId}
                       onToggleFavorite={handleToggleFavorite}
                       onDuplicate={handleDuplicateTemplate}
-                      onDelete={handleDeleteTemplate}
+                      onDelete={requestDelete}
                     />
                   ) : (
                     <button

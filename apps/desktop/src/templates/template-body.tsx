@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { useConfirmTemplateDelete } from "./confirm-template-delete";
 import { TemplateDetailsColumn } from "./details";
 import { getTemplateCopyTitle, type UserTemplateDraft } from "./queries";
 import { AUTO_TEMPLATE_ID, useTemplateTab } from "./utils";
@@ -29,6 +30,10 @@ export function TemplateView({
       setSelectedMineId(null);
     },
     [deleteTemplate, setSelectedMineId],
+  );
+  const { requestDelete, dialog: deleteDialog } = useConfirmTemplateDelete(
+    userTemplates,
+    handleDeleteTemplate,
   );
 
   const cloneAsMine = useCallback(
@@ -91,13 +96,14 @@ export function TemplateView({
 
   return (
     <div className="h-full">
+      {deleteDialog}
       <TemplateDetailsColumn
         isAutoSelected={!isWebMode && selectedMineId === AUTO_TEMPLATE_ID}
         isWebMode={isWebMode}
         selectedMineTemplate={selectedMineTemplate}
         selectedWebTemplate={selectedWebTemplate}
         handleCreateTemplate={createDefaultTemplate}
-        handleDeleteTemplate={handleDeleteTemplate}
+        handleDeleteTemplate={requestDelete}
         handleDuplicateTemplate={handleDuplicateTemplate}
         handleCloneTemplate={handleCloneTemplate}
         handleFavoriteTemplate={handleFavoriteTemplate}
