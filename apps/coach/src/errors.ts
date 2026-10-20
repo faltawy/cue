@@ -8,6 +8,7 @@ export type CoachError = {
   message: string;
   detail: string | null;
   action?: "new_chat";
+  signedOut?: boolean;
 };
 
 export const GAVE_UP = {
@@ -95,6 +96,17 @@ export function coachError(input: {
     kind,
     ...COPY[kind],
     detail: detail || null,
+  };
+}
+
+// "Sign-in expired" is wrong for someone who never signed in; Claude Code's auth status tells the two apart.
+export function withSignIn(error: CoachError, signedIn: boolean | null): CoachError {
+  if (error.kind !== "auth" || signedIn !== false) return error;
+  return {
+    ...error,
+    title: "Sign in to Claude",
+    message: "The coach uses the Claude sign-in on this Mac.",
+    signedOut: true,
   };
 }
 

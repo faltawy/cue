@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { classifyError, coachError, SIGN_IN_STEPS, StderrTail } from "./errors";
+import { classifyError, coachError, SIGN_IN_STEPS, StderrTail, withSignIn } from "./errors";
 
 describe("classifyError", () => {
   test.each([
@@ -37,6 +37,19 @@ describe("coachError", () => {
       `${SIGN_IN_STEPS}\n\nClaude Code exited unexpectedly.\n\nClaude Code: Error: Invalid API key`,
     );
     expect(coachError({ message: "Overloaded" }).detail).toBe("Overloaded");
+  });
+});
+
+describe("withSignIn", () => {
+  const expired = coachError({ message: "Not logged in · Please run /login" });
+
+  test("an auth failure with nobody signed in asks to sign in, not to sign in again", () => {
+    const signedOut = withSignIn(expired, false);
+    expect(signedOut.title).toBe("Sign in to Claude");
+    expect(signedOut.signedOut).toBe(true);
+    expect(withSignIn(expired, true).title).toBe("Sign-in expired");
+    expect(withSignIn(expired, null).title).toBe("Sign-in expired");
+    expect(withSignIn(coachError({ message: "Overloaded" }), false).title).toBe("Couldn't reach Claude");
   });
 });
 

@@ -19,7 +19,8 @@ import {
   wrappedTranscripts,
 } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
-import { coachError, GAVE_UP, StderrTail } from "./errors";
+import { claudeSignedIn } from "./claude-account";
+import { coachError, GAVE_UP, StderrTail, withSignIn } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { createInterrupter, type Interrupter } from "./interrupt";
 import { type MeetingNow, type MeetingSeen, meetingUpdate, userTurn } from "./meeting-context";
@@ -134,6 +135,17 @@ let nudgeNotes: string[] = [];
 let proactive: Proactive | null = null;
 let proactiveMeeting: string | undefined;
 let selfName: string | null = null;
+let claudeSignedInNow: boolean | null = null;
+
+function checkSignIn() {
+  claudeSignedIn(options.pathToClaudeCodeExecutable).then(
+    (signedIn) => {
+      claudeSignedInNow = signedIn;
+    },
+    (error: unknown) => console.error("[coach] could not read the Claude sign-in", { _e: errorText(error) }),
+  );
+}
+checkSignIn();
 
 const questions = new QuestionBroker({
   opened: (id, asked) => feed({ type: "question", id, questions: asked }),
@@ -161,7 +173,9 @@ function broadcast(event: CoachEvent) {
   for (const client of clients) client.enqueue(chunk);
 }
 
-function feed(event: CoachEvent) {
+function feed(next: CoachEvent) {
+  const event = next.type === "error" ? { ...next, error: withSignIn(next.error, claudeSignedInNow) } : next;
+  if (event.type === "error" && event.error.kind === "auth") checkSignIn();
   history = appendHistory(history, event);
   broadcast(event);
   schedulePersist();

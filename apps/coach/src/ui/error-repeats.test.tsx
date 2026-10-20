@@ -1,8 +1,8 @@
 import { describe, expect, mock, test } from "bun:test";
 
-import { render, within } from "@testing-library/react";
+import { fireEvent, render, within } from "@testing-library/react";
 
-import { coachError, GAVE_UP } from "../errors";
+import { coachError, GAVE_UP, withSignIn } from "../errors";
 import type { CoachEvent } from "../protocol";
 import { CoachView } from "./app";
 import { useDom } from "./dom-setup";
@@ -73,5 +73,16 @@ describe("repeated errors", () => {
     expect(within(card).getByText("The coach stopped")).toBeTruthy();
     within(card).getByRole("button", { name: "New chat" }).click();
     expect(api.newChat).toHaveBeenCalledTimes(1);
+  });
+
+  test("someone who never signed in is asked to sign in, not to sign in again", () => {
+    const { api, view } = setup(
+      stateFrom([status(), { type: "error", error: withSignIn(coachError({ message: "Not logged in · Please run /login" }), false) }]),
+    );
+    const card = view.getByTestId("error-card");
+    expect(within(card).getByText("Sign in to Claude")).toBeTruthy();
+    expect(within(card).queryByRole("button", { name: "Sign in again" })).toBeNull();
+    fireEvent.click(within(card).getByRole("button", { name: "Sign in" }));
+    expect(api.signIn).toHaveBeenCalledTimes(1);
   });
 });

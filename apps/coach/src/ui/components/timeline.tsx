@@ -522,7 +522,7 @@ export function ErrorCard({
                   }}
                 >
                   <LogIn aria-hidden className="size-3.5" />
-                  Sign in again
+                  {error.signedOut ? "Sign in" : "Sign in again"}
                 </Button>
               )}
               {newChat && (
