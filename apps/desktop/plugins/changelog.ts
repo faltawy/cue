@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, watch } from "node:fs";
+import { readFileSync, watch } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
@@ -12,49 +12,30 @@ const changelogDir = resolve(
 const VIRTUAL_ID = "virtual:changelog";
 const RESOLVED_ID = "\0" + VIRTUAL_ID;
 
-function getLatestVersion(): string | null {
-  try {
-    const files = readdirSync(changelogDir).filter((f) =>
-      /^\d+\.\d+\.\d+\.md$/.test(f),
-    );
-    const versions = files.map((f) => f.replace(".md", ""));
-    versions.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-    return versions[0] || null;
-  } catch {
-    return null;
-  }
-}
-
-function buildModule(): string {
-  const nightly = process.env.RELEASE_CHANNEL === "nightly";
-  const latest = nightly
-    ? (process.env.VITE_APP_VERSION ?? null)
-    : process.env.VITE_APP_VERSION || getLatestVersion();
+function buildModule(dir: string): string {
+  const version = process.env.VITE_APP_VERSION || null;
   let content: string | null = null;
 
-  if (latest) {
+  if (version) {
     try {
-      content = readFileSync(
-        resolve(changelogDir, nightly ? "../../nightly.md" : `${latest}.md`),
-        "utf-8",
-      );
+      content = readFileSync(resolve(dir, `${version}.md`), "utf-8");
     } catch {}
   }
 
   return [
-    `export const latestVersion = ${JSON.stringify(latest)};`,
+    `export const latestVersion = ${JSON.stringify(version)};`,
     `export const latestContent = ${JSON.stringify(content)};`,
   ].join("\n");
 }
 
-export function changelog(): Plugin {
+export function changelog(dir = changelogDir): Plugin {
   return {
     name: "changelog",
     resolveId(id) {
       if (id === VIRTUAL_ID) return RESOLVED_ID;
     },
     load(id) {
-      if (id === RESOLVED_ID) return buildModule();
+      if (id === RESOLVED_ID) return buildModule(dir);
     },
     configureServer(server: ViteDevServer) {
       if (process.env.NODE_ENV === "test" || process.env.VITEST) {
@@ -62,7 +43,7 @@ export function changelog(): Plugin {
       }
 
       try {
-        watch(resolve(changelogDir, "../.."), { recursive: true }, () => {
+        watch(dir, { recursive: true }, () => {
           const mod = server.moduleGraph.getModuleById(RESOLVED_ID);
           if (mod) {
             server.moduleGraph.invalidateModule(mod);

@@ -1,32 +1,34 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import { changelog } from "../apps/desktop/plugins/changelog.ts";
 
-test("stable and Nightly bundle their own release notes", async (t) => {
-  for (const name of ["RELEASE_CHANNEL", "VITE_APP_VERSION"]) {
-    const previous = process.env[name];
-    t.after(() => {
-      if (previous === undefined) delete process.env[name];
-      else process.env[name] = previous;
-    });
-  }
-  for (const [channel, version, file] of [
-    ["stable", "1.4.23", "content/desktop/1.4.23.md"],
-    ["nightly", "1.4.24-nightly.123", "nightly.md"],
-  ]) {
-    await t.test(channel, async () => {
-      process.env.RELEASE_CHANNEL = channel;
-      process.env.VITE_APP_VERSION = version;
-      const load = changelog().load;
-      const module = await load.call({}, "\0virtual:changelog");
-      const content = readFileSync(
-        new URL(`../packages/changelog/${file}`, import.meta.url),
-        "utf8",
-      );
-      assert.ok(module.includes(JSON.stringify(content)));
-      assert.ok(module.includes(`latestVersion = ${JSON.stringify(version)}`));
-    });
-  }
+test("the app bundles only the notes for its own version", async (t) => {
+  const previous = process.env.VITE_APP_VERSION;
+  const dir = mkdtempSync(join(tmpdir(), "changelog-"));
+  t.after(() => {
+    rmSync(dir, { recursive: true, force: true });
+    if (previous === undefined) delete process.env.VITE_APP_VERSION;
+    else process.env.VITE_APP_VERSION = previous;
+  });
+  writeFileSync(join(dir, "0.1.0.md"), "Cue 0.1.0 notes");
+  writeFileSync(join(dir, "1.4.9.md"), "Upstream 1.4.9 notes");
+  const bundle = async (version) => {
+    if (version === undefined) delete process.env.VITE_APP_VERSION;
+    else process.env.VITE_APP_VERSION = version;
+    return changelog(dir).load.call({}, "\0virtual:changelog");
+  };
+
+  const matching = await bundle("0.1.0");
+  const missing = await bundle("0.1.1");
+  const unversioned = await bundle(undefined);
+
+  assert.ok(matching.includes('latestContent = "Cue 0.1.0 notes"'));
+  assert.ok(missing.includes('latestVersion = "0.1.1"'));
+  assert.ok(missing.includes("latestContent = null"));
+  assert.ok(unversioned.includes("latestVersion = null"));
+  assert.ok(unversioned.includes("latestContent = null"));
 });
