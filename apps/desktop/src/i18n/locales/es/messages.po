@@ -111,6 +111,10 @@ msgstr ""
 msgid "{months} months ago"
 msgstr ""
 
+#: src/coach/open-button.tsx
+msgid "{nudges, plural, =0 {Coach is listening} one {Coach is listening · # nudge} other {Coach is listening · # nudges}}"
+msgstr ""
+
 #: src/calendar/components/day-cell.tsx
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr ""
@@ -2047,12 +2051,13 @@ msgstr ""
 msgid "New folder"
 msgstr ""
 
+#: src/main/empty.tsx
 #: src/shared/open-note-dialog.tsx
 msgid "New note"
 msgstr ""
 
-#: src/main/empty.tsx
-msgid "New Note"
+#: src/coach/open-button.tsx
+msgid "new nudge"
 msgstr ""
 
 #: src/settings/claude/tools.tsx
@@ -2345,11 +2350,8 @@ msgstr ""
 
 #: src/coach/nudges.tsx
 #: src/coach/open-button.tsx
+#: src/main/empty.tsx
 msgid "Open coach"
-msgstr ""
-
-#: src/coach/open-button.tsx
-msgid "Open coach, new nudge"
 msgstr ""
 
 #: src/onboarding/final.tsx
@@ -2384,6 +2386,10 @@ msgstr ""
 
 #: src/calendar/components/apple/permission.tsx
 msgid "Open Settings"
+msgstr ""
+
+#: src/settings/general/index.tsx
+msgid "Open the coach when recording starts"
 msgstr ""
 
 #: src/settings/general/meeting-settings.tsx
@@ -2603,6 +2609,10 @@ msgstr ""
 
 #: src/settings/general/permissions.tsx
 msgid "Record other participants in meetings."
+msgstr ""
+
+#: src/main/empty.tsx
+msgid "Record with coach"
 msgstr ""
 
 #: src/settings/general/permissions.tsx
@@ -3017,7 +3027,6 @@ msgstr ""
 msgid "Setting up dictation…"
 msgstr "Configurando dictado…"
 
-#: src/main/empty.tsx
 #: src/shared/open-note-dialog.tsx
 #: src/sidebar/toast/registry.tsx
 msgid "Settings"
@@ -3225,12 +3234,9 @@ msgstr ""
 msgid "start recording"
 msgstr ""
 
+#: src/main/empty.tsx
 #: src/services/event-notification/index.ts
 msgid "Start recording"
-msgstr ""
-
-#: src/main/empty.tsx
-msgid "Start Recording"
 msgstr ""
 
 #: src/settings/general/meeting-settings.tsx
@@ -3440,6 +3446,10 @@ msgstr ""
 msgid "Test export saved to {0}"
 msgstr ""
 
+#: src/settings/general/index.tsx
+msgid "The coach appears beside your meeting without taking focus."
+msgstr ""
+
 #: src/settings/claude/index.tsx
 msgid "The coach can search the web and read public pages when you ask about something mentioned in a meeting."
 msgstr ""
@@ -3506,6 +3516,7 @@ msgstr ""
 msgid "Tip: The Cue team loves our users!"
 msgstr ""
 
+#: src/main/empty.tsx
 #: src/sidebar/timeline/utils/index.ts
 msgid "Today"
 msgstr ""
@@ -3514,6 +3525,7 @@ msgstr ""
 msgid "Token"
 msgstr ""
 
+#: src/main/empty.tsx
 #: src/sidebar/timeline/utils/index.ts
 msgid "Tomorrow"
 msgstr ""
@@ -3881,6 +3893,10 @@ msgstr ""
 
 #: src/stt/live-transcript-interrupted.ts
 msgid "Your audio is still being saved, and the missing part will be filled in from the recording."
+msgstr ""
+
+#: src/main/empty.tsx
+msgid "Your coach is ready for the next meeting"
 msgstr ""
 
 #: src/settings/dictionary/index.tsx

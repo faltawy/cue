@@ -111,6 +111,10 @@ msgstr "{model} can't transcribe all selected languages together. Try another mo
 msgid "{months} months ago"
 msgstr "{months} months ago"
 
+#: src/coach/open-button.tsx
+msgid "{nudges, plural, =0 {Coach is listening} one {Coach is listening · # nudge} other {Coach is listening · # nudges}}"
+msgstr "{nudges, plural, =0 {Coach is listening} one {Coach is listening · # nudge} other {Coach is listening · # nudges}}"
+
 #: src/calendar/components/day-cell.tsx
 msgid "{overflow, plural, one {+# more} other {+# more}}"
 msgstr "{overflow, plural, one {+# more} other {+# more}}"
@@ -2047,13 +2051,14 @@ msgstr "New automation"
 msgid "New folder"
 msgstr "New folder"
 
+#: src/main/empty.tsx
 #: src/shared/open-note-dialog.tsx
 msgid "New note"
 msgstr "New note"
 
-#: src/main/empty.tsx
-msgid "New Note"
-msgstr "New Note"
+#: src/coach/open-button.tsx
+msgid "new nudge"
+msgstr "new nudge"
 
 #: src/settings/claude/tools.tsx
 msgid "New password"
@@ -2345,12 +2350,9 @@ msgstr "Open Claude settings"
 
 #: src/coach/nudges.tsx
 #: src/coach/open-button.tsx
+#: src/main/empty.tsx
 msgid "Open coach"
 msgstr "Open coach"
-
-#: src/coach/open-button.tsx
-msgid "Open coach, new nudge"
-msgstr "Open coach, new nudge"
 
 #: src/onboarding/final.tsx
 #: src/services/enhancer/summary-notification.ts
@@ -2385,6 +2387,10 @@ msgstr "Open question"
 #: src/calendar/components/apple/permission.tsx
 msgid "Open Settings"
 msgstr "Open Settings"
+
+#: src/settings/general/index.tsx
+msgid "Open the coach when recording starts"
+msgstr "Open the coach when recording starts"
 
 #: src/settings/general/meeting-settings.tsx
 msgid "Open the meeting link when a scheduled meeting begins."
@@ -2604,6 +2610,10 @@ msgstr "Record a meeting"
 #: src/settings/general/permissions.tsx
 msgid "Record other participants in meetings."
 msgstr "Record other participants in meetings."
+
+#: src/main/empty.tsx
+msgid "Record with coach"
+msgstr "Record with coach"
 
 #: src/settings/general/permissions.tsx
 msgid "Record your voice in meetings and calls."
@@ -3017,7 +3027,6 @@ msgstr "Setting up Claude… {percent}%"
 msgid "Setting up dictation…"
 msgstr "Setting up dictation…"
 
-#: src/main/empty.tsx
 #: src/shared/open-note-dialog.tsx
 #: src/sidebar/toast/registry.tsx
 msgid "Settings"
@@ -3225,13 +3234,10 @@ msgstr "Start listening when a scheduled meeting begins."
 msgid "start recording"
 msgstr "start recording"
 
+#: src/main/empty.tsx
 #: src/services/event-notification/index.ts
 msgid "Start recording"
 msgstr "Start recording"
-
-#: src/main/empty.tsx
-msgid "Start Recording"
-msgstr "Start Recording"
 
 #: src/settings/general/meeting-settings.tsx
 msgid "Start when meeting begins"
@@ -3440,6 +3446,10 @@ msgstr "Test export failed: {0}"
 msgid "Test export saved to {0}"
 msgstr "Test export saved to {0}"
 
+#: src/settings/general/index.tsx
+msgid "The coach appears beside your meeting without taking focus."
+msgstr "The coach appears beside your meeting without taking focus."
+
 #: src/settings/claude/index.tsx
 msgid "The coach can search the web and read public pages when you ask about something mentioned in a meeting."
 msgstr "The coach can search the web and read public pages when you ask about something mentioned in a meeting."
@@ -3506,6 +3516,7 @@ msgstr "Tip: Add teammate names, acronyms, company jargon, and product terms."
 msgid "Tip: The Cue team loves our users!"
 msgstr "Tip: The Cue team loves our users!"
 
+#: src/main/empty.tsx
 #: src/sidebar/timeline/utils/index.ts
 msgid "Today"
 msgstr "Today"
@@ -3514,6 +3525,7 @@ msgstr "Today"
 msgid "Token"
 msgstr "Token"
 
+#: src/main/empty.tsx
 #: src/sidebar/timeline/utils/index.ts
 msgid "Tomorrow"
 msgstr "Tomorrow"
@@ -3882,6 +3894,10 @@ msgstr "You can use up to three example summaries."
 #: src/stt/live-transcript-interrupted.ts
 msgid "Your audio is still being saved, and the missing part will be filled in from the recording."
 msgstr "Your audio is still being saved, and the missing part will be filled in from the recording."
+
+#: src/main/empty.tsx
+msgid "Your coach is ready for the next meeting"
+msgstr "Your coach is ready for the next meeting"
 
 #: src/settings/dictionary/index.tsx
 msgid "Your dictionary is empty"
