@@ -43,6 +43,7 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
       label: t`App`,
       items: [
         { id: "app", label: t`General`, icon: Gear },
+        { id: "claude", label: t`Claude`, icon: Sparkle },
         { id: "appearance", label: t`Appearance`, icon: Sun },
         { id: "notifications", label: t`Notifications`, icon: Bell },
       ],
@@ -51,8 +52,6 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
       label: "AI",
       items: [
         { id: "transcription", label: t`Transcription`, icon: Waveform },
-        { id: "dictation", label: t`Dictation`, icon: Microphone },
-        { id: "claude", label: t`Claude`, icon: Sparkle },
         { id: "dictionary", label: t`Dictionary`, icon: BookOpen },
       ],
     },
@@ -84,17 +83,20 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
           icon: FileText,
           destination: { type: "templates" },
         },
+      ],
+    },
+    {
+      label: t`Advanced`,
+      items: [
+        { id: "dictation", label: t`Dictation`, icon: Microphone },
         {
           id: "automations",
           label: t`Automations`,
           icon: Lightning,
           destination: { type: "automations" },
         },
+        { id: "permissions", label: t`Permissions`, icon: Lock },
       ],
-    },
-    {
-      label: t`Advanced`,
-      items: [{ id: "permissions", label: t`Permissions`, icon: Lock }],
     },
   ];
 }
