@@ -217,7 +217,7 @@ export type DownloadStatus =
   | { downloading: number }
   | "completed"
   | { failed: string };
-export type GgufLlmModel = "Llama3p2_3bQ4" | "Gemma3_4bQ4" | "AnarlogLLM";
+export type GgufLlmModel = "Llama3p2_3bQ4" | "Gemma3_4bQ4" | "CueLLM";
 export type LocalModel =
   | SoniqoModel
   | AppleSpeechModel

@@ -114,7 +114,7 @@ pub(super) async fn consolidate_hosted_speakers(
         Ok(Ok(relabels)) => {
             let summary = apply_relabels(&mut output.response, &relabels);
             tracing::info!(
-                anarlog.stt.provider.name = CONSOLIDATION_PROVIDER,
+                cue.stt.provider.name = CONSOLIDATION_PROVIDER,
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
                 consolidation.channels = ?summary,
                 "speaker_consolidation_completed"
@@ -122,7 +122,7 @@ pub(super) async fn consolidate_hosted_speakers(
         }
         Ok(Err(_error)) => {
             tracing::warn!(
-                anarlog.stt.provider.name = CONSOLIDATION_PROVIDER,
+                cue.stt.provider.name = CONSOLIDATION_PROVIDER,
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
                 error.type = "speaker_consolidation_failed",
                 "speaker_consolidation_failed"

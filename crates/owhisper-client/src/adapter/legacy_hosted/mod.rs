@@ -3,13 +3,13 @@ mod live;
 
 use super::{LanguageQuality, LanguageSupport};
 
-// Keep the wire identifier compatible with proxy deployments that predate the Anarlog rename.
+// Keep the upstream proxy wire identifier compatible with existing deployments.
 const STT_PROXY_PROVIDER_NAME: &str = "hyprnote";
 
 #[derive(Clone, Default)]
-pub struct AnarlogAdapter;
+pub struct LegacyHostedAdapter;
 
-impl AnarlogAdapter {
+impl LegacyHostedAdapter {
     pub fn language_support_live(
         languages: &[anlg_language::Language],
         model: Option<&str>,

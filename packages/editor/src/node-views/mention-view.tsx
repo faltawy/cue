@@ -44,7 +44,7 @@ export const mentionNodeSpec: NodeSpec = {
   },
 };
 
-const GLOBAL_NAVIGATE_FUNCTION = "__ANARLOG_NAVIGATE__";
+const GLOBAL_NAVIGATE_FUNCTION = "__CUE_NAVIGATE__";
 
 const FACEHASH_BG_CLASSES = [
   "bg-amber-50 dark:bg-amber-950",

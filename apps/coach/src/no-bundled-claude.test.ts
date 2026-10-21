@@ -11,7 +11,7 @@ function filesMentioning(...needles: string[]): string[] {
 
 describe("the app ships no Claude Code executable", () => {
   test("nothing references the bundled copy or copies the SDK's platform binary", () => {
-    expect(filesMentioning(["anarlog", "coach"].join("-"))).toContain("apps/desktop/src-tauri/tauri.conf.json");
-    expect(filesMentioning(["anarlog", "claude"].join("-"), ["claude-agent-sdk-darwin-arm64", "claude"].join("/"))).toEqual([]);
+    expect(filesMentioning(["cue", "coach"].join("-"))).toContain("apps/desktop/src-tauri/tauri.conf.json");
+    expect(filesMentioning(["cue", "claude"].join("-"), ["claude-agent-sdk-darwin-arm64", "claude"].join("/"))).toEqual([]);
   });
 });

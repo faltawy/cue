@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn native_quit_keeps_app_running_until_full_termination_is_requested() {
-        let class = ClassBuilder::new(c"AnarlogQuitTestDelegate", NSObject::class())
+        let class = ClassBuilder::new(c"CueQuitTestDelegate", NSObject::class())
             .unwrap()
             .register();
         unsafe {

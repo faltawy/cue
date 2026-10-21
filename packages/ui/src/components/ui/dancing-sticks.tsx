@@ -121,7 +121,7 @@ export const DancingSticks = memo(function DancingSticks({
             }}
           >
             <div
-              className="animate-anarlog-dancing-stick w-full origin-center rounded-full"
+              className="animate-cue-dancing-stick w-full origin-center rounded-full"
               style={{
                 height: resolvedHeight,
                 backgroundColor: color,

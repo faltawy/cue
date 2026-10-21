@@ -4,6 +4,7 @@ mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::*;
 
+// Keep prior bundle identities recognizable alongside Cue’s current display name.
 const SELF_BUNDLE_IDS: &[&str] = &[
     "com.anarlog.dev",
     "com.anarlog.stable",
@@ -16,6 +17,10 @@ const SELF_BUNDLE_IDS: &[&str] = &[
 ];
 
 const SELF_APP_NAMES: &[&str] = &[
+    "cue",
+    "cue dev",
+    "cue staging",
+    "cue nightly",
     "anarlog",
     "anarlog staging",
     "anarlog nightly",
@@ -28,6 +33,10 @@ const SELF_APP_NAMES: &[&str] = &[
 ];
 
 const SELF_APP_PATH_SEGMENTS: &[&str] = &[
+    "/cue.app/",
+    "/cue dev.app/",
+    "/cue staging.app/",
+    "/cue nightly.app/",
     "/anarlog.app/",
     "/anarlog staging.app/",
     "/anarlog nightly.app/",
@@ -79,19 +88,21 @@ mod tests {
     }
 
     #[test]
-    fn is_self_app_matches_only_anarlog_identities() {
+    fn is_self_app_matches_cue_and_legacy_identities() {
         for (id, name, expected) in [
-            ("com.anarlog.stable", "Anarlog", true),
-            ("com.hyprnote.stable", "Anarlog", true),
+            ("com.anarlog.stable", "Unknown", true),
+            ("com.hyprnote.stable", "Unknown", true),
             ("com.hyprnote.Hyprnote", "Hyprnote", true),
-            ("pid:42", "Anarlog", true),
-            ("pid:43", "Char Nightly", true),
-            ("pid:44", "Hyprnote Staging", true),
+            ("pid:42", "Cue", true),
+            ("pid:45", "Cue Dev", true),
             (
-                "/Applications/Anarlog.app/Contents/MacOS/anarlog",
+                "/Applications/Cue Dev.app/Contents/MacOS/cue",
                 "Unknown",
                 true,
             ),
+            ("pid:43", "Char Nightly", true),
+            ("pid:44", "Hyprnote Staging", true),
+            ("/Applications/Cue.app/Contents/MacOS/cue", "Unknown", true),
             (
                 "/Applications/Hyprnote Nightly.app/Contents/MacOS/Hyprnote Nightly",
                 "Unknown",

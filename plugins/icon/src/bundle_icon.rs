@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn selected_icon_persists_after_process_exit() {
-        const BUNDLE_ENV: &str = "ANARLOG_ICON_TEST_BUNDLE";
+        const BUNDLE_ENV: &str = "CUE_ICON_TEST_BUNDLE";
         if std::env::var_os(BUNDLE_ENV).is_some() {
             let image = NSImage::initWithData(
                 NSImage::alloc(),
@@ -48,17 +48,17 @@ mod tests {
         }
 
         let temp = tempfile::tempdir().unwrap();
-        let bundle = temp.path().join("Anarlog.app");
+        let bundle = temp.path().join("Cue.app");
         let contents = bundle.join("Contents");
-        let executable = contents.join("MacOS/anarlog");
+        let executable = contents.join("MacOS/cue");
         std::fs::create_dir_all(executable.parent().unwrap()).unwrap();
         std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
         std::fs::write(
             contents.join("Info.plist"),
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>so.anarlog.icon-test</string>
-<key>CFBundleExecutable</key><string>anarlog</string>
+<key>CFBundleIdentifier</key><string>so.cue.icon-test</string>
+<key>CFBundleExecutable</key><string>cue</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 </dict></plist>"#,
         )

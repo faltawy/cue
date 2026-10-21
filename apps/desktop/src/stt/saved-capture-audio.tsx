@@ -17,7 +17,7 @@ import {
 import { useLiveQuery } from "~/db";
 
 const DISMISSED_SAVED_CAPTURE_AUDIO_KEY =
-  "anarlog:dismissed-saved-capture-audio-prompts";
+  "cue:dismissed-saved-capture-audio-prompts";
 const MAX_DISMISSED_SAVED_CAPTURE_AUDIO_PROMPTS = 128;
 
 function useSavedCaptureAudioAt(sessionId: string) {
@@ -37,7 +37,9 @@ function useSavedCaptureAudioAt(sessionId: string) {
 function readDismissedSavedCaptureAudioPrompts(): string[] {
   try {
     const stored: unknown = JSON.parse(
-      localStorage.getItem(DISMISSED_SAVED_CAPTURE_AUDIO_KEY) ?? "[]",
+      localStorage.getItem(DISMISSED_SAVED_CAPTURE_AUDIO_KEY) ??
+        localStorage.getItem("anarlog:dismissed-saved-capture-audio-prompts") ??
+        "[]",
     );
     return Array.isArray(stored)
       ? stored.filter((key): key is string => typeof key === "string")

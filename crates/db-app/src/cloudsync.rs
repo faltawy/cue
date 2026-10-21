@@ -44,6 +44,7 @@ const CLOUDSYNC_FULL_RESYNC_RESET_APPLIED_ID: &str = "cloudsync_full_resync_rese
 const CLOUDSYNC_FULL_RESYNC_RECEIVE_ONLY_RESET_APPLIED_ID: &str =
     "cloudsync_full_resync_receive_only_reset_applied";
 const CLOUDSYNC_RECOVERY_PROTOCOL_VERSION: u32 = 1;
+// Existing synced databases use this table name; renaming it would split recovery barriers.
 const CLOUDSYNC_RECOVERY_BARRIER_TABLE: &str = "__anarlog_cloudsync_control";
 const CLOUDSYNC_RECOVERY_BARRIER_FIELD: &str = "$snapshot_barrier";
 

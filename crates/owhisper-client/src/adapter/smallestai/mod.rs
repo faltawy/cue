@@ -239,14 +239,14 @@ mod tests {
         assert_eq!(SmallestAIAdapter::keywords_query_value(&[]), None);
         assert_eq!(
             SmallestAIAdapter::keywords_query_value(&[
-                " Anarlog ".to_string(),
+                " Cue ".to_string(),
                 "".to_string(),
                 "a,b".to_string(),
                 "c:d".to_string(),
                 "Pulse:2".to_string(),
                 "Jensen Huang".to_string(),
             ]),
-            Some("Anarlog,Jensen Huang".to_string())
+            Some("Cue,Jensen Huang".to_string())
         );
     }
 

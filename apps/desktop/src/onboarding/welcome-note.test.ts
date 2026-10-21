@@ -57,9 +57,22 @@ it("creates a local welcome note without a hosted demo meeting link", async () =
   expect(initial.raw_md).not.toContain("Join & record");
 });
 
-it("carries the welcome note across a one-time onboarding relaunch", () => {
-  setPendingWelcomeSession("welcome-session");
+it.each(["legacy", "cue"])(
+  "carries the %s welcome note across a one-time onboarding relaunch",
+  (source) => {
+    if (source === "legacy") {
+      localStorage.setItem(
+        "anarlog.pending-welcome-session",
+        "welcome-session",
+      );
+    } else {
+      setPendingWelcomeSession("welcome-session");
+      expect(localStorage.getItem("cue.pending-welcome-session")).toBe(
+        "welcome-session",
+      );
+    }
 
-  expect(takePendingWelcomeSession()).toBe("welcome-session");
-  expect(takePendingWelcomeSession()).toBeNull();
-});
+    expect(takePendingWelcomeSession()).toBe("welcome-session");
+    expect(takePendingWelcomeSession()).toBeNull();
+  },
+);

@@ -84,7 +84,7 @@ impl RealtimeSttAdapter for AssemblyAIAdapter {
             Err(_e) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "assemblyai_json_parse_failed"
                 );
                 return vec![];
@@ -94,7 +94,7 @@ impl RealtimeSttAdapter for AssemblyAIAdapter {
         match msg {
             AssemblyAIMessage::Begin { id: _, expires_at } => {
                 tracing::debug!(
-                    anarlog.stt.provider_session.expires_at = %expires_at,
+                    cue.stt.provider_session.expires_at = %expires_at,
                     "assemblyai_session_began"
                 );
                 vec![]
@@ -105,8 +105,8 @@ impl RealtimeSttAdapter for AssemblyAIAdapter {
                 session_duration_seconds,
             } => {
                 tracing::debug!(
-                    anarlog.audio.duration_s = audio_duration_seconds,
-                    anarlog.stt.provider_session.duration_s = session_duration_seconds,
+                    cue.audio.duration_s = audio_duration_seconds,
+                    cue.stt.provider_session.duration_s = session_duration_seconds,
                     "assemblyai_session_terminated"
                 );
                 vec![StreamResponse::TerminalResponse {
@@ -126,7 +126,7 @@ impl RealtimeSttAdapter for AssemblyAIAdapter {
             }
             AssemblyAIMessage::Unknown => {
                 tracing::debug!(
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "assemblyai_unknown_message"
                 );
                 vec![]

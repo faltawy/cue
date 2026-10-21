@@ -311,7 +311,7 @@ impl<S> SseParserState<S> {
                     Err(_error) => {
                         tracing::warn!(
                             error.type = "invalid_provider_payload",
-                            anarlog.payload.size_bytes = data.len() as u64,
+                            cue.payload.size_bytes = data.len() as u64,
                             "whispercpp_batch_event_parse_failed"
                         );
                         return None;
@@ -334,7 +334,7 @@ impl<S> SseParserState<S> {
                     Err(_error) => {
                         tracing::warn!(
                             error.type = "invalid_provider_payload",
-                            anarlog.payload.size_bytes = data.len() as u64,
+                            cue.payload.size_bytes = data.len() as u64,
                             "whispercpp_progress_event_parse_failed"
                         );
                         return None;
@@ -348,7 +348,7 @@ impl<S> SseParserState<S> {
                     Err(_error) => {
                         tracing::warn!(
                             error.type = "invalid_provider_payload",
-                            anarlog.payload.size_bytes = data.len() as u64,
+                            cue.payload.size_bytes = data.len() as u64,
                             "whispercpp_segment_event_parse_failed"
                         );
                         return None;
@@ -363,7 +363,7 @@ impl<S> SseParserState<S> {
                         Err(error) => {
                             tracing::error!(
                                 error.type = "invalid_provider_payload",
-                                anarlog.payload.size_bytes = data.len() as u64,
+                                cue.payload.size_bytes = data.len() as u64,
                                 "whispercpp_result_event_parse_failed"
                             );
                             return Some(Err(Error::WebSocket(format!(

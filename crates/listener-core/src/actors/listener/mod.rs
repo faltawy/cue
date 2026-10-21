@@ -169,7 +169,7 @@ impl Actor for ListenerActor {
                 }
             };
             tracing::info!(
-                anarlog.stt.provider.name = %adapter_name,
+                cue.stt.provider.name = %adapter_name,
                 channel_mode = ?args.mode,
                 "listen_stream_connected"
             );
@@ -345,7 +345,7 @@ impl Actor for ListenerActor {
 
             ListenerMsg::StreamError(error) => {
                 tracing::warn!(
-                    anarlog.stt.provider.name = %state.transcript.provider_name(),
+                    cue.stt.provider.name = %state.transcript.provider_name(),
                     error.message = %error,
                     "listen_stream_error"
                 );
@@ -354,7 +354,7 @@ impl Actor for ListenerActor {
 
             ListenerMsg::StreamEnded => {
                 tracing::warn!(
-                    anarlog.stt.provider.name = %state.transcript.provider_name(),
+                    cue.stt.provider.name = %state.transcript.provider_name(),
                     "listen_stream_ended"
                 );
                 stop_with_degraded_error(
@@ -367,7 +367,7 @@ impl Actor for ListenerActor {
 
             ListenerMsg::StreamTimeout(elapsed) => {
                 tracing::warn!(
-                    anarlog.stt.provider.name = %state.transcript.provider_name(),
+                    cue.stt.provider.name = %state.transcript.provider_name(),
                     timeout = %elapsed,
                     "listen_stream_timeout"
                 );
@@ -435,7 +435,7 @@ fn discard_final_stream_errors(responses: Vec<StreamResponse>) -> Vec<StreamResp
                     error_code.map_or_else(|| "unknown".to_string(), |code| code.to_string());
                 tracing::warn!(
                     error.code = %error_code,
-                    anarlog.stt.provider.name = %provider,
+                    cue.stt.provider.name = %provider,
                     "stream_provider_error_during_shutdown"
                 );
                 None
@@ -521,7 +521,7 @@ fn process_stream_response(
         tracing::error!(
             error.code = %error_code_tag,
             error.message = %error_message,
-            anarlog.stt.provider.name = %provider,
+            cue.stt.provider.name = %provider,
             "stream_provider_error"
         );
         state

@@ -32,7 +32,7 @@ pub(crate) struct DragPlaceholderIvars {}
 define_class! {
     #[unsafe(super(NSView))]
     #[thread_kind = MainThreadOnly]
-    #[name = "AnarlogPermissionAssistantDragPlaceholderView"]
+    #[name = "CuePermissionAssistantDragPlaceholderView"]
     #[ivars = DragPlaceholderIvars]
     pub(crate) struct DragPlaceholderView;
 
@@ -100,7 +100,7 @@ pub(crate) struct DragSourceIvars {
 define_class! {
     #[unsafe(super(NSView))]
     #[thread_kind = MainThreadOnly]
-    #[name = "AnarlogPermissionAssistantDragSourceView"]
+    #[name = "CuePermissionAssistantDragSourceView"]
     #[ivars = DragSourceIvars]
     pub(crate) struct DragSourceView;
 

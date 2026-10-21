@@ -25,7 +25,7 @@ pub(crate) struct GuideCursorViewIvars {
 define_class! {
     #[unsafe(super(NSView))]
     #[thread_kind = MainThreadOnly]
-    #[name = "AnarlogPermissionAssistantGuideCursorView"]
+    #[name = "CuePermissionAssistantGuideCursorView"]
     #[ivars = GuideCursorViewIvars]
     pub(crate) struct GuideCursorView;
 

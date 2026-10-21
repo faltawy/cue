@@ -280,8 +280,8 @@ mod tests {
             ),
             (
                 "zoom in html",
-                "<p>Join Zoom Meeting<br/>https://anarlog.zoom.us/j/86746313244?pwd=zFIICnVHzPim44QcYGbLCAAqtBrGzx.1<br/></p>",
-                "https://anarlog.zoom.us/j/86746313244?pwd=zFIICnVHzPim44QcYGbLCAAqtBrGzx.1",
+                "<p>Join Zoom Meeting<br/>https://example.zoom.us/j/86746313244?pwd=zFIICnVHzPim44QcYGbLCAAqtBrGzx.1<br/></p>",
+                "https://example.zoom.us/j/86746313244?pwd=zFIICnVHzPim44QcYGbLCAAqtBrGzx.1",
             ),
             (
                 "korean google meet",
@@ -374,7 +374,10 @@ mod tests {
             assert_eq!(parse_meeting_link(link), None, "not a Kontur room: {link}");
         }
 
-        assert_eq!(parse_meeting_link("Follow us: https://x.com/anarlog"), None);
+        assert_eq!(
+            parse_meeting_link("Follow us: https://example.com/updates"),
+            None
+        );
         assert_eq!(parse_meeting_link("Call: https://call.x.com/new"), None);
         assert_eq!(
             parse_meeting_link("Call: https://call.x.com/g1234567890"),

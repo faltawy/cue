@@ -246,7 +246,7 @@ export function scenes(data = "demo") {
       url: "/app/main?devtools",
       steps: [
         {
-          eval: `localStorage.setItem("anarlog:devtools-bar:collapsed", "0"); location.reload()`,
+          eval: `localStorage.setItem("cue:devtools-bar:collapsed", "0"); location.reload()`,
           wait: 3000,
         },
       ],

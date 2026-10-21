@@ -23,6 +23,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
+// These identifiers are part of existing encrypted data and recovery keys, not product branding.
 const RECOVERY_KEY_PREFIX: &str = "anarlog-e2ee-v1:";
 const RECOVERY_KEY_ID_DOMAIN: &[u8] = b"anarlog-e2ee-recovery-key-id-v1";
 const WORKSPACE_KEY_SALT: &[u8] = b"anarlog-e2ee-workspace-key-v1";

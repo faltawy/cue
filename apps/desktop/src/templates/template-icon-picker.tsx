@@ -67,7 +67,7 @@ const FREQUENT_EMOJI_IDS = [
   "question",
 ];
 
-const RECENT_EMOJIS_KEY = "anarlog.template-picker.recent-emojis";
+const RECENT_EMOJIS_KEY = "cue.template-picker.recent-emojis";
 const data = emojiData as EmojiMartData;
 
 type EmojiItem = {
@@ -123,7 +123,9 @@ function loadRecentEmojiIds() {
 
   try {
     const value = JSON.parse(
-      window.localStorage.getItem(RECENT_EMOJIS_KEY) ?? "[]",
+      window.localStorage.getItem(RECENT_EMOJIS_KEY) ??
+        window.localStorage.getItem("anarlog.template-picker.recent-emojis") ??
+        "[]",
     );
     return Array.isArray(value)
       ? value.filter((item): item is string => typeof item === "string")

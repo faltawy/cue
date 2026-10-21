@@ -793,7 +793,7 @@ export const worst = (): Dataset => ({
       alreadyCleaned: false,
       fileCount: 12_483,
       totalBytes: 1_394_811_928_576,
-      sourceRoot: `${LONG_PATH}/Library/Application Support/com.anarlog.app`,
+      sourceRoot: `${LONG_PATH}/Library/Application Support/Cue`,
       blockingReason: null,
     },
     "plugin:path|resolve_directory": LONG_PATH,

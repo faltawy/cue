@@ -18,7 +18,7 @@ pub enum SkipReason {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppCategory {
-    Anarlog,
+    Cue,
     Dictation,
     IDE,
     ScreenRecording,
@@ -29,7 +29,7 @@ pub enum AppCategory {
 impl AppCategory {
     pub fn bundle_ids(&self) -> &'static [&'static str] {
         match self {
-            Self::Anarlog => &[
+            Self::Cue => &[
                 "com.hyprnote.dev",
                 "com.hyprnote.stable",
                 "com.hyprnote.nightly",
@@ -84,7 +84,7 @@ impl AppCategory {
 
     pub fn all() -> &'static [AppCategory] {
         &[
-            Self::Anarlog,
+            Self::Cue,
             Self::Dictation,
             Self::IDE,
             Self::ScreenRecording,

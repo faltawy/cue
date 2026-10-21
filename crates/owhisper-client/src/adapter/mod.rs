@@ -4,7 +4,6 @@ mod url_builder;
 
 mod alebex;
 mod amazon_bedrock;
-mod anarlog;
 pub(crate) mod aquavoice;
 mod argmax;
 pub(crate) mod assemblyai;
@@ -25,6 +24,7 @@ mod groq;
 pub mod http;
 mod inworld;
 mod language;
+mod legacy_hosted;
 pub(crate) mod meta;
 mod mistral;
 mod modulate;
@@ -48,7 +48,6 @@ mod zai;
 
 pub use alebex::*;
 pub use amazon_bedrock::*;
-pub use anarlog::*;
 pub use aquavoice::*;
 pub use argmax::*;
 pub use assemblyai::*;
@@ -67,6 +66,7 @@ pub use gradium::*;
 pub use groq::*;
 pub use inworld::*;
 pub use language::{LanguageQuality, LanguageSupport};
+pub use legacy_hosted::*;
 pub use meta::*;
 pub use mistral::*;
 pub use modulate::*;
@@ -355,25 +355,26 @@ pub(crate) fn host_matches(base_url: &str, predicate: impl Fn(&str) -> bool) -> 
         .unwrap_or(false)
 }
 
-const ANARLOG_PROXY_HOST: &str = "api.anarlog.so";
+// This is an upstream service endpoint, not a Cue-hosted service.
+const LEGACY_HOSTED_PROXY_HOST: &str = "api.anarlog.so";
 
-fn is_anarlog_cloud_host(host: &str) -> bool {
-    host == ANARLOG_PROXY_HOST
+fn is_legacy_hosted_cloud_host(host: &str) -> bool {
+    host == LEGACY_HOSTED_PROXY_HOST
 }
 
-fn is_anarlog_cloud(base_url: &str) -> bool {
-    host_matches(base_url, is_anarlog_cloud_host)
+fn is_legacy_hosted_cloud(base_url: &str) -> bool {
+    host_matches(base_url, is_legacy_hosted_cloud_host)
 }
 
-fn is_anarlog_local_proxy(base_url: &str) -> bool {
+fn is_legacy_hosted_local_proxy(base_url: &str) -> bool {
     url::Url::parse(base_url)
         .ok()
         .map(|u| is_local_host(u.host_str().unwrap_or("")) && u.path().contains("/stt"))
         .unwrap_or(false)
 }
 
-pub fn is_anarlog_proxy(base_url: &str) -> bool {
-    is_anarlog_cloud(base_url) || is_anarlog_local_proxy(base_url)
+pub fn is_legacy_hosted_proxy(base_url: &str) -> bool {
+    is_legacy_hosted_cloud(base_url) || is_legacy_hosted_local_proxy(base_url)
 }
 
 pub fn normalize_languages(languages: &[anlg_language::Language]) -> Vec<anlg_language::Language> {
@@ -400,7 +401,7 @@ fn is_local_argmax(base_url: &str) -> bool {
         .map(|url| {
             is_local_host(url.host_str().unwrap_or(""))
                 && url.port() == Some(50060)
-                && !is_anarlog_local_proxy(base_url)
+                && !is_legacy_hosted_local_proxy(base_url)
         })
         .unwrap_or(false)
 }
@@ -444,7 +445,7 @@ pub fn build_proxy_ws_url(api_base: &str) -> Option<(url::Url, Vec<(String, Stri
     let parsed: url::Url = api_base.parse().ok()?;
     let host = parsed.host_str()?;
 
-    if !is_anarlog_cloud_host(host) && !is_local_host(host) {
+    if !is_legacy_hosted_cloud_host(host) && !is_local_host(host) {
         return None;
     }
 
@@ -565,7 +566,7 @@ pub enum AdapterKind {
     #[strum(serialize = "smallestai")]
     SmallestAI,
     #[strum(serialize = "anarlog")]
-    Anarlog,
+    LegacyHosted,
 }
 
 impl AdapterKind {
@@ -576,7 +577,7 @@ impl AdapterKind {
     ) -> Self {
         use crate::providers::Provider;
 
-        if !is_anarlog_proxy(base_url)
+        if !is_legacy_hosted_proxy(base_url)
             && let Ok(url) = url::Url::parse(base_url)
             && let Some(kind) = url
                 .query_pairs()
@@ -619,8 +620,8 @@ impl AdapterKind {
         if host_matches(base_url, |host| host == "platform-api.wisprflow.ai") {
             return Self::WisprFlow;
         }
-        if is_anarlog_proxy(base_url) {
-            return Self::Anarlog;
+        if is_legacy_hosted_proxy(base_url) {
+            return Self::LegacyHosted;
         }
 
         if is_local_argmax(base_url) {
@@ -735,7 +736,7 @@ impl AdapterKind {
             | Self::SmallestAI
             | Self::WisprFlow
             | Self::GoogleGenerativeAi
-            | Self::Anarlog => true,
+            | Self::LegacyHosted => true,
         }
     }
 
@@ -783,7 +784,7 @@ impl AdapterKind {
             Self::Nari => NariAdapter::language_support_live(languages, model),
             Self::SmallestAI => SmallestAIAdapter::language_support_live(languages, model),
             Self::GoogleGenerativeAi => GoogleGenerativeAiAdapter::language_support_live(languages),
-            Self::Anarlog => AnarlogAdapter::language_support_live(languages, model),
+            Self::LegacyHosted => LegacyHostedAdapter::language_support_live(languages, model),
         }
     }
 
@@ -832,7 +833,7 @@ impl AdapterKind {
             Self::GoogleGenerativeAi => {
                 GoogleGenerativeAiAdapter::language_support_batch(languages)
             }
-            Self::Anarlog => AnarlogAdapter::language_support_batch(languages, model),
+            Self::LegacyHosted => LegacyHostedAdapter::language_support_batch(languages, model),
         }
     }
 

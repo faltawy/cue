@@ -1,3 +1,3 @@
 fn main() {
-    anarlog_desktop_lib::main()
+    cue_desktop_lib::main()
 }

@@ -74,8 +74,8 @@ fn ws_connect_error(args: &ListenerArgs, error: anlg_ws_client::Error) -> ActorP
     let message = format!("listen_ws_connect_failed: {error:?}");
 
     tracing::warn!(
-        anarlog.session.id = %args.session_id,
-        anarlog.stt.provider.name = %provider,
+        cue.session.id = %args.session_id,
+        cue.stt.provider.name = %provider,
         error.message = ?error,
         "listen_ws_connect_failed"
     );
@@ -240,7 +240,7 @@ pub(super) async fn spawn_rx_task(
         RevAi,
         Speechmatics,
         Together
-    ], unsupported: [Anarlog])?;
+    ], unsupported: [LegacyHosted])?;
 
     Ok((result.0, result.1, result.2, adapter_kind.to_string()))
 }
@@ -287,9 +287,9 @@ async fn spawn_soniqo_rx_task(
             Ok(result) => result,
             Err(error) => {
                 tracing::error!(
-                    anarlog.session.id = %args.session_id,
-                    anarlog.stt.provider.name = "soniqo",
-                    anarlog.stt.model = %model,
+                    cue.session.id = %args.session_id,
+                    cue.stt.provider.name = "soniqo",
+                    cue.stt.model = %model,
                     error.message = %error,
                     "soniqo_live_start_failed(dual)"
                 );
@@ -330,9 +330,9 @@ async fn spawn_soniqo_rx_task(
                 Ok(result) => result,
                 Err(error) => {
                     tracing::error!(
-                        anarlog.session.id = %args.session_id,
-                        anarlog.stt.provider.name = "soniqo",
-                        anarlog.stt.model = %model,
+                        cue.session.id = %args.session_id,
+                        cue.stt.provider.name = "soniqo",
+                        cue.stt.model = %model,
                         error.message = %error,
                         "soniqo_live_start_failed(single)"
                     );
@@ -399,7 +399,7 @@ async fn spawn_apple_speech_rx_task(
             format_languages(&args.languages)
         );
         tracing::error!(
-            anarlog.session.id = %args.session_id,
+            cue.session.id = %args.session_id,
             error.message = %message,
             "apple_speech_live_start_failed"
         );
@@ -419,7 +419,7 @@ async fn spawn_apple_speech_rx_task(
             Ok(result) => result,
             Err(error) => {
                 tracing::error!(
-                    anarlog.session.id = %args.session_id,
+                    cue.session.id = %args.session_id,
                     error.message = ?error,
                     "apple_speech_live_start_failed(dual)"
                 );
@@ -462,7 +462,7 @@ async fn spawn_apple_speech_rx_task(
                 Ok(result) => result,
                 Err(error) => {
                     tracing::error!(
-                        anarlog.session.id = %args.session_id,
+                        cue.session.id = %args.session_id,
                         error.message = ?error,
                         "apple_speech_live_start_failed(single)"
                     );

@@ -49,6 +49,7 @@ fn secrets_file<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<SecretsF
     Ok(SecretsFile::new(dir.join(SECRETS_FILENAME)))
 }
 
+// Keep shipped Keychain service names so existing credentials remain accessible.
 fn secure_store_service(identifier: &str) -> String {
     let identifier = match identifier {
         "com.hyprnote.dev" => "com.anarlog.dev",

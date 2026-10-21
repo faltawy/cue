@@ -3,7 +3,7 @@ use sentry::protocol::{Context, Event, Value};
 use crate::{is_ignored_error_text, is_user_error_text};
 
 const WEBVIEW_CONSOLE_LOGGERS: &[&str] = &[
-    "anarlog.webview.console",
+    "cue.webview.console",
     "hyprnote.webview.console",
     "tauri_plugin_tracing::ext",
 ];
@@ -127,11 +127,11 @@ pub fn sanitize_sentry_event(mut event: Event<'static>) -> Option<Event<'static>
         }
         matches!(
             key.as_str(),
-            "anarlog.error.stage"
-                | "anarlog.honeycomb.span_id"
-                | "anarlog.honeycomb.trace_id"
-                | "anarlog.operation"
-                | "anarlog.surface"
+            "cue.error.stage"
+                | "cue.honeycomb.span_id"
+                | "cue.honeycomb.trace_id"
+                | "cue.operation"
+                | "cue.surface"
                 | "error.code"
                 | "error.type"
                 | "http.response.status_code"
@@ -177,7 +177,7 @@ pub fn sanitize_sentry_event(mut event: Event<'static>) -> Option<Event<'static>
         event.message = Some(grouping_key.clone());
         event
             .tags
-            .insert("anarlog.operation".to_string(), grouping_key.clone());
+            .insert("cue.operation".to_string(), grouping_key.clone());
         event.fingerprint = vec!["server_error".into(), grouping_key.into()].into();
     }
 
@@ -366,7 +366,7 @@ mod tests {
         let sanitized = sanitize_sentry_event(event).unwrap();
         assert_eq!(sanitized.message.as_deref(), Some("database_write_failed"));
         assert_eq!(
-            sanitized.tags.get("anarlog.operation").map(String::as_str),
+            sanitized.tags.get("cue.operation").map(String::as_str),
             Some("database_write_failed")
         );
         assert_eq!(

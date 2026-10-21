@@ -26,6 +26,8 @@ pub fn kill_processes_by_matcher(matcher: ProcessMatcher) -> u16 {
     let targets = match matcher {
         ProcessMatcher::Name(name) => vec![name],
         ProcessMatcher::Sidecar => vec![
+            "cue-sidecar".to_string(),
+            // Clean up sidecars left running by earlier releases.
             "anarlog-sidecar".to_string(),
             "char-sidecar".to_string(),
             "hyprnote-sidecar".to_string(),

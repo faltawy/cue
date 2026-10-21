@@ -106,7 +106,7 @@ impl RealtimeSttAdapter for DashScopeAdapter {
 
         let json = serde_json::to_string(&session_config).ok()?;
         tracing::debug!(
-            anarlog.payload.size_bytes = json.len() as u64,
+            cue.payload.size_bytes = json.len() as u64,
             "dashscope_session_update_payload"
         );
         Some(Message::Text(json.into()))
@@ -125,7 +125,7 @@ impl RealtimeSttAdapter for DashScopeAdapter {
             Err(_e) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "dashscope_json_parse_failed"
                 );
                 return vec![];
@@ -161,14 +161,14 @@ impl RealtimeSttAdapter for DashScopeAdapter {
                 transcript, ..
             } => {
                 tracing::debug!(
-                    anarlog.transcript.char_count = transcript.chars().count() as u64,
+                    cue.transcript.char_count = transcript.chars().count() as u64,
                     "dashscope_transcription_completed"
                 );
                 Self::build_transcript_response(&transcript, true, true)
             }
             DashScopeEvent::ConversationItemInputAudioTranscriptionText { text, .. } => {
                 tracing::debug!(
-                    anarlog.transcript.char_count = text.chars().count() as u64,
+                    cue.transcript.char_count = text.chars().count() as u64,
                     "dashscope_transcription_text"
                 );
                 Self::build_transcript_response(&text, false, false)
@@ -191,7 +191,7 @@ impl RealtimeSttAdapter for DashScopeAdapter {
             }
             DashScopeEvent::Unknown => {
                 tracing::debug!(
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "dashscope_unknown_event"
                 );
                 vec![]

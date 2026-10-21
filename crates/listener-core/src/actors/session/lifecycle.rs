@@ -7,9 +7,9 @@ use crate::{ListenerRuntime, SessionLifecycleEvent};
 
 pub(crate) fn log_session_starting(params: &SessionParams) {
     tracing::info!(
-        anarlog.session.onboarding = params.onboarding,
-        anarlog.session.transcription_mode = ?params.transcription_mode,
-        anarlog.session.language_codes = ?params.languages,
+        cue.session.onboarding = params.onboarding,
+        cue.session.transcription_mode = ?params.transcription_mode,
+        cue.session.language_codes = ?params.languages,
         gen_ai.request.model = %params.model,
         "session_starting"
     );
@@ -33,7 +33,7 @@ pub(crate) fn emit_session_ended(
     });
 
     if let Some(reason) = failure_reason {
-        tracing::info!(anarlog.session.stop_reason = %reason, "session_stopped");
+        tracing::info!(cue.session.stop_reason = %reason, "session_stopped");
     } else {
         tracing::info!("session_stopped");
     }

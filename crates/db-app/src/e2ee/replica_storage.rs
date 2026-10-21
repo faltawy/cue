@@ -883,6 +883,7 @@ pub(super) fn sqlite_value(row: &SqliteRow, index: usize) -> E2eeReplicaResult<V
         "INTEGER" => Ok(json!(row.try_get::<i64, _>(index)?)),
         "REAL" => Ok(json!(row.try_get::<f64, _>(index)?)),
         "TEXT" => Ok(json!(row.try_get::<String, _>(index)?)),
+        // This tag is part of the persisted encrypted replica format.
         "BLOB" => Ok(json!({
             "$anarlog_blob": URL_SAFE_NO_PAD.encode(row.try_get::<Vec<u8>, _>(index)?)
         })),

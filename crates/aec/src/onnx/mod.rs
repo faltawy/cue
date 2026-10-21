@@ -370,8 +370,8 @@ mod tests {
         pub const DOUBLETALK_MIC: &[u8] =
             include_bytes!("../../data/inputs/doubletalk_mic_sample.wav");
 
-        pub const ANARLOG_LPB: &[u8] = include_bytes!("../../data/inputs/anarlog_lpb.wav");
-        pub const ANARLOG_MIC: &[u8] = include_bytes!("../../data/inputs/anarlog_mic.wav");
+        pub const CUE_LPB: &[u8] = include_bytes!("../../data/inputs/cue_lpb.wav");
+        pub const CUE_MIC: &[u8] = include_bytes!("../../data/inputs/cue_mic.wav");
 
         pub const THEO_LPB: &[u8] = include_bytes!("../../data/inputs/theo_lpb.wav");
         pub const THEO_MIC: &[u8] = include_bytes!("../../data/inputs/theo_mic.wav");
@@ -500,12 +500,7 @@ mod tests {
         "doubletalk"
     );
 
-    aec_test!(
-        test_aec_anarlog,
-        data::ANARLOG_LPB,
-        data::ANARLOG_MIC,
-        "anarlog"
-    );
+    aec_test!(test_aec_cue, data::CUE_LPB, data::CUE_MIC, "cue");
 
     aec_test!(test_aec_theo, data::THEO_LPB, data::THEO_MIC, "theo");
 }

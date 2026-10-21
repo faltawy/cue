@@ -7,13 +7,16 @@ describe("micAppsShowInUse", () => {
     expect(micAppsShowInUse([{ id: "us.zoom.xos", name: "Zoom" }])).toBe(true);
   });
 
-  it("ignores Anarlog itself", () => {
+  it("ignores Cue itself", () => {
+    const selfApps = [
+      { id: "com.cue.app", name: "Cue" },
+      { id: "com.anarlog.app", name: "Anarlog" },
+      { id: "com.hyprnote.app", name: "Hyprnote" },
+    ];
+    expect(micAppsShowInUse(selfApps)).toBe(false);
     expect(
-      micAppsShowInUse([
-        { id: "com.anarlog.app", name: "Anarlog" },
-        { id: "com.hyprnote.app", name: "Hyprnote" },
-      ]),
-    ).toBe(false);
+      micAppsShowInUse([...selfApps, { id: "us.zoom.xos", name: "Zoom" }]),
+    ).toBe(true);
   });
 
   it("ignores empty, pid, and duplicate ids", () => {

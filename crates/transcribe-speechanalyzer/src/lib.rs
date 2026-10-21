@@ -395,8 +395,8 @@ pub fn transcribe_file(path: impl AsRef<Path>, locale: &str) -> Result<FileTrans
     let started_at = Instant::now();
 
     tracing::info!(
-        anarlog.stt.provider.name = "apple-speech",
-        anarlog.stt.language = %locale,
+        cue.stt.provider.name = "apple-speech",
+        cue.stt.language = %locale,
         "apple_speech_file_transcription_start"
     );
 
@@ -405,14 +405,14 @@ pub fn transcribe_file(path: impl AsRef<Path>, locale: &str) -> Result<FileTrans
 
     match &result {
         Ok(transcript) => tracing::info!(
-            anarlog.stt.provider.name = "apple-speech",
+            cue.stt.provider.name = "apple-speech",
             elapsed_ms,
             transcript.duration_seconds = transcript.duration_seconds,
             transcript.text_chars = transcript.text.chars().count(),
             "apple_speech_file_transcription_completed"
         ),
         Err(error) => tracing::error!(
-            anarlog.stt.provider.name = "apple-speech",
+            cue.stt.provider.name = "apple-speech",
             elapsed_ms,
             error = %error,
             "apple_speech_file_transcription_failed"

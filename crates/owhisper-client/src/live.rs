@@ -13,7 +13,7 @@ use owhisper_interface::stream::StreamResponse;
 use owhisper_interface::{ControlMessage, MixedMessage};
 
 use crate::{
-    DeepgramAdapter, RealtimeSttAdapter, append_provider_param, is_anarlog_proxy,
+    DeepgramAdapter, RealtimeSttAdapter, append_provider_param, is_legacy_hosted_proxy,
     normalize_listen_params,
 };
 
@@ -116,7 +116,7 @@ impl<A: RealtimeSttAdapter> ListenClientBuilder<A> {
 
         let mut request = anlg_ws_client::client::ClientRequestBuilder::new(uri);
 
-        if is_anarlog_proxy(original_api_base) {
+        if is_legacy_hosted_proxy(original_api_base) {
             if let Some(api_key) = self.api_key.as_deref() {
                 request = request.with_header("Authorization", format!("Bearer {}", api_key));
             }

@@ -97,7 +97,7 @@ impl RealtimeSttAdapter for XaiAdapter {
             Err(_error) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "xai_json_parse_failed"
                 );
                 return Vec::new();
@@ -200,7 +200,7 @@ mod tests {
         let params = ListenParams {
             sample_rate: 16_000,
             languages: vec![anlg_language::ISO639::En.into()],
-            keywords: vec!["Anarlog".to_string()],
+            keywords: vec!["Cue".to_string()],
             ..Default::default()
         };
 

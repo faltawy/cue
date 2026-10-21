@@ -87,7 +87,7 @@ pub(in crate::batch) async fn run_direct_batch_for_adapter_kind(
         Xai => XaiAdapter,
         SmallestAI => SmallestAIAdapter,
         WisprFlow => WisprFlowAdapter,
-    }, unsupported: [DashScope, Nari, Inworld, Gradium, Modulate, Alebex, Nvidia, Anarlog])
+    }, unsupported: [DashScope, Nari, Inworld, Gradium, Modulate, Alebex, Nvidia, LegacyHosted])
 }
 
 pub(super) async fn run_direct_batch<A: BatchSttAdapter>(

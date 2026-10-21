@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 
-pub const TOKEN_ENV: &str = "ANARLOG_COACH_TOKEN";
+pub const TOKEN_ENV: &str = "CUE_COACH_TOKEN";
 const LOGIN_LIFETIME_MS: u64 = 30_000;
 
 pub fn new_token() -> String {

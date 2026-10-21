@@ -119,10 +119,7 @@ describe("providerFetch", () => {
           .mock.calls.map(([, init]) =>
             new Headers(init?.headers).get("Authorization"),
           ),
-      ).toEqual([
-        "Bearer local-key",
-        "Bearer anarlog-invalid-key-verification",
-      ]);
+      ).toEqual(["Bearer local-key", "Bearer cue-invalid-key-verification"]);
       await expect(
         verifyProviderCredentials(
           { ...credential, apiKey: "wrong-key" },

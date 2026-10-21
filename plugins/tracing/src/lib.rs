@@ -28,7 +28,7 @@ use tracing_subscriber::{
 use utils::cleanup_legacy_logs;
 
 const PLUGIN_NAME: &str = "tracing";
-const WEBVIEW_CONSOLE_TARGET: &str = "anarlog.webview.console";
+const WEBVIEW_CONSOLE_TARGET: &str = "cue.webview.console";
 
 #[derive(Default)]
 struct FileFields(DefaultFields);
@@ -188,7 +188,7 @@ mod test {
             .with(file_layer(file.clone()));
 
         tracing::subscriber::with_default(subscriber, || {
-            let span = tracing::info_span!("session", anarlog.session.id = "abc123");
+            let span = tracing::info_span!("session", cue.session.id = "abc123");
             let _guard = span.enter();
             tracing::info!(provider = "soniox", "listen_ws_connected");
         });
@@ -197,7 +197,7 @@ mod test {
         let file = file.contents();
         assert!(console.contains('\u{1b}'), "{console:?}");
         assert!(
-            file.contains("session{anarlog.session.id=\"abc123\"}"),
+            file.contains("session{cue.session.id=\"abc123\"}"),
             "{file:?}"
         );
         assert!(

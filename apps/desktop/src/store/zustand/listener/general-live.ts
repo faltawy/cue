@@ -677,7 +677,7 @@ export const startLiveSession = <T extends LiveStore>(
           detectCommands
             .listMicUsingApplications()
             .then((r) => (r.status === "ok" ? r.data : null)),
-          getIdentifier().catch(() => "com.anarlog.stable"),
+          getIdentifier().catch(() => "com.hyprnote.stable"),
         ]),
       catch: (error) => error,
     });
@@ -1081,7 +1081,7 @@ export const stopLiveSession = <T extends GeneralState>(
             if (r.status === "error") throw new Error(r.error);
             return r.data;
           }),
-          getIdentifier().catch(() => "com.anarlog.stable"),
+          getIdentifier().catch(() => "com.hyprnote.stable"),
         ])
           .then(([dataDirPath, bundleId]) => {
             const sessionPath = getSessionResourcePath(dataDirPath, sessionId);

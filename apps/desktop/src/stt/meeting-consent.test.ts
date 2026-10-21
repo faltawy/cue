@@ -10,7 +10,7 @@ import {
   type DisclosureAttempt,
 } from "./meeting-consent";
 
-const DISCLOSURE = "I'm using Anarlog to record and transcribe this meeting.";
+const DISCLOSURE = "I'm using Cue to record and transcribe this meeting.";
 
 function attempt(
   delivery: DisclosureAttempt["delivery"] = "sent",
@@ -21,7 +21,7 @@ function attempt(
     attemptedAt: "2026-08-21T00:00:00.000Z",
     platform: "slack_huddle",
     surface: "huddle",
-    messageVersion: "anarlog-disclosure-v2",
+    messageVersion: "cue-disclosure-v2",
     message: DISCLOSURE,
     delivery,
     failureReason: "",

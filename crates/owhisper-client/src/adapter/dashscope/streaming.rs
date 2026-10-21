@@ -129,7 +129,7 @@ impl RealtimeSttAdapter for DashScopeStreamingAdapter {
         let (mut url, existing_params) = DashScopeAdapter::build_ws_url_from_base(api_base);
 
         // Direct endpoints (default, China, or workspace-specific `ws-*.maas.aliyuncs.com`
-        // hosts) speak the task protocol on `/api-ws/v1/inference`; the Anarlog proxy keeps
+        // hosts) speak the task protocol on `/api-ws/v1/inference`; the legacy hosted proxy keeps
         // its own `/listen` path and dispatches by model server-side.
         if url.path() == Provider::DashScope.ws_path() {
             url.set_path(INFERENCE_WS_PATH);
@@ -199,7 +199,7 @@ impl RealtimeSttAdapter for DashScopeStreamingAdapter {
 
         let json = serde_json::to_string(&run_task).ok()?;
         tracing::debug!(
-            anarlog.payload.size_bytes = json.len() as u64,
+            cue.payload.size_bytes = json.len() as u64,
             "dashscope_run_task_payload"
         );
         Some(Message::Text(json.into()))
@@ -225,7 +225,7 @@ impl RealtimeSttAdapter for DashScopeStreamingAdapter {
             Err(_e) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "dashscope_streaming_json_parse_failed"
                 );
                 return vec![];
@@ -261,7 +261,7 @@ impl RealtimeSttAdapter for DashScopeStreamingAdapter {
             }
             _ => {
                 tracing::debug!(
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "dashscope_streaming_unknown_event"
                 );
                 vec![]

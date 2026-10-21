@@ -331,13 +331,13 @@ pub(super) fn session_span(session_id: &str) -> tracing::Span {
 pub(super) fn log_batch_failure(operation: &str, error: &str) {
     if anlg_user_error::is_user_error_text(error) {
         tracing::warn!(
-            anarlog.operation = operation,
+            cue.operation = operation,
             error.type = "user_error",
             "batch_operation_rejected"
         );
     } else {
         tracing::error!(
-            anarlog.operation = operation,
+            cue.operation = operation,
             error.type = "batch_operation_failed",
             "batch_operation_failed"
         );

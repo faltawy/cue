@@ -109,6 +109,13 @@ describe("stepZoomFactor", () => {
 });
 
 describe("readZoomFactor", () => {
+  it("keeps the legacy zoom until a Cue zoom is saved", () => {
+    const values = new Map([["anarlog-zoom-factor", "1.25"]]);
+    const saved = { getItem: (key: string) => values.get(key) ?? null };
+    expect(readZoomFactor(saved)).toBe(1.25);
+    values.set("cue-zoom-factor", "1.5");
+    expect(readZoomFactor(saved)).toBe(1.5);
+  });
   const storage = (value: string | null) => ({ getItem: vi.fn(() => value) });
 
   it.each([

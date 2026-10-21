@@ -3744,7 +3744,7 @@ describe("useStartListening", () => {
     listMicUsingApplicationsMock
       .mockResolvedValueOnce({
         status: "ok",
-        data: [{ id: "com.anarlog.dev", name: "Cue Dev" }],
+        data: [{ id: "com.hyprnote.dev", name: "Cue Dev" }],
       })
       .mockResolvedValueOnce({
         status: "ok",
@@ -3778,7 +3778,7 @@ describe("useStartListening", () => {
     expect(sendMeetingChatMessageMock).toHaveBeenNthCalledWith(
       1,
       "I'm using Cue to record and transcribe this meeting.",
-      ["com.anarlog.dev"],
+      ["com.hyprnote.dev"],
     );
     expect(sendMeetingChatMessageMock).toHaveBeenNthCalledWith(
       2,

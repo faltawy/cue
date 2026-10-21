@@ -6,26 +6,22 @@ import { getIdentifier } from "@tauri-apps/api/app";
 
 export const id = () => crypto.randomUUID() as string;
 
-export type DesktopScheme =
-  | "anarlog"
-  | "anarlog-staging"
-  | "anarlog-nightly"
-  | "anarlog-dev";
+export type DesktopScheme = "cue" | "cue-staging" | "cue-nightly" | "cue-dev";
 
 export const getScheme = async (): Promise<DesktopScheme> => {
   const id = await getIdentifier();
   const schemes: Record<string, DesktopScheme> = {
-    "com.hyprnote.stable": "anarlog",
-    "com.hyprnote.Hyprnote": "anarlog",
-    "com.hyprnote.staging": "anarlog-staging",
-    "com.hyprnote.nightly": "anarlog-nightly",
-    "com.hyprnote.dev": "anarlog-dev",
-    "so.anarlog.Anarlog": "anarlog",
-    "com.anarlog.stable": "anarlog",
-    "com.anarlog.staging": "anarlog-staging",
-    "com.anarlog.dev": "anarlog-dev",
+    "com.hyprnote.stable": "cue",
+    "com.hyprnote.Hyprnote": "cue",
+    "com.hyprnote.staging": "cue-staging",
+    "com.hyprnote.nightly": "cue-nightly",
+    "com.hyprnote.dev": "cue-dev",
+    "so.anarlog.Anarlog": "cue",
+    "com.anarlog.stable": "cue",
+    "com.anarlog.staging": "cue-staging",
+    "com.anarlog.dev": "cue-dev",
   };
-  return schemes[id] ?? "anarlog";
+  return schemes[id] ?? "cue";
 };
 
 // https://www.rfc-editor.org/rfc/rfc4122#section-4.1.7

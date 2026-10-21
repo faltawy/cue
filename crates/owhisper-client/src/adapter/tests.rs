@@ -81,17 +81,17 @@ fn test_documented_language_codes_are_menu_safe() {
 }
 
 #[test]
-fn test_is_anarlog_proxy() {
-    assert!(is_anarlog_proxy("https://api.anarlog.so/stt"));
-    assert!(is_anarlog_proxy("https://api.anarlog.so"));
-    assert!(is_anarlog_proxy("http://localhost:3001/stt"));
-    assert!(is_anarlog_proxy("http://127.0.0.1:3001/stt"));
+fn test_is_legacy_hosted_proxy() {
+    assert!(is_legacy_hosted_proxy("https://api.anarlog.so/stt"));
+    assert!(is_legacy_hosted_proxy("https://api.anarlog.so"));
+    assert!(is_legacy_hosted_proxy("http://localhost:3001/stt"));
+    assert!(is_legacy_hosted_proxy("http://127.0.0.1:3001/stt"));
 
-    assert!(!is_anarlog_proxy("https://api.hyprnote.com/stt"));
-    assert!(!is_anarlog_proxy("https://api.char.com/stt"));
-    assert!(!is_anarlog_proxy("https://notchar.com/stt"));
-    assert!(!is_anarlog_proxy("https://api.deepgram.com"));
-    assert!(!is_anarlog_proxy("http://localhost:50060/v1"));
+    assert!(!is_legacy_hosted_proxy("https://api.hyprnote.com/stt"));
+    assert!(!is_legacy_hosted_proxy("https://api.char.com/stt"));
+    assert!(!is_legacy_hosted_proxy("https://notchar.com/stt"));
+    assert!(!is_legacy_hosted_proxy("https://api.deepgram.com"));
+    assert!(!is_legacy_hosted_proxy("http://localhost:50060/v1"));
 }
 
 #[test]
@@ -111,86 +111,86 @@ fn test_adapter_kind_from_url_and_languages() {
     use anlg_language::ISO639::*;
 
     let cases: &[(&str, &[anlg_language::ISO639], Option<&str>, AdapterKind)] = &[
-        // AnarlogCloud - always routes to Anarlog adapter (proxy owns provider selection)
+        // LegacyHosted - always routes to legacy hosted adapter (proxy owns provider selection)
         (
             "https://api.anarlog.so/stt",
             &[En],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[En],
             Some("cloud"),
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[En, Ko],
             Some("cloud"),
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[Zh],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[Ja],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[Ar],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[De],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
-        // AnarlogCloud - multi-language
+        // LegacyHosted - multi-language
         (
             "https://api.anarlog.so/stt",
             &[En, Es],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[En, Ko],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[Ko, En],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "https://api.anarlog.so/stt",
             &[En, De],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         // localhost proxy
         (
             "http://localhost:3001/stt",
             &[En],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         (
             "http://localhost:3001/stt",
             &[Ar],
             None,
-            AdapterKind::Anarlog,
+            AdapterKind::LegacyHosted,
         ),
         // localhost argmax
         (
@@ -257,7 +257,7 @@ fn test_has_live_mode() {
         AdapterKind::SmallestAI,
         AdapterKind::WisprFlow,
         AdapterKind::GoogleGenerativeAi,
-        AdapterKind::Anarlog,
+        AdapterKind::LegacyHosted,
     ];
     for kind in live {
         assert!(kind.has_live_mode(), "{kind:?} should support live mode");
@@ -380,7 +380,7 @@ fn test_build_proxy_ws_url() {
 }
 
 #[test]
-fn test_anarlog_proxy_always_selects_anarlog_adapter() {
+fn test_legacy_hosted_proxy_always_selects_legacy_hosted_adapter() {
     use anlg_language::ISO639::*;
 
     let proxy_urls = &[
@@ -396,15 +396,15 @@ fn test_anarlog_proxy_always_selects_anarlog_adapter() {
             let langs: Vec<anlg_language::Language> = langs.iter().map(|l| (*l).into()).collect();
             assert_eq!(
                 AdapterKind::from_url_and_languages(url, &langs, Some("cloud")),
-                AdapterKind::Anarlog,
-                "proxy URL should always select Anarlog adapter regardless of languages: url={url}, langs={langs:?}"
+                AdapterKind::LegacyHosted,
+                "proxy URL should always select legacy hosted adapter regardless of languages: url={url}, langs={langs:?}"
             );
         }
     }
 }
 
 #[test]
-fn test_anarlog_cloud_adapter_supports_all_languages() {
+fn test_legacy_hosted_cloud_adapter_supports_all_languages() {
     use anlg_language::ISO639::*;
 
     let combos: &[&[anlg_language::ISO639]] = &[&[En], &[Ko], &[Ar], &[En, De], &[En, Ko], &[Zh]];
@@ -412,35 +412,41 @@ fn test_anarlog_cloud_adapter_supports_all_languages() {
     for langs in combos {
         let langs: Vec<anlg_language::Language> = langs.iter().map(|l| (*l).into()).collect();
         assert!(
-            AdapterKind::Anarlog.is_supported_languages_live(&langs, Some("cloud")),
-            "Anarlog adapter should support all languages: {langs:?}"
+            AdapterKind::LegacyHosted.is_supported_languages_live(&langs, Some("cloud")),
+            "legacy hosted adapter should support all languages: {langs:?}"
         );
     }
 }
 
 #[test]
-fn test_anarlog_soniqo_live_limits_parakeet_languages() {
+fn test_legacy_hosted_soniqo_live_limits_parakeet_languages() {
     use anlg_language::ISO639::*;
 
     let fr: Vec<anlg_language::Language> = vec![Fr.into()];
     let ko: Vec<anlg_language::Language> = vec![Ko.into()];
 
     assert!(
-        AdapterKind::Anarlog.is_supported_languages_live(&fr, Some("soniqo-parakeet-streaming"))
+        AdapterKind::LegacyHosted
+            .is_supported_languages_live(&fr, Some("soniqo-parakeet-streaming"))
     );
     assert!(
-        !AdapterKind::Anarlog.is_supported_languages_live(&ko, Some("soniqo-parakeet-streaming"))
+        !AdapterKind::LegacyHosted
+            .is_supported_languages_live(&ko, Some("soniqo-parakeet-streaming"))
     );
 }
 
 #[test]
-fn test_anarlog_soniqo_live_rejects_batch_only_models() {
+fn test_legacy_hosted_soniqo_live_rejects_batch_only_models() {
     use anlg_language::ISO639::*;
 
     let fr: Vec<anlg_language::Language> = vec![Fr.into()];
 
-    assert!(!AdapterKind::Anarlog.is_supported_languages_live(&fr, Some("soniqo-parakeet-batch")));
-    assert!(!AdapterKind::Anarlog.is_supported_languages_live(&fr, Some("soniqo-qwen3-small")));
+    assert!(
+        !AdapterKind::LegacyHosted.is_supported_languages_live(&fr, Some("soniqo-parakeet-batch"))
+    );
+    assert!(
+        !AdapterKind::LegacyHosted.is_supported_languages_live(&fr, Some("soniqo-qwen3-small"))
+    );
 }
 
 #[test]
