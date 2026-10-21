@@ -16,7 +16,7 @@ import { createSession } from "~/session/queries";
 import { flushAutomaticRelaunch } from "~/shared/relaunch";
 import { commands } from "~/types/tauri.gen";
 
-const RELEASES_URL = "https://github.com/faltawy/cue-releases";
+const RELEASES_URL = "https://github.com/faltawy/cue/releases";
 
 export function FinalDescription() {
   return (

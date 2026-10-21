@@ -1,6 +1,6 @@
 # Releasing Cue
 
-Source code, user guides, version tags and releases live in the public repository [`faltawy/cue`](https://github.com/faltawy/cue). Standard GitHub-hosted runners build releases there. The old `cue-releases` repository remains available for existing download links and its compatibility updater feed.
+Source code, user guides, version tags and releases live in the public repository [`faltawy/cue`](https://github.com/faltawy/cue). Standard GitHub-hosted runners build releases there. Historical releases have been migrated to this repository; the old `cue-releases` repository has been deleted.
 
 ## 1. Repository secrets (once)
 
@@ -19,8 +19,6 @@ The updater public key in `apps/desktop/src-tauri/tauri.conf.json` is `~/.tauri/
 ### Release permissions
 
 The workflow uses its built-in `GITHUB_TOKEN` with `contents: write` to publish in `faltawy/cue`; no personal token is needed for new releases.
-
-The 0.5.1 workflow uses `RELEASES_TOKEN` once to publish the final compatibility feed in `cue-releases`. Subsequent releases write only to `cue` and need no cross-repository token.
 
 ## 2. Release notes
 
@@ -59,7 +57,7 @@ To build and verify an existing tag without changing its published release, run 
 
 Nothing to set up. Cue reads `https://github.com/faltawy/cue/releases/latest/download/latest.json` 30 seconds after launch and every 6 hours, and checks each download against the updater public key. Updates download in the background. "Restart to update" (in Settings > General > Updates or the tray) installs the update, but never while a recording is running or the coach is answering. Only the stable app (`com.hyprnote.stable`) updates. Dev builds show that updates are unavailable.
 
-Versions 0.1.4 through 0.5.0 read the old `cue-releases` feed. The 0.5.1 release updates that feed once to point at its signed download in `cue`. After installing 0.5.1, those apps poll `cue` for subsequent updates. Archive `cue-releases` only after verifying this final feed and copying all published releases to `cue`. Keep the archived repository available for the compatibility feed and historical download links; do not delete it.
+Versions 0.1.4 through 0.5.0 originally read the old `cue-releases` feed. The 0.5.1 release switched the updater to `cue`, and all published release records and assets are now in this repository. Apps on versions before 0.5.1 may need to be updated manually before they can receive in-app updates.
 
 ## 5. First install of a self-signed build
 
