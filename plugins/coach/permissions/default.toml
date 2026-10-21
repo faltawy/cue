@@ -18,4 +18,8 @@ permissions = [
   "allow-update-claude-code",
   "allow-claude-setup",
   "allow-retry-claude-setup",
+    "allow-provider-account",
+    "allow-sign-in-to-provider",
+    "allow-provider-setup",
+    "allow-retry-provider-setup",
 ]

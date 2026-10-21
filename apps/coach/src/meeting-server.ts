@@ -1,14 +1,22 @@
-import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
+import {
+  createSdkMcpServer,
+  tool as sdkTool,
+} from "@anthropic-ai/claude-agent-sdk";
 import type { Database } from "bun:sqlite";
 import { z } from "zod";
 
 import type { AppBridge, CoachEdit } from "./app-bridge";
 import { type Block, showInputShape } from "./blocks";
-import { MOVE_TAGS } from "./move";
 import { libraryTools } from "./library-tools";
+import { MOVE_TAGS } from "./move";
 import { readMeetingNote } from "./notes";
+import { tool } from "./runtime-tool";
 import { failed, text } from "./tool-result";
-import { readLiveTranscript, readMeetingInfo, renderTranscript } from "./transcript";
+import {
+  readLiveTranscript,
+  readMeetingInfo,
+  renderTranscript,
+} from "./transcript";
 
 export type MeetingEdits = {
   bridge: AppBridge;
@@ -29,7 +37,10 @@ export function showTool(onShow: (block: Block) => void) {
     showInputShape,
     async (input) => {
       const parsed = z.object(showInputShape).safeParse(input);
-      if (!parsed.success) return failed(new Error(`Invalid block: ${z.prettifyError(parsed.error)}`));
+      if (!parsed.success)
+        return failed(
+          new Error(`Invalid block: ${z.prettifyError(parsed.error)}`),
+        );
       onShow(parsed.data.block);
       return text(SHOWN[parsed.data.block.kind]);
     },
@@ -37,7 +48,7 @@ export function showTool(onShow: (block: Block) => void) {
   );
 }
 
-export function meetingServer(
+export function meetingTools(
   db: Database,
   sessionId: () => string | undefined,
   edits?: MeetingEdits,
@@ -60,7 +71,11 @@ export function meetingServer(
           },
           async ({ lines, style }) => {
             try {
-              const edit = await edits.bridge.appendNote(current(), lines, style);
+              const edit = await edits.bridge.appendNote(
+                current(),
+                lines,
+                style,
+              );
               edits.onEdit(edit);
               return text(`${edit.summary} (edit ${edit.id})`);
             } catch (error) {
@@ -70,7 +85,7 @@ export function meetingServer(
         ),
         tool(
           "add_action_item",
-          "Add an action item (a checkbox task) to this meeting's notes in the app. Use only when the user asks. Put the owner first when it is not the user, e.g. \"Sara: send the pricing sheet (Friday)\".",
+          'Add an action item (a checkbox task) to this meeting\'s notes in the app. Use only when the user asks. Put the owner first when it is not the user, e.g. "Sara: send the pricing sheet (Friday)".',
           { text: z.string().min(1) },
           async ({ text: task }) => {
             try {
@@ -88,7 +103,10 @@ export function meetingServer(
           { task_id: z.string().min(1) },
           async ({ task_id }) => {
             try {
-              const edit = await edits.bridge.completeActionItem(current(), task_id);
+              const edit = await edits.bridge.completeActionItem(
+                current(),
+                task_id,
+              );
               edits.onEdit(edit);
               return text(edit.summary);
             } catch (error) {
@@ -113,46 +131,65 @@ export function meetingServer(
       ]
     : [];
 
+  return [
+    tool(
+      "live_transcript",
+      "The meeting's transcript so far, as timestamped lines labelled by speaker: You (the user), a participant name when known, or Speaker N for an unnamed voice. Pass since_ms to get only speech after that offset.",
+      { since_ms: z.number().int().nonnegative().optional() },
+      async ({ since_ms }) => {
+        const transcript = readLiveTranscript(db, {
+          sessionId: sessionId(),
+          sinceMs: since_ms,
+        });
+        return text(
+          transcript
+            ? renderTranscript(transcript)
+            : "No meeting transcript found.",
+        );
+      },
+      { annotations: { readOnlyHint: true } },
+    ),
+    tool(
+      "meeting_info",
+      "Title, start/end time and participants of the current meeting.",
+      {},
+      async () => {
+        const id = sessionId();
+        const info = id ? readMeetingInfo(db, id) : null;
+        return text(info ? JSON.stringify(info, null, 2) : "No meeting found.");
+      },
+      { annotations: { readOnlyHint: true } },
+    ),
+    tool(
+      "meeting_notes",
+      "The user's notes for this meeting as they are in the app right now, including action items as checkboxes with their task_id.",
+      {},
+      async () => {
+        const id = sessionId();
+        return text(id ? readMeetingNote(db, id) : "No meeting found.");
+      },
+      { annotations: { readOnlyHint: true } },
+    ),
+    ...editTools,
+    ...libraryTools(db, current, edits),
+    ...(onShow ? [showTool(onShow)] : []),
+  ];
+}
+
+export function meetingServer(...args: Parameters<typeof meetingTools>) {
   return createSdkMcpServer({
     name: "meeting",
     version: "0.2.0",
     instructions:
       "Tools for the meeting the coach is attached to. Call live_transcript before answering anything about what was said.",
-    tools: [
-      tool(
-        "live_transcript",
-        "The meeting's transcript so far, as timestamped lines labelled by speaker: You (the user), a participant name when known, or Speaker N for an unnamed voice. Pass since_ms to get only speech after that offset.",
-        { since_ms: z.number().int().nonnegative().optional() },
-        async ({ since_ms }) => {
-          const transcript = readLiveTranscript(db, { sessionId: sessionId(), sinceMs: since_ms });
-          return text(transcript ? renderTranscript(transcript) : "No meeting transcript found.");
-        },
-        { annotations: { readOnlyHint: true } },
+    tools: meetingTools(...args).map((entry) =>
+      sdkTool(
+        entry.name,
+        entry.description,
+        entry.inputSchema,
+        entry.handler,
+        entry.options,
       ),
-      tool(
-        "meeting_info",
-        "Title, start/end time and participants of the current meeting.",
-        {},
-        async () => {
-          const id = sessionId();
-          const info = id ? readMeetingInfo(db, id) : null;
-          return text(info ? JSON.stringify(info, null, 2) : "No meeting found.");
-        },
-        { annotations: { readOnlyHint: true } },
-      ),
-      tool(
-        "meeting_notes",
-        "The user's notes for this meeting as they are in the app right now, including action items as checkboxes with their task_id.",
-        {},
-        async () => {
-          const id = sessionId();
-          return text(id ? readMeetingNote(db, id) : "No meeting found.");
-        },
-        { annotations: { readOnlyHint: true } },
-      ),
-      ...editTools,
-      ...libraryTools(db, current, edits),
-      ...(onShow ? [showTool(onShow)] : []),
-    ],
+    ),
   });
 }

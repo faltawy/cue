@@ -141,6 +141,38 @@ async retryClaudeSetup() : Promise<Result<ClaudeSetup, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async providerAccount(provider: CoachProvider) : Promise<Result<ClaudeAccount, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|provider_account", { provider }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async signInToProvider(provider: CoachProvider) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|sign_in_to_provider", { provider }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async providerSetup(provider: CoachProvider) : Promise<Result<ClaudeSetup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|provider_setup", { provider }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async retryProviderSetup(provider: CoachProvider) : Promise<Result<ClaudeSetup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|retry_provider_setup", { provider }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -208,7 +240,8 @@ export type CoachNudged = { session_id: string; tag: string; line: string;
  * The coach panel had focus, so the person already saw it there.
  */
 seen: boolean }
-export type CoachSettings = { project: string | null; model: ClaudeModel; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
+export type CoachProvider = "claude" | "codex"
+export type CoachSettings = { project: string | null; model: ClaudeModel; provider: CoachProvider; codex_model: string; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
 export type Endpoint = { url: string; token: string }
 export type FoundConnector = { name: string; id: string; url: string }
 /**

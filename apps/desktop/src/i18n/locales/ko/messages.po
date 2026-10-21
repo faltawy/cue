@@ -335,6 +335,19 @@ msgstr ""
 msgid "Agenda"
 msgstr ""
 
+#: src/settings/claude/index.tsx
+#: src/sidebar/settings-nav-groups.ts
+msgid "AI"
+msgstr ""
+
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "AI isn’t available"
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "AI setup"
+msgstr ""
+
 #: src/settings/automations/index.tsx
 msgid "AI step"
 msgstr ""
@@ -614,6 +627,10 @@ msgstr ""
 msgid "Check for updates"
 msgstr ""
 
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "Check your provider and sign-in in AI settings, then try again."
+msgstr ""
+
 #: src/settings/general/updates.tsx
 msgid "Checking for updates…"
 msgstr ""
@@ -668,6 +685,10 @@ msgstr ""
 #: src/settings/automations/markdown-export-options.tsx
 msgid "Choose at least one section to export."
 msgstr "내보낼 섹션을 하나 이상 선택하세요."
+
+#: src/settings/claude/index.tsx
+msgid "Choose Claude or Codex for summaries, titles, briefs and the coach. New chats use this provider; existing chats keep their original provider."
+msgstr ""
 
 #: src/templates/template-icon-picker.tsx
 msgid "Choose custom color"
@@ -728,13 +749,12 @@ msgstr ""
 msgid "Choose which day begins your calendar week."
 msgstr ""
 
-#: src/settings/claude/index.tsx
-msgid "Choose…"
+#: src/onboarding/index.tsx
+msgid "Choose your AI provider"
 msgstr ""
 
 #: src/settings/claude/index.tsx
-#: src/sidebar/settings-nav-groups.ts
-msgid "Claude"
+msgid "Choose…"
 msgstr ""
 
 #: src/settings/claude/claude-code.tsx
@@ -758,20 +778,12 @@ msgstr ""
 msgid "Claude connectors"
 msgstr ""
 
-#: src/session/components/note-input/enhanced/config-error.tsx
-msgid "Claude isn’t available"
+#: src/settings/claude/index.tsx
+msgid "Claude connectors are saved but unavailable with Codex."
 msgstr ""
 
 #: src/settings/claude/sign-in.tsx
 msgid "Claude sign-in"
-msgstr ""
-
-#: src/onboarding/index.tsx
-msgid "Claude sign-in skipped"
-msgstr ""
-
-#: src/onboarding/index.tsx
-msgid "Claude signed in"
 msgstr ""
 
 #: src/settings/general/storage/legacy-cleanup.tsx
@@ -845,6 +857,10 @@ msgstr ""
 
 #: src/coach/shortcut.tsx
 msgid "Coach shortcut"
+msgstr ""
+
+#: src/settings/claude/sign-in.tsx
+msgid "Codex sign-in"
 msgstr ""
 
 #. placeholder {0}: node.name
@@ -1444,12 +1460,12 @@ msgstr "파일 이름"
 msgid "Files and folders the coach can read when they're relevant. They are read on demand, not sent with every message."
 msgstr ""
 
-#: src/settings/claude/sign-in.tsx
-msgid "Finish signing in in Terminal."
+#: src/onboarding/claude.tsx
+msgid "Finish signing in in the window that opened, then come back here."
 msgstr ""
 
-#: src/onboarding/claude.tsx
-msgid "Finish signing in in the Terminal window that opened, then come back here."
+#: src/settings/claude/sign-in.tsx
+msgid "Finish signing in in the window that opened."
 msgstr ""
 
 #: src/templates/template-icon-picker.tsx
@@ -1760,6 +1776,10 @@ msgstr ""
 #. placeholder {0}: lastRun.detail
 #: src/settings/automations/starter-config.tsx
 msgid "Last run failed {relative}: {0}"
+msgstr ""
+
+#: src/settings/claude/index.tsx
+msgid "Leave blank to use the Codex default model."
 msgstr ""
 
 #: src/settings/automations/markdown-export-options.tsx
@@ -2335,6 +2355,10 @@ msgstr ""
 msgid "Open {0} settings"
 msgstr ""
 
+#: src/session/components/note-input/enhanced/config-error.tsx
+msgid "Open AI settings"
+msgstr ""
+
 #: src/sidebar/timeline/index.tsx
 msgid "Open calendar"
 msgstr ""
@@ -2342,10 +2366,6 @@ msgstr ""
 #: src/calendar/components/calendar-selection.tsx
 #: src/calendar/components/sidebar.tsx
 msgid "Open calendar account actions"
-msgstr ""
-
-#: src/session/components/note-input/enhanced/config-error.tsx
-msgid "Open Claude settings"
 msgstr ""
 
 #: src/coach/nudges.tsx
@@ -2546,6 +2566,11 @@ msgstr "미리보기"
 
 #: src/session/components/note-input/search/bar.tsx
 msgid "Previous match"
+msgstr ""
+
+#: src/onboarding/claude.tsx
+#: src/settings/claude/index.tsx
+msgid "Provider"
 msgstr ""
 
 #: src/coach/nudges.tsx
@@ -3023,6 +3048,14 @@ msgstr ""
 msgid "Setting up Claude… {percent}%"
 msgstr ""
 
+#: src/ai/claude-setup-label.tsx
+msgid "Setting up Codex…"
+msgstr ""
+
+#: src/ai/claude-setup-label.tsx
+msgid "Setting up Codex… {percent}%"
+msgstr ""
+
 #: src/settings/dictation.tsx
 msgid "Setting up dictation…"
 msgstr ""
@@ -3124,8 +3157,11 @@ msgid "Sign in"
 msgstr ""
 
 #: src/onboarding/claude.tsx
-#: src/onboarding/index.tsx
 msgid "Sign in to Claude"
+msgstr ""
+
+#: src/onboarding/claude.tsx
+msgid "Sign in to Codex"
 msgstr ""
 
 #: src/settings/claude/sign-in.tsx
@@ -3320,18 +3356,6 @@ msgstr ""
 
 #: src/session/components/note-input/raw.tsx
 msgid "Suggested templates"
-msgstr ""
-
-#: src/onboarding/index.tsx
-msgid "Summaries and the coach run on Claude, using your Claude sign-in on this Mac."
-msgstr ""
-
-#: src/session/components/note-input/enhanced/config-error.tsx
-msgid "Summaries use Claude through the Claude sign-in on this Mac. Check the Claude settings, then try again."
-msgstr ""
-
-#: src/settings/claude/index.tsx
-msgid "Summaries, titles, briefs and the coach run on Claude, using the Claude sign-in on this Mac. No API keys needed."
 msgstr ""
 
 #: src/contacts/details.tsx
@@ -3732,6 +3756,10 @@ msgstr ""
 
 #: src/automations/starters.tsx
 msgid "Use a stable filename in the configured export directory."
+msgstr ""
+
+#: src/onboarding/index.tsx
+msgid "Use Claude or Codex for summaries and the coach. You can switch providers later in Settings."
 msgstr ""
 
 #: src/settings/claude/tools.tsx

@@ -1,19 +1,43 @@
-const MISSING = /^(?:Claude Code returned an error result: )?No conversation found with session ID: ([\w-]+)$/;
+export class MissingConversationError extends Error {
+  constructor(readonly sessionId: string) {
+    super(`Saved conversation ${sessionId} is no longer available.`);
+  }
+}
+
+const MISSING =
+  /^(?:Claude Code returned an error result: )?No conversation found with session ID: ([\w-]+)$/;
 
 export function missingConversation(text: string): string | null {
   return MISSING.exec(text.trim())?.[1] ?? null;
 }
 
-export type RestartPolicy = { maxFailures: number; baseMs: number; capMs: number };
+export type RestartPolicy = {
+  maxFailures: number;
+  baseMs: number;
+  capMs: number;
+};
 
-export const RESTART: RestartPolicy = { maxFailures: 5, baseMs: 2_000, capMs: 30_000 };
+export const RESTART: RestartPolicy = {
+  maxFailures: 5,
+  baseMs: 2_000,
+  capMs: 30_000,
+};
 
-export type Restart = { kind: "now" } | { kind: "later"; delayMs: number } | { kind: "stop" };
+export type Restart =
+  | { kind: "now" }
+  | { kind: "later"; delayMs: number }
+  | { kind: "stop" };
 
-export function restartAfter(failures: number, policy: RestartPolicy = RESTART): Restart {
+export function restartAfter(
+  failures: number,
+  policy: RestartPolicy = RESTART,
+): Restart {
   if (failures >= policy.maxFailures) return { kind: "stop" };
   if (failures <= 1) return { kind: "now" };
-  return { kind: "later", delayMs: Math.min(policy.capMs, policy.baseMs * 2 ** (failures - 2)) };
+  return {
+    kind: "later",
+    delayMs: Math.min(policy.capMs, policy.baseMs * 2 ** (failures - 2)),
+  };
 }
 
 export type SupervisorDeps<M> = {
@@ -30,7 +54,9 @@ function resultErrors(message: unknown): string[] {
   if (typeof message !== "object" || message === null) return [];
   const record = Object.fromEntries(Object.entries(message));
   if (record.type !== "result" || !Array.isArray(record.errors)) return [];
-  return record.errors.filter((entry): entry is string => typeof entry === "string");
+  return record.errors.filter(
+    (entry): entry is string => typeof entry === "string",
+  );
 }
 
 function errorText(error: unknown): string {
@@ -72,7 +98,12 @@ export class Supervisor<M> {
       try {
         for await (const message of session.messages) {
           if (mine !== this.generation) return;
-          if (resumedFrom && resultErrors(message).some((error) => missingConversation(error) === resumedFrom)) {
+          if (
+            resumedFrom &&
+            resultErrors(message).some(
+              (error) => missingConversation(error) === resumedFrom,
+            )
+          ) {
             missing = true;
             continue;
           }
@@ -80,13 +111,30 @@ export class Supervisor<M> {
         }
       } catch (error) {
         failure = errorText(error);
+        if (
+          error instanceof MissingConversationError &&
+          error.sessionId === resumedFrom
+        )
+          missing = true;
       }
       if (mine !== this.generation) return;
-      this.settle({ failure, missing: missing || (resumedFrom !== null && failure !== null && missingConversation(failure) === resumedFrom), resumedFrom });
+      this.settle({
+        failure,
+        missing:
+          missing ||
+          (resumedFrom !== null &&
+            failure !== null &&
+            missingConversation(failure) === resumedFrom),
+        resumedFrom,
+      });
     })();
   }
 
-  private settle(input: { failure: string | null; missing: boolean; resumedFrom: string | null }) {
+  private settle(input: {
+    failure: string | null;
+    missing: boolean;
+    resumedFrom: string | null;
+  }) {
     const ours = this.abortRequested;
     this.abortRequested = false;
     this.deps.ended(ours);
@@ -100,7 +148,7 @@ export class Supervisor<M> {
       this.deps.restart();
       return;
     }
-    const message = input.failure ?? "Claude Code exited unexpectedly.";
+    const message = input.failure ?? "The coach runtime exited unexpectedly.";
     const next = restartAfter(this.failures, this.policy);
     if (next.kind === "stop") {
       this.deps.gaveUp(message);

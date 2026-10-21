@@ -1,11 +1,21 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-
-import { type AppBridge, appBridgeFromEnv, type CoachEdit, type MeetingProject } from "./app-bridge";
-import { createAccess, loginUrl, randomToken, TOKEN_ENV, withAccess } from "./access";
+import {
+  createAccess,
+  loginUrl,
+  randomToken,
+  TOKEN_ENV,
+  withAccess,
+} from "./access";
+import {
+  type AppBridge,
+  appBridgeFromEnv,
+  type CoachEdit,
+  type MeetingProject,
+} from "./app-bridge";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
+import { actionItemText, blockItemCount } from "./blocks";
 import {
   type ChatStore,
   dropResume,
@@ -21,10 +31,18 @@ import {
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { claudeAccount } from "./claude-account";
 import { claudeCodeFromArgs } from "./claude-code";
+import { codexAccount, signInCodex } from "./codex-account";
+import { codexCodeFromArgs } from "./codex-code";
 import { coachError, GAVE_UP, StderrTail, withSignIn } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
+import { type AskImage, parseAskImages } from "./images";
 import { createInterrupter, type Interrupter } from "./interrupt";
-import { type MeetingNow, type MeetingSeen, meetingUpdate, userTurn } from "./meeting-context";
+import {
+  type MeetingNow,
+  type MeetingSeen,
+  meetingUpdate,
+  userTurn,
+} from "./meeting-context";
 import {
   isAnswering,
   type MeetingPointer,
@@ -35,11 +53,20 @@ import {
   wrapUpActions,
 } from "./meeting-state";
 import { moveText } from "./move";
-import { nudgeLabel, nudgeNote, rememberNote, runNudge, withNudgeNotes } from "./nudge";
+import {
+  nudgeLabel,
+  nudgeNote,
+  rememberNote,
+  runNudge,
+  withNudgeNotes,
+} from "./nudge";
 import { NO_SPEND, spendOf } from "./pricing";
-import { type NudgeRequest, PROACTIVE_DEFAULTS, Proactive, type ProactiveView } from "./proactive";
-import { actionItemText, blockItemCount } from "./blocks";
-import { type AskImage, parseAskImages } from "./images";
+import {
+  type NudgeRequest,
+  PROACTIVE_DEFAULTS,
+  Proactive,
+  type ProactiveView,
+} from "./proactive";
 import {
   addedBlockItem,
   appendHistory,
@@ -53,7 +80,9 @@ import {
   type TurnKind,
   type WrapUpView,
 } from "./protocol";
+import { type CoachProvider, parseProvider } from "./provider";
 import { QuestionBroker } from "./questions";
+import type { RuntimeMessage } from "./runtime-message";
 import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
 import { Supervisor } from "./supervisor";
@@ -68,7 +97,12 @@ import {
 import { runTriage } from "./triage";
 import { TurnTracker } from "./turn-events";
 import page from "./ui/index.html";
-import { commitmentText, generateWrapUp, logToClientsPrompt, type WrapUp } from "./wrapup";
+import {
+  commitmentText,
+  generateWrapUp,
+  logToClientsPrompt,
+  type WrapUp,
+} from "./wrapup";
 
 const { values } = parseArgs({
   options: {
@@ -76,7 +110,10 @@ const { values } = parseArgs({
     port: { type: "string", default: "4747" },
     "no-nudges": { type: "boolean", default: false },
     "no-project": { type: "boolean", default: false },
-    "nudge-limit": { type: "string", default: String(PROACTIVE_DEFAULTS.capUsd) },
+    "nudge-limit": {
+      type: "string",
+      default: String(PROACTIVE_DEFAULTS.capUsd),
+    },
     state: { type: "string" },
     "exit-with-stdin": { type: "boolean", default: false },
   },
@@ -84,7 +121,9 @@ const { values } = parseArgs({
 
 const nudgeLimit = Number(values["nudge-limit"]);
 if (!Number.isFinite(nudgeLimit) || nudgeLimit <= 0) {
-  throw new Error(`--nudge-limit must be a dollar amount above 0, got ${values["nudge-limit"]}`);
+  throw new Error(
+    `--nudge-limit must be a dollar amount above 0, got ${values["nudge-limit"]}`,
+  );
 }
 const proactiveConfig = {
   ...PROACTIVE_DEFAULTS,
@@ -96,9 +135,24 @@ const NUDGE_TIMEOUT_MS = 45_000;
 const CONTEXT_PEOPLE_MAX = 8;
 const options = await coachOptionsFromArgs(values);
 const bridge = appBridgeFromEnv(process.env);
-const model = values.model ?? "sonnet";
+const selectedProvider = parseProvider(values.provider);
+const selected = {
+  provider: selectedProvider,
+  model: options.model ?? "sonnet",
+  models: {
+    claude:
+      values["claude-model"] ??
+      (selectedProvider === "claude" ? (options.model ?? "sonnet") : "sonnet"),
+    codex:
+      values["codex-model"] ??
+      (selectedProvider === "codex" ? (options.model ?? "") : ""),
+  },
+};
+let provider = selected.provider;
+let model = selected.model;
 const { db } = options;
-const stateFile = values.state ?? path.join(path.dirname(values.db), "coach-chats.json");
+const stateFile =
+  values.state ?? path.join(path.dirname(values.db), "coach-chats.json");
 
 const noProject = values["no-project"];
 
@@ -141,61 +195,81 @@ let nudgeNotes: string[] = [];
 let proactive: Proactive | null = null;
 let proactiveMeeting: string | undefined;
 let selfName: string | null = null;
-let claudeSignedInNow: boolean | null = null;
+let signedInNow: boolean | null = null;
+let signingIn = false;
 let setup: SetupView = { state: "checking" };
-let claudeExecutable: Promise<string> | null = null;
-
-const { claudeCode, executable: claudeCodeExecutable } = claudeCodeFromArgs(values);
-claudeCode.onProgress(({ receivedBytes, totalBytes }) => {
-  const percent = totalBytes > 0 ? Math.min(99, Math.floor((receivedBytes / totalBytes) * 100)) : null;
-  if (setup.state !== "downloading" || setup.percent !== percent) setSetup({ state: "downloading", percent });
-});
+const executables = new Map<CoachProvider, Promise<string>>();
+const { claudeCode, executable: claudeCodeExecutable } =
+  claudeCodeFromArgs(values);
+const {
+  codexCode,
+  executable: codexCodeExecutable,
+  home: codexHome,
+} = codexCodeFromArgs(values);
+for (const [owner, runtime] of [
+  ["claude", claudeCode],
+  ["codex", codexCode],
+] as const) {
+  runtime.onProgress(({ receivedBytes, totalBytes }) => {
+    if (owner !== provider) return;
+    const percent =
+      totalBytes > 0
+        ? Math.min(99, Math.floor((receivedBytes / totalBytes) * 100))
+        : null;
+    if (setup.state !== "downloading" || setup.percent !== percent)
+      setSetup({ state: "downloading", percent });
+  });
+}
 
 function setSetup(next: SetupView) {
   setup = next;
   broadcast(status());
 }
 
-function claude(): Promise<string> {
-  claudeExecutable ??= claudeCodeExecutable().then(
-    (resolved) => {
-      console.error(`[coach] running Claude Code at ${resolved}`);
-      setSetup({ state: "ready" });
-      return resolved;
-    },
-    (error: unknown) => {
-      console.error("[coach] could not set up Claude Code", { _e: errorText(error) });
-      setSetup({ state: "failed", message: errorText(error) });
+function executable(owner: CoachProvider = provider): Promise<string> {
+  let pending = executables.get(owner);
+  if (!pending) {
+    pending = (
+      owner === "codex" ? codexCodeExecutable() : claudeCodeExecutable()
+    ).catch((error: unknown) => {
+      executables.delete(owner);
       throw error;
-    },
-  );
-  return claudeExecutable;
+    });
+    executables.set(owner, pending);
+  }
+  return pending;
 }
 
 function retrySetup() {
-  claudeExecutable = null;
+  executables.delete(provider);
   setSetup({ state: "checking" });
-  checkSignIn();
   enqueue(() => openChat("startup"));
 }
 
 function checkSignIn() {
-  claude().then(
+  const owner = provider;
+  executable(owner).then(
     (resolved) =>
-      claudeAccount(resolved).then(
+      (owner === "codex"
+        ? codexAccount(resolved, codexHome)
+        : claudeAccount(resolved)
+      ).then(
         (account) => {
-          claudeSignedInNow = account.signedIn;
+          if (owner === provider) signedInNow = account.signedIn;
         },
-        (error: unknown) => console.error("[coach] could not read the Claude sign-in", { _e: errorText(error) }),
+        (error: unknown) =>
+          console.error("[coach] could not read the sign-in", {
+            _e: errorText(error),
+          }),
       ),
     () => undefined,
   );
 }
-checkSignIn();
 
 const questions = new QuestionBroker({
   opened: (id, asked) => feed({ type: "question", id, questions: asked }),
-  closed: (id, answers) => feed({ type: "question_closed", id, answered: answers !== null }),
+  closed: (id, answers) =>
+    feed({ type: "question_closed", id, answered: answers !== null }),
 });
 
 if (values["exit-with-stdin"]) {
@@ -220,7 +294,10 @@ function broadcast(event: CoachEvent) {
 }
 
 function feed(next: CoachEvent) {
-  const event = next.type === "error" ? { ...next, error: withSignIn(next.error, claudeSignedInNow) } : next;
+  const event =
+    next.type === "error"
+      ? { ...next, error: withSignIn(next.error, signedInNow, provider) }
+      : next;
   if (event.type === "error" && event.error.kind === "auth") checkSignIn();
   history = appendHistory(history, event);
   broadcast(event);
@@ -233,7 +310,9 @@ function persistNow() {
   if (!chatSessionId) return;
   const before = store;
   store = remember(store, chatSessionId, {
-    claudeSessionId: tracker.resumable,
+    runtimeSessionId: tracker.resumable,
+    provider,
+    model,
     project: project.path,
     history,
     updatedAt: Date.now(),
@@ -246,7 +325,10 @@ function saveStore() {
   try {
     saveChats(stateFile, store);
   } catch (error) {
-    console.error("[coach] could not save the chat", { _e: errorText(error), stateFile });
+    console.error("[coach] could not save the chat", {
+      _e: errorText(error),
+      stateFile,
+    });
   }
 }
 
@@ -266,6 +348,7 @@ function errorText(error: unknown): string {
 function status(): StatusEvent {
   return {
     type: "status",
+    provider,
     project,
     model,
     busy,
@@ -328,7 +411,10 @@ function startProactive(sessionId: string | undefined) {
     triage: async (request) =>
       runTriage(request, {
         signal: AbortSignal.timeout(TRIAGE_TIMEOUT_MS),
-        claudePath: await claude(),
+        claudePath: await executable(selected.provider),
+        provider: selected.provider,
+        model: selected.model,
+        codexHome,
       }),
     nudge: (request) => {
       if (!coach || busy || proactive !== current) return false;
@@ -351,15 +437,25 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
   askedAt = Date.now();
   feed({ type: "user", kind: "nudge", text: label });
   broadcast(status());
-  const result = await claude()
+  const result = await executable(selected.provider)
     .then((claudePath) =>
       runNudge(request, {
         instructions: options.instructions ?? "",
-        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(NUDGE_TIMEOUT_MS)]),
+        signal: AbortSignal.any([
+          abort.signal,
+          AbortSignal.timeout(NUDGE_TIMEOUT_MS),
+        ]),
         claudePath,
+        provider: selected.provider,
+        model: selected.model,
+        codexHome,
       }),
     )
-    .catch((error: unknown) => ({ ok: false as const, error: errorText(error), spend: NO_SPEND }));
+    .catch((error: unknown) => ({
+      ok: false as const,
+      error: errorText(error),
+      spend: NO_SPEND,
+    }));
   owner.spend("nudges", result.spend);
   if (nudgeAbort !== abort) return;
   nudgeAbort = null;
@@ -367,20 +463,38 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
   if (!result.ok) {
     if (!interrupted) {
       console.error("[coach] nudge failed", { _e: result.error });
-      feed({ type: "error", error: coachError({ message: result.error }) });
+      feed({
+        type: "error",
+        error: coachError({
+          message: result.error,
+          provider: selected.provider,
+        }),
+      });
     }
     settleTurn({ ok: false, interrupted });
     return;
   }
   if (result.move) {
-    feed({ type: "block", id: crypto.randomUUID(), block: { kind: "move", ...result.move } });
+    feed({
+      type: "block",
+      id: crypto.randomUUID(),
+      block: { kind: "move", ...result.move },
+    });
     if (bridge && sessionId) {
-      bridge.nudged(sessionId, { tag: result.move.tag, line: result.move.line }).catch((error: unknown) => {
-        console.error("[coach] could not tell the app about a nudge", { _e: errorText(error), sessionId });
-      });
+      bridge
+        .nudged(sessionId, { tag: result.move.tag, line: result.move.line })
+        .catch((error: unknown) => {
+          console.error("[coach] could not tell the app about a nudge", {
+            _e: errorText(error),
+            sessionId,
+          });
+        });
     }
     if (result.talk) feed({ type: "talk", talk: result.talk });
-    nudgeNotes = rememberNote(nudgeNotes, nudgeNote(label, moveText(result.move)));
+    nudgeNotes = rememberNote(
+      nudgeNotes,
+      nudgeNote(label, moveText(result.move)),
+    );
   }
   settleTurn({ ok: true, interrupted: false, silent: result.move === null });
 }
@@ -404,7 +518,10 @@ async function projectFor(sessionId: string | undefined): Promise<ProjectView> {
   try {
     return projectView(await bridge.meetingProject(sessionId));
   } catch (error) {
-    console.error("[coach] could not resolve the meeting's project", { _e: errorText(error), sessionId });
+    console.error("[coach] could not resolve the meeting's project", {
+      _e: errorText(error),
+      sessionId,
+    });
     notice(`Using the default project: ${errorText(error)}`);
     return defaultProject;
   }
@@ -419,7 +536,11 @@ function enqueue(task: () => Promise<void>) {
   });
 }
 
-function settleTurn(input: { ok: boolean; interrupted: boolean; silent?: boolean }) {
+function settleTurn(input: {
+  ok: boolean;
+  interrupted: boolean;
+  silent?: boolean;
+}) {
   const silent = input.silent ?? false;
   busy = false;
   const done: CoachEvent = {
@@ -439,7 +560,7 @@ function settleTurn(input: { ok: boolean; interrupted: boolean; silent?: boolean
   persistNow();
 }
 
-const supervisor = new Supervisor<SDKMessage>({
+const supervisor = new Supervisor<RuntimeMessage>({
   handle,
   ended: (ours) => {
     coach?.close();
@@ -447,15 +568,30 @@ const supervisor = new Supervisor<SDKMessage>({
     if (busy) settleTurn({ ok: false, interrupted: ours });
   },
   failed: (message) => {
-    console.error("[coach] the Claude session stopped", { _e: message });
-    feed({ type: "error", error: coachError({ message, stderr: stderr.take() }) });
+    console.error("[coach] the coach session stopped", { _e: message });
+    feed({
+      type: "error",
+      error: coachError({ message, provider, stderr: stderr.take() }),
+    });
   },
   gaveUp: (message) => {
-    console.error("[coach] the Claude session keeps stopping; not restarting it", { _e: message });
-    feed({ type: "error", error: { ...coachError({ message, stderr: stderr.take() }), ...GAVE_UP } });
+    console.error(
+      "[coach] the coach session keeps stopping; not restarting it",
+      { _e: message },
+    );
+    feed({
+      type: "error",
+      error: {
+        ...coachError({ message, provider, stderr: stderr.take() }),
+        ...GAVE_UP,
+      },
+    });
   },
   forget: (id) => {
-    console.error("[coach] Claude Code has no conversation to resume; starting a fresh one", { claudeSessionId: id });
+    console.error(
+      "[coach] The provider has no conversation to resume; starting a fresh one",
+      { runtimeSessionId: id },
+    );
     tracker.resumable = null;
     if (!chatSessionId) return;
     store = dropResume(store, chatSessionId);
@@ -482,14 +618,15 @@ function editHooks(bridge: AppBridge) {
 }
 
 function rememberEdits(events: readonly CoachEvent[]) {
-  for (const event of events) if (event.type === "edit") editSessions.set(event.edit.id, event.edit.session_id);
+  for (const event of events)
+    if (event.type === "edit")
+      editSessions.set(event.edit.id, event.edit.session_id);
 }
 
 async function openChat(reason: OpenReason) {
-  const claudePath = await claude().catch(() => null);
-  if (!claudePath) return;
   const sessionId = attached?.sessionId;
-  const nextProject = reason === "recover" ? project : await projectFor(sessionId);
+  const nextProject =
+    reason === "recover" ? project : await projectFor(sessionId);
   if (reason !== "recover") {
     persistNow();
     supervisor.reset();
@@ -499,9 +636,22 @@ async function openChat(reason: OpenReason) {
     store,
     meeting: attached,
     project: nextProject.path,
-    current: { claudeSessionId: tracker.resumable, project: project.path, history, seen },
+    selected,
+    current: {
+      provider,
+      model,
+      runtimeSessionId: tracker.resumable,
+      project: project.path,
+      history,
+      seen,
+    },
   });
+  supervisor.stop();
   coach?.close();
+  coach = null;
+  provider = plan.provider;
+  model = plan.model;
+  signedInNow = null;
   questions.dismissAll("The chat was closed.");
   store = plan.store;
   project = nextProject;
@@ -511,16 +661,34 @@ async function openChat(reason: OpenReason) {
   rememberEdits(history);
   tracker = new TurnTracker();
   tracker.resumable = plan.resume;
+  busy = false;
+  nudgeAbort?.abort();
+  nudgeAbort = null;
+  saveStore();
+  setSetup({ state: "checking" });
+  const runtimePath = await executable().catch((error: unknown) => {
+    setSetup({ state: "failed", message: errorText(error) });
+    return null;
+  });
+  if (!runtimePath) return;
+  setSetup({ state: "ready" });
+  checkSignIn();
   const session = startCoach({
     ...options,
-    pathToClaudeCodeExecutable: claudePath,
+    provider,
+    model,
+    codexHome,
+    ...(provider === "codex"
+      ? { pathToCodexExecutable: runtimePath, connectors: {} }
+      : { pathToClaudeCodeExecutable: runtimePath }),
     project: project.path,
     meeting: () => sessionId,
     ...(bridge ? { edits: editHooks(bridge) } : {}),
     ...(plan.resume ? { resume: plan.resume } : {}),
     askUser: (id, asked, signal) => questions.ask(id, asked, signal),
     show: (block) => feed({ type: "block", id: crypto.randomUUID(), block }),
-    onToolResult: (id, response, name) => tracker.hookResult(id, response, name),
+    onToolResult: (id, response, name) =>
+      tracker.hookResult(id, response, name),
     stderr: (chunk) => stderr.push(chunk),
   });
   coach = session;
@@ -532,32 +700,52 @@ async function openChat(reason: OpenReason) {
     },
   });
   busy = false;
-  nudgeAbort?.abort();
-  nudgeAbort = null;
   if (reason !== "recover") nudgeNotes = [];
   startProactive(sessionId);
   if (plan.resume && reason !== "recover" && history.length > 0) {
-    history = appendHistory(history, { type: "divider", text: "Picked up where you left off" });
+    history = appendHistory(history, {
+      type: "divider",
+      text: "Picked up where you left off",
+    });
   }
   if (!wrapUp && plan.wrapUp && sessionId) {
     const { view, transcriptId } = plan.wrapUp;
-    wrapUp = view.state === "ready" ? { ...view, actions: actionsFor(view.wrapUp) } : view;
+    wrapUp =
+      view.state === "ready"
+        ? { ...view, actions: actionsFor(view.wrapUp) }
+        : view;
     wrapUpMeeting = { sessionId, transcriptId };
   }
-  if (reason !== "startup") broadcast({ type: "reset", reason: reason === "recover" ? "sync" : reason });
+  if (reason !== "startup")
+    broadcast({
+      type: "reset",
+      reason: reason === "recover" ? "sync" : reason,
+    });
   for (const event of history) broadcast(event);
   if (reason !== "startup" && wrapUp) broadcast({ type: "wrapup", wrapUp });
   broadcast(status());
   supervisor.watch(session, plan.resume);
 }
 
-function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt: string, images: AskImage[] = []) {
+function startTurn(
+  session: CoachSession,
+  kind: TurnKind,
+  label: string,
+  prompt: string,
+  images: AskImage[] = [],
+) {
   busy = true;
   askedAt = Date.now();
   tracker.beginTurn();
   const update = meetingUpdate(seen, meetingNow(), askedAt);
   seen = update.seen;
-  const turn = userTurn({ kind, label, prompt: withNudgeNotes(nudgeNotes, prompt), line: update.line, images });
+  const turn = userTurn({
+    kind,
+    label,
+    prompt: withNudgeNotes(nudgeNotes, prompt),
+    line: update.line,
+    images,
+  });
   feed(turn.event);
   broadcast(status());
   session.ask(turn.content);
@@ -567,7 +755,12 @@ function startTurn(session: CoachSession, kind: TurnKind, label: string, prompt:
 function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
   proactive?.caughtUp();
   const since = Math.max(0, (lines.at(-1)?.end_ms ?? 0) - CATCH_UP_WINDOW_MS);
-  startTurn(session, "catchup", `Catch me up · ${clockTime()}`, catchUpPrompt(since));
+  startTurn(
+    session,
+    "catchup",
+    `Catch me up · ${clockTime()}`,
+    catchUpPrompt(since),
+  );
   const talk = talkStats(lines, CATCH_UP_WINDOW_MS);
   if (talk) feed({ type: "talk", talk });
 }
@@ -583,7 +776,10 @@ async function refreshRecording() {
     recordingUnknown = false;
   } catch (error) {
     recording = undefined;
-    if (!recordingUnknown) console.error("[coach] could not ask the app what it is recording", { _e: errorText(error) });
+    if (!recordingUnknown)
+      console.error("[coach] could not ask the app what it is recording", {
+        _e: errorText(error),
+      });
     recordingUnknown = true;
   }
 }
@@ -595,22 +791,33 @@ function transcriptEvent(transcript = readTranscript()): CoachEvent {
     strip,
     lines:
       strip.state === "live" && transcript
-        ? transcript.lines
-            .slice(-6)
-            .map((line) => ({ speaker: line.speaker, you: line.channel === 0, text: line.text.trim() }))
+        ? transcript.lines.slice(-6).map((line) => ({
+            speaker: line.speaker,
+            you: line.channel === 0,
+            text: line.text.trim(),
+          }))
         : [],
-    pending: strip.state === "live" && transcript ? transcript.pending.trim() : "",
+    pending:
+      strip.state === "live" && transcript ? transcript.pending.trim() : "",
   };
 }
 
 function setWrapUp(next: WrapUpView | null) {
   wrapUp = next;
   broadcast({ type: "wrapup", wrapUp });
-  if (wrapUpMeeting && next && next.state !== "running") storeWrapUp(wrapUpMeeting, next);
+  if (wrapUpMeeting && next && next.state !== "running")
+    storeWrapUp(wrapUpMeeting, next);
 }
 
-function storeWrapUp(meeting: { sessionId: string; transcriptId: string }, view: SettledWrapUp) {
-  store = keepWrapUp(store, meeting.sessionId, { transcriptId: meeting.transcriptId, view, updatedAt: Date.now() });
+function storeWrapUp(
+  meeting: { sessionId: string; transcriptId: string },
+  view: SettledWrapUp,
+) {
+  store = keepWrapUp(store, meeting.sessionId, {
+    transcriptId: meeting.transcriptId,
+    view,
+    updatedAt: Date.now(),
+  });
   saveStore();
 }
 
@@ -628,13 +835,18 @@ function startWrapUp(transcript: LiveTranscript) {
   wrapUpAbort?.abort();
   const abort = new AbortController();
   wrapUpAbort = abort;
-  wrapUpMeeting = { sessionId: transcript.sessionId, transcriptId: transcript.transcriptId };
+  wrapUpMeeting = {
+    sessionId: transcript.sessionId,
+    transcriptId: transcript.transcriptId,
+  };
   const title = transcript.title;
   setWrapUp({ state: "running", title });
-  claude()
+  executable(selected.provider)
     .then((claudePath) =>
       generateWrapUp(transcript, readMeetingInfo(db, transcript.sessionId), {
-        model,
+        model: selected.model,
+        provider: selected.provider,
+        codexHome,
         claudePath,
         signal: abort.signal,
       }),
@@ -703,19 +915,31 @@ async function poll() {
   }
 
   if (!transcript || !coach || transcript.sessionId !== chatSessionId) return;
-  proactive?.observe({ lines: transcript.lines, pending: transcript.pending, live: transcript.live, selfName });
+  proactive?.observe({
+    lines: transcript.lines,
+    pending: transcript.pending,
+    live: transcript.live,
+    selfName,
+  });
 }
 
-function handle(message: SDKMessage) {
+function handle(message: RuntimeMessage) {
   if (message.type === "result") {
     const interrupted = interrupter?.pending ?? false;
     interrupter?.settled();
-    const outcome = tracker.finishTurn(message, { interrupted, stderr: stderr.take() });
+    const outcome = tracker.finishTurn(message, {
+      interrupted,
+      stderr: stderr.take(),
+    });
     if (outcome.ok) supervisor.reset();
-    if (outcome.sources.length > 0) feed({ type: "sources", sources: outcome.sources });
+    if (outcome.sources.length > 0)
+      feed({ type: "sources", sources: outcome.sources });
     if (outcome.usage) {
       feed({ type: "usage", usage: outcome.usage });
-      proactive?.spend("asks", spendOf(outcome.usage.model ?? model, outcome.usage));
+      proactive?.spend(
+        "asks",
+        spendOf(outcome.usage.model ?? model, outcome.usage),
+      );
     }
     if (outcome.error) feed({ type: "error", error: outcome.error });
     settleTurn({ ok: outcome.ok, interrupted });
@@ -737,12 +961,19 @@ async function bridgeCall(run: () => Promise<Response>): Promise<Response> {
   }
 }
 
-async function changeSeriesProject(change: (bridge: AppBridge, sessionId: string) => Promise<MeetingProject | null>) {
-  if (!bridge || !chatSessionId) return conflict("Open the coach from the app during a meeting first.");
+async function changeSeriesProject(
+  change: (
+    bridge: AppBridge,
+    sessionId: string,
+  ) => Promise<MeetingProject | null>,
+) {
+  if (!bridge || !chatSessionId)
+    return conflict("Open the coach from the app during a meeting first.");
   const sessionId = chatSessionId;
   return bridgeCall(async () => {
     const resolved = await change(bridge, sessionId);
-    if (resolved && resolved.project !== project.path) enqueue(() => openChat("project"));
+    if (resolved && resolved.project !== project.path)
+      enqueue(() => openChat("project"));
     else if (resolved) {
       project = projectView(resolved);
       broadcast(status());
@@ -754,19 +985,28 @@ async function changeSeriesProject(change: (bridge: AppBridge, sessionId: string
 async function jsonBody(request: Request): Promise<Record<string, unknown>> {
   try {
     const body: unknown = await request.json();
-    return body && typeof body === "object" && !Array.isArray(body) ? Object.fromEntries(Object.entries(body)) : {};
+    return body && typeof body === "object" && !Array.isArray(body)
+      ? Object.fromEntries(Object.entries(body))
+      : {};
   } catch {
     return {};
   }
 }
 
 function projectImage(requested: string) {
-  return resolveImageFile(requested, project.path, readRoots({ ...options, project: project.path }));
+  return resolveImageFile(
+    requested,
+    project.path,
+    readRoots({ ...options, project: project.path }),
+  );
 }
 
 function blockItemRef(body: Record<string, unknown>): BlockItemRef | null {
   const id = typeof body.block_id === "string" ? body.block_id : "";
-  const index = typeof body.index === "number" && Number.isInteger(body.index) ? body.index : -1;
+  const index =
+    typeof body.index === "number" && Number.isInteger(body.index)
+      ? body.index
+      : -1;
   const block = id ? findBlock(history, id) : null;
   if (!block || index < 0) return null;
   return index < blockItemCount(block) ? { id, index } : null;
@@ -800,7 +1040,11 @@ const server = Bun.serve({
         },
       });
       return new Response(stream, {
-        headers: { "content-type": "text/event-stream", "cache-control": "no-cache", connection: "keep-alive" },
+        headers: {
+          "content-type": "text/event-stream",
+          "cache-control": "no-cache",
+          connection: "keep-alive",
+        },
       });
     },
     "/busy": () => Response.json({ busy: isAnswering(busy, wrapUp) }),
@@ -810,9 +1054,16 @@ const server = Bun.serve({
         const text = typeof body.text === "string" ? body.text.trim() : "";
         const images = parseAskImages(body.images);
         if (!images.ok) return new Response(images.error, { status: 400 });
-        if (!text && images.images.length === 0) return new Response("Type a question first.", { status: 400 });
-        if (!coach) return new Response("The coach is starting. Try again in a moment.", { status: 503 });
-        if (busy) return conflict("The coach is still answering. Stop it first, or wait a moment.");
+        if (!text && images.images.length === 0)
+          return new Response("Type a question first.", { status: 400 });
+        if (!coach)
+          return new Response("The coach is starting. Try again in a moment.", {
+            status: 503,
+          });
+        if (busy)
+          return conflict(
+            "The coach is still answering. Stop it first, or wait a moment.",
+          );
         startTurn(coach, "ask", text, text, images.images);
         return new Response(null, { status: 204 });
       },
@@ -821,8 +1072,14 @@ const server = Bun.serve({
       POST: async (request) => {
         const body = await jsonBody(request);
         const ref = blockItemRef(body);
-        if (!ref || typeof body.checked !== "boolean") return new Response("That item no longer exists.", { status: 404 });
-        feed({ type: "block_check", id: ref.id, index: ref.index, checked: body.checked });
+        if (!ref || typeof body.checked !== "boolean")
+          return new Response("That item no longer exists.", { status: 404 });
+        feed({
+          type: "block_check",
+          id: ref.id,
+          index: ref.index,
+          checked: body.checked,
+        });
         return new Response(null, { status: 204 });
       },
     },
@@ -830,16 +1087,25 @@ const server = Bun.serve({
       POST: async (request) => {
         const ref = blockItemRef(await jsonBody(request));
         const block = ref && findBlock(history, ref.id);
-        const item = ref && block?.kind === "actions" ? block.items[ref.index] : undefined;
-        if (!ref || !item) return new Response("That item no longer exists.", { status: 404 });
+        const item =
+          ref && block?.kind === "actions" ? block.items[ref.index] : undefined;
+        if (!ref || !item)
+          return new Response("That item no longer exists.", { status: 404 });
         const key = `${ref.id}:${ref.index}`;
-        if (addingBlockItems.has(key) || addedBlockItem(history, ref)) return conflict("That item is already in the notes.");
-        if (!bridge || !chatSessionId) return conflict("Open the coach from the app during a meeting to add to the notes.");
+        if (addingBlockItems.has(key) || addedBlockItem(history, ref))
+          return conflict("That item is already in the notes.");
+        if (!bridge || !chatSessionId)
+          return conflict(
+            "Open the coach from the app during a meeting to add to the notes.",
+          );
         const sessionId = chatSessionId;
         addingBlockItems.add(key);
         return bridgeCall(async () => {
           try {
-            const edit = await bridge.addActionItem(sessionId, actionItemText(item));
+            const edit = await bridge.addActionItem(
+              sessionId,
+              actionItemText(item),
+            );
             editSessions.set(edit.id, edit.session_id);
             feed({ type: "edit", edit, block: ref });
             return new Response(null, { status: 204 });
@@ -851,11 +1117,19 @@ const server = Bun.serve({
     },
     "/checkin": {
       POST: () => {
-        if (busy) return conflict("The coach is answering. Check in again when it's done.");
-        if (!coach) return new Response("The coach is starting. Try again in a moment.", { status: 503 });
+        if (busy)
+          return conflict(
+            "The coach is answering. Check in again when it's done.",
+          );
+        if (!coach)
+          return new Response("The coach is starting. Try again in a moment.", {
+            status: 503,
+          });
         const transcript = readTranscript();
         if (!transcript?.live || transcript.sessionId !== chatSessionId) {
-          return new Response("Check-ins need a meeting that's recording.", { status: 404 });
+          return new Response("Check-ins need a meeting that's recording.", {
+            status: 404,
+          });
         }
         runCatchUp(coach, transcript.lines);
         return new Response(null, { status: 204 });
@@ -872,47 +1146,91 @@ const server = Bun.serve({
       POST: async (request) => {
         const body = await jsonBody(request);
         const id = typeof body.id === "string" ? body.id : "";
-        const answers = Array.isArray(body.answers) ? body.answers.filter((answer) => typeof answer === "string") : null;
-        const settled = answers ? questions.answer(id, answers) : questions.dismiss(id);
-        return settled ? new Response(null, { status: 204 }) : new Response("That question is closed.", { status: 404 });
+        const answers = Array.isArray(body.answers)
+          ? body.answers.filter((answer) => typeof answer === "string")
+          : null;
+        const settled = answers
+          ? questions.answer(id, answers)
+          : questions.dismiss(id);
+        return settled
+          ? new Response(null, { status: 204 })
+          : new Response("That question is closed.", { status: 404 });
       },
     },
     "/open": {
       POST: async (request) => {
         const body = await jsonBody(request);
         const url = typeof body.url === "string" ? body.url : "";
-        if (!/^https?:\/\//i.test(url)) return new Response("Only web links can be opened.", { status: 400 });
+        if (!/^https?:\/\//i.test(url))
+          return new Response("Only web links can be opened.", { status: 400 });
         Bun.spawn(["open", url], { stdout: "ignore", stderr: "ignore" });
         return new Response(null, { status: 204 });
       },
     },
     "/file": {
       GET: (request) => {
-        const image = projectImage(new URL(request.url).searchParams.get("path") ?? "");
-        if (!image.ok) return new Response(image.reason, { status: image.status });
-        return new Response(Bun.file(image.file), { headers: imageHeaders(image.type) });
+        const image = projectImage(
+          new URL(request.url).searchParams.get("path") ?? "",
+        );
+        if (!image.ok)
+          return new Response(image.reason, { status: image.status });
+        return new Response(Bun.file(image.file), {
+          headers: imageHeaders(image.type),
+        });
       },
     },
     "/open-image": {
       POST: async (request) => {
         const body = await jsonBody(request);
-        const image = projectImage(typeof body.path === "string" ? body.path : "");
-        if (!image.ok) return new Response(image.reason, { status: image.status });
-        Bun.spawn(["open", "--", image.file], { stdout: "ignore", stderr: "ignore" });
+        const image = projectImage(
+          typeof body.path === "string" ? body.path : "",
+        );
+        if (!image.ok)
+          return new Response(image.reason, { status: image.status });
+        Bun.spawn(["open", "--", image.file], {
+          stdout: "ignore",
+          stderr: "ignore",
+        });
         return new Response(null, { status: 204 });
       },
     },
     "/sign-in": {
       POST: async () => {
-        const claudePath = await claude().catch(() => null);
-        if (!claudePath) return new Response("The coach is still setting up. Sign in once it's ready.", { status: 503 });
-        Bun.spawn(signInCommand(claudePath), { stdout: "ignore", stderr: "ignore" });
+        if (signingIn) return conflict("Sign-in is already in progress.");
+        const runtimePath = await executable().catch(() => null);
+        if (!runtimePath)
+          return new Response(
+            "The coach is still setting up. Sign in once it's ready.",
+            { status: 503 },
+          );
+        if (provider === "codex") {
+          signingIn = true;
+          void signInCodex(runtimePath, codexHome)
+            .then(checkSignIn)
+            .catch((error: unknown) => {
+              feed({
+                type: "error",
+                error: coachError({
+                  message: errorText(error),
+                  provider: "codex",
+                }),
+              });
+            })
+            .finally(() => {
+              signingIn = false;
+            });
+        } else
+          Bun.spawn(signInCommand(runtimePath), {
+            stdout: "ignore",
+            stderr: "ignore",
+          });
         return new Response(null, { status: 204 });
       },
     },
     "/setup/retry": {
       POST: () => {
-        if (setup.state !== "failed") return conflict("There's nothing to retry.");
+        if (setup.state !== "failed")
+          return conflict("There's nothing to retry.");
         retrySetup();
         return new Response(null, { status: 204 });
       },
@@ -925,7 +1243,8 @@ const server = Bun.serve({
     },
     "/project": {
       POST: () => {
-        if (!bridge) return conflict("Open the coach from the app to choose a folder.");
+        if (!bridge)
+          return conflict("Open the coach from the app to choose a folder.");
         const app = bridge;
         return bridgeCall(async () => {
           await app.chooseDefaultProject();
@@ -934,15 +1253,24 @@ const server = Bun.serve({
       },
     },
     "/project/series": {
-      POST: () => changeSeriesProject((bridge, sessionId) => bridge.chooseSeriesProject(sessionId)),
-      DELETE: () => changeSeriesProject((bridge, sessionId) => bridge.clearSeriesProject(sessionId)),
+      POST: () =>
+        changeSeriesProject((bridge, sessionId) =>
+          bridge.chooseSeriesProject(sessionId),
+        ),
+      DELETE: () =>
+        changeSeriesProject((bridge, sessionId) =>
+          bridge.clearSeriesProject(sessionId),
+        ),
     },
     "/undo": {
       POST: async (request) => {
         const body = await jsonBody(request);
         const editId = typeof body.edit_id === "string" ? body.edit_id : "";
         const sessionId = editSessions.get(editId);
-        if (!bridge || !sessionId) return new Response("That edit can no longer be undone here.", { status: 404 });
+        if (!bridge || !sessionId)
+          return new Response("That edit can no longer be undone here.", {
+            status: 404,
+          });
         return bridgeCall(async () => {
           const edit = await bridge.undo(sessionId, editId);
           feed({ type: "undone", id: edit.id, summary: edit.summary });
@@ -952,10 +1280,15 @@ const server = Bun.serve({
     },
     "/wrapup/action-items": {
       POST: () => {
-        if (wrapUp?.state !== "ready" || !wrapUp.actions.addActionItems.enabled || wrapUp.added) {
+        if (
+          wrapUp?.state !== "ready" ||
+          !wrapUp.actions.addActionItems.enabled ||
+          wrapUp.added
+        ) {
           return conflict("There's nothing to add.");
         }
-        if (!bridge || !wrapUpMeeting) return conflict("Open the coach from the app to add action items.");
+        if (!bridge || !wrapUpMeeting)
+          return conflict("Open the coach from the app to add action items.");
         const ready = wrapUp;
         const meeting = wrapUpMeeting;
         const hooks = editHooks(bridge);
@@ -963,11 +1296,14 @@ const server = Bun.serve({
         return bridgeCall(async () => {
           try {
             for (const commitment of ready.commitments) {
-              hooks.onEdit(await bridge.addActionItem(meeting.sessionId, commitment));
+              hooks.onEdit(
+                await bridge.addActionItem(meeting.sessionId, commitment),
+              );
               added += 1;
             }
           } finally {
-            if (added > 0 && wrapUpMeeting === meeting) setWrapUp({ ...ready, added: true });
+            if (added > 0 && wrapUpMeeting === meeting)
+              setWrapUp({ ...ready, added: true });
             else if (added > 0) storeWrapUp(meeting, { ...ready, added: true });
           }
           return new Response(null, { status: 204 });
@@ -976,12 +1312,25 @@ const server = Bun.serve({
     },
     "/wrapup/log-clients": {
       POST: () => {
-        if (wrapUp?.state !== "ready" || !wrapUp.actions.logToClients.enabled || wrapUp.logged) {
+        if (
+          wrapUp?.state !== "ready" ||
+          !wrapUp.actions.logToClients.enabled ||
+          wrapUp.logged
+        ) {
           return conflict("There's nothing to log.");
         }
-        if (busy) return conflict("The coach is answering. Try again when it's done.");
-        if (!coach) return new Response("The coach is starting. Try again in a moment.", { status: 503 });
-        startTurn(coach, "ask", "Log promises to clients", logToClientsPrompt(wrapUp.title, wrapUp.wrapUp));
+        if (busy)
+          return conflict("The coach is answering. Try again when it's done.");
+        if (!coach)
+          return new Response("The coach is starting. Try again in a moment.", {
+            status: 503,
+          });
+        startTurn(
+          coach,
+          "ask",
+          "Log promises to clients",
+          logToClientsPrompt(wrapUp.title, wrapUp.wrapUp),
+        );
         setWrapUp({ ...wrapUp, logged: true });
         return new Response(null, { status: 204 });
       },
@@ -989,5 +1338,10 @@ const server = Bun.serve({
   }),
 });
 
-console.error(`[coach] http://${server.hostname}:${server.port} · project ${options.project}`);
-if (!launchToken) console.error(`[coach] no ${TOKEN_ENV} set; sign in once at ${loginUrl(access)}`);
+console.error(
+  `[coach] http://${server.hostname}:${server.port} · project ${options.project}`,
+);
+if (!launchToken)
+  console.error(
+    `[coach] no ${TOKEN_ENV} set; sign in once at ${loginUrl(access)}`,
+  );

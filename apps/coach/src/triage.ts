@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { HitKind } from "./detect";
 import { jsonOf, runLlm } from "./llm";
 import { NO_SPEND, type Spend, spendOf } from "./pricing";
+import type { CoachProvider } from "./provider";
 import { renderLines, type TranscriptLine } from "./transcript";
 
 export const TRIAGE_MODEL = "haiku";
@@ -21,7 +22,11 @@ Reply with only this JSON: {"nudge": true or false, "why": "at most 12 words"}`;
 const verdictSchema = z.object({ nudge: z.boolean(), why: z.string() });
 
 export type TriageVerdict = z.infer<typeof verdictSchema>;
-export type TriageRequest = { context: string; kinds: HitKind[]; lines: readonly TranscriptLine[] };
+export type TriageRequest = {
+  context: string;
+  kinds: HitKind[];
+  lines: readonly TranscriptLine[];
+};
 export type TriageResult = { verdict: TriageVerdict | null; spend: Spend };
 
 export function triagePrompt(request: TriageRequest): string {
@@ -41,22 +46,44 @@ export function parseTriage(reply: string): TriageVerdict | null {
 
 export async function askTriage(
   request: TriageRequest,
-  options: { signal: AbortSignal; claudePath: string },
+  options: {
+    signal: AbortSignal;
+    claudePath: string;
+    provider?: CoachProvider;
+    model?: string;
+    codexHome?: string;
+  },
 ): Promise<{ reply: string; spend: Spend } | { error: string; spend: Spend }> {
   let reply = "";
   let spend = NO_SPEND;
   for await (const event of runLlm(
     {
-      model: TRIAGE_MODEL,
+      model:
+        options.provider === "codex" ? (options.model ?? "") : TRIAGE_MODEL,
       system: TRIAGE_SYSTEM,
-      messages: [{ role: "user", content: [{ type: "text", text: triagePrompt(request) }] }],
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: triagePrompt(request) }],
+        },
+      ],
     },
     options.signal,
     options.claudePath,
-    { thinking: { type: "disabled" }, shortCache: true },
+    {
+      thinking: { type: "disabled" },
+      shortCache: true,
+      provider: options.provider,
+      codexHome: options.codexHome,
+    },
   )) {
     if (event.type === "text") reply += event.delta;
-    else if (event.type === "done") spend = spendOf(TRIAGE_MODEL, event);
+    else if (event.type === "done")
+      spend = spendOf(
+        event.model ??
+          (options.provider === "codex" ? (options.model ?? "") : TRIAGE_MODEL),
+        event,
+      );
     else return { error: event.message, spend };
   }
   return { reply, spend };
@@ -64,7 +91,13 @@ export async function askTriage(
 
 export async function runTriage(
   request: TriageRequest,
-  options: { signal: AbortSignal; claudePath: string },
+  options: {
+    signal: AbortSignal;
+    claudePath: string;
+    provider?: CoachProvider;
+    model?: string;
+    codexHome?: string;
+  },
 ): Promise<TriageResult> {
   const answer = await askTriage(request, options);
   if ("error" in answer) {

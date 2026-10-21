@@ -1,5 +1,7 @@
 import type { SDKAssistantMessageError } from "@anthropic-ai/claude-agent-sdk";
 
+import { type CoachProvider, providerName } from "./provider";
+
 export type CoachErrorKind = "auth" | "rate_limit" | "network" | "other";
 
 export type CoachError = {
@@ -13,18 +15,27 @@ export type CoachError = {
 
 export const GAVE_UP = {
   title: "The coach stopped",
-  message: "It failed to restart several times in a row. Start a new chat to try again.",
+  message:
+    "It failed to restart several times in a row. Start a new chat to try again.",
   action: "new_chat",
 } satisfies Partial<CoachError>;
 
 const KIND_SIGNATURES: Array<{ kind: CoachErrorKind; pattern: RegExp }> = [
+  {
+    kind: "auth",
+    pattern:
+      /\bnot logged in\b|\bmissing bearer\b|\bauthentication required\b/i,
+  },
   { kind: "auth", pattern: /\binvalid x-api-key\b/i },
   { kind: "auth", pattern: /\binvalid api key\b/i },
   { kind: "auth", pattern: /\bauthentication[_ ]error\b/i },
   { kind: "auth", pattern: /\bno auth credentials\b/i },
   { kind: "auth", pattern: /\bunauthorized\b/i },
   { kind: "auth", pattern: /\bfailed to authenticate\b/i },
-  { kind: "auth", pattern: /\boauth\b.{0,80}\b(expired|revoked|invalid|refresh)/i },
+  {
+    kind: "auth",
+    pattern: /\boauth\b.{0,80}\b(expired|revoked|invalid|refresh)/i,
+  },
   { kind: "auth", pattern: /\b(token|session)\b.{0,40}\bexpired\b/i },
   { kind: "auth", pattern: /\bplease run \/login\b/i },
   { kind: "rate_limit", pattern: /\brate.?limit/i },
@@ -42,7 +53,10 @@ const KIND_SIGNATURES: Array<{ kind: CoachErrorKind; pattern: RegExp }> = [
   { kind: "network", pattern: /\bconnection error\b/i },
 ];
 
-const SDK_ERROR_KINDS: Partial<Record<SDKAssistantMessageError, CoachErrorKind>> & Record<string, CoachErrorKind | undefined> = {
+const SDK_ERROR_KINDS: Partial<
+  Record<SDKAssistantMessageError, CoachErrorKind>
+> &
+  Record<string, CoachErrorKind | undefined> = {
   authentication_failed: "auth",
   oauth_org_not_allowed: "auth",
   rate_limit: "rate_limit",
@@ -50,11 +64,17 @@ const SDK_ERROR_KINDS: Partial<Record<SDKAssistantMessageError, CoachErrorKind>>
   server_error: "network",
 };
 
-export function classifyError(input: { message: string; sdkError?: string }): CoachErrorKind {
+export function classifyError(input: {
+  message: string;
+  sdkError?: string;
+}): CoachErrorKind {
   const tagged = input.sdkError ? SDK_ERROR_KINDS[input.sdkError] : undefined;
   if (tagged) return tagged;
   if (input.message.startsWith("Tool ")) return "other";
-  return KIND_SIGNATURES.find(({ pattern }) => pattern.test(input.message))?.kind ?? "other";
+  return (
+    KIND_SIGNATURES.find(({ pattern }) => pattern.test(input.message))?.kind ??
+    "other"
+  );
 }
 
 const COPY: Record<CoachErrorKind, { title: string; message: string }> = {
@@ -64,11 +84,13 @@ const COPY: Record<CoachErrorKind, { title: string; message: string }> = {
   },
   rate_limit: {
     title: "Usage limit reached",
-    message: "Claude is limiting requests right now. Wait a moment, or check your plan's usage, then retry.",
+    message:
+      "Claude is limiting requests right now. Wait a moment, or check your plan's usage, then retry.",
   },
   network: {
     title: "Couldn't reach Claude",
-    message: "Check your connection and retry. Claude may also be briefly overloaded.",
+    message:
+      "Check your connection and retry. Claude may also be briefly overloaded.",
   },
   other: {
     title: "The coach hit an error",
@@ -76,12 +98,14 @@ const COPY: Record<CoachErrorKind, { title: string; message: string }> = {
   },
 };
 
-export const SIGN_IN_STEPS = "To sign in yourself: open Terminal, run `claude`, then type `/login`.";
+export const SIGN_IN_STEPS =
+  "To sign in yourself: open Terminal, run `claude`, then type `/login`.";
 
 const DETAIL_MAX = 2_000;
 
 export function coachError(input: {
   message: string;
+  provider?: CoachProvider;
   sdkError?: string;
   stderr?: string;
 }): CoachError {
@@ -90,22 +114,49 @@ export function coachError(input: {
     ...(input.sdkError ? { sdkError: input.sdkError } : {}),
   });
   const stderr = input.stderr?.trim();
-  const raw = [input.message.trim(), stderr ? `Claude Code: ${stderr}` : ""].filter(Boolean).join("\n\n");
-  const detail = [kind === "auth" ? SIGN_IN_STEPS : "", raw.slice(-DETAIL_MAX)].filter(Boolean).join("\n\n");
-  return {
-    kind,
-    ...COPY[kind],
-    detail: detail || null,
-  };
+  const raw = [input.message.trim(), stderr ? `Claude Code: ${stderr}` : ""]
+    .filter(Boolean)
+    .join("\n\n");
+  const detail = [kind === "auth" ? SIGN_IN_STEPS : "", raw.slice(-DETAIL_MAX)]
+    .filter(Boolean)
+    .join("\n\n");
+  return errorForProvider(
+    { kind, ...COPY[kind], detail: detail || null },
+    input.provider ?? "claude",
+  );
 }
 
 // "Sign-in expired" is wrong for someone who never signed in; Claude Code's auth status tells the two apart.
-export function withSignIn(error: CoachError, signedIn: boolean | null): CoachError {
+export function errorForProvider(
+  error: CoachError,
+  provider: CoachProvider,
+): CoachError {
+  if (provider === "claude") return error;
+  return {
+    ...error,
+    title: error.title.replaceAll("Claude", "Codex"),
+    message: error.message.replaceAll("Claude", "Codex"),
+    detail:
+      error.detail
+        ?.replace(SIGN_IN_STEPS, "Sign in to Codex in Settings → AI.")
+        .replaceAll("Claude Code", "Codex") ?? null,
+  };
+}
+
+export function withSignIn(
+  error: CoachError,
+  signedIn: boolean | null,
+  provider: CoachProvider = "claude",
+): CoachError {
+  error = errorForProvider(error, provider);
   if (error.kind !== "auth" || signedIn !== false) return error;
   return {
     ...error,
-    title: "Sign in to Claude",
-    message: "The coach uses the Claude sign-in on this Mac.",
+    title: `Sign in to ${providerName(provider)}`,
+    message:
+      provider === "codex"
+        ? "Sign in to Codex for Cue in Settings → AI."
+        : "The coach uses the Claude sign-in on this Mac.",
     signedOut: true,
   };
 }

@@ -2,8 +2,13 @@ import { z } from "zod";
 
 import { runLlm } from "./llm";
 import { MOVE_VERBS } from "./move";
+import type { CoachProvider } from "./provider";
 import { talkStats, talkSummary } from "./talk-time";
-import { type LiveTranscript, type MeetingInfo, renderTranscript } from "./transcript";
+import {
+  type LiveTranscript,
+  type MeetingInfo,
+  renderTranscript,
+} from "./transcript";
 
 export const wrapUpSchema = z.object({
   commitments: z.array(
@@ -19,7 +24,11 @@ export const wrapUpSchema = z.object({
     went_well: z.array(z.string()),
     next_time: z.array(
       z.object({
-        moment: z.object({ speaker: z.string(), at: z.string().nullable(), quote: z.string() }),
+        moment: z.object({
+          speaker: z.string(),
+          at: z.string().nullable(),
+          quote: z.string(),
+        }),
         headline: z.string(),
         verb: z.enum(MOVE_VERBS),
         line: z.string(),
@@ -31,7 +40,7 @@ export const wrapUpSchema = z.object({
 export type WrapUp = z.infer<typeof wrapUpSchema>;
 export type Commitment = WrapUp["commitments"][number];
 
-export const WRAP_UP_SYSTEM =`You write the wrap-up of a meeting that just ended, from its transcript.
+export const WRAP_UP_SYSTEM = `You write the wrap-up of a meeting that just ended, from its transcript.
 "You" in the transcript is the user; other speakers appear by name, as "Speaker N", or as "Them".
 Write every field in the meeting's main language, the one most of the transcript is in, except each coaching headline, which is in English.
 - commitments: every concrete promise made in the meeting. who = the person who promised: "You" for the user, otherwise their name, taken from the invite list when the transcript only says "Them" and there is a single other invitee; keep "Them" only when you cannot tell. what = the promised action in a few words, when = the stated deadline in the speaker's words, or null.
@@ -46,7 +55,10 @@ Never invent commitments or deadlines that were not said.`;
 const WENT_WELL_MAX = 2;
 const NEXT_TIME_MAX = 3;
 
-export function wrapUpPrompt(transcript: LiveTranscript, info: MeetingInfo | null): string {
+export function wrapUpPrompt(
+  transcript: LiveTranscript,
+  info: MeetingInfo | null,
+): string {
   const participants = info?.participants
     .map((participant) => participant.name || participant.email)
     .filter(Boolean)
@@ -56,13 +68,21 @@ export function wrapUpPrompt(transcript: LiveTranscript, info: MeetingInfo | nul
 }
 
 export function commitmentText(commitment: Commitment): string {
-  const owner = commitment.who.trim() && commitment.who.trim() !== "You" ? `${commitment.who.trim()}: ` : "";
+  const owner =
+    commitment.who.trim() && commitment.who.trim() !== "You"
+      ? `${commitment.who.trim()}: `
+      : "";
   const when = commitment.when?.trim() ? ` (${commitment.when.trim()})` : "";
   return `${owner}${commitment.what.trim()}${when}`;
 }
 
-export function logToClientsPrompt(title: string | null, wrapUp: WrapUp): string {
-  const list = wrapUp.commitments.map((commitment) => `- ${commitmentText(commitment)}`).join("\n");
+export function logToClientsPrompt(
+  title: string | null,
+  wrapUp: WrapUp,
+): string {
+  const list = wrapUp.commitments
+    .map((commitment) => `- ${commitmentText(commitment)}`)
+    .join("\n");
   return `Log the promises from the meeting "${title ?? "Untitled"}" that just ended to the clients system with the mcp__clients__ tools. Find the client this meeting was with first; if you cannot tell which client it is, ask me instead of guessing. Promises:
 ${list}
 Reply with one line per promise saying where it was logged.`;
@@ -71,18 +91,30 @@ Reply with one line per promise saying where it was logged.`;
 export async function generateWrapUp(
   transcript: LiveTranscript,
   info: MeetingInfo | null,
-  options: { model: string; claudePath: string; signal: AbortSignal },
+  options: {
+    claudePath: string;
+    provider?: CoachProvider;
+    model?: string;
+    codexHome?: string;
+    signal: AbortSignal;
+  },
 ): Promise<WrapUp> {
   let output = "";
   for await (const event of runLlm(
     {
-      model: options.model,
+      model: options.model ?? (options.provider === "codex" ? "" : "sonnet"),
       system: WRAP_UP_SYSTEM,
-      messages: [{ role: "user", content: [{ type: "text", text: wrapUpPrompt(transcript, info) }] }],
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: wrapUpPrompt(transcript, info) }],
+        },
+      ],
       schema: z.toJSONSchema(wrapUpSchema, { target: "draft-7" }),
     },
     options.signal,
     options.claudePath,
+    { provider: options.provider, codexHome: options.codexHome },
   )) {
     if (event.type === "error") throw new Error(event.message);
     if (event.type === "text") output += event.delta;
@@ -90,7 +122,8 @@ export async function generateWrapUp(
   return parseWrapUp(JSON.parse(output));
 }
 
-const sameText = (text: string) => text.trim().replace(/\s+/g, " ").toLowerCase();
+const sameText = (text: string) =>
+  text.trim().replace(/\s+/g, " ").toLowerCase();
 
 function unique<T>(items: readonly T[], identity: (item: T) => string): T[] {
   const seen = new Set<string>();
@@ -106,7 +139,11 @@ export function parseWrapUp(json: unknown): WrapUp {
   const wrapUp = wrapUpSchema.parse(json);
   return {
     ...wrapUp,
-    commitments: unique(wrapUp.commitments, (commitment) => `${sameText(commitment.who)}\n${sameText(commitment.what)}`),
+    commitments: unique(
+      wrapUp.commitments,
+      (commitment) =>
+        `${sameText(commitment.who)}\n${sameText(commitment.what)}`,
+    ),
     open_questions: unique(wrapUp.open_questions, sameText),
     coaching: {
       went_well: wrapUp.coaching.went_well.slice(0, WENT_WELL_MAX),

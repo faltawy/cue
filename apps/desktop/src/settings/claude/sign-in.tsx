@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { commands as coachCommands } from "@anlg/plugin-coach";
 import { Button } from "@anlg/ui/components/ui/button";
@@ -9,7 +9,7 @@ import { useClaudeSetup } from "~/ai/hooks";
 import { SettingRow } from "~/settings/setting-row";
 
 const CLAUDE_SIGN_IN_QUERY_KEY = ["claude-signed-in"] as const;
-// Sign-in finishes in Terminal, so poll for a while after starting it.
+// Claude sign-in finishes outside the app, so poll after starting it.
 const SIGN_IN_POLL_MS = 3_000;
 const SIGN_IN_WAIT_MS = 3 * 60_000;
 
@@ -25,11 +25,31 @@ async function signInToClaude() {
 }
 
 export function useClaudeSignIn() {
-  const setup = useClaudeSetup();
-  const signIn = useMutation({ mutationFn: signInToClaude });
+  return useProviderSignIn("claude");
+}
+
+export function useProviderSignIn(provider: "claude" | "codex") {
+  const setup = useClaudeSetup(provider);
+  const queryClient = useQueryClient();
+  const queryKey =
+    provider === "claude" ? CLAUDE_SIGN_IN_QUERY_KEY : ["codex-signed-in"];
+  const signIn = useMutation({
+    mutationKey: ["provider-sign-in", provider],
+    mutationFn: async () => {
+      if (provider === "claude") return signInToClaude();
+      const result = await coachCommands.signInToProvider(provider);
+      if (result.status === "error") throw new Error(result.error);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  });
   const status = useQuery({
-    queryKey: CLAUDE_SIGN_IN_QUERY_KEY,
-    queryFn: claudeSignedIn,
+    queryKey,
+    queryFn: async () => {
+      if (provider === "claude") return claudeSignedIn();
+      const result = await coachCommands.providerAccount(provider);
+      if (result.status === "error") throw new Error(result.error);
+      return result.data;
+    },
     enabled: setup.ready,
     refetchOnWindowFocus: "always",
     refetchInterval: (query) =>
@@ -51,13 +71,23 @@ export function useClaudeSignIn() {
   };
 }
 
-export function ClaudeSignInRow() {
+export function ClaudeSignInRow({
+  provider = "claude",
+}: {
+  provider?: "claude" | "codex";
+}) {
   const { setup, signedIn, email, error, signingIn, signIn } =
-    useClaudeSignIn();
+    useProviderSignIn(provider);
   const failed = setup.setup?.state === "failed";
   return (
     <SettingRow
-      title={<Trans>Claude sign-in</Trans>}
+      title={
+        provider === "claude" ? (
+          <Trans>Claude sign-in</Trans>
+        ) : (
+          <Trans>Codex sign-in</Trans>
+        )
+      }
       description={
         error ? (
           <span role="alert" className="text-destructive">
@@ -68,7 +98,7 @@ export function ClaudeSignInRow() {
             role={failed ? "alert" : "status"}
             className={failed ? "text-destructive" : undefined}
           >
-            <ClaudeSetupLabel setup={setup.setup} />
+            <ClaudeSetupLabel setup={setup.setup} provider={provider} />
           </span>
         ) : signedIn === undefined ? (
           <Trans>Checking…</Trans>
@@ -79,7 +109,7 @@ export function ClaudeSignInRow() {
             <Trans>Signed in</Trans>
           )
         ) : signingIn ? (
-          <Trans>Finish signing in in Terminal.</Trans>
+          <Trans>Finish signing in in the window that opened.</Trans>
         ) : (
           <Trans>Not signed in</Trans>
         )

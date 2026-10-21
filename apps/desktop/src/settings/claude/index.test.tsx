@@ -20,6 +20,8 @@ import type { ClaudeConnector, McpServer } from "@anlg/plugin-coach";
 
 const coach = vi.hoisted(() => ({
   settings: {
+    provider: "claude" as "claude" | "codex",
+    codex_model: "",
     project: "/work/northwind" as string | null,
     model: "sonnet" as "sonnet" | "opus" | "haiku",
     nudges: true,
@@ -30,6 +32,9 @@ const coach = vi.hoisted(() => ({
     knowledge: [] as string[],
     web_access: true,
   },
+  providerSetup: vi.fn(),
+  providerAccount: vi.fn(),
+  signInToProvider: vi.fn(),
   getSettings: vi.fn(),
   setSettings: vi.fn(),
   chooseProject: vi.fn(),
@@ -48,6 +53,9 @@ const coach = vi.hoisted(() => ({
 
 vi.mock("@anlg/plugin-coach", () => ({
   commands: {
+    providerSetup: coach.providerSetup,
+    providerAccount: coach.providerAccount,
+    signInToProvider: coach.signInToProvider,
     getSettings: coach.getSettings,
     setSettings: coach.setSettings,
     chooseProject: coach.chooseProject,
@@ -100,7 +108,19 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  coach.settings.provider = "claude";
+  coach.settings.codex_model = "";
+  coach.providerSetup.mockResolvedValue({
+    status: "ok",
+    data: { state: "ready" },
+  });
+  coach.providerAccount.mockResolvedValue({
+    status: "ok",
+    data: { signed_in: true, email: "codex@example.com" },
+  });
   coach.settings = {
+    provider: "claude",
+    codex_model: "",
     project: "/work/northwind",
     model: "sonnet",
     nudges: true,
@@ -153,6 +173,37 @@ afterEach(() => {
 });
 
 describe("SettingsClaude", () => {
+  it("keeps separate model preferences when switching providers", async () => {
+    coach.settings.codex_model = "custom-codex-model";
+    renderPage();
+    await screen.findByRole("combobox", { name: "Provider" });
+    pick("Provider", "Codex");
+    expect(
+      await screen.findByText("Signed in as codex@example.com"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("textbox", { name: "Model" }).getAttribute("value"),
+    ).toBe("custom-codex-model");
+    expect(coach.setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        provider: "codex",
+        model: "sonnet",
+        codex_model: "custom-codex-model",
+      }),
+    );
+    pick("Provider", "Claude");
+    expect(
+      await screen.findByRole("combobox", { name: "Model" }),
+    ).not.toBeNull();
+    expect(coach.setSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        provider: "claude",
+        model: "sonnet",
+        codex_model: "custom-codex-model",
+      }),
+    );
+  });
+
   it("says when Claude isn't signed in, starts the sign-in, and picks up the new sign-in", async () => {
     coach.claudeSignedIn.mockResolvedValue({
       status: "ok",
@@ -380,6 +431,8 @@ describe("SettingsClaude", () => {
 
     await waitFor(() =>
       expect(coach.setSettings).toHaveBeenCalledWith({
+        provider: "claude",
+        codex_model: "",
         project: "/work/northwind",
         model: "opus",
         nudges: true,
@@ -410,6 +463,8 @@ describe("SettingsClaude", () => {
 
     await waitFor(() =>
       expect(coach.setSettings).toHaveBeenCalledWith({
+        provider: "claude",
+        codex_model: "",
         project: "/work/northwind",
         model: "sonnet",
         nudges: false,

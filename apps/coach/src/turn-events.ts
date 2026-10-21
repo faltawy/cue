@@ -2,14 +2,22 @@ import path from "node:path";
 
 import { type CoachError, coachError } from "./errors";
 import type { CoachEvent } from "./protocol";
-import { type FoundSource, pickSources, type Source, sourcesFromTool } from "./sources";
+import type { RuntimeMessage } from "./runtime-message";
+import {
+  type FoundSource,
+  pickSources,
+  type Source,
+  sourcesFromTool,
+} from "./sources";
 import { type TurnUsage, turnUsage, type UsageSource } from "./usage";
 
 export const OUTPUT_MAX = 4_000;
 const DETAIL_MAX = 400;
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.entries(value)) : {};
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value))
+    : {};
 }
 
 function str(value: unknown): string {
@@ -40,14 +48,20 @@ export type ToolLabels = { done: string; active: string };
 
 const label = (done: string, active: string): ToolLabels => ({ done, active });
 
-export function toolLabels(name: string, input: Record<string, unknown>): ToolLabels {
+export function toolLabels(
+  name: string,
+  input: Record<string, unknown>,
+): ToolLabels {
   const file = path.basename(str(input.file_path) || str(input.path));
   const pattern = clip(str(input.pattern), 40);
   switch (name) {
     case "mcp__meeting__live_transcript":
       return label("Read the transcript", "Reading the transcript");
     case "mcp__meeting__meeting_info":
-      return label("Checked who's in the meeting", "Checking who's in the meeting");
+      return label(
+        "Checked who's in the meeting",
+        "Checking who's in the meeting",
+      );
     case "mcp__meeting__meeting_notes":
       return label("Read the notes", "Reading the notes");
     case "mcp__meeting__update_note":
@@ -93,15 +107,22 @@ export function toolLabels(name: string, input: Record<string, unknown>): ToolLa
     case "WebSearch": {
       const query = clip(str(input.query), 40);
       return query
-        ? label(`Searched the web for “${query}”`, `Searching the web for “${query}”`)
+        ? label(
+            `Searched the web for “${query}”`,
+            `Searching the web for “${query}”`,
+          )
         : label("Searched the web", "Searching the web");
     }
     case "WebFetch": {
       const host = hostOf(str(input.url));
-      return host ? label(`Read ${host}`, `Reading ${host}`) : label("Read a web page", "Reading a web page");
+      return host
+        ? label(`Read ${host}`, `Reading ${host}`)
+        : label("Read a web page", "Reading a web page");
     }
     case "Read":
-      return file ? label(`Read ${file}`, `Reading ${file}`) : label("Read a file", "Reading a file");
+      return file
+        ? label(`Read ${file}`, `Reading ${file}`)
+        : label("Read a file", "Reading a file");
     case "Grep":
       return isPlainTerm(pattern)
         ? label(`Searched for “${pattern}”`, `Searching for “${pattern}”`)
@@ -128,18 +149,34 @@ export function toolLabels(name: string, input: Record<string, unknown>): ToolLa
   return label(humanize(name), humanize(name));
 }
 
-export function toolDetail(name: string, input: Record<string, unknown>): string | null {
+export function toolDetail(
+  name: string,
+  input: Record<string, unknown>,
+): string | null {
   if (name === "Bash") return str(input.command) || null;
   if (name === "Read") return str(input.file_path) || null;
   if (name === "Grep") {
     const where = str(input.path) || str(input.glob);
-    return [str(input.pattern), where && `in ${where}`].filter(Boolean).join(" ") || null;
+    return (
+      [str(input.pattern), where && `in ${where}`].filter(Boolean).join(" ") ||
+      null
+    );
   }
-  if (name === "Glob") return [str(input.pattern), str(input.path) && `in ${str(input.path)}`].filter(Boolean).join(" ") || null;
+  if (name === "Glob")
+    return (
+      [str(input.pattern), str(input.path) && `in ${str(input.path)}`]
+        .filter(Boolean)
+        .join(" ") || null
+    );
   if (name === "AskUserQuestion" || name === "TodoWrite") return null;
   const lines = Object.entries(input)
-    .filter(([, value]) => value !== undefined && value !== null && value !== "")
-    .map(([key, value]) => `${humanize(key)}: ${typeof value === "string" ? value : JSON.stringify(value)}`);
+    .filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    )
+    .map(
+      ([key, value]) =>
+        `${humanize(key)}: ${typeof value === "string" ? value : JSON.stringify(value)}`,
+    );
   return lines.length > 0 ? clip(lines.join("\n"), DETAIL_MAX) : null;
 }
 
@@ -158,7 +195,9 @@ function responseText(response: unknown): string | null {
   if (typeof response === "string") return toolResultText(response);
   const record = asRecord(response);
   if (Array.isArray(record.content)) return toolResultText(record.content);
-  return response === undefined || response === null ? null : clip(JSON.stringify(response), OUTPUT_MAX);
+  return response === undefined || response === null
+    ? null
+    : clip(JSON.stringify(response), OUTPUT_MAX);
 }
 
 export type ResultLike = UsageSource & {
@@ -175,10 +214,6 @@ export type TurnOutcome = {
   error: CoachError | null;
   sources: Source[];
 };
-
-function blocks(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.map(asRecord) : [];
-}
 
 export class TurnTracker {
   resumable: string | null = null;
@@ -201,74 +236,80 @@ export class TurnTracker {
   hookResult(toolUseId: string, response: unknown, toolName = "") {
     this.hookResults.set(toolUseId, responseText(response));
     const direct = toolName !== "WebSearch";
-    for (const source of sourcesFromTool(toolName, response)) this.found.push({ ...source, direct });
+    for (const source of sourcesFromTool(toolName, response))
+      this.found.push({ ...source, direct });
   }
 
-  handle(raw: unknown): CoachEvent[] {
-    const message = asRecord(raw);
-    if (message.parent_tool_use_id !== null) return [];
+  handle(message: RuntimeMessage): CoachEvent[] {
     switch (message.type) {
-      case "stream_event": {
-        const event = asRecord(message.event);
-        const delta = asRecord(event.delta);
-        if (event.type !== "content_block_delta" || delta.type !== "text_delta" || !str(delta.text)) return [];
-        this.answer += str(delta.text);
-        return [{ type: "text", delta: str(delta.text) }];
+      case "text":
+        this.answer += message.delta;
+        return [{ type: "text", delta: message.delta }];
+      case "assistant_usage":
+        this.lastMainUsage = message.usage;
+        if (message.error) this.sdkError = message.error;
+        return [];
+      case "tool_start": {
+        this.starts.set(message.id, this.now());
+        const labels = toolLabels(message.name, message.input);
+        return [
+          {
+            type: "tool",
+            id: message.id,
+            name: message.name,
+            label: labels.done,
+            activeLabel: labels.active,
+            detail: toolDetail(message.name, message.input),
+          },
+        ];
       }
-      case "assistant": {
-        const body = asRecord(message.message);
-        if (str(message.error)) this.sdkError = str(message.error);
-        if (body.usage) this.lastMainUsage = body.usage;
-        return blocks(body.content).flatMap((block): CoachEvent[] => {
-          const id = str(block.id);
-          const name = str(block.name);
-          if (block.type !== "tool_use" || !id || !name) return [];
-          const input = asRecord(block.input);
-          this.starts.set(id, this.now());
-          const labels = toolLabels(name, input);
-          return [
-            { type: "tool", id, name, label: labels.done, activeLabel: labels.active, detail: toolDetail(name, input) },
-          ];
-        });
+      case "tool_result": {
+        const started = this.starts.get(message.id);
+        if (started === undefined) return [];
+        this.starts.delete(message.id);
+        const hook = this.hookResults.get(message.id);
+        this.hookResults.delete(message.id);
+        return [
+          {
+            type: "tool_result",
+            id: message.id,
+            ok: !message.isError,
+            output: toolResultText(message.content) ?? hook ?? null,
+            durationMs: this.now() - started,
+          },
+        ];
       }
-      case "user":
-        return blocks(asRecord(message.message).content).flatMap((block): CoachEvent[] => {
-          const id = str(block.tool_use_id);
-          const started = this.starts.get(id);
-          if (block.type !== "tool_result" || started === undefined) return [];
-          this.starts.delete(id);
-          const hook = this.hookResults.get(id);
-          this.hookResults.delete(id);
-          return [
-            {
-              type: "tool_result",
-              id,
-              ok: block.is_error !== true,
-              output: toolResultText(block.content) ?? hook ?? null,
-              durationMs: this.now() - started,
-            },
-          ];
-        });
       default:
         return [];
     }
   }
 
-  finishTurn(result: ResultLike, input: { interrupted: boolean; stderr: string }): TurnOutcome {
+  finishTurn(
+    result: ResultLike,
+    input: { interrupted: boolean; stderr: string },
+  ): TurnOutcome {
     const usage = turnUsage({ result, lastMainUsage: this.lastMainUsage });
     const ok = result.subtype === "success" && !result.is_error;
-    if ((ok || input.interrupted) && result.session_id) this.resumable = result.session_id;
+    if ((ok || input.interrupted) && result.session_id)
+      this.resumable = result.session_id;
     const sources = pickSources(this.found, this.answer);
     this.starts.clear();
     this.hookResults.clear();
     this.found = [];
     this.answer = "";
     if (ok || input.interrupted) return { ok, usage, error: null, sources };
-    const message = (result.result || (result.errors ?? []).filter(Boolean).join("\n")) || result.subtype;
+    const message =
+      result.result ||
+      (result.errors ?? []).filter(Boolean).join("\n") ||
+      result.subtype;
     return {
       ok,
       usage,
-      error: coachError({ message, stderr: input.stderr, ...(this.sdkError ? { sdkError: this.sdkError } : {}) }),
+      error: coachError({
+        message,
+        stderr: input.stderr,
+        ...(this.sdkError ? { sdkError: this.sdkError } : {}),
+      }),
       sources,
     };
   }

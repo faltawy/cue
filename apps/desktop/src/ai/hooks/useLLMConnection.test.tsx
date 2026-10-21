@@ -62,6 +62,17 @@ describe("useLLMConnection", () => {
     });
   });
 
+  it("uses Codex's default model without falling back to the saved Claude model", async () => {
+    mocks.getSettings.mockResolvedValue({
+      status: "ok",
+      data: { provider: "codex", model: "opus", codex_model: "" },
+    });
+    const { result } = renderHook(() => useLanguageModel(), { wrapper });
+    await waitFor(() =>
+      expect(result.current).toMatchObject({ provider: "codex", modelId: "" }),
+    );
+  });
+
   it("stays off when an admin disabled AI, even though Claude is set up", async () => {
     mocks.intelligenceDisabled = true;
     const { result } = renderHook(

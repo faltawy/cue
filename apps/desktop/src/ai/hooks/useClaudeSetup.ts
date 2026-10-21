@@ -24,7 +24,7 @@ async function retryClaudeSetup() {
  * Getting Claude ready, started at app launch: the person's own Claude Code
  * when it is new enough, else Cue's copy downloading in the background.
  */
-export function useClaudeSetup(): {
+export function useClaudeSetup(provider: "claude" | "codex" = "claude"): {
   setup: ClaudeSetup | undefined;
   error: Error | null;
   ready: boolean;
@@ -32,15 +32,27 @@ export function useClaudeSetup(): {
   retrying: boolean;
 } {
   const queryClient = useQueryClient();
+  const queryKey =
+    provider === "claude" ? CLAUDE_SETUP_QUERY_KEY : ["codex-setup"];
   const query = useQuery({
-    queryKey: CLAUDE_SETUP_QUERY_KEY,
-    queryFn: claudeSetup,
+    queryKey,
+    queryFn: async () => {
+      if (provider === "claude") return claudeSetup();
+      const result = await coachCommands.providerSetup(provider);
+      if (result.status === "error") throw new Error(result.error);
+      return result.data;
+    },
     refetchInterval: (current) =>
       current.state.data?.state === "preparing" ? PREPARING_POLL_MS : false,
   });
   const retry = useMutation({
-    mutationFn: retryClaudeSetup,
-    onSuccess: (next) => queryClient.setQueryData(CLAUDE_SETUP_QUERY_KEY, next),
+    mutationFn: async () => {
+      if (provider === "claude") return retryClaudeSetup();
+      const result = await coachCommands.retryProviderSetup(provider);
+      if (result.status === "error") throw new Error(result.error);
+      return result.data;
+    },
+    onSuccess: (next) => queryClient.setQueryData(queryKey, next),
   });
   return {
     setup: query.data,

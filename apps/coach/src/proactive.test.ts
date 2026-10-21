@@ -1,11 +1,30 @@
-import { afterEach, beforeEach, describe, expect, jest, mock, spyOn, test } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  mock,
+  spyOn,
+  test,
+} from "bun:test";
 
 import { type Spend, spendOf } from "./pricing";
-import { type NudgeRequest, PROACTIVE_DEFAULTS, Proactive, type ProactiveConfig } from "./proactive";
+import {
+  type NudgeRequest,
+  PROACTIVE_DEFAULTS,
+  Proactive,
+  type ProactiveConfig,
+} from "./proactive";
 import type { TranscriptLine } from "./transcript";
 import type { TriageRequest, TriageResult, TriageVerdict } from "./triage";
 
-const line = (speaker: string, text: string, startS: number, endS: number): TranscriptLine => ({
+const line = (
+  speaker: string,
+  text: string,
+  startS: number,
+  endS: number,
+): TranscriptLine => ({
   speaker,
   channel: speaker === "You" ? 0 : 1,
   start_ms: startS * 1_000,
@@ -14,15 +33,29 @@ const line = (speaker: string, text: string, startS: number, endS: number): Tran
 });
 
 const QUESTION = line("Omar", "Can you Bcc every reply to our CRM?", 60, 63);
-const SMALL_TALK = line("Omar", "The weather has been lovely this week.", 50, 53);
+const SMALL_TALK = line(
+  "Omar",
+  "The weather has been lovely this week.",
+  50,
+  53,
+);
 
 const TRIAGE_SPEND: Spend = { usd: 0.0002, tokens: 1_400, cachedTokens: 0 };
 
-function harness(options: { verdict?: TriageVerdict | null; config?: Partial<ProactiveConfig>; spend?: Spend } = {}) {
+function harness(
+  options: {
+    verdict?: TriageVerdict | null;
+    config?: Partial<ProactiveConfig>;
+    spend?: Spend;
+  } = {},
+) {
   let busy = false;
   const triage = mock(
     async (_request: TriageRequest): Promise<TriageResult> => ({
-      verdict: options.verdict === undefined ? { nudge: true, why: "Omar asked about Bcc" } : options.verdict,
+      verdict:
+        options.verdict === undefined
+          ? { nudge: true, why: "Omar asked about Bcc" }
+          : options.verdict,
       spend: options.spend ?? TRIAGE_SPEND,
     }),
   );
@@ -30,12 +63,19 @@ function harness(options: { verdict?: TriageVerdict | null; config?: Partial<Pro
   const changed = mock();
   const proactive = new Proactive(
     { ...PROACTIVE_DEFAULTS, enabled: true, ...options.config },
-    { triage, nudge, busy: () => busy, context: () => "Weekly sync · with Omar", changed },
+    {
+      triage,
+      nudge,
+      busy: () => busy,
+      context: () => "Weekly sync · with Omar",
+      changed,
+    },
   );
   let lines: TranscriptLine[] = [];
   let pending = "";
   let live = true;
-  const observe = () => proactive.observe({ lines, pending, live, selfName: "Ahmad Falta" });
+  const observe = () =>
+    proactive.observe({ lines, pending, live, selfName: "Ahmad Falta" });
   return {
     proactive,
     triage,
@@ -131,7 +171,10 @@ describe("Proactive: hit → triage → nudge", () => {
 describe("Proactive: debounce and cooldown", () => {
   test("ongoing speech holds the triage, but never past the max hold", () => {
     const coach = harness();
-    coach.say(QUESTION, line("You", "Hmm, let me think about that one.", 64, 66));
+    coach.say(
+      QUESTION,
+      line("You", "Hmm, let me think about that one.", 64, 66),
+    );
     for (let second = 1; second <= 8; second += 1) {
       coach.speaking(`and the other thing ${second}`);
       coach.tick(1);
@@ -148,12 +191,18 @@ describe("Proactive: debounce and cooldown", () => {
     coach.tick(3);
     await settle();
     expect(coach.nudge).toHaveBeenCalledTimes(1);
-    coach.say(line("Omar", "Can you send the pricing sheet?", 80, 82), line("Omar", "It is $1,200 a month.", 83, 85));
+    coach.say(
+      line("Omar", "Can you send the pricing sheet?", 80, 82),
+      line("Omar", "It is $1,200 a month.", 83, 85),
+    );
     coach.tick(55);
     expect(coach.triage).toHaveBeenCalledTimes(1);
     coach.tick(5);
     expect(coach.triage).toHaveBeenCalledTimes(2);
-    expect(coach.triage.mock.calls[1]?.[0].kinds).toEqual(["question", "number"]);
+    expect(coach.triage.mock.calls[1]?.[0].kinds).toEqual([
+      "question",
+      "number",
+    ]);
   });
 
   test("nothing is triaged while a turn is running; the held hit goes once it ends", () => {
@@ -192,10 +241,16 @@ describe("Proactive: debounce and cooldown", () => {
 });
 
 describe("Proactive: rate limit", () => {
-  const askEvery70s = async (coach: ReturnType<typeof harness>, from: number, count: number) => {
+  const askEvery70s = async (
+    coach: ReturnType<typeof harness>,
+    from: number,
+    count: number,
+  ) => {
     for (let index = 0; index < count; index += 1) {
       const at = (from + index) * 70;
-      coach.say(line("Omar", `Can you check item ${from + index} for us?`, at, at + 3));
+      coach.say(
+        line("Omar", `Can you check item ${from + index} for us?`, at, at + 3),
+      );
       coach.tick(3);
       await settle();
       coach.tick(67);
@@ -222,24 +277,73 @@ describe("Proactive: rate limit", () => {
 });
 
 describe("Proactive: budget", () => {
+  test("unpriced triage stops automatic calls but retains usage instead of pretending the cap was reached", async () => {
+    const known = harness();
+    known.say(QUESTION);
+    known.tick(3);
+    await settle();
+    expect(known.nudge).toHaveBeenCalled();
+
+    const unknown = harness({
+      spend: { usd: null, tokens: 1_400, cachedTokens: 200 },
+    });
+    unknown.say(QUESTION);
+    unknown.tick(3);
+    await settle();
+    expect(unknown.proactive.view()).toMatchObject({
+      state: "unpriced",
+      nudgesUsd: null,
+      meetingUsd: null,
+      meetingTokens: 1_400,
+      cachedTokens: 200,
+    });
+    expect(unknown.nudge).not.toHaveBeenCalled();
+    unknown.say(line("Omar", "Do you have the numbers?", 170, 172));
+    unknown.tick(80);
+    await settle();
+    expect(unknown.proactive.view().meetingTokens).toBe(1_400);
+    expect(unknown.triage).toHaveBeenCalledTimes(1);
+  });
+
   test("triage and nudges count toward the cap; asks only toward the meeting total", async () => {
     const coach = harness();
     coach.say(QUESTION);
     coach.tick(3);
     await settle();
-    coach.proactive.spend("nudges", { usd: 0.0098, tokens: 3_100, cachedTokens: 0 });
-    coach.proactive.spend("asks", { usd: 0.05, tokens: 40_000, cachedTokens: 35_000 });
+    coach.proactive.spend("nudges", {
+      usd: 0.0098,
+      tokens: 3_100,
+      cachedTokens: 0,
+    });
+    coach.proactive.spend("asks", {
+      usd: 0.05,
+      tokens: 40_000,
+      cachedTokens: 35_000,
+    });
     const view = coach.proactive.view();
     expect(view.nudgesUsd).toBeCloseTo(0.01, 6);
     expect(view.meetingUsd).toBeCloseTo(0.06, 6);
-    expect(view).toMatchObject({ state: "on", capUsd: 0.5, meetingTokens: 44_500, cachedTokens: 35_000 });
+    expect(view).toMatchObject({
+      state: "on",
+      capUsd: 0.5,
+      meetingTokens: 44_500,
+      cachedTokens: 35_000,
+    });
     expect(coach.changed).toHaveBeenLastCalledWith(coach.proactive.view());
   });
 
   test("cache reads alone can reach the cap: 250k cached Sonnet tokens are $0.05", async () => {
     const cached = (tokens: number) =>
-      spendOf("sonnet", { inputTokens: 0, cachedInputTokens: tokens, cacheCreationTokens: 0, outputTokens: 0 });
-    const coach = harness({ config: { capUsd: 0.05 }, spend: { usd: 0, tokens: 0, cachedTokens: 0 } });
+      spendOf("sonnet", {
+        inputTokens: 0,
+        cachedInputTokens: tokens,
+        cacheCreationTokens: 0,
+        outputTokens: 0,
+      });
+    const coach = harness({
+      config: { capUsd: 0.05 },
+      spend: { usd: 0, tokens: 0, cachedTokens: 0 },
+    });
     coach.proactive.spend("nudges", cached(249_000));
     coach.say(QUESTION);
     coach.tick(3);
@@ -256,7 +360,11 @@ describe("Proactive: budget", () => {
 
   test("asks never pause nudges, however much they cost", () => {
     const coach = harness({ config: { capUsd: 0.05 } });
-    coach.proactive.spend("asks", { usd: 3, tokens: 1_000_000, cachedTokens: 900_000 });
+    coach.proactive.spend("asks", {
+      usd: 3,
+      tokens: 1_000_000,
+      cachedTokens: 900_000,
+    });
     coach.say(QUESTION);
     coach.tick(3);
     expect(coach.triage).toHaveBeenCalledTimes(1);
@@ -270,7 +378,11 @@ describe("Proactive: budget", () => {
     expect(open.triage).toHaveBeenCalledTimes(1);
 
     const capped = harness({ config: { capUsd: 0.05 } });
-    capped.proactive.spend("nudges", { usd: 0.05, tokens: 9_000, cachedTokens: 0 });
+    capped.proactive.spend("nudges", {
+      usd: 0.05,
+      tokens: 9_000,
+      cachedTokens: 0,
+    });
     capped.say(QUESTION);
     capped.tick(3);
     expect(capped.triage).not.toHaveBeenCalled();
@@ -278,8 +390,15 @@ describe("Proactive: budget", () => {
   });
 
   test("triage that pushes the total over the cap does not start the nudge", async () => {
-    const coach = harness({ spend: { usd: 0.006, tokens: 1_400, cachedTokens: 0 }, config: { capUsd: 0.01 } });
-    coach.proactive.spend("nudges", { usd: 0.005, tokens: 1_000, cachedTokens: 0 });
+    const coach = harness({
+      spend: { usd: 0.006, tokens: 1_400, cachedTokens: 0 },
+      config: { capUsd: 0.01 },
+    });
+    coach.proactive.spend("nudges", {
+      usd: 0.005,
+      tokens: 1_000,
+      cachedTokens: 0,
+    });
     coach.say(QUESTION);
     coach.tick(3);
     expect(coach.triage).toHaveBeenCalledTimes(1);
@@ -315,7 +434,9 @@ describe("Proactive: failures", () => {
       await settle();
       expect(coach.nudge).not.toHaveBeenCalled();
       expect(log).toHaveBeenCalledTimes(1);
-      coach.say(line("Omar", "Could you also check the Zendesk sync?", 120, 123));
+      coach.say(
+        line("Omar", "Could you also check the Zendesk sync?", 120, 123),
+      );
       coach.tick(20);
       await settle();
       expect(coach.triage).toHaveBeenCalledTimes(2);
@@ -327,7 +448,12 @@ describe("Proactive: failures", () => {
 });
 
 describe("Proactive: objections", () => {
-  const PUSHBACK = line("Omar", "Honestly, this is too expensive for a team our size.", 60, 64);
+  const PUSHBACK = line(
+    "Omar",
+    "Honestly, this is too expensive for a team our size.",
+    60,
+    64,
+  );
 
   test("pushback from the other side goes through triage, and the nudge carries the objection", async () => {
     const coach = harness();
@@ -335,7 +461,9 @@ describe("Proactive: objections", () => {
     coach.tick(3);
     expect(coach.triage.mock.calls[0]?.[0].kinds).toEqual(["objection"]);
     await settle();
-    expect(coach.nudge.mock.calls[0]?.[0].hits).toEqual([{ kind: "objection", lineIndex: 0, text: PUSHBACK.text }]);
+    expect(coach.nudge.mock.calls[0]?.[0].hits).toEqual([
+      { kind: "objection", lineIndex: 0, text: PUSHBACK.text },
+    ]);
   });
 
   test("the user saying the same words never reaches triage", () => {
@@ -359,7 +487,10 @@ describe("Proactive: objections", () => {
     expect(coach.triage).toHaveBeenCalledTimes(1);
     coach.end();
     coach.tick(1);
-    answer({ verdict: { nudge: true, why: "price pushback" }, spend: TRIAGE_SPEND });
+    answer({
+      verdict: { nudge: true, why: "price pushback" },
+      spend: TRIAGE_SPEND,
+    });
     await settle();
     expect(coach.nudge).not.toHaveBeenCalled();
   });
@@ -367,7 +498,12 @@ describe("Proactive: objections", () => {
 
 describe("Proactive: long monologues", () => {
   const MORE = "And here is the next part of how the inbox works.";
-  const talk = async (coach: ReturnType<typeof harness>, fromS: number, toS: number, speaker = "You") => {
+  const talk = async (
+    coach: ReturnType<typeof harness>,
+    fromS: number,
+    toS: number,
+    speaker = "You",
+  ) => {
     for (let at = fromS; at < toS; at += 10) {
       coach.say(line(speaker, MORE, at, at + 10));
       coach.tick(10);
@@ -383,7 +519,9 @@ describe("Proactive: long monologues", () => {
     await talk(coach, 80, 90);
     expect(coach.nudge).toHaveBeenCalledTimes(1);
     const request = coach.nudge.mock.calls[0]?.[0];
-    expect(request?.hits).toEqual([{ kind: "monologue", lineIndex: 8, text: MORE }]);
+    expect(request?.hits).toEqual([
+      { kind: "monologue", lineIndex: 8, text: MORE },
+    ]);
     expect(request?.why).toBe("You have talked for 01:30 without handing over");
     expect(request?.context).toBe("Weekly sync · with Omar");
     await talk(coach, 90, 300);
@@ -406,14 +544,23 @@ describe("Proactive: long monologues", () => {
     expect(asked.nudge).not.toHaveBeenCalled();
     await talk(asked, 91, 141);
     expect(asked.nudge).toHaveBeenCalledTimes(1);
-    expect(asked.nudge.mock.calls[0]?.[0].why).toBe("You have talked for 01:30 without handing over");
+    expect(asked.nudge.mock.calls[0]?.[0].why).toBe(
+      "You have talked for 01:30 without handing over",
+    );
   });
 
   test("a second monologue right after the first waits out the cooldown", async () => {
     const coach = harness({ verdict: NO });
     await talk(coach, 0, 90);
     expect(coach.nudge).toHaveBeenCalledTimes(1);
-    coach.say(line("Omar", "Okay, so what would the rollout look like for us then?", 90, 96));
+    coach.say(
+      line(
+        "Omar",
+        "Okay, so what would the rollout look like for us then?",
+        90,
+        96,
+      ),
+    );
     coach.tick(6);
     await settle();
     await talk(coach, 96, 196);
@@ -436,7 +583,11 @@ describe("Proactive: long monologues", () => {
     const off = harness({ config: { enabled: false } });
     await talk(off, 0, 120);
     const capped = harness({ config: { capUsd: 0.05 } });
-    capped.proactive.spend("nudges", { usd: 0.05, tokens: 9_000, cachedTokens: 0 });
+    capped.proactive.spend("nudges", {
+      usd: 0.05,
+      tokens: 9_000,
+      cachedTokens: 0,
+    });
     await talk(capped, 0, 120);
     const busy = harness();
     busy.setBusy(true);
@@ -445,7 +596,8 @@ describe("Proactive: long monologues", () => {
     await talk(ended, 0, 80);
     ended.end();
     await talk(ended, 80, 120);
-    for (const coach of [off, capped, busy, ended]) expect(coach.nudge).not.toHaveBeenCalled();
+    for (const coach of [off, capped, busy, ended])
+      expect(coach.nudge).not.toHaveBeenCalled();
   });
 
   test("a nudge declined by the app is retried on the next look, not dropped", async () => {

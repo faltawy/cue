@@ -33,7 +33,8 @@ type ContentPart =
   | { type: "image"; mediaType: ImageType; data: string };
 
 export type ClaudeRequest = {
-  model: ClaudeModel;
+  provider: "claude" | "codex";
+  model: string;
   system?: string;
   messages: Array<{ role: "user" | "assistant"; content: ContentPart[] }>;
   schema?: NonNullable<
@@ -84,13 +85,14 @@ function toBase64(bytes: Uint8Array): string {
 function unsupported(functionality: string): never {
   throw new UnsupportedFunctionalityError({
     functionality,
-    message: `Claude in Cue does not support ${functionality}.`,
+    message: `AI in Cue does not support ${functionality}.`,
   });
 }
 
 export function buildClaudeRequest(
-  model: ClaudeModel,
+  model: string,
   options: CallOptions,
+  provider: "claude" | "codex" = "claude",
 ): ClaudeRequest {
   if (options.tools?.length) {
     unsupported("tool calling");
@@ -134,10 +136,11 @@ export function buildClaudeRequest(
   }
 
   if (messages.length === 0) {
-    throw new Error("Claude needs at least one message.");
+    throw new Error("AI needs at least one message.");
   }
 
   return {
+    provider,
     model,
     ...(system.length > 0 ? { system: system.join("\n\n") } : {}),
     messages,
@@ -192,8 +195,16 @@ export function createClaudeCodeModel(
   modelId: ClaudeModel,
   deps: ClaudeCodeDeps = defaultDeps,
 ): LanguageModelV3 {
+  return createCoachModel("claude", modelId, deps);
+}
+
+export function createCoachModel(
+  provider: "claude" | "codex",
+  modelId: string,
+  deps: ClaudeCodeDeps = defaultDeps,
+): LanguageModelV3 {
   const doStream = async (options: CallOptions): Promise<StreamResult> => {
-    const request = buildClaudeRequest(modelId, options);
+    const request = buildClaudeRequest(modelId, options, provider);
     const endpoint = await deps.endpoint();
     const url = `${endpoint.url}/llm`;
     const response = await deps.fetch(url, {
@@ -207,7 +218,7 @@ export function createClaudeCodeModel(
     });
     if (!response.ok || !response.body) {
       throw new APICallError({
-        message: `Claude request failed with status ${response.status}`,
+        message: `AI request failed with status ${response.status}`,
         url,
         requestBodyValues: request,
         statusCode: response.status,
@@ -259,7 +270,7 @@ export function createClaudeCodeModel(
             }
             controller.enqueue({
               type: "error",
-              error: new Error("Claude stopped before finishing its answer."),
+              error: new Error("AI stopped before finishing its answer."),
             });
             controller.close();
           } catch (error) {
@@ -272,7 +283,7 @@ export function createClaudeCodeModel(
 
   return {
     specificationVersion: "v3",
-    provider: "claude_code",
+    provider: provider === "claude" ? "claude_code" : "codex",
     modelId,
     supportedUrls: {},
     doStream,
@@ -289,7 +300,7 @@ export function createClaudeCodeModel(
         if (value.type === "finish") finish = value;
       }
       if (!finish) {
-        throw new Error("Claude stopped before finishing its answer.");
+        throw new Error("AI stopped before finishing its answer.");
       }
       return {
         content: [{ type: "text", text }],

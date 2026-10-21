@@ -7,6 +7,7 @@ import {
   commands as coachCommands,
 } from "@anlg/plugin-coach";
 import { Button } from "@anlg/ui/components/ui/button";
+import { Input } from "@anlg/ui/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -102,55 +103,110 @@ export function SettingsClaude() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <SettingsPageTitle title={t`Claude`} />
+        <SettingsPageTitle title={t`AI`} />
         <p className="text-muted-foreground text-body">
           <Trans>
-            Summaries, titles, briefs and the coach run on Claude, using the
-            Claude sign-in on this Mac. No API keys needed.
+            Choose Claude or Codex for summaries, titles, briefs and the coach.
+            New chats use this provider; existing chats keep their original
+            provider.
           </Trans>
         </p>
       </div>
 
-      <ClaudeSignInRow />
-
-      <ClaudeCodeRow />
+      {settings && (
+        <SettingRow title={<Trans>Provider</Trans>}>
+          {(labelProps) => (
+            <Select
+              value={settings.provider ?? "claude"}
+              disabled={save.isPending}
+              onValueChange={(provider) =>
+                save.mutate({
+                  ...settings,
+                  provider: provider === "codex" ? "codex" : "claude",
+                })
+              }
+            >
+              <SelectTrigger {...labelProps} className={SETTING_CONTROL_CLASS}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="claude">Claude</SelectItem>
+                <SelectItem value="codex">Codex</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </SettingRow>
+      )}
+      <ClaudeSignInRow
+        key={settings?.provider ?? "claude"}
+        provider={settings?.provider ?? "claude"}
+      />
+      {settings?.provider !== "codex" && <ClaudeCodeRow />}
 
       {settings && (
         <section className="flex flex-col gap-4">
-          <SettingRow
-            title={<Trans>Model</Trans>}
-            description={
-              <Trans>Sonnet is the default. Opus is slower and smarter.</Trans>
-            }
-          >
-            {(labelProps) => (
-              <Select
-                value={settings.model}
-                disabled={save.isPending}
-                onValueChange={(model) =>
-                  save.mutate({
-                    ...settings,
-                    model:
-                      model === "opus" || model === "haiku" ? model : "sonnet",
-                  })
-                }
-              >
-                <SelectTrigger
+          {settings.provider === "codex" ? (
+            <SettingRow
+              title={<Trans>Model</Trans>}
+              description={
+                <Trans>Leave blank to use the Codex default model.</Trans>
+              }
+            >
+              {(labelProps) => (
+                <Input
                   {...labelProps}
+                  key={settings.codex_model}
+                  defaultValue={settings.codex_model}
+                  disabled={save.isPending}
                   className={SETTING_CONTROL_CLASS}
+                  onBlur={(event) => {
+                    const codex_model = event.currentTarget.value.trim();
+                    if (codex_model !== settings.codex_model)
+                      save.mutate({ ...settings, codex_model });
+                  }}
+                />
+              )}
+            </SettingRow>
+          ) : (
+            <SettingRow
+              title={<Trans>Model</Trans>}
+              description={
+                <Trans>
+                  Sonnet is the default. Opus is slower and smarter.
+                </Trans>
+              }
+            >
+              {(labelProps) => (
+                <Select
+                  value={settings.model}
+                  disabled={save.isPending}
+                  onValueChange={(model) =>
+                    save.mutate({
+                      ...settings,
+                      model:
+                        model === "opus" || model === "haiku"
+                          ? model
+                          : "sonnet",
+                    })
+                  }
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(["sonnet", "opus", "haiku"] as const).map((model) => (
-                    <SelectItem key={model} value={model}>
-                      {modelLabels[model]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </SettingRow>
+                  <SelectTrigger
+                    {...labelProps}
+                    className={SETTING_CONTROL_CLASS}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["sonnet", "opus", "haiku"] as const).map((model) => (
+                      <SelectItem key={model} value={model}>
+                        {modelLabels[model]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </SettingRow>
+          )}
 
           <SettingRow
             title={<Trans>Coach project</Trans>}
@@ -258,7 +314,12 @@ export function SettingsClaude() {
         />
       )}
 
-      {settings && (
+      {settings?.provider === "codex" && (
+        <p className="text-muted-foreground text-body">
+          <Trans>Claude connectors are saved but unavailable with Codex.</Trans>
+        </p>
+      )}
+      {settings && settings.provider !== "codex" && (
         <ClaudeConnectorsGroup
           connectors={settings.claude_connectors}
           disabled={save.isPending || saveTools.isPending}

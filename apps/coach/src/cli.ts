@@ -1,10 +1,10 @@
 import readline from "node:readline";
 import { parseArgs } from "node:util";
 
-import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { claudeCodeFromArgs } from "./claude-code";
+import { codexCodeFromArgs } from "./codex-code";
+import type { RuntimeMessage } from "./runtime-message";
 import { startCoach } from "./session";
 
 const { values } = parseArgs({
@@ -12,52 +12,45 @@ const { values } = parseArgs({
 });
 
 const scripted = values.ask ?? [];
+const options = await coachOptionsFromArgs(values);
+const codex = codexCodeFromArgs(values);
 const coach = startCoach({
-  ...(await coachOptionsFromArgs(values)),
-  pathToClaudeCodeExecutable: await claudeCodeFromArgs(values).executable(),
+  ...options,
+  ...(options.provider === "codex"
+    ? { pathToCodexExecutable: await codex.executable(), codexHome: codex.home }
+    : {
+        pathToClaudeCodeExecutable:
+          await claudeCodeFromArgs(values).executable(),
+      }),
 });
 
 let askedAt = 0;
 
-function render(message: SDKMessage) {
+function render(message: RuntimeMessage) {
   switch (message.type) {
-    case "system":
-      if (message.subtype === "init") {
-        console.error(`[coach] ${message.model} in ${message.cwd} · tools: ${message.tools.length} · mcp: ${message.mcp_servers.map((server) => `${server.name}=${server.status}`).join(", ")}`);
-      }
+    case "text":
+      process.stdout.write(message.delta);
       return;
-    case "stream_event":
-      if (
-        message.parent_tool_use_id === null &&
-        message.event.type === "content_block_delta" &&
-        message.event.delta.type === "text_delta"
-      ) {
-        process.stdout.write(message.event.delta.text);
-      }
-      return;
-    case "assistant":
-      for (const block of message.message.content) {
-        if (block.type === "tool_use") {
-          process.stderr.write(`\n[tool] ${block.name} ${JSON.stringify(block.input).slice(0, 160)}\n`);
-        }
-      }
+    case "tool_start":
+      process.stderr.write(
+        `\n[tool] ${message.name} ${JSON.stringify(message.input).slice(0, 160)}\n`,
+      );
       return;
     case "result":
       console.error(
-        `\n[done] ${message.subtype} · ${((Date.now() - askedAt) / 1000).toFixed(1)}s · $${message.total_cost_usd.toFixed(4)}`,
+        `\n[done] ${message.subtype} · ${((Date.now() - askedAt) / 1000).toFixed(1)}s`,
       );
-      if (values.ask) {
-        askNext();
-        return;
-      }
-      prompt.prompt();
-      return;
-    default:
+      if (values.ask) askNext();
+      else prompt.prompt();
       return;
   }
 }
 
-const prompt = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: "\ncoach> " });
+const prompt = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  prompt: "\ncoach> ",
+});
 prompt.on("line", (line) => {
   const text = line.trim();
   if (!text) return prompt.prompt();

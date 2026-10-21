@@ -17,6 +17,25 @@ const CONNECTOR_PREFIX: &str = "claude_ai_";
     Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type,
 )]
 #[serde(rename_all = "lowercase")]
+pub enum CoachProvider {
+    #[default]
+    Claude,
+    Codex,
+}
+
+impl CoachProvider {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Claude => "claude",
+            Self::Codex => "codex",
+        }
+    }
+}
+
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type,
+)]
+#[serde(rename_all = "lowercase")]
 pub enum ClaudeModel {
     #[default]
     Sonnet,
@@ -94,7 +113,8 @@ impl McpServer {
 }
 
 fn validate_url(value: &str) -> Result<()> {
-    let url = tauri::Url::parse(value).map_err(|error| Error::Other(format!("{value}: {error}")))?;
+    let url =
+        tauri::Url::parse(value).map_err(|error| Error::Other(format!("{value}: {error}")))?;
     if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
         return Err(Error::Other(format!(
             "{value} must be an http or https address"
@@ -156,6 +176,8 @@ impl ClaudeConnector {
 pub struct CoachSettings {
     pub project: Option<String>,
     pub model: ClaudeModel,
+    pub provider: CoachProvider,
+    pub codex_model: String,
     pub nudges: bool,
     pub nudge_limit_cents: u32,
     pub mcp_servers: Vec<McpServer>,
@@ -170,6 +192,8 @@ impl Default for CoachSettings {
         Self {
             project: None,
             model: ClaudeModel::Sonnet,
+            provider: CoachProvider::Claude,
+            codex_model: String::new(),
             nudges: true,
             nudge_limit_cents: DEFAULT_NUDGE_LIMIT_CENTS,
             mcp_servers: Vec::new(),
@@ -182,6 +206,13 @@ impl Default for CoachSettings {
 }
 
 impl CoachSettings {
+    pub fn selected_model(&self) -> &str {
+        match self.provider {
+            CoachProvider::Claude => self.model.as_str(),
+            CoachProvider::Codex => &self.codex_model,
+        }
+    }
+
     pub fn project_dir(&self) -> Option<PathBuf> {
         self.project
             .as_deref()
@@ -420,6 +451,8 @@ mod tests {
         CoachSettings {
             project: Some(project.to_string_lossy().into_owned()),
             model: ClaudeModel::Opus,
+            provider: CoachProvider::Claude,
+            codex_model: String::new(),
             nudges: false,
             nudge_limit_cents: 120,
             mcp_servers: Vec::new(),
@@ -438,6 +471,8 @@ mod tests {
             CoachSettings {
                 project: None,
                 model: ClaudeModel::Sonnet,
+                provider: CoachProvider::Claude,
+                codex_model: String::new(),
                 nudges: true,
                 nudge_limit_cents: 50,
                 mcp_servers: Vec::new(),
@@ -447,6 +482,27 @@ mod tests {
                 web_access: true,
             }
         );
+    }
+
+    #[test]
+    fn switching_providers_preserves_legacy_claude_model_and_codex_preference() {
+        let config = tempfile::tempdir().unwrap();
+        let secrets = MemorySecrets::default();
+        std::fs::write(config.path().join(FILE_NAME), r#"{"model":"opus"}"#).unwrap();
+        let mut settings = load(config.path(), &secrets).unwrap();
+        assert_eq!(settings.provider, CoachProvider::Claude);
+        assert_eq!(settings.selected_model(), "opus");
+        settings.provider = CoachProvider::Codex;
+        settings.codex_model = "custom-codex-model".into();
+        save(config.path(), &settings).unwrap();
+        let mut restored = load(config.path(), &secrets).unwrap();
+        assert_eq!(restored.provider, CoachProvider::Codex);
+        assert_eq!(restored.selected_model(), "custom-codex-model");
+        restored.provider = CoachProvider::Claude;
+        save(config.path(), &restored).unwrap();
+        let restored = load(config.path(), &secrets).unwrap();
+        assert_eq!(restored.selected_model(), "opus");
+        assert_eq!(restored.codex_model, "custom-codex-model");
     }
 
     #[test]

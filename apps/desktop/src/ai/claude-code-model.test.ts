@@ -10,6 +10,7 @@ import {
   buildClaudeRequest,
   type ClaudeCodeDeps,
   createClaudeCodeModel,
+  createCoachModel,
 } from "./claude-code-model";
 
 type CallOptions = Parameters<typeof buildClaudeRequest>[1];
@@ -84,6 +85,7 @@ describe("createClaudeCodeModel", () => {
       new Headers(fetch.mock.calls[0]?.[1]?.headers).get("authorization"),
     ).toBe("Bearer launch-secret");
     expect(sentBody(fetch)).toEqual({
+      provider: "claude",
       model: "haiku",
       system: "Be brief.",
       messages: [
@@ -91,6 +93,24 @@ describe("createClaudeCodeModel", () => {
       ],
     });
   });
+
+  it.each(["", "custom-codex-model"])(
+    "routes generation to Codex with model %j",
+    async (model) => {
+      const { deps, fetch } = fakeDeps(() =>
+        ndjson([
+          { type: "text", delta: "Meeting summary" },
+          { type: "done", inputTokens: 7, outputTokens: 2 },
+        ]),
+      );
+      const result = await generateText({
+        model: createCoachModel("codex", model, deps),
+        prompt: "Summarize",
+      });
+      expect(result.text).toBe("Meeting summary");
+      expect(sentBody(fetch)).toMatchObject({ provider: "codex", model });
+    },
+  );
 
   it("sends the JSON schema and parses the object that comes back", async () => {
     const { deps, fetch } = fakeDeps(() =>
@@ -217,6 +237,7 @@ describe("buildClaudeRequest", () => {
     );
 
     expect(request).toEqual({
+      provider: "claude",
       model: "opus",
       system: "Rules",
       messages: [

@@ -1,6 +1,7 @@
 use crate::{
     ClaudeAccount, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup, Coach, CoachPluginExt,
-    CoachSettings, Endpoint, FoundConnector, McpProbe, McpSecretInput, McpServerStatus, Result,
+    CoachProvider, CoachSettings, Endpoint, FoundConnector, McpProbe, McpSecretInput,
+    McpServerStatus, Result,
 };
 
 async fn blocking<T: Send + 'static>(
@@ -134,4 +135,40 @@ pub async fn claude_setup(app: tauri::AppHandle) -> std::result::Result<ClaudeSe
 #[specta::specta]
 pub async fn retry_claude_setup(app: tauri::AppHandle) -> std::result::Result<ClaudeSetup, String> {
     blocking(app, Coach::retry_claude_setup).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn provider_account(
+    app: tauri::AppHandle,
+    provider: CoachProvider,
+) -> std::result::Result<ClaudeAccount, String> {
+    blocking(app, move |coach| coach.provider_account(provider)).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn sign_in_to_provider(
+    app: tauri::AppHandle,
+    provider: CoachProvider,
+) -> std::result::Result<(), String> {
+    blocking(app, move |coach| coach.sign_in_to_provider(provider)).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn provider_setup(
+    app: tauri::AppHandle,
+    provider: CoachProvider,
+) -> std::result::Result<ClaudeSetup, String> {
+    blocking(app, move |coach| coach.provider_setup(provider)).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn retry_provider_setup(
+    app: tauri::AppHandle,
+    provider: CoachProvider,
+) -> std::result::Result<ClaudeSetup, String> {
+    blocking(app, move |coach| coach.retry_provider_setup(provider)).await
 }

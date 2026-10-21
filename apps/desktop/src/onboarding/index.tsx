@@ -20,7 +20,6 @@ import { FinalDescription, FinalSection, finishOnboarding } from "./final";
 import { PermissionsSection } from "./permissions";
 import { OnboardingSection } from "./shared";
 
-import { useClaudeSignIn } from "~/settings/claude/sign-in";
 import { StandaloneWindowShell } from "~/shared/window-shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
 
@@ -85,8 +84,7 @@ function OnboardingScreenContent({
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const onboardingVideoRef = useRef<HTMLVideoElement>(null);
 
-  const claudeSignedIn = useClaudeSignIn().signedIn;
-  const skipped = claudeSignedIn ? (["claude"] as const) : [];
+  const skipped: readonly "claude"[] = [];
 
   const goNext = () => {
     const next = getNextStep(currentStep, skipped);
@@ -192,18 +190,12 @@ function OnboardingScreenContent({
             </OnboardingSection>
 
             <OnboardingSection
-              title={<Trans>Sign in to Claude</Trans>}
-              completedTitle={
-                claudeSignedIn ? (
-                  <Trans>Claude signed in</Trans>
-                ) : (
-                  <Trans>Claude sign-in skipped</Trans>
-                )
-              }
+              title={<Trans>Choose your AI provider</Trans>}
+              completedTitle={<Trans>AI setup</Trans>}
               description={
                 <Trans>
-                  Summaries and the coach run on Claude, using your Claude
-                  sign-in on this Mac.
+                  Use Claude or Codex for summaries and the coach. You can
+                  switch providers later in Settings.
                 </Trans>
               }
               status={getStepStatus("claude", currentStep)}

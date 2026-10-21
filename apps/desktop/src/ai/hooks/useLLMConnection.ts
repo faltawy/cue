@@ -2,12 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import {
-  type ClaudeModel,
   type CoachSettings,
   commands as coachCommands,
 } from "@anlg/plugin-coach";
 
-import { createClaudeCodeModel } from "../claude-code-model";
+import { createCoachModel } from "../claude-code-model";
 
 import { useSettingsReady } from "~/settings/queries";
 import { useConfigValues } from "~/shared/config";
@@ -17,10 +16,10 @@ export const COACH_SETTINGS_QUERY_KEY = ["coach", "settings"] as const;
 export type LLMConnectionStatus =
   | { status: "pending"; reason: "managed_disabled" | "settings_loading" }
   | { status: "error"; reason: "settings_unavailable"; message: string }
-  | { status: "success"; providerId: "claude_code" };
+  | { status: "success"; providerId: "claude_code" | "codex" };
 
 type LLMConnectionResult = {
-  conn: { providerId: "claude_code"; modelId: ClaudeModel } | null;
+  conn: { providerId: "claude_code" | "codex"; modelId: string } | null;
   status: LLMConnectionStatus;
 };
 
@@ -46,7 +45,12 @@ export const useLLMConnection = (): LLMConnectionResult => {
     "intelligence_disabled",
   ] as const);
   const coachSettings = useCoachSettings();
-  const modelId = coachSettings.data?.model;
+  const provider = coachSettings.data?.provider ?? "claude";
+  const providerId = provider === "codex" ? "codex" : "claude_code";
+  const modelId =
+    provider === "codex"
+      ? coachSettings.data?.codex_model
+      : coachSettings.data?.model;
   const error = coachSettings.error;
 
   return useMemo<LLMConnectionResult>(() => {
@@ -66,17 +70,17 @@ export const useLLMConnection = (): LLMConnectionResult => {
         },
       };
     }
-    if (!settingsReady || !modelId) {
+    if (!settingsReady || modelId === undefined) {
       return {
         conn: null,
         status: { status: "pending", reason: "settings_loading" },
       };
     }
     return {
-      conn: { providerId: "claude_code", modelId },
-      status: { status: "success", providerId: "claude_code" },
+      conn: { providerId, modelId },
+      status: { status: "success", providerId },
     };
-  }, [settingsReady, intelligence_disabled, modelId, error]);
+  }, [settingsReady, intelligence_disabled, modelId, providerId, error]);
 };
 
 export const useLLMConnectionStatus = (): LLMConnectionStatus =>
@@ -85,8 +89,9 @@ export const useLLMConnectionStatus = (): LLMConnectionStatus =>
 export const useLanguageModel = () => {
   const { conn } = useLLMConnection();
   const modelId = conn?.modelId;
+  const provider = conn?.providerId === "codex" ? "codex" : "claude";
   return useMemo(
-    () => (modelId ? createClaudeCodeModel(modelId) : null),
-    [modelId],
+    () => (modelId !== undefined ? createCoachModel(provider, modelId) : null),
+    [modelId, provider],
   );
 };

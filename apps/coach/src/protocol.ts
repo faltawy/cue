@@ -4,6 +4,7 @@ import type { CoachError } from "./errors";
 import type { ImageThumb } from "./image-limits";
 import type { StripView, WrapUpActions } from "./meeting-state";
 import type { ProactiveView } from "./proactive";
+import type { CoachProvider } from "./provider";
 import type { Question } from "./questions";
 import type { Source } from "./sources";
 import type { TalkStats } from "./talk-time";
@@ -35,7 +36,11 @@ export type WrapUpView =
     }
   | { state: "failed"; title: string | null; message: string };
 
-export type TranscriptLineView = { speaker: string; you: boolean; text: string };
+export type TranscriptLineView = {
+  speaker: string;
+  you: boolean;
+  text: string;
+};
 
 /** Getting Claude Code ready: the person's own, or Cue's copy downloaded on first use. */
 export type SetupView =
@@ -46,6 +51,7 @@ export type SetupView =
 
 export type StatusEvent = {
   type: "status";
+  provider?: CoachProvider;
   project: ProjectView;
   model: string;
   busy: boolean;
@@ -63,13 +69,32 @@ export type CoachEvent =
   | { type: "divider"; text: string }
   | { type: "user"; kind: TurnKind; text: string; images?: ImageThumb[] }
   | { type: "text"; delta: string }
-  | { type: "tool"; id: string; name: string; label: string; activeLabel: string; detail: string | null }
-  | { type: "tool_result"; id: string; ok: boolean; output: string | null; durationMs: number | null }
+  | {
+      type: "tool";
+      id: string;
+      name: string;
+      label: string;
+      activeLabel: string;
+      detail: string | null;
+    }
+  | {
+      type: "tool_result";
+      id: string;
+      ok: boolean;
+      output: string | null;
+      durationMs: number | null;
+    }
   | { type: "question"; id: string; questions: Question[] }
   | { type: "question_closed"; id: string; answered: boolean }
   | { type: "usage"; usage: TurnUsage }
   | { type: "error"; error: CoachError }
-  | { type: "done"; seconds: number; ok: boolean; silent: boolean; interrupted: boolean }
+  | {
+      type: "done";
+      seconds: number;
+      ok: boolean;
+      silent: boolean;
+      interrupted: boolean;
+    }
   | { type: "edit"; edit: CoachEdit; block?: BlockItemRef }
   | { type: "block"; id: string; block: Block }
   | { type: "block_check"; id: string; index: number; checked: boolean }
@@ -78,7 +103,12 @@ export type CoachEvent =
   | { type: "undone"; id: string; summary: string }
   | { type: "notice"; text: string }
   | { type: "wrapup"; wrapUp: WrapUpView | null }
-  | { type: "transcript"; strip: StripView; lines: TranscriptLineView[]; pending: string };
+  | {
+      type: "transcript";
+      strip: StripView;
+      lines: TranscriptLineView[];
+      pending: string;
+    };
 
 export const FEED_EVENTS: ReadonlySet<CoachEvent["type"]> = new Set([
   "divider",
@@ -100,24 +130,42 @@ export const FEED_EVENTS: ReadonlySet<CoachEvent["type"]> = new Set([
   "talk",
 ]);
 
-export function appendHistory(history: CoachEvent[], event: CoachEvent): CoachEvent[] {
+export function appendHistory(
+  history: CoachEvent[],
+  event: CoachEvent,
+): CoachEvent[] {
   if (!FEED_EVENTS.has(event.type)) return history;
   const last = history.at(-1);
   if (event.type === "text" && last?.type === "text") {
-    return [...history.slice(0, -1), { type: "text", delta: last.delta + event.delta }];
+    return [
+      ...history.slice(0, -1),
+      { type: "text", delta: last.delta + event.delta },
+    ];
   }
   return [...history, event];
 }
 
-export function findBlock(history: readonly CoachEvent[], id: string): Block | null {
-  for (const event of history) if (event.type === "block" && event.id === id) return event.block;
+export function findBlock(
+  history: readonly CoachEvent[],
+  id: string,
+): Block | null {
+  for (const event of history)
+    if (event.type === "block" && event.id === id) return event.block;
   return null;
 }
 
-export function addedBlockItem(history: readonly CoachEvent[], ref: BlockItemRef): string | null {
+export function addedBlockItem(
+  history: readonly CoachEvent[],
+  ref: BlockItemRef,
+): string | null {
   let editId: string | null = null;
   for (const event of history) {
-    if (event.type === "edit" && event.block?.id === ref.id && event.block.index === ref.index) editId = event.edit.id;
+    if (
+      event.type === "edit" &&
+      event.block?.id === ref.id &&
+      event.block.index === ref.index
+    )
+      editId = event.edit.id;
     else if (event.type === "undone" && event.id === editId) editId = null;
   }
   return editId;
@@ -126,7 +174,8 @@ export function addedBlockItem(history: readonly CoachEvent[], ref: BlockItemRef
 export function dropSilentNudge(history: CoachEvent[]): CoachEvent[] {
   for (let index = history.length - 1; index >= 0; index -= 1) {
     const event = history[index];
-    if (event?.type === "user") return event.kind === "nudge" ? history.slice(0, index) : history;
+    if (event?.type === "user")
+      return event.kind === "nudge" ? history.slice(0, index) : history;
   }
   return history;
 }

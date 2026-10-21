@@ -37,7 +37,9 @@ use mcp::ResolvedServer;
 pub use probe::McpProbe;
 pub use process::Endpoint;
 use process::{Launch, Sidecar};
-pub use settings::{ClaudeConnector, ClaudeModel, CoachSettings, FoundConnector, McpServer};
+pub use settings::{
+    ClaudeConnector, ClaudeModel, CoachProvider, CoachSettings, FoundConnector, McpServer,
+};
 
 const PLUGIN_NAME: &str = "coach";
 const START_TIMEOUT: Duration = Duration::from_secs(20);
@@ -53,6 +55,8 @@ struct CoachState {
     opening: Mutex<()>,
     bridge: Mutex<Option<bridge::Bridge>>,
     setup: Mutex<SetupSlot>,
+    codex_setup: Mutex<SetupSlot>,
+    sign_in: [Mutex<()>; 2],
     unseen_nudge: AtomicBool,
 }
 
@@ -303,21 +307,11 @@ impl Coach {
     }
 
     pub fn claude_signed_in(&self) -> Result<ClaudeAccount> {
-        let stdout = run_sidecar(
-            &self.app,
-            vec!["--auth-status".into()],
-            "couldn't check the Claude sign-in",
-        )?;
-        Ok(serde_json::from_slice(&stdout)?)
+        self.provider_account(CoachProvider::Claude)
     }
 
     pub fn sign_in_to_claude(&self) -> Result<()> {
-        run_sidecar(
-            &self.app,
-            vec!["--sign-in".into()],
-            "couldn't start the Claude sign-in",
-        )?;
-        Ok(())
+        self.sign_in_to_provider(CoachProvider::Claude)
     }
 
     pub fn claude_code_status(&self) -> Result<ClaudeCodeStatus> {
@@ -338,33 +332,76 @@ impl Coach {
         Ok(serde_json::from_slice(&stdout)?)
     }
 
-    /// Where getting Claude Code ready stands. The first call (at launch)
-    /// starts it: a no-op when the person's own Claude Code is new enough,
-    /// else Cue's copy downloads in the background.
-    pub fn claude_setup(&self) -> Result<ClaudeSetup> {
-        let state = self.app.state::<CoachState>();
-        let mut slot = state
-            .setup
-            .lock()
-            .map_err(|error| Error::Other(error.to_string()))?;
-        if slot.running.is_none() && slot.last.is_none() {
-            start_claude_setup(&self.app, &mut slot)?;
-        }
-        poll_claude_setup(&self.app, &mut slot)
+    pub fn provider_account(&self, provider: CoachProvider) -> Result<ClaudeAccount> {
+        let stdout = run_sidecar(
+            &self.app,
+            vec![
+                "--auth-status".into(),
+                "--provider".into(),
+                provider.as_str().into(),
+            ],
+            "couldn't check the AI sign-in",
+        )?;
+        Ok(serde_json::from_slice(&stdout)?)
     }
 
-    /// Start again after a failure; joins a setup that is still running.
-    pub fn retry_claude_setup(&self) -> Result<ClaudeSetup> {
+    pub fn sign_in_to_provider(&self, provider: CoachProvider) -> Result<()> {
         let state = self.app.state::<CoachState>();
-        let mut slot = state
-            .setup
+        let slot = match provider {
+            CoachProvider::Claude => &state.sign_in[0],
+            CoachProvider::Codex => &state.sign_in[1],
+        };
+        let _sign_in = slot.try_lock().map_err(|error| match error {
+            std::sync::TryLockError::WouldBlock => Error::Other(format!(
+                "{} sign-in is already in progress",
+                provider.as_str()
+            )),
+            std::sync::TryLockError::Poisoned(error) => Error::Other(error.to_string()),
+        })?;
+        run_sidecar(
+            &self.app,
+            vec![
+                "--sign-in".into(),
+                "--provider".into(),
+                provider.as_str().into(),
+            ],
+            "couldn't start the AI sign-in",
+        )?;
+        Ok(())
+    }
+
+    pub fn provider_setup(&self, provider: CoachProvider) -> Result<ClaudeSetup> {
+        self.setup_provider(provider, false)
+    }
+
+    pub fn retry_provider_setup(&self, provider: CoachProvider) -> Result<ClaudeSetup> {
+        self.setup_provider(provider, true)
+    }
+
+    fn setup_provider(&self, provider: CoachProvider, retry: bool) -> Result<ClaudeSetup> {
+        let state = self.app.state::<CoachState>();
+        let slot = match provider {
+            CoachProvider::Claude => &state.setup,
+            CoachProvider::Codex => &state.codex_setup,
+        };
+        let mut slot = slot
             .lock()
             .map_err(|error| Error::Other(error.to_string()))?;
-        if poll_claude_setup(&self.app, &mut slot)? != ClaudeSetup::Ready && slot.running.is_none()
+        let current = poll_provider_setup(&self.app, &mut slot, provider)?;
+        if slot.running.is_none()
+            && (slot.last.is_none() || (retry && current != ClaudeSetup::Ready))
         {
-            start_claude_setup(&self.app, &mut slot)?;
+            start_provider_setup(&self.app, &mut slot, provider)?;
         }
-        poll_claude_setup(&self.app, &mut slot)
+        poll_provider_setup(&self.app, &mut slot, provider)
+    }
+
+    pub fn claude_setup(&self) -> Result<ClaudeSetup> {
+        self.provider_setup(CoachProvider::Claude)
+    }
+
+    pub fn retry_claude_setup(&self) -> Result<ClaudeSetup> {
+        self.retry_provider_setup(CoachProvider::Claude)
     }
 
     pub fn llm_endpoint(&self) -> Result<Endpoint> {
@@ -399,9 +436,20 @@ impl Coach {
     }
 }
 
-fn start_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<()> {
+fn start_provider_setup(
+    app: &AppHandle,
+    slot: &mut SetupSlot,
+    provider: CoachProvider,
+) -> Result<()> {
     let mut child = process::sidecar_command(
-        vec!["--prepare-claude-code".into(), "--exit-with-stdin".into()],
+        vec![
+            match provider {
+                CoachProvider::Claude => "--prepare-claude-code",
+                CoachProvider::Codex => "--prepare-codex",
+            }
+            .into(),
+            "--exit-with-stdin".into(),
+        ],
         &claude_dir(app)?,
     )?
     .stdin(std::process::Stdio::piped())
@@ -411,19 +459,24 @@ fn start_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<()> {
     let stdin = child
         .stdin
         .take()
-        .ok_or_else(|| Error::Other("the Claude Code setup has no input".into()))?;
+        .ok_or_else(|| Error::Other("the AI runtime setup has no input".into()))?;
     slot.running = Some((child, stdin));
     slot.last = None;
     Ok(())
 }
 
-fn poll_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<ClaudeSetup> {
+fn poll_provider_setup(
+    app: &AppHandle,
+    slot: &mut SetupSlot,
+    provider: CoachProvider,
+) -> Result<ClaudeSetup> {
     if let Some((child, _)) = slot.running.as_mut() {
         match child.try_wait()? {
             None => {
-                let percent = std::fs::read_to_string(claude_dir(app)?.join(".install.progress"))
-                    .ok()
-                    .and_then(|progress| claude_code::download_percent(&progress));
+                let percent =
+                    std::fs::read_to_string(provider_dir(app, provider)?.join(".install.progress"))
+                        .ok()
+                        .and_then(|progress| claude_code::download_percent(&progress));
                 return Ok(ClaudeSetup::Preparing { percent });
             }
             Some(status) => {
@@ -431,7 +484,13 @@ fn poll_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<ClaudeSetu
                 if let Some(mut pipe) = child.stderr.take() {
                     std::io::Read::read_to_string(&mut pipe, &mut stderr)?;
                 }
-                let finished = claude_code::finished(status.success(), &stderr);
+                let finished = if !status.success() && stderr.trim().is_empty() {
+                    ClaudeSetup::Failed {
+                        message: format!("{} could not be set up.", provider.as_str()),
+                    }
+                } else {
+                    claude_code::finished(status.success(), &stderr)
+                };
                 if let ClaudeSetup::Failed { message } = &finished {
                     tracing::error!(%message, "claude_setup_failed");
                 }
@@ -444,6 +503,13 @@ fn poll_claude_setup(app: &AppHandle, slot: &mut SetupSlot) -> Result<ClaudeSetu
         .last
         .clone()
         .unwrap_or(ClaudeSetup::Preparing { percent: None }))
+}
+
+fn provider_dir(app: &AppHandle, provider: CoachProvider) -> Result<PathBuf> {
+    Ok(app.path().app_cache_dir()?.join(match provider {
+        CoachProvider::Claude => "claude-code",
+        CoachProvider::Codex => "codex",
+    }))
 }
 
 fn claude_dir(app: &AppHandle) -> Result<PathBuf> {
@@ -564,7 +630,10 @@ fn coach_launch(
         project,
         db,
         port,
-        model: settings.model.as_str(),
+        model: settings.selected_model().to_string(),
+        claude_model: settings.model.as_str().to_string(),
+        codex_model: settings.codex_model.clone(),
+        provider: settings.provider,
         nudges: settings.nudges,
         nudge_limit_cents: settings.nudge_limit_cents,
         mcp_config,
@@ -722,6 +791,10 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::update_claude_code,
             commands::claude_setup,
             commands::retry_claude_setup,
+            commands::provider_account,
+            commands::sign_in_to_provider,
+            commands::provider_setup,
+            commands::retry_provider_setup,
         ])
         .events(tauri_specta::collect_events![CoachNudged, CoachFocused])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
@@ -745,9 +818,15 @@ pub fn init(
                 opening: Mutex::new(()),
                 bridge: Mutex::new(None),
                 setup: Mutex::new(SetupSlot::default()),
+                codex_setup: Mutex::new(SetupSlot::default()),
+                sign_in: std::array::from_fn(|_| Mutex::new(())),
                 unseen_nudge: AtomicBool::new(false),
             });
-            if let Err(error) = app.coach().claude_setup() {
+            if let Err(error) = app
+                .coach()
+                .settings()
+                .and_then(|settings| app.coach().provider_setup(settings.provider))
+            {
                 tracing::error!(%error, "claude_setup_start_failed");
             }
             Ok(())
@@ -761,12 +840,14 @@ pub fn init(
                         slot.take();
                     }
                 }
-                if let Ok(mut setup) = state.setup.lock()
-                    && let Some((mut child, stdin)) = setup.running.take()
-                {
-                    drop(stdin);
-                    if let Err(error) = child.kill() {
-                        tracing::warn!(%error, "claude_setup_stop_failed");
+                for slot in [&state.setup, &state.codex_setup] {
+                    if let Ok(mut setup) = slot.lock()
+                        && let Some((mut child, stdin)) = setup.running.take()
+                    {
+                        drop(stdin);
+                        if let Err(error) = child.kill() {
+                            tracing::warn!(%error, "provider_setup_stop_failed");
+                        }
                     }
                 }
             }
@@ -805,6 +886,8 @@ mod test {
             opening: Mutex::new(()),
             bridge: Mutex::new(None),
             setup: Mutex::new(SetupSlot::default()),
+            codex_setup: Mutex::new(SetupSlot::default()),
+            sign_in: std::array::from_fn(|_| Mutex::new(())),
             unseen_nudge: AtomicBool::new(false),
         };
         let launch = coach_launch(&state, &CoachSettings::default(), &[], 0, None, None).unwrap();

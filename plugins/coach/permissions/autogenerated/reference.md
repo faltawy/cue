@@ -21,6 +21,10 @@ Default permissions for the plugin
 - `allow-update-claude-code`
 - `allow-claude-setup`
 - `allow-retry-claude-setup`
+- `allow-provider-account`
+- `allow-sign-in-to-provider`
+- `allow-provider-setup`
+- `allow-retry-provider-setup`
 
 ## Permission Table
 
@@ -294,6 +298,58 @@ Denies the probe_mcp_server command without any pre-configured scope.
 <tr>
 <td>
 
+`coach:allow-provider-account`
+
+</td>
+<td>
+
+Enables the provider_account command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-provider-account`
+
+</td>
+<td>
+
+Denies the provider_account command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-provider-setup`
+
+</td>
+<td>
+
+Enables the provider_setup command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-provider-setup`
+
+</td>
+<td>
+
+Denies the provider_setup command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `coach:allow-retry-claude-setup`
 
 </td>
@@ -313,6 +369,32 @@ Enables the retry_claude_setup command without any pre-configured scope.
 <td>
 
 Denies the retry_claude_setup command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-retry-provider-setup`
+
+</td>
+<td>
+
+Enables the retry_provider_setup command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-retry-provider-setup`
+
+</td>
+<td>
+
+Denies the retry_provider_setup command without any pre-configured scope.
 
 </td>
 </tr>
@@ -443,6 +525,32 @@ Enables the sign_in_to_claude command without any pre-configured scope.
 <td>
 
 Denies the sign_in_to_claude command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-sign-in-to-provider`
+
+</td>
+<td>
+
+Enables the sign_in_to_provider command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-sign-in-to-provider`
+
+</td>
+<td>
+
+Denies the sign_in_to_provider command without any pre-configured scope.
 
 </td>
 </tr>

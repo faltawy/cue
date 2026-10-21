@@ -1,9 +1,17 @@
 import { ChevronDown, SquarePen } from "lucide-react";
-import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { approxUsd, formatUsd } from "../../pricing";
 import type { ProactiveView } from "../../proactive";
 import type { TranscriptLineView } from "../../protocol";
+import { type CoachProvider, providerName } from "../../provider";
 import { formatTokens, type TurnUsage } from "../../usage";
 import type { Connection, TranscriptView } from "../state";
 import { ariaShortcut, Button, cx, Kbd, Tooltip } from "./primitives";
@@ -24,10 +32,15 @@ export function formatElapsed(ms: number): string {
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const seconds = String(total % 60).padStart(2, "0");
-  return hours > 0 ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}` : `${minutes}:${seconds}`;
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+    : `${minutes}:${seconds}`;
 }
 
-const RELATIVE = new Intl.RelativeTimeFormat("en", { numeric: "auto", style: "narrow" });
+const RELATIVE = new Intl.RelativeTimeFormat("en", {
+  numeric: "auto",
+  style: "narrow",
+});
 
 export function formatEndedAgo(ms: number): string {
   const minutes = Math.floor(Math.max(0, ms) / 60_000);
@@ -50,27 +63,35 @@ export function isLongChat(usage: TurnUsage | null): boolean {
 export function spendTooltip(view: ProactiveView): string {
   const tokens = `${formatTokens(view.meetingTokens)} tokens this meeting, ${formatTokens(view.cachedTokens)} of them re-read from cache.`;
   const limit = formatUsd(view.capUsd);
-  if (view.state === "capped") return `Nudges reached the ${limit} limit for this meeting. Asking still works. ${tokens}`;
+  if (view.state === "unpriced")
+    return `Nudges paused because model pricing is unavailable. Asking still works. ${tokens}`;
+  if (view.state === "capped")
+    return `Nudges reached the ${limit} limit for this meeting. Asking still works. ${tokens}`;
   if (view.state === "off") return `Nudges are off. ${tokens}`;
   return `Nudges ${approxUsd(view.nudgesUsd)} of the ${limit} limit. ${tokens}`;
 }
 
 function ProactiveBudget({ view }: { view: ProactiveView }) {
-  const capped = view.state === "capped";
-  if (!capped && view.meetingUsd <= 0) return null;
+  const capped = view.state === "capped" || view.state === "unpriced";
+  if (!capped && view.meetingUsd !== null && view.meetingUsd <= 0) return null;
   return (
     <Tooltip label={spendTooltip(view)} align="end">
       <span
         data-testid="proactive-budget"
-        className="shrink-0 text-[11.5px] text-muted-foreground tabular-nums max-[399px]:hidden"
+        className="text-muted-foreground shrink-0 text-[11.5px] tabular-nums max-[399px]:hidden"
       >
-        {capped ? "Nudges paused" : `${approxUsd(view.meetingUsd)} this meeting`}
+        {capped
+          ? "Nudges paused"
+          : view.meetingUsd === null
+            ? "Cost unavailable"
+            : `${approxUsd(view.meetingUsd)} this meeting`}
       </span>
     </Tooltip>
   );
 }
 
 export function Header({
+  provider,
   connection,
   transcript,
   usage,
@@ -79,6 +100,7 @@ export function Header({
   newChatDisabled,
   onPalette,
 }: {
+  provider?: CoachProvider;
   connection: Connection;
   transcript: TranscriptView | null;
   usage: TurnUsage | null;
@@ -91,7 +113,10 @@ export function Header({
   const settled = connection === "open";
   const live = settled && strip?.state === "live";
   const endedTitle = strip?.state === "waiting" ? strip.lastTitle : null;
-  const now = useNow(live ? 1_000 : 60_000, live || (settled && endedTitle !== null));
+  const now = useNow(
+    live ? 1_000 : 60_000,
+    live || (settled && endedTitle !== null),
+  );
   const title = strip?.state === "live" ? strip.title : (endedTitle ?? "Coach");
   const longChat = isLongChat(usage);
   let subtitle: ReactNode = null;
@@ -108,30 +133,53 @@ export function Header({
         </>
       );
   } else if (strip?.state === "waiting" && endedTitle !== null) {
-    subtitle = strip.endedAt === null ? "Ended" : formatEndedAgo(now - strip.endedAt);
+    subtitle =
+      strip.endedAt === null ? "Ended" : formatEndedAgo(now - strip.endedAt);
   }
   return (
-    <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3">
+    <header className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
       <span
         aria-hidden
         className={cx(
           "size-2 shrink-0 rounded-full",
-          !settled ? "coach-pulse bg-muted-foreground" : live ? "coach-live-dot bg-live" : "bg-muted-foreground/40",
+          !settled
+            ? "coach-pulse bg-muted-foreground"
+            : live
+              ? "coach-live-dot bg-live"
+              : "bg-muted-foreground/40",
         )}
       />
-      <div className="flex min-w-0 flex-1 items-baseline gap-1.5" role="status" aria-live="polite">
-        <bdi dir="auto" className="min-w-0 truncate text-[13.5px] font-semibold" title={title}>
+      <div
+        className="flex min-w-0 flex-1 items-baseline gap-1.5"
+        role="status"
+        aria-live="polite"
+      >
+        <bdi
+          dir="auto"
+          className="min-w-0 truncate text-[13.5px] font-semibold"
+          title={title}
+        >
           {title}
         </bdi>
         {subtitle && (
-          <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums" data-testid="header-subtitle">
+          <span
+            className="text-muted-foreground shrink-0 text-[12px] tabular-nums"
+            data-testid="header-subtitle"
+          >
             {subtitle}
           </span>
         )}
       </div>
+      {provider && (
+        <span className="text-muted-foreground shrink-0 text-[11.5px]">
+          {providerName(provider)}
+        </span>
+      )}
       {live && proactive && <ProactiveBudget view={proactive} />}
       <Tooltip
-        label={longChat ? "Long chat. The coach may forget the start" : "New chat"}
+        label={
+          longChat ? "Long chat. The coach may forget the start" : "New chat"
+        }
         shortcut={["mod", "shift", "o"]}
         align="end"
       >
@@ -139,7 +187,9 @@ export function Header({
           tone="ghost"
           onClick={onNewChat}
           disabled={newChatDisabled}
-          aria-label={longChat ? "New chat (this chat is getting long)" : "New chat"}
+          aria-label={
+            longChat ? "New chat (this chat is getting long)" : "New chat"
+          }
           aria-keyshortcuts={ariaShortcut(["mod", "shift", "o"])}
           className="relative max-[399px]:px-1.5"
         >
@@ -149,7 +199,7 @@ export function Header({
             <span
               aria-hidden
               data-testid="long-chat-dot"
-              className="absolute top-1 right-0.5 size-1.5 rounded-full bg-foreground/70 rtl:right-auto rtl:left-0.5"
+              className="bg-foreground/70 absolute top-1 right-0.5 size-1.5 rounded-full rtl:right-auto rtl:left-0.5"
             />
           )}
         </Button>
@@ -160,7 +210,7 @@ export function Header({
           onClick={onPalette}
           aria-label="Actions"
           aria-keyshortcuts={ariaShortcut(["mod", "k"])}
-          className="-me-1 grid h-7 place-items-center rounded-md px-1.5 transition-colors duration-100 hover:bg-muted"
+          className="hover:bg-muted -me-1 grid h-7 place-items-center rounded-md px-1.5 transition-colors duration-100"
         >
           <Kbd keys={["mod", "k"]} />
         </button>
@@ -171,12 +221,15 @@ export function Header({
 
 export type SpeakerTurn = { speaker: string; you: boolean; texts: string[] };
 
-export function speakerTurns(lines: readonly TranscriptLineView[]): SpeakerTurn[] {
+export function speakerTurns(
+  lines: readonly TranscriptLineView[],
+): SpeakerTurn[] {
   const turns: SpeakerTurn[] = [];
   for (const line of lines) {
     const last = turns.at(-1);
     if (last && last.speaker === line.speaker) last.texts.push(line.text);
-    else turns.push({ speaker: line.speaker, you: line.you, texts: [line.text] });
+    else
+      turns.push({ speaker: line.speaker, you: line.you, texts: [line.text] });
   }
   return turns;
 }
@@ -196,7 +249,10 @@ export function TranscriptStrip({
   const regionId = useId();
   const latest = transcript.lines.at(-1);
   return (
-    <section className="shrink-0 border-b border-border" aria-label="Live transcript">
+    <section
+      className="border-border shrink-0 border-b"
+      aria-label="Live transcript"
+    >
       <div className="flex h-9 items-center gap-2 pr-2 pl-2">
         <button
           type="button"
@@ -204,7 +260,7 @@ export function TranscriptStrip({
           aria-expanded={open}
           aria-controls={regionId}
           aria-label={open ? "Hide the transcript" : "Show the transcript"}
-          className="flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 text-left text-[12.5px] hover:bg-muted"
+          className="hover:bg-muted flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 text-left text-[12.5px]"
         >
           <ChevronDown
             aria-hidden
@@ -214,20 +270,32 @@ export function TranscriptStrip({
             )}
           />
           {open ? (
-            <span className="font-medium text-muted-foreground">Transcript</span>
+            <span className="text-muted-foreground font-medium">
+              Transcript
+            </span>
           ) : transcript.pending ? (
-            <span dir="auto" className="min-w-0 truncate text-muted-foreground" data-testid="strip-now">
+            <span
+              dir="auto"
+              className="text-muted-foreground min-w-0 truncate"
+              data-testid="strip-now"
+            >
               {transcript.pending}
             </span>
           ) : latest ? (
             <span className="flex min-w-0 items-baseline gap-1.5">
               <span
                 dir="auto"
-                className={cx("max-w-[40%] shrink-0 truncate font-medium", latest.you ? "text-muted-foreground" : "text-foreground")}
+                className={cx(
+                  "max-w-[40%] shrink-0 truncate font-medium",
+                  latest.you ? "text-muted-foreground" : "text-foreground",
+                )}
               >
                 {latest.speaker}
               </span>
-              <span dir="auto" className="min-w-0 truncate text-muted-foreground">
+              <span
+                dir="auto"
+                className="text-muted-foreground min-w-0 truncate"
+              >
                 {latest.text}
               </span>
             </span>
@@ -235,7 +303,11 @@ export function TranscriptStrip({
             <span className="text-muted-foreground">Listening…</span>
           )}
         </button>
-        <Tooltip label={unavailable ?? "Catch me up"} shortcut={unavailable ? undefined : CATCH_UP_SHORTCUT} align="end">
+        <Tooltip
+          label={unavailable ?? "Catch me up"}
+          shortcut={unavailable ? undefined : CATCH_UP_SHORTCUT}
+          align="end"
+        >
           <Button
             tone={unavailable ? "ghost" : emphasis ? "primary" : "outline"}
             onClick={onCheckIn}
@@ -246,12 +318,26 @@ export function TranscriptStrip({
           </Button>
         </Tooltip>
       </div>
-      {open && <TranscriptLog id={regionId} lines={transcript.lines} pending={transcript.pending} />}
+      {open && (
+        <TranscriptLog
+          id={regionId}
+          lines={transcript.lines}
+          pending={transcript.pending}
+        />
+      )}
     </section>
   );
 }
 
-function TranscriptLog({ id, lines, pending }: { id: string; lines: readonly TranscriptLineView[]; pending: string }) {
+function TranscriptLog({
+  id,
+  lines,
+  pending,
+}: {
+  id: string;
+  lines: readonly TranscriptLineView[];
+  pending: string;
+}) {
   const turns = speakerTurns(lines);
   const scroller = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -265,12 +351,15 @@ function TranscriptLog({ id, lines, pending }: { id: string; lines: readonly Tra
       ref={scroller}
       onScroll={(event) => {
         const element = event.currentTarget;
-        pinned.current = element.scrollHeight - element.scrollTop - element.clientHeight < 24;
+        pinned.current =
+          element.scrollHeight - element.scrollTop - element.clientHeight < 24;
       }}
       className="max-h-[min(40vh,260px)] overflow-y-auto overscroll-contain px-4 pt-1 pb-3"
     >
       {turns.length === 0 && !pending ? (
-        <p className="py-2 text-[12.5px] text-muted-foreground">Nothing said yet.</p>
+        <p className="text-muted-foreground py-2 text-[12.5px]">
+          Nothing said yet.
+        </p>
       ) : (
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-[12.5px] leading-[1.5]">
           {turns.map((turn, index) => {
@@ -287,9 +376,18 @@ function TranscriptLog({ id, lines, pending }: { id: string; lines: readonly Tra
                 >
                   {turn.speaker}
                 </dt>
-                <dd className={cx("min-w-0 space-y-1", current ? "text-foreground" : "text-muted-foreground")}>
+                <dd
+                  className={cx(
+                    "min-w-0 space-y-1",
+                    current ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
                   {turn.texts.map((text, line) => (
-                    <p key={line} dir="auto" className="[overflow-wrap:anywhere]">
+                    <p
+                      key={line}
+                      dir="auto"
+                      className="[overflow-wrap:anywhere]"
+                    >
                       {text}
                     </p>
                   ))}
@@ -300,7 +398,10 @@ function TranscriptLog({ id, lines, pending }: { id: string; lines: readonly Tra
           {pending && (
             <div className="contents">
               <dt aria-hidden />
-              <dd dir="auto" className="min-w-0 text-muted-foreground/80 [overflow-wrap:anywhere]">
+              <dd
+                dir="auto"
+                className="text-muted-foreground/80 min-w-0 [overflow-wrap:anywhere]"
+              >
                 {pending}
               </dd>
             </div>

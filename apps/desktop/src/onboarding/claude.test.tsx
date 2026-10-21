@@ -9,6 +9,8 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const coach = vi.hoisted(() => ({
+  getSettings: vi.fn(),
+  setSettings: vi.fn(),
   claudeSetup: vi.fn(),
   retryClaudeSetup: vi.fn(),
   claudeSignedIn: vi.fn(),
@@ -31,6 +33,10 @@ function renderStep() {
 }
 
 beforeEach(() => {
+  coach.getSettings.mockResolvedValue({
+    status: "ok",
+    data: { provider: "claude", model: "sonnet", codex_model: "" },
+  });
   coach.claudeSignedIn.mockResolvedValue({
     status: "ok",
     data: { signed_in: false, email: null },

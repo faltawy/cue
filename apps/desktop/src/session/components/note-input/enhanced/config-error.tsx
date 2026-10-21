@@ -14,12 +14,11 @@ export function ConfigError() {
     >
       <div className="mb-4 flex max-w-md flex-col gap-1 text-center">
         <p className="text-title">
-          <Trans>Claude isn’t available</Trans>
+          <Trans>AI isn’t available</Trans>
         </p>
         <p className="text-muted-foreground text-ui text-balance">
           <Trans>
-            Summaries use Claude through the Claude sign-in on this Mac. Check
-            the Claude settings, then try again.
+            Check your provider and sign-in in AI settings, then try again.
           </Trans>
         </p>
       </div>
@@ -30,7 +29,7 @@ export function ConfigError() {
             openNew({ type: "settings", state: { tab: "claude" } })
           }
         >
-          <Trans>Open Claude settings</Trans>
+          <Trans>Open AI settings</Trans>
         </Button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 
 import { createAccess, randomToken, secure, TOKEN_ENV } from "./access";
 import { CLAUDE_ARGS, claudeCodeFromArgs } from "./claude-code";
+import { codexCodeFromArgs } from "./codex-code";
 import { llmResponse } from "./llm";
 
 const { values } = parseArgs({
@@ -9,6 +10,8 @@ const { values } = parseArgs({
   options: {
     port: { type: "string", default: "4748" },
     ...CLAUDE_ARGS,
+    codex: { type: "string" },
+    "codex-dir": { type: "string" },
     "exit-with-stdin": { type: "boolean", default: false },
   },
 });
@@ -19,10 +22,13 @@ if (values["exit-with-stdin"]) {
 }
 
 const { executable } = claudeCodeFromArgs(values);
+const { executable: codexExecutable, home: codexHome } =
+  codexCodeFromArgs(values);
 const port = Number(values.port);
 const launchToken = process.env[TOKEN_ENV];
 delete process.env[TOKEN_ENV];
-if (!launchToken) console.error(`[llm] no ${TOKEN_ENV} set; every request will be refused`);
+if (!launchToken)
+  console.error(`[llm] no ${TOKEN_ENV} set; every request will be refused`);
 const access = createAccess(launchToken || randomToken(), port);
 
 const server = Bun.serve({
@@ -31,7 +37,15 @@ const server = Bun.serve({
   idleTimeout: 0,
   routes: secure(access, {
     "/health": () => new Response("ok"),
-    "/llm": { POST: (request) => llmResponse(request, executable) },
+    "/llm": {
+      POST: (request) =>
+        llmResponse(
+          request,
+          (provider) =>
+            provider === "codex" ? codexExecutable() : executable(),
+          { codexHome },
+        ),
+    },
   }),
 });
 

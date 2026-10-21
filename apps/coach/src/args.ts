@@ -4,18 +4,27 @@ import path from "node:path";
 import { CLAUDE_ARGS } from "./claude-code";
 import { expandProtectedRoots } from "./guard";
 import { loadMcpConfig } from "./mcp-config";
+import { parseProvider } from "./provider";
 import { type CoachOptions } from "./session";
 import { openAppDb } from "./transcript";
 
-const DEFAULT_DB = path.join(os.homedir(), "Library/Application Support/com.hyprnote.dev/app.db");
+const DEFAULT_DB = path.join(
+  os.homedir(),
+  "Library/Application Support/com.hyprnote.dev/app.db",
+);
 
 export const COACH_ARGS = {
   project: { type: "string" },
   dir: { type: "string", multiple: true },
   db: { type: "string", default: DEFAULT_DB },
   session: { type: "string" },
-  model: { type: "string", default: "sonnet" },
+  model: { type: "string" },
+  "claude-model": { type: "string" },
+  "codex-model": { type: "string" },
   ...CLAUDE_ARGS,
+  provider: { type: "string", default: "claude" },
+  codex: { type: "string" },
+  "codex-dir": { type: "string" },
   "mcp-config": { type: "string" },
   "allow-changes": { type: "string" },
   instructions: { type: "string" },
@@ -25,11 +34,16 @@ export const COACH_ARGS = {
 } as const;
 
 export type CoachArgValues = {
+  provider?: string;
+  codex?: string;
+  "codex-dir"?: string;
   project?: string;
   dir?: string[];
   db: string;
   session?: string;
-  model: string;
+  model?: string;
+  "claude-model"?: string;
+  "codex-model"?: string;
   claude?: string;
   "claude-dir"?: string;
   "mcp-config"?: string;
@@ -50,19 +64,30 @@ export function parseServerList(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-export async function coachOptionsFromArgs(values: CoachArgValues): Promise<CoachOptions> {
-  if (!values.project) throw new Error(`missing --project\nusage: ${COACH_USAGE}`);
+export async function coachOptionsFromArgs(
+  values: CoachArgValues,
+): Promise<CoachOptions> {
+  if (!values.project)
+    throw new Error(`missing --project\nusage: ${COACH_USAGE}`);
   return {
     project: path.resolve(values.project),
     extraDirectories: (values.dir ?? []).map((dir) => path.resolve(dir)),
     db: openAppDb(values.db),
     sessionId: values.session,
-    model: values.model,
+    provider: parseProvider(values.provider),
+    model:
+      values.model ??
+      (parseProvider(values.provider) === "codex" ? "" : "sonnet"),
     ...(await loadMcpConfig(values["mcp-config"])),
     allowChanges: parseServerList(values["allow-changes"]),
-    instructions: values.instructions ? await Bun.file(values.instructions).text() : "",
+    instructions: values.instructions
+      ? await Bun.file(values.instructions).text()
+      : "",
     knowledge: (values.knowledge ?? []).map((entry) => path.resolve(entry)),
     webAccess: values.web ?? false,
-    protectedDirs: expandProtectedRoots([path.dirname(path.resolve(values.db)), ...(values.protect ?? [])]),
+    protectedDirs: expandProtectedRoots([
+      path.dirname(path.resolve(values.db)),
+      ...(values.protect ?? []),
+    ]),
   };
 }

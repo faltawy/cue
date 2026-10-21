@@ -43,7 +43,7 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
       label: t`App`,
       items: [
         { id: "app", label: t`General`, icon: Gear },
-        { id: "claude", label: t`Claude`, icon: Sparkle },
+        { id: "claude", label: t`AI`, icon: Sparkle },
         { id: "appearance", label: t`Appearance`, icon: Sun },
         { id: "notifications", label: t`Notifications`, icon: Bell },
       ],

@@ -1,20 +1,47 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Composer, type ComposerHandle, folderName } from "./components/composer";
-import { CATCH_UP_SHORTCUT, Header, TranscriptStrip } from "./components/header";
+import {
+  Composer,
+  type ComposerHandle,
+  folderName,
+} from "./components/composer";
+import {
+  CATCH_UP_SHORTCUT,
+  Header,
+  TranscriptStrip,
+} from "./components/header";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
 import { SetupFailed, setupLabel } from "./components/setup-notice";
-import { EmptyState, Timeline, type TimelineActions } from "./components/timeline";
-import { hasFollowUp, isEmptyWrapUp, WrapUpCard } from "./components/wrap-up-card";
+import {
+  EmptyState,
+  Timeline,
+  type TimelineActions,
+} from "./components/timeline";
+import {
+  hasFollowUp,
+  isEmptyWrapUp,
+  WrapUpCard,
+} from "./components/wrap-up-card";
 import type { PreparedImage } from "./images";
-import { chipsAllowed, type CoachState, isBusy, lastAsk, latestUndoable, meetingPhase, suggestions, type Turn } from "./state";
+import {
+  chipsAllowed,
+  type CoachState,
+  isBusy,
+  lastAsk,
+  latestUndoable,
+  meetingPhase,
+  suggestions,
+  type Turn,
+} from "./state";
 import { type CoachApi, useCoach } from "./use-coach";
 
 export const GLANCE_QUERY = "(max-height: 500px)";
 
 function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => typeof matchMedia === "function" && matchMedia(query).matches);
+  const [matches, setMatches] = useState(
+    () => typeof matchMedia === "function" && matchMedia(query).matches,
+  );
   useEffect(() => {
     if (typeof matchMedia !== "function") return;
     const list = matchMedia(query);
@@ -40,26 +67,39 @@ export function App() {
   return <CoachView state={state} api={api} />;
 }
 
-export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) {
+export function CoachView({
+  state,
+  api,
+}: {
+  state: CoachState;
+  api: CoachApi;
+}) {
   const [palette, setPalette] = useState(false);
   const [sent, setSent] = useState(0);
   const glance = useMediaQuery(GLANCE_QUERY);
   const composer = useRef<ComposerHandle>(null);
   const busy = isBusy(state);
   const setup = state.status?.setup ?? null;
-  const settingUp = setup ? setupLabel(setup) : null;
-  const ready = state.connection === "open" && state.status !== null && settingUp === null;
+  const settingUp = setup ? setupLabel(setup, state.status?.provider) : null;
+  const ready =
+    state.connection === "open" && state.status !== null && settingUp === null;
   const phase = meetingPhase(state);
   const live = phase === "live";
   const needsFolder = state.status?.project.needsFolder ?? false;
-  const projectName = state.status && !needsFolder ? folderName(state.status.project.path) : null;
+  const projectName =
+    state.status && !needsFolder ? folderName(state.status.project.path) : null;
   const latestAsk = lastAsk(state);
-  const chips = suggestions(phase, state.wrapUp?.state === "ready" && hasFollowUp(state.wrapUp.wrapUp.follow_up_draft));
+  const chips = suggestions(
+    phase,
+    state.wrapUp?.state === "ready" &&
+      hasFollowUp(state.wrapUp.wrapUp.follow_up_draft),
+  );
 
   const ask = useCallback(
     async (text: string, images: readonly PreparedImage[] = []) => {
       setSent((count) => count + 1);
-      const result = images.length > 0 ? await api.ask(text, images) : await api.ask(text);
+      const result =
+        images.length > 0 ? await api.ask(text, images) : await api.ask(text);
       return result.ok;
     },
     [api],
@@ -83,12 +123,17 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
   );
 
   const copyLast = useCallback(async () => {
-    const last = [...state.items].reverse().find((item): item is Turn => item.kind === "turn" && item.text.length > 0);
+    const last = [...state.items]
+      .reverse()
+      .find(
+        (item): item is Turn => item.kind === "turn" && item.text.length > 0,
+      );
     if (!last) {
       api.notify("There's no answer to copy yet.");
       return;
     }
-    if (!(await copyText(last.text))) api.notify("Couldn't copy. Select the text and copy it instead.");
+    if (!(await copyText(last.text)))
+      api.notify("Couldn't copy. Select the text and copy it instead.");
   }, [api, state.items]);
 
   const stopOrDismiss = useCallback(() => {
@@ -98,16 +143,49 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
 
   const canCatchUp = live && !busy && ready;
   const lastItem = state.items.at(-1);
-  const authErrorShowing = lastItem?.kind === "error" && lastItem.error.kind === "auth";
+  const authErrorShowing =
+    lastItem?.kind === "error" && lastItem.error.kind === "auth";
 
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [];
-    if (canCatchUp) list.push({ id: "check-in", label: "Catch me up", shortcut: CATCH_UP_SHORTCUT, run: () => void api.checkIn() });
-    list.push({ id: "new-chat", label: "New chat", shortcut: ["mod", "shift", "o"], run: () => void api.newChat() });
-    if (busy) list.push({ id: "stop", label: "Stop answering", shortcut: ["esc"], run: stopOrDismiss });
-    if (latestAsk && !busy) list.push({ id: "retry", label: "Ask the last question again", run: () => retry(latestAsk) });
-    list.push({ id: "copy", label: "Copy the last answer", shortcut: ["mod", "shift", "c"], run: () => void copyLast() });
-    list.push({ id: "focus", label: "Ask a question", shortcut: ["/"], run: () => composer.current?.focus() });
+    if (canCatchUp)
+      list.push({
+        id: "check-in",
+        label: "Catch me up",
+        shortcut: CATCH_UP_SHORTCUT,
+        run: () => void api.checkIn(),
+      });
+    list.push({
+      id: "new-chat",
+      label: "New chat",
+      shortcut: ["mod", "shift", "o"],
+      run: () => void api.newChat(),
+    });
+    if (busy)
+      list.push({
+        id: "stop",
+        label: "Stop answering",
+        shortcut: ["esc"],
+        run: stopOrDismiss,
+      });
+    if (latestAsk && !busy)
+      list.push({
+        id: "retry",
+        label: "Ask the last question again",
+        run: () => retry(latestAsk),
+      });
+    list.push({
+      id: "copy",
+      label: "Copy the last answer",
+      shortcut: ["mod", "shift", "c"],
+      run: () => void copyLast(),
+    });
+    list.push({
+      id: "focus",
+      label: "Ask a question",
+      shortcut: ["/"],
+      run: () => composer.current?.focus(),
+    });
     if (state.status?.appConnected && state.status.project.series) {
       list.push({
         id: "series-folder",
@@ -116,11 +194,25 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         run: () => void api.chooseSeriesFolder(),
       });
       if (state.status.project.source === "series") {
-        list.push({ id: "default-folder", label: "Use the default folder", hint: folderName(state.status.project.defaultProject), run: () => void api.useDefaultFolder() });
+        list.push({
+          id: "default-folder",
+          label: "Use the default folder",
+          hint: folderName(state.status.project.defaultProject),
+          run: () => void api.useDefaultFolder(),
+        });
       }
     }
     return list;
-  }, [api, busy, canCatchUp, copyLast, latestAsk, retry, state.status, stopOrDismiss]);
+  }, [
+    api,
+    busy,
+    canCatchUp,
+    copyLast,
+    latestAsk,
+    retry,
+    state.status,
+    stopOrDismiss,
+  ]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -149,7 +241,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         }
       } else if (event.key === "/" && !mod) {
         const target = event.target;
-        const typing = target instanceof HTMLElement && (target.tagName === "TEXTAREA" || target.tagName === "INPUT");
+        const typing =
+          target instanceof HTMLElement &&
+          (target.tagName === "TEXTAREA" || target.tagName === "INPUT");
         if (!typing) {
           event.preventDefault();
           composer.current?.focus();
@@ -189,7 +283,8 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
       undo: (id) => void api.undo(id),
       copy: copyText,
       signIn: () => void api.signIn(),
-      checkItem: (blockId, index, checked) => void api.checkItem(blockId, index, checked),
+      checkItem: (blockId, index, checked) =>
+        void api.checkItem(blockId, index, checked),
       addItemToNote: api.addItemToNote,
       reply: (text) => void ask(text),
       open: (url) => void api.open(url),
@@ -197,7 +292,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
     [api, ask, retry],
   );
   const lastTurn = state.items.at(-1);
-  const repliesShowing = lastTurn?.kind === "turn" && lastTurn.blocks.some((block) => block.kind === "replies");
+  const repliesShowing =
+    lastTurn?.kind === "turn" &&
+    lastTurn.blocks.some((block) => block.kind === "replies");
   const wrapUpActions = useMemo(
     () => ({
       copy: copyText,
@@ -208,11 +305,14 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
     [api, ask],
   );
 
-  const wrapUp = state.wrapUp ? <WrapUpCard view={state.wrapUp} busy={busy} actions={wrapUpActions} /> : undefined;
+  const wrapUp = state.wrapUp ? (
+    <WrapUpCard view={state.wrapUp} busy={busy} actions={wrapUpActions} />
+  ) : undefined;
 
   return (
-    <div className="flex h-full flex-col bg-surface text-foreground">
+    <div className="bg-surface text-foreground flex h-full flex-col">
       <Header
+        provider={state.status?.provider}
         connection={state.connection}
         transcript={state.transcript}
         usage={state.usage}
@@ -225,7 +325,13 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         <TranscriptStrip
           transcript={state.transcript}
           onCheckIn={() => void api.checkIn()}
-          unavailable={!ready ? "Available once the coach reconnects" : busy ? "Available when this answer finishes" : null}
+          unavailable={
+            !ready
+              ? "Available once the coach reconnects"
+              : busy
+                ? "Available when this answer finishes"
+                : null
+          }
           emphasis={!authErrorShowing}
         />
       )}
@@ -237,7 +343,10 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         busy={busy}
         questionOpen={state.question !== null}
         ready={ready}
-        canAddToNotes={(state.status?.appConnected ?? false) && (state.status?.meeting ?? false)}
+        canAddToNotes={
+          (state.status?.appConnected ?? false) &&
+          (state.status?.meeting ?? false)
+        }
         latestUndoable={latestUndoable(state)}
         lastAskKey={latestAsk?.key ?? null}
         actions={timelineActions}
@@ -248,7 +357,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
             suggestions={glance ? chips.slice(0, 2) : chips}
             disabled={!ready || busy}
             onSuggestion={(text) => void ask(text)}
-            onChooseFolder={needsFolder ? () => void api.chooseProjectFolder() : undefined}
+            onChooseFolder={
+              needsFolder ? () => void api.chooseProjectFolder() : undefined
+            }
           />
         }
       />
@@ -269,7 +380,10 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         }
         above={
           setup?.state === "failed" ? (
-            <SetupFailed message={setup.message} onRetry={() => void api.retrySetup()} />
+            <SetupFailed
+              message={setup.message}
+              onRetry={() => void api.retrySetup()}
+            />
           ) : state.question ? (
             <QuestionPanel
               key={state.question.id}
@@ -289,7 +403,9 @@ export function CoachView({ state, api }: { state: CoachState; api: CoachApi }) 
         onDefaultFolder={() => void api.useDefaultFolder()}
         onChooseProject={() => void api.chooseProjectFolder()}
       />
-      {palette && <Palette commands={commands} onClose={() => setPalette(false)} />}
+      {palette && (
+        <Palette commands={commands} onClose={() => setPalette(false)} />
+      )}
     </div>
   );
 }

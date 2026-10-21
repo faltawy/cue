@@ -22,15 +22,25 @@ export const PROACTIVE_DEFAULTS = {
 export type ProactiveConfig = typeof PROACTIVE_DEFAULTS & { enabled: boolean };
 export type SpendSource = "nudges" | "asks";
 export type ProactiveView = {
-  state: "on" | "off" | "capped";
-  nudgesUsd: number;
+  state: "on" | "off" | "capped" | "unpriced";
+  nudgesUsd: number | null;
   capUsd: number;
-  meetingUsd: number;
+  meetingUsd: number | null;
   meetingTokens: number;
   cachedTokens: number;
 };
-export type NudgeRequest = { context: string; hits: Hit[]; why: string; lines: readonly TranscriptLine[] };
-export type Observed = { lines: readonly TranscriptLine[]; pending: string; live: boolean; selfName: string | null };
+export type NudgeRequest = {
+  context: string;
+  hits: Hit[];
+  why: string;
+  lines: readonly TranscriptLine[];
+};
+export type Observed = {
+  lines: readonly TranscriptLine[];
+  pending: string;
+  live: boolean;
+  selfName: string | null;
+};
 
 export type ProactiveDeps = {
   triage(request: TriageRequest): Promise<TriageResult>;
@@ -72,7 +82,7 @@ export class Proactive {
   private monologueNudged: number | null = null;
   private nudgedAt: number[] = [];
   private triaging = false;
-  private nudgesUsd = 0;
+  private nudgesUsd: number | null = 0;
   private meeting: Spend = { usd: 0, tokens: 0, cachedTokens: 0 };
 
   constructor(
@@ -96,17 +106,31 @@ export class Proactive {
     if (!this.config.enabled || !input.live) return;
 
     const paused = now - this.lastActivityAt >= this.config.pauseMs;
-    this.scan(input, paused ? input.lines.length : input.lines.length - 1, input.selfName, now);
-    this.held = this.held.filter((hit) => now - hit.seenAt < this.config.hitTtlMs);
+    this.scan(
+      input,
+      paused ? input.lines.length : input.lines.length - 1,
+      input.selfName,
+      now,
+    );
+    this.held = this.held.filter(
+      (hit) => now - hit.seenAt < this.config.hitTtlMs,
+    );
     if (this.due(now, paused)) this.triage(now);
     else this.handOver(now);
   }
 
   spend(source: SpendSource, cost: Spend) {
-    if (cost.usd <= 0 && cost.tokens <= 0) return;
-    if (source === "nudges") this.nudgesUsd += cost.usd;
+    if (cost.usd !== null && cost.usd <= 0 && cost.tokens <= 0) return;
+    if (source === "nudges")
+      this.nudgesUsd =
+        this.nudgesUsd === null || cost.usd === null
+          ? null
+          : this.nudgesUsd + cost.usd;
     this.meeting = {
-      usd: this.meeting.usd + cost.usd,
+      usd:
+        this.meeting.usd === null || cost.usd === null
+          ? null
+          : this.meeting.usd + cost.usd,
       tokens: this.meeting.tokens + cost.tokens,
       cachedTokens: this.meeting.cachedTokens + cost.cachedTokens,
     };
@@ -118,7 +142,13 @@ export class Proactive {
   }
 
   view(): ProactiveView {
-    const state = !this.config.enabled ? "off" : this.capped() ? "capped" : "on";
+    const state = !this.config.enabled
+      ? "off"
+      : this.nudgesUsd === null
+        ? "unpriced"
+        : this.capped()
+          ? "capped"
+          : "on";
     return {
       state,
       nudgesUsd: this.nudgesUsd,
@@ -130,15 +160,25 @@ export class Proactive {
   }
 
   private capped(): boolean {
-    return Math.round(this.nudgesUsd * 1e6) >= Math.round(this.config.capUsd * 1e6);
+    return (
+      this.nudgesUsd === null ||
+      Math.round(this.nudgesUsd * 1e6) >= Math.round(this.config.capUsd * 1e6)
+    );
   }
 
   private rateLimited(now: number): boolean {
-    this.nudgedAt = this.nudgedAt.filter((at) => now - at < this.config.rateWindowMs);
+    this.nudgedAt = this.nudgedAt.filter(
+      (at) => now - at < this.config.rateWindowMs,
+    );
     return this.nudgedAt.length >= this.config.rateMax;
   }
 
-  private scan(input: Observed, finalCount: number, selfName: string | null, now: number) {
+  private scan(
+    input: Observed,
+    finalCount: number,
+    selfName: string | null,
+    now: number,
+  ) {
     const from = Math.max(0, Math.min(this.scanned, input.lines.length) - 1);
     for (let index = from; index < finalCount; index += 1) {
       const line = input.lines[index];
@@ -154,22 +194,39 @@ export class Proactive {
   }
 
   private blocked(now: number): boolean {
-    return this.triaging || this.capped() || this.rateLimited(now) || this.deps.busy();
+    return (
+      this.triaging ||
+      this.capped() ||
+      this.rateLimited(now) ||
+      this.deps.busy()
+    );
   }
 
   private due(now: number, paused: boolean): boolean {
     const first = this.held[0];
     if (!first || this.blocked(now)) return false;
     if (!paused && now - first.seenAt < this.config.maxHoldMs) return false;
-    return now - this.lastTriageAt >= this.config.triageGapMs && now - this.lastNudgeAt >= this.config.nudgeGapMs;
+    return (
+      now - this.lastTriageAt >= this.config.triageGapMs &&
+      now - this.lastNudgeAt >= this.config.nudgeGapMs
+    );
   }
 
   private handOver(now: number) {
     const stretch = monologueNudge(this.lines, this.config.monologueMs);
     if (!stretch || stretch.startMs === this.monologueNudged) return;
-    if (now - this.lastMonologueAt < this.config.monologueGapMs || now - this.lastNudgeAt < this.config.nudgeGapMs) return;
+    if (
+      now - this.lastMonologueAt < this.config.monologueGapMs ||
+      now - this.lastNudgeAt < this.config.nudgeGapMs
+    )
+      return;
     if (this.blocked(now)) return;
-    const request = { context: this.deps.context(), hits: [stretch.hit], why: stretch.why, lines: this.lines };
+    const request = {
+      context: this.deps.context(),
+      hits: [stretch.hit],
+      why: stretch.why,
+      lines: this.lines,
+    };
     if (!this.deps.nudge(request)) return;
     this.monologueNudged = stretch.startMs;
     this.lastMonologueAt = now;
@@ -189,12 +246,28 @@ export class Proactive {
       .triage({
         context,
         kinds,
-        lines: this.lines.filter((line) => line.end_ms >= latestEnd - this.config.windowMs),
+        lines: this.lines.filter(
+          (line) => line.end_ms >= latestEnd - this.config.windowMs,
+        ),
       })
       .then((result) => {
         this.spend("nudges", result.spend);
-        if (!result.verdict?.nudge || !this.live || this.capped() || this.deps.busy()) return;
-        if (!this.deps.nudge({ context, hits, why: result.verdict.why, lines: this.lines })) return;
+        if (
+          !result.verdict?.nudge ||
+          !this.live ||
+          this.capped() ||
+          this.deps.busy()
+        )
+          return;
+        if (
+          !this.deps.nudge({
+            context,
+            hits,
+            why: result.verdict.why,
+            lines: this.lines,
+          })
+        )
+          return;
         const at = this.now();
         this.lastNudgeAt = at;
         this.nudgedAt.push(at);

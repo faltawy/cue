@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
-use crate::{Error, Result, access};
+use crate::{CoachProvider, Error, Result, access};
 
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
 pub struct Endpoint {
@@ -23,7 +23,10 @@ pub struct Launch {
     pub project_chosen: bool,
     pub db: PathBuf,
     pub port: u16,
-    pub model: &'static str,
+    pub model: String,
+    pub claude_model: String,
+    pub codex_model: String,
+    pub provider: CoachProvider,
     pub nudges: bool,
     pub nudge_limit_cents: u32,
     pub mcp_config: Option<PathBuf>,
@@ -39,9 +42,12 @@ pub struct Launch {
 impl Launch {
     pub fn key(&self) -> String {
         format!(
-            "coach:{}:{}:{}:{}:{:x}:{:x}:{}",
+            "coach:{}:{}:{}:{}:{}:{}:{}:{:x}:{:x}:{}",
             self.project.display(),
+            self.provider.as_str(),
             self.model,
+            self.claude_model,
+            self.codex_model,
             self.nudges,
             self.nudge_limit_cents,
             self.tools_fingerprint,
@@ -94,7 +100,13 @@ pub fn server_args(launch: &Launch) -> Vec<OsString> {
         "--port".into(),
         launch.port.to_string().into(),
         "--model".into(),
-        launch.model.into(),
+        launch.model.clone().into(),
+        "--provider".into(),
+        launch.provider.as_str().into(),
+        "--claude-model".into(),
+        launch.claude_model.clone().into(),
+        "--codex-model".into(),
+        launch.codex_model.clone().into(),
         "--nudge-limit".into(),
         format!(
             "{}.{:02}",
@@ -167,7 +179,12 @@ pub fn sidecar_command(args: Vec<OsString>, claude_dir: &Path) -> Result<Command
             command
         }
     };
-    command.args(args).arg("--claude-dir").arg(claude_dir);
+    command
+        .args(args)
+        .arg("--claude-dir")
+        .arg(claude_dir)
+        .arg("--codex-dir")
+        .arg(claude_dir.with_file_name("codex"));
     Ok(command)
 }
 
@@ -286,7 +303,10 @@ mod tests {
             project_chosen: true,
             db: "/data/app.db".into(),
             port: 4747,
-            model: "opus",
+            model: "opus".into(),
+            claude_model: "opus".into(),
+            codex_model: String::new(),
+            provider: CoachProvider::Claude,
             nudges: true,
             nudge_limit_cents: 105,
             mcp_config: None,
@@ -313,11 +333,60 @@ mod tests {
                 "4747",
                 "--model",
                 "opus",
+                "--provider",
+                "claude",
+                "--claude-model",
+                "opus",
+                "--codex-model",
+                "",
                 "--nudge-limit",
                 "1.05",
                 "--exit-with-stdin"
             ]
         );
+    }
+
+    #[test]
+    fn switching_provider_changes_the_running_process_and_routes_its_model() {
+        let claude = launch("/p", "sonnet", true, 1);
+        let codex = Launch {
+            provider: CoachProvider::Codex,
+            model: "".into(),
+            ..launch("/p", "sonnet", true, 1)
+        };
+        let args = server_args(&codex);
+        assert!(args.windows(2).any(|pair| pair == ["--provider", "codex"]));
+        assert!(args.windows(2).any(|pair| pair == ["--model", ""]));
+        assert!(
+            server_args(&claude)
+                .windows(2)
+                .any(|pair| pair == ["--model", "sonnet"])
+        );
+        assert_ne!(codex.key(), claude.key());
+        assert_ne!(
+            Launch {
+                provider: CoachProvider::Codex,
+                model: "".into(),
+                claude_model: "opus".into(),
+                ..launch("/p", "sonnet", true, 1)
+            }
+            .key(),
+            codex.key()
+        );
+        assert_ne!(
+            Launch {
+                codex_model: "gpt-6.1-sol".into(),
+                ..launch("/p", "sonnet", true, 1)
+            }
+            .key(),
+            claude.key()
+        );
+
+        assert!(
+            args.windows(2)
+                .any(|pair| pair == ["--claude-model", "sonnet"])
+        );
+        assert!(args.windows(2).any(|pair| pair == ["--codex-model", ""]));
     }
 
     #[test]
@@ -389,7 +458,10 @@ mod tests {
             project_chosen: true,
             db: "/db".into(),
             port,
-            model,
+            model: model.into(),
+            claude_model: model.into(),
+            codex_model: String::new(),
+            provider: CoachProvider::Claude,
             nudges,
             nudge_limit_cents: 50,
             mcp_config: None,

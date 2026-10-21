@@ -1,9 +1,15 @@
+import {
+  type Options,
+  query,
+  type SDKMessage,
+  type SDKUserMessage,
+} from "@anthropic-ai/claude-agent-sdk";
 import os from "node:os";
-
-import { type Options, query, type SDKMessage, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 
+import { startCodexSession } from "./codex-session";
 import { sessionEnv } from "./env";
+import { providerSchema, type CoachProvider } from "./provider";
 import { cacheWrite5m } from "./usage";
 
 const imagePart = z.object({
@@ -13,26 +19,35 @@ const imagePart = z.object({
 });
 const textPart = z.object({ type: z.literal("text"), text: z.string() });
 
-export const llmRequestSchema = z.object({
-  model: z.string().default("sonnet"),
-  system: z.string().optional(),
-  messages: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant"]),
-        content: z.array(z.union([textPart, imagePart])),
-      }),
-    )
-    .min(1),
-  schema: z.record(z.string(), z.unknown()).optional(),
-});
+export const llmRequestSchema = z
+  .object({
+    provider: providerSchema.default("claude"),
+    model: z.string().optional(),
+    system: z.string().optional(),
+    messages: z
+      .array(
+        z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.array(z.union([textPart, imagePart])),
+        }),
+      )
+      .min(1),
+    schema: z.record(z.string(), z.unknown()).optional(),
+  })
+  .transform((request) => ({
+    ...request,
+    model: request.model ?? (request.provider === "codex" ? "" : "sonnet"),
+  }));
 
-export type LlmRequest = z.infer<typeof llmRequestSchema>;
+export type LlmRequest = Omit<z.infer<typeof llmRequestSchema>, "provider"> & {
+  provider?: CoachProvider;
+};
 
 export type LlmEvent =
   | { type: "text"; delta: string }
   | {
       type: "done";
+      model?: string;
       inputTokens: number;
       outputTokens: number;
       cachedInputTokens: number;
@@ -43,9 +58,18 @@ export type LlmEvent =
 
 type ContentBlock =
   | { type: "text"; text: string }
-  | { type: "image"; source: { type: "base64"; media_type: z.infer<typeof imagePart>["mediaType"]; data: string } };
+  | {
+      type: "image";
+      source: {
+        type: "base64";
+        media_type: z.infer<typeof imagePart>["mediaType"];
+        data: string;
+      };
+    };
 
-export function toPromptContent(messages: LlmRequest["messages"]): ContentBlock[] {
+export function toPromptContent(
+  messages: LlmRequest["messages"],
+): ContentBlock[] {
   const last = messages.at(-1);
   const history = messages.slice(0, -1);
   const blocks: ContentBlock[] = [];
@@ -53,24 +77,38 @@ export function toPromptContent(messages: LlmRequest["messages"]): ContentBlock[
   if (history.length > 0) {
     const transcript = history
       .map((message) => {
-        const text = message.content.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n");
+        const text = message.content
+          .flatMap((part) => (part.type === "text" ? [part.text] : []))
+          .join("\n");
         return `<${message.role}>\n${text}\n</${message.role}>`;
       })
       .join("\n");
-    blocks.push({ type: "text", text: `Conversation so far:\n${transcript}\n\nReply to the latest message.` });
+    blocks.push({
+      type: "text",
+      text: `Conversation so far:\n${transcript}\n\nReply to the latest message.`,
+    });
   }
 
   for (const part of last?.content ?? []) {
     blocks.push(
       part.type === "text"
         ? { type: "text", text: part.text }
-        : { type: "image", source: { type: "base64", media_type: part.mediaType, data: part.data } },
+        : {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: part.mediaType,
+              data: part.data,
+            },
+          },
     );
   }
   return blocks;
 }
 
-export function jsonOf(reply: string): { ok: true; value: unknown } | { ok: false; error: string } {
+export function jsonOf(
+  reply: string,
+): { ok: true; value: unknown } | { ok: false; error: string } {
   const json = reply
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
@@ -78,11 +116,18 @@ export function jsonOf(reply: string): { ok: true; value: unknown } | { ok: fals
   try {
     return { ok: true, value: JSON.parse(json) };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
-export type LlmTuning = Pick<Options, "thinking" | "effort"> & { shortCache?: boolean };
+export type LlmTuning = Pick<Options, "thinking" | "effort"> & {
+  shortCache?: boolean;
+  provider?: CoachProvider;
+  codexHome?: string;
+};
 
 export function llmQueryOptions(
   request: LlmRequest,
@@ -90,7 +135,12 @@ export function llmQueryOptions(
   claudePath: string,
   tuning: LlmTuning = {},
 ): Options {
-  const { shortCache = false, ...model } = tuning;
+  const {
+    shortCache = false,
+    provider: _provider,
+    codexHome: _codexHome,
+    ...model
+  } = tuning;
   return {
     ...model,
     pathToClaudeCodeExecutable: claudePath,
@@ -105,17 +155,30 @@ export function llmQueryOptions(
     persistSession: false,
     maxTurns: request.schema ? 3 : 1,
     includePartialMessages: true,
-    env: shortCache ? { ...sessionEnv(process.env), FORCE_PROMPT_CACHING_5M: "1" } : sessionEnv(process.env),
+    env: shortCache
+      ? { ...sessionEnv(process.env), FORCE_PROMPT_CACHING_5M: "1" }
+      : sessionEnv(process.env),
     abortController,
-    ...(request.schema ? { outputFormat: { type: "json_schema", schema: request.schema } } : {}),
+    ...(request.schema
+      ? { outputFormat: { type: "json_schema", schema: request.schema } }
+      : {}),
   };
 }
 
-async function* singleMessage(content: ContentBlock[]): AsyncIterable<SDKUserMessage> {
-  yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null };
+async function* singleMessage(
+  content: ContentBlock[],
+): AsyncIterable<SDKUserMessage> {
+  yield {
+    type: "user",
+    message: { role: "user", content },
+    parent_tool_use_id: null,
+  };
 }
 
-export function eventsFromMessage(message: SDKMessage, structured: boolean): LlmEvent[] {
+export function eventsFromMessage(
+  message: SDKMessage,
+  structured: boolean,
+): LlmEvent[] {
   if (
     !structured &&
     message.type === "stream_event" &&
@@ -127,7 +190,9 @@ export function eventsFromMessage(message: SDKMessage, structured: boolean): Llm
   }
   if (message.type !== "result") return [];
   if (message.subtype !== "success") {
-    return [{ type: "error", message: `the model run ended with ${message.subtype}` }];
+    return [
+      { type: "error", message: `the model run ended with ${message.subtype}` },
+    ];
   }
   const usage = {
     inputTokens: message.usage.input_tokens,
@@ -138,7 +203,9 @@ export function eventsFromMessage(message: SDKMessage, structured: boolean): Llm
   };
   if (!structured) return [{ type: "done", ...usage }];
   if (message.structured_output === undefined) {
-    return [{ type: "error", message: "the model returned no structured output" }];
+    return [
+      { type: "error", message: "the model returned no structured output" },
+    ];
   }
   return [
     { type: "text", delta: JSON.stringify(message.structured_output) },
@@ -152,46 +219,140 @@ export async function* runLlm(
   claudePath: string,
   tuning?: LlmTuning,
 ): AsyncIterable<LlmEvent> {
+  if ((tuning?.provider ?? request.provider) === "codex") {
+    yield* runCodexLlm(request, signal, claudePath, tuning?.codexHome);
+    return;
+  }
   const abortController = new AbortController();
-  signal.addEventListener("abort", () => abortController.abort(), { once: true });
+  const abort = () => abortController.abort();
+  signal.addEventListener("abort", abort, { once: true });
+  if (signal.aborted) abort();
   const run = query({
     prompt: singleMessage(toPromptContent(request.messages)),
     options: llmQueryOptions(request, abortController, claudePath, tuning),
   });
   try {
     for await (const message of run) {
-      for (const event of eventsFromMessage(message, request.schema !== undefined)) {
+      for (const event of eventsFromMessage(
+        message,
+        request.schema !== undefined,
+      )) {
         yield event;
         if (event.type !== "text") return;
       }
     }
     yield { type: "error", message: "the model run ended without a result" };
   } finally {
+    signal.removeEventListener("abort", abort);
     run.close();
   }
 }
 
-export function llmResponse(request: Request, claudePath: () => Promise<string>): Response {
+export function llmResponse(
+  request: Request,
+  executable: (provider: CoachProvider) => Promise<string>,
+  tuning: Pick<LlmTuning, "codexHome"> = {},
+): Response {
   return new Response(
     new ReadableStream<string>({
       async start(controller) {
         try {
           const body = llmRequestSchema.safeParse(await request.json());
           if (!body.success) {
-            controller.enqueue(`${JSON.stringify({ type: "error", message: body.error.message })}\n`);
+            controller.enqueue(
+              `${JSON.stringify({ type: "error", message: body.error.message })}\n`,
+            );
             return;
           }
-          for await (const event of runLlm(body.data, request.signal, await claudePath())) {
+          for await (const event of runLlm(
+            body.data,
+            request.signal,
+            await executable(body.data.provider),
+            { ...tuning, provider: body.data.provider },
+          )) {
             controller.enqueue(`${JSON.stringify(event)}\n`);
           }
         } catch (error) {
           console.error("[llm] request failed", { _e: String(error) });
-          controller.enqueue(`${JSON.stringify({ type: "error", message: String(error) })}\n`);
+          controller.enqueue(
+            `${JSON.stringify({ type: "error", message: String(error) })}\n`,
+          );
         } finally {
           controller.close();
         }
       },
     }),
-    { headers: { "content-type": "application/x-ndjson", "cache-control": "no-cache" } },
+    {
+      headers: {
+        "content-type": "application/x-ndjson",
+        "cache-control": "no-cache",
+      },
+    },
   );
+}
+
+async function* runCodexLlm(
+  request: LlmRequest,
+  signal: AbortSignal,
+  executable: string,
+  home?: string,
+): AsyncIterable<LlmEvent> {
+  const session = startCodexSession({
+    executable,
+    home,
+    model: request.model,
+    prompt: request.system ?? "",
+    schema: request.schema,
+    ephemeral: true,
+    signal,
+  });
+  let answer = "";
+  try {
+    if (signal.aborted) return;
+    session.ask(toPromptContent(request.messages));
+    for await (const message of session.messages) {
+      if (message.type === "text") {
+        answer += message.delta;
+        if (!request.schema) yield message;
+      }
+      if (message.type !== "result") continue;
+      if (message.is_error) {
+        yield {
+          type: "error",
+          message: message.result || "Codex could not finish the request.",
+        };
+        return;
+      }
+      if (request.schema) {
+        const parsed = jsonOf(answer);
+        if (!parsed.ok) {
+          yield {
+            type: "error",
+            message: "Codex returned invalid structured output.",
+          };
+          return;
+        }
+        yield { type: "text", delta: JSON.stringify(parsed.value) };
+      }
+      const usage =
+        message.usage && typeof message.usage === "object"
+          ? Object.fromEntries(Object.entries(message.usage))
+          : {};
+      const model = Object.keys(message.modelUsage ?? {})[0];
+      yield {
+        type: "done",
+        ...(model ? { model } : {}),
+        inputTokens: Number(usage.input_tokens) || 0,
+        outputTokens: Number(usage.output_tokens) || 0,
+        cachedInputTokens: Number(usage.cache_read_input_tokens) || 0,
+        cacheCreationTokens: 0,
+        cacheWrite5mTokens: 0,
+      };
+      return;
+    }
+    if (!signal.aborted)
+      yield { type: "error", message: "Codex ended without a result." };
+  } finally {
+    session.close();
+  }
 }

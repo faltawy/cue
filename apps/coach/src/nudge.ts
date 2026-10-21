@@ -3,8 +3,22 @@ import { z } from "zod";
 import { isNothing, NOTHING } from "./checkin";
 import type { Hit, HitKind } from "./detect";
 import { jsonOf, runLlm } from "./llm";
-import { type Moment, type Move, MOVE_TAGS, type MoveTag, moveFields, QUOTE_MAX } from "./move";
-import { charTokens, estimateTokens, NO_SPEND, type Spend, spendOf } from "./pricing";
+import {
+  type Moment,
+  type Move,
+  MOVE_TAGS,
+  type MoveTag,
+  moveFields,
+  QUOTE_MAX,
+} from "./move";
+import {
+  charTokens,
+  estimateTokens,
+  NO_SPEND,
+  type Spend,
+  spendOf,
+} from "./pricing";
+import type { CoachProvider } from "./provider";
 import { INSTRUCTIONS_HEADING } from "./session";
 import { type TalkStats, talkStats, talkSummary } from "./talk-time";
 import { formatTimestamp } from "./timestamp";
@@ -36,15 +50,27 @@ const MOMENTS_MAX = 3;
 const MOMENT: Record<HitKind, string> = {
   question: "a question aimed at the user",
   name: "someone said the user's name",
-  objection: "pushback (price, timing, a competitor, a decision maker or doubt)",
+  objection:
+    "pushback (price, timing, a competitor, a decision maker or doubt)",
   commitment: "a commitment",
   number: "a number, date or price",
-  monologue: "the user has held the floor too long; hand it back with one concrete question about what they were just saying",
+  monologue:
+    "the user has held the floor too long; hand it back with one concrete question about what they were just saying",
 };
 
-const TAG_HINT: Partial<Record<HitKind, MoveTag>> = { monologue: "talk_time", objection: "pushback" };
+const TAG_HINT: Partial<Record<HitKind, MoveTag>> = {
+  monologue: "talk_time",
+  objection: "pushback",
+};
 
-const LABEL_ORDER: readonly HitKind[] = ["monologue", "objection", "question", "name", "commitment", "number"];
+const LABEL_ORDER: readonly HitKind[] = [
+  "monologue",
+  "objection",
+  "question",
+  "name",
+  "commitment",
+  "number",
+];
 
 const LABEL: Record<HitKind, string> = {
   question: "Question for you",
@@ -56,23 +82,33 @@ const LABEL: Record<HitKind, string> = {
 };
 
 function tagHint(hits: readonly Hit[]): MoveTag | undefined {
-  const kind = LABEL_ORDER.find((candidate) => TAG_HINT[candidate] && hits.some((hit) => hit.kind === candidate));
+  const kind = LABEL_ORDER.find(
+    (candidate) =>
+      TAG_HINT[candidate] && hits.some((hit) => hit.kind === candidate),
+  );
   return kind && TAG_HINT[kind];
 }
 
 export function nudgeLabel(hits: readonly Hit[]): string {
-  const kind = LABEL_ORDER.find((candidate) => hits.some((hit) => hit.kind === candidate)) ?? "question";
+  const kind =
+    LABEL_ORDER.find((candidate) =>
+      hits.some((hit) => hit.kind === candidate),
+    ) ?? "question";
   return LABEL[kind];
 }
 
 function moments(hits: readonly Hit[]): string {
   const byLine = new Map<number, Hit[]>();
-  for (const hit of hits) byLine.set(hit.lineIndex, [...(byLine.get(hit.lineIndex) ?? []), hit]);
+  for (const hit of hits)
+    byLine.set(hit.lineIndex, [...(byLine.get(hit.lineIndex) ?? []), hit]);
   return [...byLine.values()]
     .slice(-MOMENTS_MAX)
     .map((group) => {
       const text = group[0]?.text.trim() ?? "";
-      const quote = text.length > MOMENT_MAX_CHARS ? `${text.slice(0, MOMENT_MAX_CHARS)}…` : text;
+      const quote =
+        text.length > MOMENT_MAX_CHARS
+          ? `${text.slice(0, MOMENT_MAX_CHARS)}…`
+          : text;
       return `- ${group.map((hit) => MOMENT[hit.kind]).join(", ")}: "${quote}"`;
     })
     .join("\n");
@@ -96,12 +132,19 @@ function tailWithin(text: string, maxTokens: number): string {
   let used = 0;
   for (let index = chars.length - 1; index >= 0; index -= 1) {
     used += charTokens(chars[index] ?? "");
-    if (used > maxTokens) return `…${chars.slice(index + 1).join("").trimStart()}`;
+    if (used > maxTokens)
+      return `…${chars
+        .slice(index + 1)
+        .join("")
+        .trimStart()}`;
   }
   return text;
 }
 
-function recentLines(lines: readonly TranscriptLine[], maxTokens: number): string {
+function recentLines(
+  lines: readonly TranscriptLine[],
+  maxTokens: number,
+): string {
   const kept: string[] = [];
   let used = 0;
   for (let index = lines.length - 1; index >= 0; index -= 1) {
@@ -110,7 +153,15 @@ function recentLines(lines: readonly TranscriptLine[], maxTokens: number): strin
     const rendered = renderLines([current]);
     const cost = estimateTokens(rendered) + 1;
     if (used + cost > maxTokens) {
-      if (kept.length === 0) kept.push(renderLines([{ ...current, text: tailWithin(current.text.trim(), maxTokens - 20) }]));
+      if (kept.length === 0)
+        kept.push(
+          renderLines([
+            {
+              ...current,
+              text: tailWithin(current.text.trim(), maxTokens - 20),
+            },
+          ]),
+        );
       break;
     }
     kept.unshift(rendered);
@@ -121,14 +172,23 @@ function recentLines(lines: readonly TranscriptLine[], maxTokens: number): strin
 
 export function nudgeSystem(instructions: string): string {
   const own = instructions.trim();
-  return own ? `${NUDGE_SYSTEM}\n\n${INSTRUCTIONS_HEADING}\n${headWithin(own, TOKENS.instructions)}` : NUDGE_SYSTEM;
+  return own
+    ? `${NUDGE_SYSTEM}\n\n${INSTRUCTIONS_HEADING}\n${headWithin(own, TOKENS.instructions)}`
+    : NUDGE_SYSTEM;
 }
 
-export type NudgeInput = { context: string; hits: readonly Hit[]; why: string; lines: readonly TranscriptLine[] };
+export type NudgeInput = {
+  context: string;
+  hits: readonly Hit[];
+  why: string;
+  lines: readonly TranscriptLine[];
+};
 
 export function nudgeMessage(input: NudgeInput): string {
   const latestEnd = input.lines.at(-1)?.end_ms ?? 0;
-  const recent = input.lines.filter((line) => line.end_ms >= latestEnd - NUDGE_WINDOW_MS);
+  const recent = input.lines.filter(
+    (line) => line.end_ms >= latestEnd - NUDGE_WINDOW_MS,
+  );
   const stats = talkStats(input.lines);
   const tag = tagHint(input.hits);
   return `Meeting: ${headWithin(input.context, TOKENS.context)}
@@ -150,7 +210,10 @@ export function rememberNote(notes: readonly string[], note: string): string[] {
   return [...notes, note].slice(-NOTES_MAX);
 }
 
-export function withNudgeNotes(notes: readonly string[], prompt: string): string {
+export function withNudgeNotes(
+  notes: readonly string[],
+  prompt: string,
+): string {
   if (notes.length === 0) return prompt;
   return `(Since your last answer, the user also saw these automatic nudges, written outside this chat from the live transcript:
 ${notes.map((note) => `- ${note}`).join("\n")})
@@ -162,15 +225,25 @@ export const nudgeReplySchema = z.strictObject(moveFields);
 
 export type NudgeReply = z.infer<typeof nudgeReplySchema>;
 
-export type ParsedNudge = { kind: "nothing" } | { kind: "move"; reply: NudgeReply } | { kind: "malformed"; error: string };
+export type ParsedNudge =
+  | { kind: "nothing" }
+  | { kind: "move"; reply: NudgeReply }
+  | { kind: "malformed"; error: string };
 
 export function parseNudge(reply: string): ParsedNudge {
   if (isNothing(reply) || reply.trim() === "") return { kind: "nothing" };
   const json = jsonOf(reply);
   const parsed = json.ok ? nudgeReplySchema.safeParse(json.value) : null;
   if (parsed?.success) return { kind: "move", reply: parsed.data };
-  const error = parsed ? z.prettifyError(parsed.error) : json.ok ? "" : json.error;
-  console.error("[coach] nudge reply was not the expected JSON; dropping it", { _e: error, reply: reply.slice(0, 300) });
+  const error = parsed
+    ? z.prettifyError(parsed.error)
+    : json.ok
+      ? ""
+      : json.error;
+  console.error("[coach] nudge reply was not the expected JSON; dropping it", {
+    _e: error,
+    reply: reply.slice(0, 300),
+  });
   return { kind: "malformed", error };
 }
 
@@ -184,12 +257,16 @@ function triggerMoment(input: NudgeInput): Moment | undefined {
   if (!line || !quote) return undefined;
   return {
     speaker: line.speaker,
-    quote: quote.length > QUOTE_MAX ? `${quote.slice(0, QUOTE_MAX - 1)}…` : quote,
+    quote:
+      quote.length > QUOTE_MAX ? `${quote.slice(0, QUOTE_MAX - 1)}…` : quote,
     at: formatTimestamp(line.start_ms),
   };
 }
 
-export function nudgeMove(input: NudgeInput, reply: NudgeReply): { move: Move; talk: TalkStats | null } {
+export function nudgeMove(
+  input: NudgeInput,
+  reply: NudgeReply,
+): { move: Move; talk: TalkStats | null } {
   const moment = triggerMoment(input);
   return {
     move: { ...reply, ...(moment ? { moment } : {}) },
@@ -203,25 +280,48 @@ export type NudgeResult =
 
 export async function runNudge(
   input: NudgeInput,
-  options: { instructions: string; signal: AbortSignal; claudePath: string },
+  options: {
+    instructions: string;
+    signal: AbortSignal;
+    claudePath: string;
+    provider?: CoachProvider;
+    model?: string;
+    codexHome?: string;
+  },
 ): Promise<NudgeResult> {
   let text = "";
   let spend = NO_SPEND;
   for await (const event of runLlm(
     {
-      model: NUDGE_MODEL,
+      model: options.provider === "codex" ? (options.model ?? "") : NUDGE_MODEL,
       system: nudgeSystem(options.instructions),
-      messages: [{ role: "user", content: [{ type: "text", text: nudgeMessage(input) }] }],
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: nudgeMessage(input) }],
+        },
+      ],
     },
     options.signal,
     options.claudePath,
-    { effort: "low", shortCache: true },
+    {
+      effort: "low",
+      shortCache: true,
+      provider: options.provider,
+      codexHome: options.codexHome,
+    },
   )) {
     if (event.type === "text") text += event.delta;
-    else if (event.type === "done") spend = spendOf(NUDGE_MODEL, event);
+    else if (event.type === "done")
+      spend = spendOf(
+        event.model ??
+          (options.provider === "codex" ? (options.model ?? "") : NUDGE_MODEL),
+        event,
+      );
     else return { ok: false, error: event.message, spend };
   }
   const parsed = parseNudge(text);
-  if (parsed.kind !== "move") return { ok: true, move: null, talk: null, spend };
+  if (parsed.kind !== "move")
+    return { ok: true, move: null, talk: null, spend };
   return { ok: true, ...nudgeMove(input, parsed.reply), spend };
 }
