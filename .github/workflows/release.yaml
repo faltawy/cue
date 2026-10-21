@@ -157,7 +157,7 @@ jobs:
             --config src-tauri/tauri.conf.stable.json \
             --config '{"bundle":{"createUpdaterArtifacts":true}}'
       - if: always()
-        run: '"$SCCACHE_PATH" --show-stats'
+        run: sccache --show-stats
 
       - name: Collect artifacts
         run: |
