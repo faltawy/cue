@@ -221,13 +221,6 @@ jobs:
             exit 1
           fi
 
-      - if: ${{ !contains(env.VERSION, '-') }}
-        env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-        run: |
-          legacy_tag=$(gh release view --repo faltawy/cue-releases --json tagName --jq .tagName)
-          gh release upload "$legacy_tag" --repo faltawy/cue-releases dist/latest.json --clobber
-
       - name: Remove the signing keychain
         if: always()
         run: |

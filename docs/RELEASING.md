@@ -12,7 +12,6 @@ Set these on `faltawy/cue` under Settings > Secrets and variables > Actions:
 | `APPLE_CERTIFICATE_PASSWORD`                  | password of that `.p12`                             | set              |
 | `TAURI_SIGNING_PRIVATE_KEY`                   | contents of `~/.tauri/cue-updater.key`              | set              |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`          | contents of `~/.tauri/cue-updater.key.password`     | set              |
-| `RELEASES_TOKEN`                              | token that updates the legacy updater feed | set |
 | `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | Apple Developer ID notarization (optional)          | not set: skipped |
 
 The updater public key in `apps/desktop/src-tauri/tauri.conf.json` is `~/.tauri/cue-updater.key.pub`. The release workflow fails if the private key doesn't match it.
@@ -21,7 +20,7 @@ The updater public key in `apps/desktop/src-tauri/tauri.conf.json` is `~/.tauri/
 
 The workflow uses its built-in `GITHUB_TOKEN` with `contents: write` to publish in `faltawy/cue`; no personal token is needed for new releases.
 
-`RELEASES_TOKEN` is retained only for compatibility. It needs Contents read/write on `faltawy/cue-releases` so the workflow can replace `latest.json` on that repository’s latest stable release. The manifest points at the new release in `faltawy/cue`. Keep this token valid until support for installations using the old feed is retired.
+The 0.5.1 workflow uses `RELEASES_TOKEN` once to publish the final compatibility feed in `cue-releases`. Subsequent releases write only to `cue` and need no cross-repository token.
 
 ## 2. Release notes
 
@@ -58,7 +57,7 @@ gh release delete v0.2.0 -R faltawy/cue
 
 Nothing to set up. Cue reads `https://github.com/faltawy/cue/releases/latest/download/latest.json` 30 seconds after launch and every 6 hours, and checks each download against the updater public key. Updates download in the background. "Restart to update" (in Settings > General > Updates or the tray) installs the update, but never while a recording is running or the coach is answering. Only the stable app (`com.hyprnote.stable`) updates. Dev builds show that updates are unavailable.
 
-Versions 0.1.4 through 0.5.0 read the old `cue-releases` feed. After publishing each stable release, the workflow updates that feed’s `latest.json` to point at the signed download in `cue`. Those installations can update directly to the new version, which then polls `cue`. Do not delete or archive `cue-releases` while this bridge is needed. Historical downloads remain there to preserve existing links.
+Versions 0.1.4 through 0.5.0 read the old `cue-releases` feed. The 0.5.1 release updates that feed once to point at its signed download in `cue`. After installing 0.5.1, those apps poll `cue` for subsequent updates. Archive `cue-releases` only after verifying this final feed and copying all published releases to `cue`. Keep the archived repository available for the compatibility feed and historical download links; do not delete it.
 
 ## 5. First install of a self-signed build
 
