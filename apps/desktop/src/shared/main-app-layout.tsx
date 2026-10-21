@@ -65,7 +65,7 @@ const useNavigationEvents = () => {
         }
       }
     };
-    (window as any).__ANARLOG_NAVIGATE__ = navigateFromNative;
+    (window as any).__CUE_NAVIGATE__ = navigateFromNative;
 
     let unlistenNavigate: (() => void) | undefined;
     let unlistenOpenTab: (() => void) | undefined;
@@ -148,8 +148,8 @@ const useNavigationEvents = () => {
 
     return () => {
       cancelled = true;
-      if ((window as any).__ANARLOG_NAVIGATE__ === navigateFromNative) {
-        delete (window as any).__ANARLOG_NAVIGATE__;
+      if ((window as any).__CUE_NAVIGATE__ === navigateFromNative) {
+        delete (window as any).__CUE_NAVIGATE__;
       }
       unlistenNavigate?.();
       unlistenOpenTab?.();

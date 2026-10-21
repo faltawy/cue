@@ -5,7 +5,7 @@ use owhisper_interface::ListenParams;
 use owhisper_interface::batch::Response as BatchResponse;
 use reqwest_middleware::ClientWithMiddleware;
 
-use crate::adapter::{BatchSttAdapter, append_provider_param, is_anarlog_proxy};
+use crate::adapter::{BatchSttAdapter, append_provider_param, is_legacy_hosted_proxy};
 use crate::error::Error;
 use crate::http_client::create_client;
 use crate::{DeepgramAdapter, ListenClientBuilder, normalize_listen_params};
@@ -73,7 +73,7 @@ pub struct BatchClient<A: BatchSttAdapter = DeepgramAdapter> {
 
 impl<A: BatchSttAdapter> BatchClient<A> {
     fn normalize_api_base(api_base: String) -> String {
-        if !is_anarlog_proxy(&api_base) {
+        if !is_legacy_hosted_proxy(&api_base) {
             return api_base;
         }
         let provider_name = A::default().provider_name();
@@ -132,12 +132,12 @@ impl<A: crate::RealtimeSttAdapter + BatchSttAdapter> ListenClientBuilder<A> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AnarlogAdapter, DeepgramAdapter, OpenAIAdapter};
+    use crate::{DeepgramAdapter, LegacyHostedAdapter, OpenAIAdapter};
     use anlg_language::{ISO639, Language};
 
     #[test]
-    fn injects_or_rewrites_provider_param_for_anarlog_proxy() {
-        let client = BatchClient::<AnarlogAdapter>::builder()
+    fn injects_or_rewrites_provider_param_for_legacy_hosted_proxy() {
+        let client = BatchClient::<LegacyHostedAdapter>::builder()
             .api_base("https://api.anarlog.so/stt")
             .api_key("test")
             .build();

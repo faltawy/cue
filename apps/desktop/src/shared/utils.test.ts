@@ -16,13 +16,13 @@ describe("getScheme", () => {
   });
 
   it.each([
-    ["com.hyprnote.stable", "anarlog"],
-    ["com.hyprnote.Hyprnote", "anarlog"],
-    ["com.hyprnote.staging", "anarlog-staging"],
-    ["com.hyprnote.nightly", "anarlog-nightly"],
-    ["com.hyprnote.dev", "anarlog-dev"],
-    ["so.anarlog.Anarlog", "anarlog"],
-    ["unknown", "anarlog"],
+    ["com.hyprnote.stable", "cue"],
+    ["com.hyprnote.Hyprnote", "cue"],
+    ["com.hyprnote.staging", "cue-staging"],
+    ["com.hyprnote.nightly", "cue-nightly"],
+    ["com.hyprnote.dev", "cue-dev"],
+    ["so.anarlog.Anarlog", "cue"],
+    ["unknown", "cue"],
   ])("maps %s to %s", async (identifier, scheme) => {
     mocks.getIdentifier.mockResolvedValue(identifier);
 

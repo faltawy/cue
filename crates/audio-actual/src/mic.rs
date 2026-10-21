@@ -399,7 +399,7 @@ impl MicInput {
                 let bluetooth =
                     bluetooth.filter(|activation| activation.name.as_ref() == Some(&name));
                 tracing::info!(
-                    anarlog.audio.sample_rate_hz = ?config.sample_rate(),
+                    cue.audio.sample_rate_hz = ?config.sample_rate(),
                     device_name = name,
                     "mic_input_initialized"
                 );

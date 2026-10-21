@@ -101,7 +101,7 @@ fn initialize_request() -> serde_json::Value {
         "params": {
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": { "name": "anarlog-coach", "version": env!("CARGO_PKG_VERSION") },
+            "clientInfo": { "name": "cue-coach", "version": env!("CARGO_PKG_VERSION") },
         },
     })
 }

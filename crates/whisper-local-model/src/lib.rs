@@ -130,7 +130,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn model_urls_use_anarlog_domain() {
+    fn model_urls_use_upstream_download_domain() {
         for model in [
             WhisperModel::QuantizedTiny,
             WhisperModel::QuantizedTinyEn,

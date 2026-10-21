@@ -21,8 +21,8 @@ use crate::series::{self, MeetingProject};
 use crate::settings::{self, SeriesProject};
 use crate::{CoachNudged, Error, Result};
 
-pub const URL_ENV: &str = "ANARLOG_COACH_APP_URL";
-pub const TOKEN_ENV: &str = "ANARLOG_COACH_APP_TOKEN";
+pub const URL_ENV: &str = "CUE_COACH_APP_URL";
+pub const TOKEN_ENV: &str = "CUE_COACH_APP_TOKEN";
 
 pub type RecordingFuture = Pin<Box<dyn Future<Output = Option<Vec<String>>> + Send>>;
 

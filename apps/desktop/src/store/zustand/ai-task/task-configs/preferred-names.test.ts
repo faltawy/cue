@@ -13,18 +13,14 @@ describe("preferred names guidance", () => {
 
   it("appends preferred names after the rendered prompt", () => {
     expect(
-      appendPreferredNamesGuidance("Base prompt", [
-        "Anarlog",
-        "Char",
-        "anarlog",
-      ]),
+      appendPreferredNamesGuidance("Base prompt", ["Cue", "Char", "cue"]),
     ).toBe(
       `Base prompt
 
 # Preferred Names
 
 Use these names and terms exactly when they appear, even if the transcript or notes spell them differently:
-- Anarlog
+- Cue
 - Char`,
     );
   });

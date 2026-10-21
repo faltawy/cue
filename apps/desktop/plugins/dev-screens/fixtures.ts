@@ -98,7 +98,7 @@ const FIXTURES: Record<string, unknown> = {
     alreadyCleaned: false,
     fileCount: 1284,
     totalBytes: 734_003_200,
-    sourceRoot: "/Users/demo/Library/Application Support/com.anarlog.app",
+    sourceRoot: "/Users/demo/Library/Application Support/Cue",
     blockingReason: null,
   },
   "plugin:transcription|render_transcript_segments": renderTranscript,

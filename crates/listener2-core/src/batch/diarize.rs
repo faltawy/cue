@@ -317,7 +317,7 @@ pub(super) async fn apply_local_diarization(
         Ok(Ok(labels)) => {
             let summary = apply_labels(&mut output.response, &labels);
             tracing::info!(
-                anarlog.stt.provider.name = LOCAL_DIARIZATION_PROVIDER,
+                cue.stt.provider.name = LOCAL_DIARIZATION_PROVIDER,
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
                 diarization.channels = summary.channel_speakers.len(),
                 diarization.speakers = ?summary.channel_speakers,
@@ -328,7 +328,7 @@ pub(super) async fn apply_local_diarization(
         }
         Ok(Err(_error)) => {
             tracing::warn!(
-                anarlog.stt.provider.name = LOCAL_DIARIZATION_PROVIDER,
+                cue.stt.provider.name = LOCAL_DIARIZATION_PROVIDER,
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
                 error.type = "local_diarization_failed",
                 "local_diarization_failed"

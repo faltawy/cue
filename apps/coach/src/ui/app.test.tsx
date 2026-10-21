@@ -334,10 +334,10 @@ describe("worst-case data", () => {
   });
 
   test("with no project folder chosen, the coach still opens and offers to choose one", () => {
-    const path = "/tmp/anarlog-coach-no-project";
+    const path = "/tmp/cue-coach-no-project";
     const api = setup(stateFrom([status({ meeting: false, project: { path, source: "default", series: null, defaultProject: path, needsFolder: true } })]));
     expect(view.getByText("Choose a project folder to give the coach context.")).toBeTruthy();
-    expect(view.queryByText(/anarlog-coach-no-project/)).toBeNull();
+    expect(view.queryByText(/cue-coach-no-project/)).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Choose folder…" }));
     expect(api.chooseProjectFolder).toHaveBeenCalledTimes(1);
   });

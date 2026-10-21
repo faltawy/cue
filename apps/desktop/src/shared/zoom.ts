@@ -9,7 +9,7 @@ import {
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-export const ZOOM_STORAGE_KEY = "anarlog-zoom-factor";
+export const ZOOM_STORAGE_KEY = "cue-zoom-factor";
 export const ZOOM_CHANGED_EVENT = "anlg:zoom-factor-changed";
 
 export const ZOOM_STEPS = [
@@ -114,7 +114,8 @@ export function stepZoomFactor(
 export function readZoomFactor(
   storage: Pick<Storage, "getItem"> = window.localStorage,
 ): number {
-  const raw = storage.getItem(ZOOM_STORAGE_KEY);
+  const raw =
+    storage.getItem(ZOOM_STORAGE_KEY) ?? storage.getItem("anarlog-zoom-factor");
   const factor = raw === null ? NaN : Number(raw);
   return Number.isFinite(factor) && factor > 0 ? factor : DEFAULT_ZOOM_FACTOR;
 }

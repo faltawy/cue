@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // Windows Credential Manager caps a credential blob at 2560 bytes, i.e. 1280
 // UTF-16 code units. Secrets that exceed a platform's limit are split across
 // chunk entries, and the primary entry holds a manifest pointing at them.
+// Persisted Keychain manifests must retain their original wire format.
 const MANIFEST_PREFIX: &str = "anarlog-secure-store-chunks:v1:";
 const CHUNK_UTF16_UNITS: usize = 1024;
 

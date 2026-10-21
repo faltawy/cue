@@ -13,6 +13,7 @@ impl TrayVersion {
             "com.hyprnote.stable" | "com.hyprnote.Hyprnote" => "stable",
             "com.hyprnote.staging" => "staging",
             "com.hyprnote.dev" => "dev",
+            // Older installed bundles can still report their original product names.
             _ => match app_name {
                 "Cue" | "Anarlog" | "Char" | "Hyprnote" => "stable",
                 "Cue Staging" | "Anarlog Staging" | "Char Staging" | "Hyprnote Staging" => {

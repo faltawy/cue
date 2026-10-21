@@ -99,7 +99,7 @@ fn transform_mentions_in_markdown(markdown: &str) -> String {
         let app_url = format!("/app/{}/{}", mention_type, id);
 
         format!(
-            r#"<a class="mention" data-mention="true" data-id="{}" data-type="{}" data-label="{}" href="javascript:void(0)" onclick="event.preventDefault(); if (window.__ANARLOG_NAVIGATE__) window.__ANARLOG_NAVIGATE__('{}');">@{}</a>"#,
+            r#"<a class="mention" data-mention="true" data-id="{}" data-type="{}" data-label="{}" href="javascript:void(0)" onclick="event.preventDefault(); if (window.__CUE_NAVIGATE__) window.__CUE_NAVIGATE__('{}');">@{}</a>"#,
             id, mention_type, label, app_url, label
         )
     }).to_string()
@@ -285,7 +285,7 @@ mod tests {
     fn test_md_to_md_3() {
         let input = r#"
 # Enhanced Meeting Notes
-## What Anarlog Does
+## What Cue Does
 - A smart notepad for people with back-to-back meetings.
 - Listens to the meeting so you don't have to write everything down.
 - Merges your notes and the transcript into a clean, context-aware summary.
@@ -301,8 +301,8 @@ mod tests {
 - Offers powerful extensions—like real-time transcripts and CRM uploads (e.g. Twenty).
 
 ## Stay Connected
-- Follow updates on [X](https://anarlog.so/x).
-- Join the community and chat on [Discord](https://anarlog.so/discord). 
+- Follow updates on [X](https://example.com/x).
+- Join the community and chat on [Discord](https://example.com/discord).
 
 # Participants:
 
@@ -314,7 +314,7 @@ mod tests {
 "#;
 
         insta::assert_snapshot!(md_to_md(input).unwrap().to_string(), @"
-        # What Anarlog Does
+        # What Cue Does
 
         - A smart notepad for people with back-to-back meetings.
         - Listens to the meeting so you don't have to write everything down.
@@ -340,8 +340,8 @@ mod tests {
 
         # Stay Connected
 
-        - Follow updates on [X](https://anarlog.so/x).
-        - Join the community and chat on [Discord](https://anarlog.so/discord).
+        - Follow updates on [X](https://example.com/x).
+        - Join the community and chat on [Discord](https://example.com/discord).
 
          
 
@@ -362,7 +362,7 @@ mod tests {
     fn test_opinionated_md_to_html() {
         let input = r#"
 # Enhanced Meeting Notes
-## What Anarlog Does
+## What Cue Does
 - A smart notepad for people with back-to-back meetings.
 - Listens to the meeting so you don't have to write everything down.
 - Merges your notes and the transcript into a clean, context-aware summary.
@@ -378,12 +378,12 @@ mod tests {
 - Offers powerful extensions—like real-time transcripts and CRM uploads (e.g. Twenty).
 
 ## Stay Connected
-- Follow updates on [X](https://anarlog.so/x).
-- Join the community and chat on [Discord](https://anarlog.so/discord).
+- Follow updates on [X](https://example.com/x).
+- Join the community and chat on [Discord](https://example.com/discord).
 "#;
 
         insta::assert_snapshot!(opinionated_md_to_html(input).unwrap().to_string(), @r#"
-        <h1>What Anarlog Does</h1>
+        <h1>What Cue Does</h1>
         <ul>
         <li>A smart notepad for people with back-to-back meetings.</li>
         <li>Listens to the meeting so you don't have to write everything down.</li>
@@ -406,8 +406,8 @@ mod tests {
         <p> </p>
         <h1>Stay Connected</h1>
         <ul>
-        <li>Follow updates on <a href="https://anarlog.so/x">X</a>.</li>
-        <li>Join the community and chat on <a href="https://anarlog.so/discord">Discord</a>.</li>
+        <li>Follow updates on <a href="https://example.com/x">X</a>.</li>
+        <li>Join the community and chat on <a href="https://example.com/discord">Discord</a>.</li>
         </ul>
         "#);
     }

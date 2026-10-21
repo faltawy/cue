@@ -9,6 +9,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use crate::{Envelope, Error, RecoveryKey, Result, WorkspaceKey};
 
+// Keep persisted cryptographic domains compatible with existing identities and grants.
 const MEMBER_IDENTITY_KDF_SALT: &[u8] = b"anarlog-e2ee-member-identity-v1";
 const MEMBER_IDENTITY_INFO: &[u8] = b"x25519";
 const GRANT_KDF_SALT: &[u8] = b"anarlog-e2ee-workspace-key-grant-kdf-v1";

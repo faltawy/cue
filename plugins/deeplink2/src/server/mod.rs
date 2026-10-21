@@ -343,14 +343,14 @@ mod tests {
     #[test]
     fn subscription_code_bounces_through_custom_scheme_deeplink() {
         assert_eq!(
-            subscription_auth_deeplink("anarlog", &subscription_search()).as_deref(),
-            Some("anarlog://auth/callback?code=ac_nf5hq&state=state-1")
+            subscription_auth_deeplink("cue", &subscription_search()).as_deref(),
+            Some("cue://auth/callback?code=ac_nf5hq&state=state-1")
         );
-        let html = render_html(&DeepLink::AuthCallback(subscription_search()), "anarlog");
-        assert!(html.contains("anarlog://auth/callback?code=ac_nf5hq"));
+        let html = render_html(&DeepLink::AuthCallback(subscription_search()), "cue");
+        assert!(html.contains("cue://auth/callback?code=ac_nf5hq"));
         assert!(html.contains("state=state-1"));
         assert!(html.contains(r#"document.getElementById("open-app")?.click()"#));
-        assert!(!html.contains("anarlog://focus"));
+        assert!(!html.contains("cue://focus"));
     }
 
     #[test]
@@ -362,9 +362,9 @@ mod tests {
                 code: Some("should-ignore".to_string()),
                 ..AuthCallbackSearch::default()
             }),
-            "anarlog-dev",
+            "cue-dev",
         );
-        assert!(html.contains("anarlog-dev://focus"));
+        assert!(html.contains("cue-dev://focus"));
         assert!(!html.contains("code=should-ignore"));
     }
 
@@ -373,9 +373,9 @@ mod tests {
         let html = render_html_from_callback(
             "/auth/callback",
             "code=codex-code&state=s1&scope=openid",
-            "anarlog",
+            "cue",
         );
-        assert!(html.contains("anarlog://auth/callback?code=codex-code"));
+        assert!(html.contains("cue://auth/callback?code=codex-code"));
         assert!(html.contains("state=s1"));
     }
 }

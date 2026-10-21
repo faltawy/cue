@@ -42,7 +42,7 @@ describe("session drag context", () => {
     const dataTransfer = new FakeDataTransfer() as unknown as DataTransfer;
 
     dataTransfer.setData(
-      "application/x-anarlog-session-context",
+      "application/x-cue-session-context",
       JSON.stringify({ sessionId: "session-1" }),
     );
 
@@ -55,7 +55,7 @@ describe("session drag context", () => {
   it("ignores malformed session drag payloads", () => {
     const dataTransfer = new FakeDataTransfer() as unknown as DataTransfer;
 
-    dataTransfer.setData("application/x-anarlog-session-context", "{");
+    dataTransfer.setData("application/x-cue-session-context", "{");
 
     expect(hasSessionContextDragData(dataTransfer)).toBe(true);
     expect(readSessionMentionDragData(dataTransfer)).toBeNull();

@@ -294,6 +294,20 @@ pub fn main() {
                 tracing::info!(target: "startup", "{message}");
             }
             let app_handle = app.handle().clone();
+            {
+                use tauri_plugin_autostart::ManagerExt;
+                let autostart = app_handle.autolaunch();
+                // Rewrite enabled login items with the current executable path after an upgrade.
+                match autostart.is_enabled() {
+                    Ok(true) => {
+                        if let Err(error) = autostart.enable() {
+                            tracing::warn!(%error, "failed to refresh login item");
+                        }
+                    }
+                    Ok(false) => {}
+                    Err(error) => tracing::warn!(%error, "failed to read login item status"),
+                }
+            }
             tauri_plugin_shortcut::initialize_global_shortcuts(&app_handle);
 
             specta_builder.mount_events(&app_handle);
@@ -530,7 +544,7 @@ fn append_startup_failure_to_log(identifier: &str, message: &str) {
             return;
         };
         let timestamp = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.6fZ");
-        let _ = writeln!(file, "{timestamp} ERROR anarlog::startup: {message}");
+        let _ = writeln!(file, "{timestamp} ERROR cue::startup: {message}");
     }
 }
 

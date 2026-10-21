@@ -16,15 +16,15 @@ Prefer the Cue MCP tools when they are available:
 - `get_meeting_transcript` for bounded transcript pages
 - `get_recurring_meeting_history` for meetings in the same recurring series
 
-If MCP is unavailable, use the `anarlog` CLI with `--json`:
+If MCP is unavailable, use the `cue` CLI with `--json`:
 
 ```sh
-anarlog --json meetings list --query "planning"
-anarlog --json meetings folders
-anarlog --json meetings list --folder "Projects/Launch"
-anarlog --json meetings get MEETING_ID
-anarlog --json meetings transcript MEETING_ID --limit 200 --offset 0
-anarlog --json meetings history MEETING_ID
+cue --json meetings list --query "planning"
+cue --json meetings folders
+cue --json meetings list --folder "Projects/Launch"
+cue --json meetings get MEETING_ID
+cue --json meetings transcript MEETING_ID --limit 200 --offset 0
+cue --json meetings history MEETING_ID
 ```
 
 The CLI discovers Cue's database from the platform application-data
@@ -33,6 +33,4 @@ provides a non-default database path; do not crawl the filesystem to find one.
 Never guess a meeting ID. Keep transcript requests bounded and continue from
 `pagination.next_offset` only when more context is needed.
 
-Documentation: https://docs.anarlog.so
-
-Agent skill: https://docs.anarlog.so/skill.md
+Documentation: https://github.com/faltawy/cue/tree/main/docs

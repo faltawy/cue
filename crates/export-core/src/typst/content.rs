@@ -20,7 +20,7 @@ fn build_preamble() -> String {
     #grid(
       columns: (1fr, auto),
       text(size: 8pt, fill: muted)[#session-title],
-      text(size: 8pt, fill: subtle, tracking: 0.14em)[ANARLOG],
+      text(size: 8pt, fill: subtle, tracking: 0.14em)[CUE],
     )
     #v(5pt)
     #line(length: 100%, stroke: 0.5pt + hairline)
@@ -215,9 +215,9 @@ fn build_cover_page(
     cover.push_str("    #line(length: 100%, stroke: 0.5pt + hairline)\n");
     cover.push_str("    #v(4mm)\n");
     cover.push_str("    #table(columns: (1fr, auto), stroke: none, inset: 0pt,\n");
-    cover.push_str("      [#image(\"anarlog-logo.svg\", width: 13mm)],\n");
+    cover.push_str("      [#text(size: 18pt, weight: \"bold\")[Cue]],\n");
     cover.push_str(
-        "      [#align(right, text(size: 9pt, fill: subtle)[#link(\"https://anarlog.so\")[anarlog.so]])],\n",
+        "      [#align(right, text(size: 9pt, fill: subtle)[#link(\"https://github.com/faltawy/cue\")[github.com/faltawy/cue]])],\n",
     );
     cover.push_str("    )\n");
     cover.push_str("    #v(14mm)\n");

@@ -70,7 +70,7 @@ impl RealtimeSttAdapter for SmallestAIAdapter {
             Err(_error) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "smallestai_json_parse_failed"
                 );
                 return vec![];
@@ -303,7 +303,7 @@ mod tests {
             &ListenParams {
                 sample_rate: 16_000,
                 languages: vec![ISO639::En.into()],
-                keywords: vec!["Anarlog".to_string(), "Pulse".to_string()],
+                keywords: vec!["Cue".to_string(), "Pulse".to_string()],
                 ..Default::default()
             },
             1,
@@ -320,7 +320,7 @@ mod tests {
         assert_eq!(query.get("sample_rate"), Some(&"16000".to_string()));
         assert_eq!(query.get("word_timestamps"), Some(&"true".to_string()));
         assert_eq!(query.get("diarize"), Some(&"true".to_string()));
-        assert_eq!(query.get("keywords"), Some(&"Anarlog,Pulse".to_string()));
+        assert_eq!(query.get("keywords"), Some(&"Cue,Pulse".to_string()));
         assert!(!query.contains_key("full_transcript"));
     }
 

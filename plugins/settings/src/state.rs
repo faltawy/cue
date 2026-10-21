@@ -62,6 +62,7 @@ impl StartupSnapshot {
     }
 }
 
+// Provider IDs are persisted settings, independent of the product display name.
 fn normalize_legacy_names(mut settings: serde_json::Value) -> serde_json::Value {
     let Some(ai) = settings
         .get_mut("ai")

@@ -11,7 +11,7 @@ pub(crate) struct DecorativeSwitchIvars {}
 define_class! {
     #[unsafe(super(NSSwitch))]
     #[thread_kind = MainThreadOnly]
-    #[name = "AnarlogPermissionAssistantDecorativeSwitch"]
+    #[name = "CuePermissionAssistantDecorativeSwitch"]
     #[ivars = DecorativeSwitchIvars]
     pub(crate) struct DecorativeSwitch;
 

@@ -22,7 +22,7 @@ impl PublicGitHubHttpClient {
         );
         headers.insert(
             reqwest::header::USER_AGENT,
-            reqwest::header::HeaderValue::from_static("anarlog-desktop"),
+            reqwest::header::HeaderValue::from_static("cue-desktop"),
         );
 
         let client = reqwest::Client::builder()

@@ -6,6 +6,7 @@ use crate::{
 
 const MAX_ID_BYTES: usize = 255;
 const MAX_TIMESTAMP_BYTES: usize = 64;
+// Retain the stored metadata key so previously imported sessions remain identifiable.
 const RESERVED_METADATA_KEY: &str = "anarlog_capture_ingest";
 
 pub(crate) fn validate(

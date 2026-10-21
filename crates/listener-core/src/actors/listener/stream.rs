@@ -251,7 +251,7 @@ where
     loop {
         tokio::select! {
             _ = &mut finalize_timeout => {
-                tracing::warn!(anarlog.timeout.reached = true, "break_timeout");
+                tracing::warn!(cue.timeout.reached = true, "break_timeout");
                 break;
             }
             result = listen_stream.next() => {
@@ -282,7 +282,7 @@ where
                         break;
                     }
                     None => {
-                        tracing::info!(anarlog.stream.ended = true, "break_from_finalize");
+                        tracing::info!(cue.stream.ended = true, "break_from_finalize");
                         break;
                     }
                 }
@@ -634,7 +634,7 @@ mod tests {
     fn repeated_final_responses_do_not_hide_stalled_transcripts() {
         let now = Instant::now();
         let mut progress = StreamProgress::new(now);
-        let mut engine = crate::LiveTranscriptEngine::new("anarlog", &[], None);
+        let mut engine = crate::LiveTranscriptEngine::new("cue", &[], None);
         let response = transcript_response(true);
         let initial = engine
             .process(&response)
@@ -657,7 +657,7 @@ mod tests {
     fn advancing_single_word_finals_keep_an_active_stream_healthy() {
         let now = Instant::now();
         let mut progress = StreamProgress::new(now);
-        let mut engine = crate::LiveTranscriptEngine::new("anarlog", &[], None);
+        let mut engine = crate::LiveTranscriptEngine::new("cue", &[], None);
         let mut response = transcript_response(true);
         if let StreamResponse::TranscriptResponse { channel, .. } = &mut response {
             channel.alternatives[0].words.truncate(1);

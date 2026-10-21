@@ -261,7 +261,7 @@ impl RealtimeSttAdapter for GladiaAdapter {
             Err(_e) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "gladia_json_parse_failed"
                 );
                 return vec![];
@@ -280,10 +280,7 @@ impl RealtimeSttAdapter for GladiaAdapter {
                     tracing::warn!("gladia_session_channels_not_found");
                     1
                 });
-                tracing::debug!(
-                    anarlog.audio.channel_count = channels,
-                    "gladia_session_ended"
-                );
+                tracing::debug!(cue.audio.channel_count = channels, "gladia_session_ended");
                 vec![StreamResponse::TerminalResponse {
                     request_id: id,
                     created: String::new(),
@@ -312,7 +309,7 @@ impl RealtimeSttAdapter for GladiaAdapter {
             }
             GladiaMessage::Unknown => {
                 tracing::debug!(
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "gladia_unknown_message"
                 );
                 vec![]

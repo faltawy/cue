@@ -67,7 +67,7 @@ impl RealtimeSttAdapter for ArgmaxAdapter {
                     }]
                 } else {
                     tracing::warn!(
-                        anarlog.payload.size_bytes = raw.len() as u64,
+                        cue.payload.size_bytes = raw.len() as u64,
                         "argmax_unknown_message"
                     );
                     vec![]

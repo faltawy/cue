@@ -162,7 +162,7 @@ fn provider_selection_survives_custom_and_loopback_endpoints() {
             &[],
             None
         ),
-        AdapterKind::Anarlog
+        AdapterKind::LegacyHosted
     );
     let url = NvidiaAdapter::default().build_ws_url(
         "http://localhost:9000?provider=nvidia",

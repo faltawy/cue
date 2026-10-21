@@ -6,7 +6,7 @@ use transcribe_speechanalyzer as apple_speech;
 const LOCALE: &str = "en-US";
 
 fn sample_wav() -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../aec/data/inputs/anarlog_mic.wav")
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../aec/data/inputs/cue_mic.wav")
 }
 
 fn read_wav_samples(path: &std::path::Path) -> Vec<f32> {

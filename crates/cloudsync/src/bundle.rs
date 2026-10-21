@@ -7,7 +7,7 @@ use crate::CLOUDSYNC_VERSION;
 use crate::error::Error;
 
 static TEMP_FILE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
-const CLOUDSYNC_BUNDLE_REVISION: &str = "anarlog-bounded-send-2";
+const CLOUDSYNC_BUNDLE_REVISION: &str = "cue-bounded-send-2";
 
 macro_rules! configure_cloudsync_target {
     ($target:literal, $file_name:literal, $path:literal) => {

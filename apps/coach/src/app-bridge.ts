@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const APP_URL_ENV = "ANARLOG_COACH_APP_URL";
-export const APP_TOKEN_ENV = "ANARLOG_COACH_APP_TOKEN";
+export const APP_URL_ENV = "CUE_COACH_APP_URL";
+export const APP_TOKEN_ENV = "CUE_COACH_APP_TOKEN";
 
 export const EDIT_KINDS = [
   "note",

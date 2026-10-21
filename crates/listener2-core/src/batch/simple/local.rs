@@ -143,13 +143,13 @@ fn create_channel_tempfile(parent: Option<&Path>) -> std::io::Result<tempfile::N
         && crate::batch::upload::is_recovery_directory(parent)
     {
         return tempfile::Builder::new()
-            .prefix("anarlog_channel_")
+            .prefix("cue_channel_")
             .suffix(".wav")
             .tempfile_in(parent);
     }
     let in_parent = parent.and_then(|parent| {
         tempfile::Builder::new()
-            .prefix("anarlog_channel_")
+            .prefix("cue_channel_")
             .suffix(".wav")
             .tempfile_in(parent)
             .ok()
@@ -157,7 +157,7 @@ fn create_channel_tempfile(parent: Option<&Path>) -> std::io::Result<tempfile::N
     match in_parent {
         Some(file) => Ok(file),
         None => tempfile::Builder::new()
-            .prefix("anarlog_channel_")
+            .prefix("cue_channel_")
             .suffix(".wav")
             .tempfile(),
     }
@@ -184,8 +184,8 @@ pub(in crate::batch) async fn run_apple_speech_batch(
         let started_at = Instant::now();
 
         tracing::info!(
-            anarlog.stt.provider.name = "apple-speech",
-            anarlog.stt.language = %locale,
+            cue.stt.provider.name = "apple-speech",
+            cue.stt.language = %locale,
             "apple_speech_batch_start"
         );
 
@@ -213,7 +213,7 @@ pub(in crate::batch) async fn run_apple_speech_batch(
         })?;
 
         tracing::info!(
-            anarlog.stt.provider.name = "apple-speech",
+            cue.stt.provider.name = "apple-speech",
             elapsed_ms = started_at.elapsed().as_millis() as u64,
             transcript.channel_count = transcribed.len(),
             "apple_speech_batch_completed"
@@ -304,10 +304,10 @@ pub(in crate::batch) async fn run_soniqo_batch(
         let started_at = Instant::now();
 
         tracing::info!(
-            anarlog.stt.provider.name = "soniqo",
-            anarlog.stt.model = %model,
-            anarlog.stt.language = %language_label,
-            anarlog.stt.language_hint = %language_hint_label,
+            cue.stt.provider.name = "soniqo",
+            cue.stt.model = %model,
+            cue.stt.language = %language_label,
+            cue.stt.language_hint = %language_hint_label,
             file.extension = %file_extension,
             "soniqo_batch_start"
         );
@@ -331,8 +331,8 @@ pub(in crate::batch) async fn run_soniqo_batch(
         .await
         .map_err(|_e| {
             tracing::error!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 error.type = "local_task_join_failed",
                 "soniqo_batch_task_join_failed"
             );
@@ -351,8 +351,8 @@ pub(in crate::batch) async fn run_soniqo_batch(
         })?;
 
         tracing::info!(
-            anarlog.stt.provider.name = "soniqo",
-            anarlog.stt.model = %model,
+            cue.stt.provider.name = "soniqo",
+            cue.stt.model = %model,
             elapsed_ms = started_at.elapsed().as_millis() as u64,
             transcript.channel_count = transcribed.len(),
             "soniqo_batch_completed"
@@ -387,9 +387,9 @@ fn transcribe_soniqo_file(
         .map(|duration| duration.as_millis().min(u128::from(u64::MAX)) as u64);
 
     tracing::info!(
-        anarlog.stt.provider.name = "soniqo",
-        anarlog.stt.model = %model,
-        anarlog.stt.language = %language.unwrap_or("auto"),
+        cue.stt.provider.name = "soniqo",
+        cue.stt.model = %model,
+        cue.stt.language = %language.unwrap_or("auto"),
         audio.channel_count = channel_count,
         audio.sample_rate_hz = sample_rate,
         audio.duration_ms = duration_ms.unwrap_or_default(),
@@ -407,8 +407,8 @@ fn transcribe_soniqo_file(
         .map(|channel| channel.sample_count)
         .sum::<usize>();
     tracing::info!(
-        anarlog.stt.provider.name = "soniqo",
-        anarlog.stt.model = %model,
+        cue.stt.provider.name = "soniqo",
+        cue.stt.model = %model,
         elapsed_ms = resample_started_at.elapsed().as_millis() as u64,
         audio.source_sample_rate_hz = sample_rate,
         audio.target_sample_rate_hz = TARGET_SAMPLE_RATE,
@@ -417,8 +417,8 @@ fn transcribe_soniqo_file(
     );
 
     tracing::info!(
-        anarlog.stt.provider.name = "soniqo",
-        anarlog.stt.model = %model,
+        cue.stt.provider.name = "soniqo",
+        cue.stt.model = %model,
         audio.source_channel_count = channel_count,
         audio.transcribed_channel_count = channel_files.len(),
         "soniqo_channels_prepared"
@@ -438,8 +438,8 @@ fn transcribe_soniqo_file(
     };
     if !diarization_within_limit {
         tracing::warn!(
-            anarlog.stt.provider.name = "soniqo",
-            anarlog.stt.model = %model,
+            cue.stt.provider.name = "soniqo",
+            cue.stt.model = %model,
             audio.duration_seconds = channel_sample_counts.iter().copied().max().unwrap_or_default()
                 as f64
                 / TARGET_SAMPLE_RATE as f64,
@@ -731,7 +731,7 @@ where
             Err(_error) => {
                 failed_channels += 1;
                 tracing::warn!(
-                    anarlog.stt.provider.name = "soniqo",
+                    cue.stt.provider.name = "soniqo",
                     error.type = "channel_transcription_failed",
                     "soniqo_channel_transcription_failed"
                 );
@@ -768,8 +768,8 @@ fn soniqo_channel_plan(
         SoniqoChunkStrategy::SpeechAware => ("speech-aware", None),
     };
     tracing::info!(
-        anarlog.stt.provider.name = "soniqo",
-        anarlog.stt.model = %model,
+        cue.stt.provider.name = "soniqo",
+        cue.stt.model = %model,
         channel.index = channel_index,
         channel.duration_seconds = duration_seconds,
         channel.sample_count = sample_count,
@@ -861,8 +861,8 @@ fn diarize_soniqo_channel(
     match anlg_transcribe_soniqo::diarize_samples(model, samples, speaker_count) {
         Ok(segments) => {
             tracing::info!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 channel.index = channel_index,
                 speaker.count = speaker_count,
                 segment.count = segments.len(),
@@ -873,8 +873,8 @@ fn diarize_soniqo_channel(
         }
         Err(_error) => {
             tracing::warn!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 channel.index = channel_index,
                 speaker.count = speaker_count,
                 elapsed_ms = started_at.elapsed().as_millis() as u64,
@@ -945,8 +945,8 @@ where
         let chunk_rms = audio_rms(&chunk.samples);
         if is_direct_mic && chunk_rms < SONIQO_DIRECT_MIC_MIN_RMS {
             tracing::info!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 channel.index = channel_index,
                 chunk.index = chunk_index,
                 audio.rms = chunk_rms,
@@ -958,8 +958,8 @@ where
 
         let chunk_started_at = Instant::now();
         tracing::info!(
-            anarlog.stt.provider.name = "soniqo",
-            anarlog.stt.model = %model,
+            cue.stt.provider.name = "soniqo",
+            cue.stt.model = %model,
             channel.index = channel_index,
             chunk.index = chunk_index,
             chunk.sample_start = chunk.sample_start,
@@ -979,8 +979,8 @@ where
             Err(_error) => {
                 failed_chunks += 1;
                 tracing::warn!(
-                    anarlog.stt.provider.name = "soniqo",
-                    anarlog.stt.model = %model,
+                    cue.stt.provider.name = "soniqo",
+                    cue.stt.model = %model,
                     channel.index = channel_index,
                     chunk.index = chunk_index,
                     elapsed_ms = chunk_started_at.elapsed().as_millis() as u64,
@@ -992,8 +992,8 @@ where
         };
 
         tracing::info!(
-            anarlog.stt.provider.name = "soniqo",
-            anarlog.stt.model = %model,
+            cue.stt.provider.name = "soniqo",
+            cue.stt.model = %model,
             channel.index = channel_index,
             chunk.index = chunk_index,
             elapsed_ms = chunk_started_at.elapsed().as_millis() as u64,
@@ -1020,8 +1020,8 @@ where
 
     if failed_chunks > 0 {
         tracing::warn!(
-            anarlog.stt.provider.name = "soniqo",
-            anarlog.stt.model = %model,
+            cue.stt.provider.name = "soniqo",
+            cue.stt.model = %model,
             channel.index = channel_index,
             chunk.success_count = successful_chunks,
             chunk.failed_count = failed_chunks,

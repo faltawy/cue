@@ -16,7 +16,7 @@ pub(crate) struct SketchArrowIvars {}
 define_class! {
     #[unsafe(super(NSView))]
     #[thread_kind = MainThreadOnly]
-    #[name = "AnarlogPermissionAssistantSketchArrowView"]
+    #[name = "CuePermissionAssistantSketchArrowView"]
     #[ivars = SketchArrowIvars]
     pub(crate) struct SketchArrowView;
 

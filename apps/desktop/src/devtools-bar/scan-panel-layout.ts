@@ -6,7 +6,7 @@ import {
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-const STORAGE_KEY = "anarlog:devtools-scan-layout";
+const STORAGE_KEY = "cue:devtools-scan-layout";
 export type PanelRect = { x: number; y: number; width: number; height: number };
 type Edge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 const viewport = () => ({
@@ -68,7 +68,11 @@ function defaultRect(): PanelRect {
 }
 function readRect(): PanelRect {
   try {
-    const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+    const value = JSON.parse(
+      localStorage.getItem(STORAGE_KEY) ??
+        localStorage.getItem("anarlog:devtools-scan-layout") ??
+        "null",
+    );
     if (
       value &&
       [value.x, value.y, value.width, value.height].every(

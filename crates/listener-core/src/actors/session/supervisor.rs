@@ -1049,7 +1049,7 @@ mod tests {
                 "https://api.anarlog.so/stt?provider=soniox",
                 "cloud",
                 false,
-                "anarlog proxy soniox enters batch fallback",
+                "legacy hosted proxy soniox enters batch fallback",
             ),
             (
                 "http://localhost:1234",

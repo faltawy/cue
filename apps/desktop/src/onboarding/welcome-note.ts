@@ -6,7 +6,7 @@ import { WELCOME_NOTE_TRACKING_ID } from "~/onboarding/welcome-note.constants";
 import { createSession } from "~/session/queries";
 import { DEFAULT_USER_ID } from "~/shared/utils";
 
-const PENDING_WELCOME_SESSION_KEY = "anarlog.pending-welcome-session";
+const PENDING_WELCOME_SESSION_KEY = "cue.pending-welcome-session";
 
 const WELCOME_NOTE = `Welcome to Cue 👋
 
@@ -35,12 +35,16 @@ export function setPendingWelcomeSession(sessionId: string | null) {
     localStorage.setItem(PENDING_WELCOME_SESSION_KEY, sessionId);
   } else {
     localStorage.removeItem(PENDING_WELCOME_SESSION_KEY);
+    localStorage.removeItem("anarlog.pending-welcome-session");
   }
 }
 
 export function takePendingWelcomeSession(): string | null {
-  const sessionId = localStorage.getItem(PENDING_WELCOME_SESSION_KEY);
+  const sessionId =
+    localStorage.getItem(PENDING_WELCOME_SESSION_KEY) ??
+    localStorage.getItem("anarlog.pending-welcome-session");
   localStorage.removeItem(PENDING_WELCOME_SESSION_KEY);
+  localStorage.removeItem("anarlog.pending-welcome-session");
   return sessionId;
 }
 

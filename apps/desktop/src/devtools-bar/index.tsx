@@ -65,7 +65,7 @@ const CHANNEL_TEXT: Record<BuildChannel, string> = {
   stable: "text-foreground",
 };
 
-const COLLAPSED_STORAGE_KEY = "anarlog:devtools-bar:collapsed";
+const COLLAPSED_STORAGE_KEY = "cue:devtools-bar:collapsed";
 
 const ITEM_CLASS = "flex items-center gap-1.5 px-2";
 const BUTTON_CLASS = cn([
@@ -217,7 +217,10 @@ function DevtoolsStatusBarContent(props: Record<never, never>) {
 
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(COLLAPSED_STORAGE_KEY) !== "0";
+    return (
+      (localStorage.getItem(COLLAPSED_STORAGE_KEY) ??
+        localStorage.getItem("anarlog:devtools-bar:collapsed")) !== "0"
+    );
   } catch {
     return true;
   }

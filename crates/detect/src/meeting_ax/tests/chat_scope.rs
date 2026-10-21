@@ -27,7 +27,7 @@ fn test_chat_mutation_is_enabled_only_for_slack_huddles() {
         "slack",
         "zoom",
         "google-chrome",
-        "com.anarlog.dev",
+        "com.hyprnote.dev",
     ] {
         assert!(
             !supports_meeting_chat_mutation(bundle_id),

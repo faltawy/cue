@@ -24,6 +24,7 @@ const FIXED_PREFIX_BYTES: usize = MAGIC.len() + 1 + HEADER_NONCE_BYTES + 4;
 const MAX_WORKSPACE_ID_BYTES: usize = 256;
 const MAX_ATTACHMENT_ID_BYTES: usize = 1024;
 const CANONICAL_UUID_BYTES: usize = 36;
+// Persisted cryptographic domains must remain stable so existing attachments can be decrypted.
 const BLOB_KEY_SALT: &[u8] = b"anarlog-e2ee-attachment-blob-key-v1";
 const BLOB_KEY_INFO_DOMAIN: &[u8] = b"anarlog-e2ee-attachment-blob-object-v1";
 const HEADER_KEY_INFO: &[u8] = b"anarlog-e2ee-attachment-blob-header-key-v1";

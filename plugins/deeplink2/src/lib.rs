@@ -142,7 +142,7 @@ mod test {
 
     #[test]
     fn redacts_query_and_fragment_from_logged_urls() {
-        let value = redact_url("anarlog://auth/callback?code=ac_nf5hq&state=xYc5ZmNlqtWTu3BIbfbVQg#secret");
-        assert_eq!(value, "anarlog://auth/callback");
+        let value = redact_url("cue://auth/callback?code=ac_nf5hq&state=xYc5ZmNlqtWTu3BIbfbVQg#secret");
+        assert_eq!(value, "cue://auth/callback");
     }
 }

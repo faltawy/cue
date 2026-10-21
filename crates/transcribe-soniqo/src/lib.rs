@@ -108,9 +108,9 @@ pub fn transcribe_file(
     let started_at = Instant::now();
 
     tracing::info!(
-        anarlog.stt.provider.name = "soniqo",
-        anarlog.stt.model = %model,
-        anarlog.stt.language = %language_label,
+        cue.stt.provider.name = "soniqo",
+        cue.stt.model = %model,
+        cue.stt.language = %language_label,
         file.extension = %file_extension,
         "soniqo_native_file_transcription_start"
     );
@@ -121,8 +121,8 @@ pub fn transcribe_file(
     match &result {
         Ok(transcript) => {
             tracing::info!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 elapsed_ms,
                 transcript.duration_seconds = transcript.duration_seconds,
                 transcript.text_chars = transcript.text.chars().count(),
@@ -131,8 +131,8 @@ pub fn transcribe_file(
         }
         Err(error) => {
             tracing::error!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 elapsed_ms,
                 error = %error,
                 "soniqo_native_file_transcription_failed"
@@ -183,8 +183,8 @@ impl LiveTranscriptionSession {
 
         let session_token = platform::live_start(model).map_err(|error| {
             tracing::error!(
-                anarlog.stt.provider.name = "soniqo",
-                anarlog.stt.model = %model,
+                cue.stt.provider.name = "soniqo",
+                cue.stt.model = %model,
                 error = %error,
                 "soniqo_native_live_start_failed"
             );

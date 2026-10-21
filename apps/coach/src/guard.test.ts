@@ -233,18 +233,18 @@ describe("sessionEnv", () => {
   test("never hands the app bridge address or token to Claude Code", () => {
     const env = sessionEnv({
       PATH: "/bin",
-      ANARLOG_COACH_APP_URL: "http://127.0.0.1:5000",
-      ANARLOG_COACH_APP_TOKEN: "secret",
+      CUE_COACH_APP_URL: "http://127.0.0.1:5000",
+      CUE_COACH_APP_TOKEN: "secret",
     });
     expect(env).toMatchObject({ PATH: "/bin" });
-    expect(env).not.toHaveProperty("ANARLOG_COACH_APP_URL");
-    expect(env).not.toHaveProperty("ANARLOG_COACH_APP_TOKEN");
+    expect(env).not.toHaveProperty("CUE_COACH_APP_URL");
+    expect(env).not.toHaveProperty("CUE_COACH_APP_TOKEN");
   });
 
   test("never hands the coach server's own launch secret to Claude Code", () => {
-    const env = sessionEnv({ PATH: "/bin", ANARLOG_COACH_TOKEN: "launch-secret" });
+    const env = sessionEnv({ PATH: "/bin", CUE_COACH_TOKEN: "launch-secret" });
     expect(env).toMatchObject({ PATH: "/bin" });
-    expect(env).not.toHaveProperty("ANARLOG_COACH_TOKEN");
+    expect(env).not.toHaveProperty("CUE_COACH_TOKEN");
   });
 
   test("keeps the key when requests are routed to another endpoint", () => {

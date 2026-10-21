@@ -13,8 +13,8 @@ pub struct Endpoint {
     pub token: String,
 }
 
-const BUN_ENV: &str = "ANARLOG_COACH_BUN";
-const SERVER_ENV: &str = "ANARLOG_COACH_SERVER";
+const BUN_ENV: &str = "CUE_COACH_BUN";
+const SERVER_ENV: &str = "CUE_COACH_SERVER";
 const BUN_CANDIDATES: &[&str] = &["/opt/homebrew/bin/bun", "/usr/local/bin/bun"];
 const STOP_GRACE: Duration = Duration::from_secs(3);
 
@@ -161,7 +161,7 @@ pub fn llm_args(port: u16) -> Vec<OsString> {
     ]
 }
 
-const BUNDLED_COACH: &str = "anarlog-coach";
+const BUNDLED_COACH: &str = "cue-coach";
 
 fn bundled_coach() -> Option<PathBuf> {
     let coach = std::env::current_exe().ok()?.parent()?.join(BUNDLED_COACH);

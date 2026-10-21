@@ -3,12 +3,12 @@ name = "desktop"
 version = "0.5.1"
 authors = ["you"]
 edition = "2024"
-description = "Anarlog Desktop App"
+description = "Cue Desktop App"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "anarlog_desktop_lib"
+name = "cue_desktop_lib"
 crate-type = ["staticlib", "rlib"]
 
 [build-dependencies]

@@ -67,7 +67,7 @@ const one = (): Dataset => {
         alreadyCleaned: false,
         fileCount: 1,
         totalBytes: 1,
-        sourceRoot: "/Users/demo/Library/Application Support/com.anarlog.app",
+        sourceRoot: "/Users/demo/Library/Application Support/Cue",
         blockingReason: null,
       },
     },

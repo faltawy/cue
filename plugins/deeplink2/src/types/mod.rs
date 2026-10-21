@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn rejects_shared_note_links() {
         assert!(matches!(
-            DeepLink::from_str("anarlog://share/open?mode=account&share_id=share-1"),
+            DeepLink::from_str("cue://share/open?mode=account&share_id=share-1"),
             Err(crate::Error::UnknownPath(path)) if path == "share/open"
         ));
     }
@@ -79,8 +79,14 @@ mod tests {
                 "codex-code",
                 "s1",
             ),
+            // Previously issued login links remain valid after the rebrand.
             (
-                "anarlog://auth/callback?code=ac_nf5hq&state=xYc5ZmNlqtWTu3BIbfbVQg",
+                "anarlog://auth/callback?code=legacy-code&state=legacy-state",
+                "legacy-code",
+                "legacy-state",
+            ),
+            (
+                "cue://auth/callback?code=ac_nf5hq&state=xYc5ZmNlqtWTu3BIbfbVQg",
                 "ac_nf5hq",
                 "xYc5ZmNlqtWTu3BIbfbVQg",
             ),

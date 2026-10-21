@@ -3,12 +3,12 @@ use std::path::{Path, PathBuf};
 use owhisper_interface::ListenParams;
 use owhisper_interface::batch::Response as BatchResponse;
 
-use super::{AnarlogAdapter, STT_PROXY_PROVIDER_NAME};
+use super::{LegacyHostedAdapter, STT_PROXY_PROVIDER_NAME};
 use crate::adapter::http::mime_type_from_extension;
 use crate::adapter::{BatchFuture, BatchSttAdapter, ClientWithMiddleware, append_path_if_missing};
 use crate::error::Error;
 
-impl BatchSttAdapter for AnarlogAdapter {
+impl BatchSttAdapter for LegacyHostedAdapter {
     fn provider_name(&self) -> &'static str {
         STT_PROXY_PROVIDER_NAME
     }
@@ -18,7 +18,7 @@ impl BatchSttAdapter for AnarlogAdapter {
         languages: &[anlg_language::Language],
         model: Option<&str>,
     ) -> bool {
-        AnarlogAdapter::is_supported_languages_batch(languages, model)
+        LegacyHostedAdapter::is_supported_languages_batch(languages, model)
     }
 
     fn transcribe_file<'a, P: AsRef<Path> + Send + 'a>(

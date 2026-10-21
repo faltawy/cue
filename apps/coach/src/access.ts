@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-export const TOKEN_ENV = "ANARLOG_COACH_TOKEN";
+export const TOKEN_ENV = "CUE_COACH_TOKEN";
 export const SESSION_COOKIE = "coach_session";
 export const CODE_TTL_MS = 60_000;
 

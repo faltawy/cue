@@ -22,17 +22,17 @@ pub use providers::{Auth, Provider, is_meta_model};
 pub use adapter::StreamingBatchConfig;
 pub use adapter::deepgram::DeepgramModel;
 pub use adapter::{
-    AdapterKind, AlebexAdapter, AmazonBedrockAdapter, AnarlogAdapter, AquaVoiceAdapter,
-    ArgmaxAdapter, AssemblyAIAdapter, AwsTranscribeAdapter, AzureSpeechAdapter, BatchSttAdapter,
-    BatchUploadLimit, CallbackResult, CallbackSttAdapter, CartesiaAdapter, CohereAdapter,
-    DashScopeAdapter, DashScopeStreamingAdapter, DeepgramAdapter, DeepgramFluxAdapter,
-    ElevenLabsAdapter, FireworksAdapter, GladiaAdapter, GoogleCloudAdapter,
-    GoogleGenerativeAiAdapter, GradiumAdapter, GroqAdapter, InworldAdapter, LanguageQuality,
-    LanguageSupport, MetaAdapter, MistralAdapter, ModulateAdapter, NariAdapter, NvidiaAdapter,
-    OpenAIAdapter, OpenRouterAdapter, PyannoteAdapter, RealtimeSttAdapter, RevAiAdapter,
-    SiliconFlowAdapter, SmallestAIAdapter, SonioxAdapter, SpeechmaticsAdapter, TogetherAdapter,
-    WhisperCppAdapter, WisprFlowAdapter, XaiAdapter, ZaiAdapter, append_provider_param,
-    documented_language_codes_batch, documented_language_codes_live, is_anarlog_proxy,
+    AdapterKind, AlebexAdapter, AmazonBedrockAdapter, AquaVoiceAdapter, ArgmaxAdapter,
+    AssemblyAIAdapter, AwsTranscribeAdapter, AzureSpeechAdapter, BatchSttAdapter, BatchUploadLimit,
+    CallbackResult, CallbackSttAdapter, CartesiaAdapter, CohereAdapter, DashScopeAdapter,
+    DashScopeStreamingAdapter, DeepgramAdapter, DeepgramFluxAdapter, ElevenLabsAdapter,
+    FireworksAdapter, GladiaAdapter, GoogleCloudAdapter, GoogleGenerativeAiAdapter, GradiumAdapter,
+    GroqAdapter, InworldAdapter, LanguageQuality, LanguageSupport, LegacyHostedAdapter,
+    MetaAdapter, MistralAdapter, ModulateAdapter, NariAdapter, NvidiaAdapter, OpenAIAdapter,
+    OpenRouterAdapter, PyannoteAdapter, RealtimeSttAdapter, RevAiAdapter, SiliconFlowAdapter,
+    SmallestAIAdapter, SonioxAdapter, SpeechmaticsAdapter, TogetherAdapter, WhisperCppAdapter,
+    WisprFlowAdapter, XaiAdapter, ZaiAdapter, append_provider_param,
+    documented_language_codes_batch, documented_language_codes_live, is_legacy_hosted_proxy,
     is_local_host, normalize_languages,
 };
 pub use adapter::{StreamingBatchEvent, StreamingBatchStream};
@@ -68,14 +68,14 @@ pub(crate) fn log_provider_failure(
 
     if anlg_user_error::is_user_error_text(message) {
         tracing::warn!(
-            anarlog.stt.provider.name = provider,
+            cue.stt.provider.name = provider,
             error.type = safe_error_type,
             error.code = safe_error_code,
             "provider_request_rejected"
         );
     } else {
         tracing::error!(
-            anarlog.stt.provider.name = provider,
+            cue.stt.provider.name = provider,
             error.type = safe_error_type,
             error.code = safe_error_code,
             "provider_request_failed"

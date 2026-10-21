@@ -7,7 +7,7 @@ const binaries = path.resolve(root, "../desktop/src-tauri/binaries");
 
 const result = await Bun.build({
   entrypoints: [path.join(root, "src/main.ts")],
-  compile: { outfile: path.join(binaries, "anarlog-coach-aarch64-apple-darwin") },
+  compile: { outfile: path.join(binaries, "cue-coach-aarch64-apple-darwin") },
   plugins: [tailwind],
   minify: true,
   define: { "process.env.NODE_ENV": JSON.stringify("production") },

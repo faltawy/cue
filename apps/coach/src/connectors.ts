@@ -30,7 +30,7 @@ async function* noPrompt(signal: AbortSignal): AsyncGenerator<SDKUserMessage> {
 }
 
 export async function findConnectors(options: { claudePath: string; timeoutMs: number }): Promise<FoundConnector[]> {
-  const cwd = mkdtempSync(path.join(os.tmpdir(), "anarlog-connectors-"));
+  const cwd = mkdtempSync(path.join(os.tmpdir(), "cue-connectors-"));
   const abortController = new AbortController();
   const handle = query({
     prompt: noPrompt(abortController.signal),

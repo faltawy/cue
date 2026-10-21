@@ -2,10 +2,10 @@ use anlg_ws_client::client::Message;
 use owhisper_interface::ListenParams;
 use owhisper_interface::stream::StreamResponse;
 
-use super::{AnarlogAdapter, STT_PROXY_PROVIDER_NAME};
+use super::{LegacyHostedAdapter, STT_PROXY_PROVIDER_NAME};
 use crate::adapter::{RealtimeSttAdapter, append_path_if_missing, set_scheme_from_host};
 
-impl RealtimeSttAdapter for AnarlogAdapter {
+impl RealtimeSttAdapter for LegacyHostedAdapter {
     fn provider_name(&self) -> &'static str {
         STT_PROXY_PROVIDER_NAME
     }
@@ -15,7 +15,7 @@ impl RealtimeSttAdapter for AnarlogAdapter {
         languages: &[anlg_language::Language],
         model: Option<&str>,
     ) -> bool {
-        AnarlogAdapter::is_supported_languages_live(languages, model)
+        LegacyHostedAdapter::is_supported_languages_live(languages, model)
     }
 
     fn supports_native_multichannel(&self) -> bool {
@@ -100,7 +100,7 @@ mod tests {
     use anlg_language::ISO639;
     use owhisper_interface::stream::{Alternatives, Channel, Metadata, StreamResponse};
 
-    use super::AnarlogAdapter;
+    use super::LegacyHostedAdapter;
     use crate::adapter::RealtimeSttAdapter;
     use crate::test_utils::{UrlTestCase, run_url_test_cases};
 
@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn test_url_structure() {
         run_url_test_cases(
-            &AnarlogAdapter::default(),
+            &LegacyHostedAdapter::default(),
             API_BASE,
             &[
                 UrlTestCase {
@@ -132,19 +132,19 @@ mod tests {
 
     #[test]
     fn test_url_carries_keywords_speaker_counts_custom_query_and_meta_model() {
-        let adapter = AnarlogAdapter::default();
+        let adapter = LegacyHostedAdapter::default();
 
         let url = adapter.build_ws_url(
             API_BASE,
             &owhisper_interface::ListenParams {
                 model: Some("nova-3".to_string()),
                 languages: vec![ISO639::En.into()],
-                keywords: vec!["Anarlog".to_string(), "transcription".to_string()],
+                keywords: vec!["Cue".to_string(), "transcription".to_string()],
                 ..Default::default()
             },
             1,
         );
-        assert!(url.as_str().contains("keyword=Anarlog"));
+        assert!(url.as_str().contains("keyword=Cue"));
         assert!(url.as_str().contains("keyword=transcription"));
 
         let url = adapter.build_ws_url(
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_auth_header() {
-        let adapter = AnarlogAdapter::default();
+        let adapter = LegacyHostedAdapter::default();
         let header = adapter.build_auth_header(Some("test-key"));
         assert_eq!(
             header,
@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_localhost_uses_ws_scheme() {
-        let adapter = AnarlogAdapter::default();
+        let adapter = LegacyHostedAdapter::default();
         let params = owhisper_interface::ListenParams {
             model: Some("nova-3".to_string()),
             languages: vec![ISO639::En.into()],
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn parse_response_accepts_single_and_array_payloads() {
-        let adapter = AnarlogAdapter::default();
+        let adapter = LegacyHostedAdapter::default();
         let raw = serde_json::to_string(&sample_response("hello", false)).unwrap();
 
         let responses = adapter.parse_response(&raw);

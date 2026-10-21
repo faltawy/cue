@@ -370,6 +370,7 @@ pub(crate) fn persist_markdown_export(
     Ok(())
 }
 
+// Keep recognizing files written by the legacy exporter after the rebrand.
 fn legacy_export_prefix(meeting_id: &str) -> String {
     format!("<!-- anarlog:legacy-markdown-export {meeting_id:?} -->\n\n")
 }

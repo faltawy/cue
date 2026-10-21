@@ -65,7 +65,7 @@ impl RealtimeSttAdapter for DeepgramAdapter {
             Err(_error) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "deepgram_json_parse_failed"
                 );
                 return vec![];

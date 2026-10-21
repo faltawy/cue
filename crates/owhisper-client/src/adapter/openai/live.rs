@@ -159,7 +159,7 @@ impl RealtimeSttAdapter for OpenAIAdapter {
 
         let json = serde_json::to_string(&event).ok()?;
         tracing::debug!(
-            anarlog.payload.size_bytes = json.len() as u64,
+            cue.payload.size_bytes = json.len() as u64,
             "openai_session_update_payload"
         );
         Some(Message::Text(json.into()))
@@ -176,7 +176,7 @@ impl RealtimeSttAdapter for OpenAIAdapter {
             Err(_error) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "openai_json_parse_failed"
                 );
                 return vec![];
@@ -206,7 +206,7 @@ impl RealtimeSttAdapter for OpenAIAdapter {
                 ..
             } => {
                 tracing::debug!(
-                    anarlog.stt.audio_start_ms = audio_start_ms,
+                    cue.stt.audio_start_ms = audio_start_ms,
                     "openai_speech_started"
                 );
                 Self::finish_state_update(self.record_item_start(&item_id, audio_start_ms))
@@ -216,10 +216,7 @@ impl RealtimeSttAdapter for OpenAIAdapter {
                 audio_end_ms,
                 ..
             } => {
-                tracing::debug!(
-                    anarlog.stt.audio_end_ms = audio_end_ms,
-                    "openai_speech_stopped"
-                );
+                tracing::debug!(cue.stt.audio_end_ms = audio_end_ms, "openai_speech_stopped");
                 Self::finish_state_update(self.record_item_end(&item_id, audio_end_ms))
             }
             ServerEvent::InputAudioBufferTimeoutTriggered {
@@ -229,8 +226,8 @@ impl RealtimeSttAdapter for OpenAIAdapter {
                 ..
             } => {
                 tracing::debug!(
-                    anarlog.stt.audio_start_ms = audio_start_ms,
-                    anarlog.stt.audio_end_ms = audio_end_ms,
+                    cue.stt.audio_start_ms = audio_start_ms,
+                    cue.stt.audio_end_ms = audio_end_ms,
                     "openai_audio_buffer_timeout_triggered"
                 );
                 Self::finish_state_update(self.record_item_span(
@@ -246,8 +243,8 @@ impl RealtimeSttAdapter for OpenAIAdapter {
                 ..
             } => {
                 tracing::debug!(
-                    anarlog.stt.content_index = content_index,
-                    anarlog.transcript.char_count = transcript.chars().count() as u64,
+                    cue.stt.content_index = content_index,
+                    cue.transcript.char_count = transcript.chars().count() as u64,
                     "openai_transcription_completed"
                 );
                 match self.complete_items(&item_id, &transcript) {
@@ -263,8 +260,8 @@ impl RealtimeSttAdapter for OpenAIAdapter {
                 ..
             } => {
                 tracing::debug!(
-                    anarlog.stt.content_index = content_index.unwrap_or_default(),
-                    anarlog.transcript.char_count = delta.chars().count() as u64,
+                    cue.stt.content_index = content_index.unwrap_or_default(),
+                    cue.transcript.char_count = delta.chars().count() as u64,
                     "openai_transcription_delta"
                 );
                 match self.append_item_delta(&item_id, &delta) {
@@ -303,7 +300,7 @@ impl RealtimeSttAdapter for OpenAIAdapter {
             }
             ServerEvent::Unknown => {
                 tracing::debug!(
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "openai_unknown_event"
                 );
                 vec![]

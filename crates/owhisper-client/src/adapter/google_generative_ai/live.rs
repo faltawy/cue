@@ -5,7 +5,7 @@ use owhisper_interface::stream::{Alternatives, Channel, Metadata, StreamResponse
 use super::{GoogleGenerativeAiAdapter, WS_PATH, parse_duration_secs};
 use crate::adapter::parsing::{WordBuilder, parse_speaker_id};
 use crate::adapter::{
-    RealtimeSttAdapter, build_proxy_ws_url, build_url_with_scheme, is_anarlog_proxy,
+    RealtimeSttAdapter, build_proxy_ws_url, build_url_with_scheme, is_legacy_hosted_proxy,
 };
 use crate::providers::Provider;
 
@@ -118,7 +118,7 @@ impl RealtimeSttAdapter for GoogleGenerativeAiAdapter {
             Err(_error) => {
                 tracing::warn!(
                     error.type = "invalid_provider_payload",
-                    anarlog.payload.size_bytes = raw.len() as u64,
+                    cue.payload.size_bytes = raw.len() as u64,
                     "google_generative_ai_json_parse_failed"
                 );
                 return Vec::new();
@@ -203,7 +203,7 @@ impl GoogleGenerativeAiAdapter {
 
         {
             let mut query = url.query_pairs_mut();
-            if is_anarlog_proxy(api_base) {
+            if is_legacy_hosted_proxy(api_base) {
                 query.extend_pairs(&existing_params);
             } else if let Some(api_key) = api_key.filter(|key| !key.is_empty()) {
                 query.append_pair("key", api_key);
@@ -329,7 +329,7 @@ mod tests {
     fn initial_message_includes_languages_and_keywords() {
         let params = ListenParams {
             languages: vec!["en-US".parse().unwrap()],
-            keywords: vec!["Anarlog".to_string()],
+            keywords: vec!["Cue".to_string()],
             model: Some("gemini-3.5-transcribe-live".to_string()),
             ..Default::default()
         };
@@ -352,7 +352,7 @@ mod tests {
         );
         assert_eq!(
             json["setup"]["inputAudioTranscription"]["customVocabulary"][0],
-            "Anarlog"
+            "Cue"
         );
     }
 

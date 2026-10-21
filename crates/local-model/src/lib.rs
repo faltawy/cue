@@ -11,15 +11,16 @@ pub const APPLE_SPEECH_DEFAULT_LOCALE: &str = "en-US";
 pub enum GgufLlmModel {
     Llama3p2_3bQ4,
     Gemma3_4bQ4,
-    #[serde(alias = "HyprLLM")]
-    AnarlogLLM,
+    // Existing settings may contain either previous model name.
+    #[serde(alias = "HyprLLM", alias = "AnarlogLLM")]
+    CueLLM,
 }
 
 impl GgufLlmModel {
     pub fn file_name(&self) -> &str {
         match self {
             GgufLlmModel::Llama3p2_3bQ4 => "llm.gguf",
-            GgufLlmModel::AnarlogLLM => "hypr-llm.gguf",
+            GgufLlmModel::CueLLM => "hypr-llm.gguf",
             GgufLlmModel::Gemma3_4bQ4 => "gemma-3-4b-it-Q4_K_M.gguf",
         }
     }
@@ -29,7 +30,7 @@ impl GgufLlmModel {
             GgufLlmModel::Llama3p2_3bQ4 => {
                 "https://models.anarlog.so/v0/lmstudio-community/Llama-3.2-3B-Instruct-GGUF/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
             }
-            GgufLlmModel::AnarlogLLM => {
+            GgufLlmModel::CueLLM => {
                 "https://models.anarlog.so/v0/yujonglee/hypr-llm-sm/model_q4_k_m.gguf"
             }
             GgufLlmModel::Gemma3_4bQ4 => {
@@ -41,7 +42,7 @@ impl GgufLlmModel {
     pub fn model_size(&self) -> u64 {
         match self {
             GgufLlmModel::Llama3p2_3bQ4 => 2019377440,
-            GgufLlmModel::AnarlogLLM => 1107409056,
+            GgufLlmModel::CueLLM => 1107409056,
             GgufLlmModel::Gemma3_4bQ4 => 2489894016,
         }
     }
@@ -49,7 +50,7 @@ impl GgufLlmModel {
     pub fn model_checksum(&self) -> u32 {
         match self {
             GgufLlmModel::Llama3p2_3bQ4 => 2831308098,
-            GgufLlmModel::AnarlogLLM => 4037351144,
+            GgufLlmModel::CueLLM => 4037351144,
             GgufLlmModel::Gemma3_4bQ4 => 2760830291,
         }
     }
@@ -57,7 +58,7 @@ impl GgufLlmModel {
     pub fn display_name(&self) -> &'static str {
         match self {
             GgufLlmModel::Llama3p2_3bQ4 => "Llama 3.2 3B Q4",
-            GgufLlmModel::AnarlogLLM => "Anarlog LLM",
+            GgufLlmModel::CueLLM => "Cue LLM",
             GgufLlmModel::Gemma3_4bQ4 => "Gemma 3 4B Q4",
         }
     }
@@ -125,7 +126,7 @@ impl LocalModel {
 
         models.extend([
             LocalModel::GgufLlm(GgufLlmModel::Llama3p2_3bQ4),
-            LocalModel::GgufLlm(GgufLlmModel::AnarlogLLM),
+            LocalModel::GgufLlm(GgufLlmModel::CueLLM),
             LocalModel::GgufLlm(GgufLlmModel::Gemma3_4bQ4),
         ]);
 
@@ -162,7 +163,7 @@ impl LocalModel {
             LocalModel::Whisper(WhisperModel::QuantizedSmallEn) => "whisper-small-en",
             LocalModel::Whisper(WhisperModel::QuantizedLargeTurbo) => "whisper-large-turbo",
             LocalModel::GgufLlm(GgufLlmModel::Llama3p2_3bQ4) => "llm-llama3-2-3b-q4",
-            LocalModel::GgufLlm(GgufLlmModel::AnarlogLLM) => "llm-hypr-llm",
+            LocalModel::GgufLlm(GgufLlmModel::CueLLM) => "llm-hypr-llm",
             LocalModel::GgufLlm(GgufLlmModel::Gemma3_4bQ4) => "llm-gemma3-4b-q4",
         }
     }
@@ -342,14 +343,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn anarlog_llm_accepts_legacy_serialized_name() {
+    fn cue_llm_accepts_legacy_serialized_name() {
+        for legacy_name in ["\"HyprLLM\"", "\"AnarlogLLM\""] {
+            assert_eq!(
+                serde_json::from_str::<GgufLlmModel>(legacy_name).unwrap(),
+                GgufLlmModel::CueLLM,
+            );
+        }
         assert_eq!(
-            serde_json::from_str::<GgufLlmModel>("\"HyprLLM\"").unwrap(),
-            GgufLlmModel::AnarlogLLM,
-        );
-        assert_eq!(
-            serde_json::to_string(&GgufLlmModel::AnarlogLLM).unwrap(),
-            "\"AnarlogLLM\"",
+            serde_json::to_string(&GgufLlmModel::CueLLM).unwrap(),
+            "\"CueLLM\"",
         );
     }
 

@@ -11,7 +11,7 @@ pub(crate) struct ContentViewIvars {}
 define_class! {
     #[unsafe(super(NSView))]
     #[thread_kind = MainThreadOnly]
-    #[name = "AnarlogPermissionAssistantContentView"]
+    #[name = "CuePermissionAssistantContentView"]
     #[ivars = ContentViewIvars]
     pub(crate) struct ContentView;
 

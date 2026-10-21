@@ -572,7 +572,7 @@ fn ensure(
 
 fn http_client() -> Result<reqwest::Client> {
     reqwest::Client::builder()
-        .user_agent(concat!("anarlog-coach/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("cue-coach/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|error| Error::Other(error.to_string()))
 }
@@ -683,17 +683,17 @@ fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -
 
 // Without a chosen folder the coach still runs, in an empty folder of its own, and offers to pick one.
 fn no_project_dir() -> Result<PathBuf> {
-    let dir = std::env::temp_dir().join("anarlog-coach-no-project");
+    let dir = std::env::temp_dir().join("cue-coach-no-project");
     std::fs::create_dir_all(&dir)?;
     Ok(dir)
 }
 
 fn mcp_config_dir() -> PathBuf {
-    std::env::temp_dir().join("anarlog-coach-mcp")
+    std::env::temp_dir().join("cue-coach-mcp")
 }
 
 fn instructions_dir() -> PathBuf {
-    std::env::temp_dir().join("anarlog-coach-instructions")
+    std::env::temp_dir().join("cue-coach-instructions")
 }
 
 fn restart_running_coach(app: &AppHandle, settings: &CoachSettings) -> Result<()> {
