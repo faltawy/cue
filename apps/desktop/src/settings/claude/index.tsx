@@ -64,6 +64,11 @@ export function SettingsClaude() {
     onSuccess: (next) =>
       queryClient.setQueryData(COACH_SETTINGS_QUERY_KEY, next),
   });
+  const saveInstructions = useMutation({
+    mutationFn: saveSettings,
+    onSuccess: (next) =>
+      queryClient.setQueryData(COACH_SETTINGS_QUERY_KEY, next),
+  });
   const saveTools = useMutation({
     mutationFn: saveSettings,
     onSuccess: (next) =>
@@ -85,6 +90,7 @@ export function SettingsClaude() {
   const error =
     settingsQuery.error ??
     save.error ??
+    saveInstructions.error ??
     pickProject.error ??
     pickKnowledge.error;
   const modelLabels: Record<ClaudeModel, string> = {
@@ -230,7 +236,7 @@ export function SettingsClaude() {
           knowledge={settings.knowledge}
           busy={save.isPending || pickKnowledge.isPending}
           onSaveInstructions={(instructions) =>
-            save.mutate({ ...settings, instructions })
+            saveInstructions.mutate({ ...settings, instructions })
           }
           onRemoveKnowledge={(path) =>
             save.mutate({
