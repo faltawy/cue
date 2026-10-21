@@ -34,10 +34,18 @@ export const DEFAULT_CODEX_HOME = path.join(
 
 export function codexInput(content: AskContent): unknown[] {
   if (typeof content === "string")
-    return [{ type: "text", text: content, text_elements: [] }];
+    return [
+      { type: "text", text: codexToolReferences(content), text_elements: [] },
+    ];
   return content.flatMap((part): unknown[] => {
     if (part.type === "text")
-      return [{ type: "text", text: part.text, text_elements: [] }];
+      return [
+        {
+          type: "text",
+          text: codexToolReferences(part.text),
+          text_elements: [],
+        },
+      ];
     if (part.type === "image" && part.source.type === "base64")
       return [
         {
@@ -47,6 +55,19 @@ export function codexInput(content: AskContent): unknown[] {
       ];
     throw new Error("This attachment type is not supported by Codex.");
   });
+}
+
+export function codexDynamicToolName(name: string): string {
+  return name.startsWith("mcp__")
+    ? `cue_${name.slice(5).replace("__", "_")}`
+    : name;
+}
+
+export function codexToolReferences(prompt: string): string {
+  return prompt.replace(
+    /mcp__([a-zA-Z0-9_-]+)__([a-zA-Z0-9_-]+)/g,
+    "cue_$1_$2",
+  );
 }
 
 export function startCodexSession(options: {
@@ -70,7 +91,10 @@ export function startCodexSession(options: {
 }): CoachSession {
   const messages = new EventQueue<RuntimeMessage>();
   const tools = new Map(
-    (options.tools ?? []).map((entry) => [entry.name, entry]),
+    (options.tools ?? []).map((entry) => [
+      codexDynamicToolName(entry.name),
+      entry,
+    ]),
   );
   let client: CodexClient | undefined;
   let closeTools: (() => Promise<void>) | undefined;
@@ -127,7 +151,8 @@ export function startCodexSession(options: {
         await loaded.close();
         return;
       }
-      for (const entry of loaded.tools) tools.set(entry.name, entry);
+      for (const entry of loaded.tools)
+        tools.set(codexDynamicToolName(entry.name), entry);
     }
     client = new CodexClient({
       executable: options.executable,
@@ -142,10 +167,10 @@ export function startCodexSession(options: {
           throw new Error(
             "Cue does not allow native commands, file edits, or permission escalation.",
           );
-        const name = String(params.tool ?? "");
+        const codexName = String(params.tool ?? "");
         const id = String(params.callId ?? "");
         const input = record(params.arguments);
-        const entry = tools.get(name);
+        const entry = tools.get(codexName);
         if (!entry || closed || interrupted || !active)
           return {
             contentItems: [
@@ -153,6 +178,7 @@ export function startCodexSession(options: {
             ],
             success: false,
           };
+        const name = entry.name;
         messages.push({ type: "tool_start", id, name, input });
         let response;
         try {
@@ -225,9 +251,9 @@ export function startCodexSession(options: {
           ? { threadId: options.resume }
           : {
               ephemeral: options.ephemeral ?? false,
-              dynamicTools: [...tools.values()].map((entry) => ({
+              dynamicTools: [...tools].map(([name, entry]) => ({
                 type: "function",
-                name: entry.name,
+                name,
                 description: entry.description,
                 inputSchema:
                   entry.jsonSchema ??
@@ -383,7 +409,7 @@ export function startCodexCoach(options: CoachOptions): CoachSession {
     home: options.codexHome,
     model: options.model,
     resume: options.resume,
-    prompt:
+    prompt: codexToolReferences(
       coachPrompt(
         options.allowChanges,
         !!options.edits,
@@ -391,8 +417,9 @@ export function startCodexCoach(options: CoachOptions): CoachSession {
         [],
         !!options.show,
       ) +
-      (web ? `\n${WEB_PROMPT}` : "") +
-      userContextPrompt(options.knowledge, options.instructions),
+        (web ? `\n${WEB_PROMPT}` : "") +
+        userContextPrompt(options.knowledge, options.instructions),
+    ),
     tools: [...meeting, ...questions, ...codexFileTools(roots, protectedRoots)],
     loadTools: (signal) => loadCodexMcpTools(options.mcpServers ?? {}, signal),
     web,

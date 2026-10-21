@@ -13,6 +13,7 @@ const answer = (id, result) => send({ id, result });
 const notification = (method, params) =>
   send({ method, params: { threadId: "thread-1", ...params } });
 let tool = false;
+let meetingTool = false;
 let turn = 0;
 let pendingText = "";
 let schema;
@@ -66,6 +67,11 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
     finish(message.result.contentItems[0].text);
     continue;
   }
+  if (id === "meeting-call") {
+    if (!message.result?.success) throw new Error("Meeting tool failed");
+    finish(message.result.contentItems[0].text);
+    continue;
+  }
   if (method === "initialize") answer(id, { userAgent: "fixture" });
   if (method === "thread/resume" && params.threadId === "missing") {
     send({
@@ -80,7 +86,24 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
   if (method === "thread/start" || method === "thread/resume") {
     if (params.permissions !== "cue" || params.approvalPolicy !== "never")
       throw new Error("Unsafe thread policy");
+    const reserved = params.dynamicTools?.find((entry) =>
+      entry.name.startsWith("mcp__"),
+    );
+    if (reserved) {
+      send({
+        id,
+        error: {
+          code: -32600,
+          message: `dynamic tool name is reserved: ${reserved.name}`,
+        },
+      });
+      continue;
+    }
     tool = params.dynamicTools?.some((entry) => entry.name === "echo") ?? false;
+    meetingTool =
+      params.dynamicTools?.some(
+        (entry) => entry.name === "cue_meeting_live_transcript",
+      ) ?? false;
     answer(id, { thread: { id: "thread-1" }, model: "gpt-5.4-mini" });
   }
   if (method === "turn/start") {
@@ -103,6 +126,16 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
           tool: "Read",
           callId: "file-1",
           arguments: { file_path: pendingText.slice(5) },
+        },
+      });
+    else if (pendingText === "meeting-tool" && meetingTool)
+      send({
+        id: "meeting-call",
+        method: "item/tool/call",
+        params: {
+          tool: "cue_meeting_live_transcript",
+          callId: "meeting-1",
+          arguments: {},
         },
       });
     else if (tool)

@@ -80,7 +80,7 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
   } else if (method === "thread/start") {
     if (
       params.dynamicTools.find(
-        (entry) => entry.name === "mcp__records__write_record",
+        (entry) => entry.name === "cue_records_write_record",
       )?.inputSchema.required?.[0] !== "value"
     )
       throw new Error("MCP schema was lost");
@@ -95,7 +95,7 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
       id: "write",
       method: "item/tool/call",
       params: {
-        tool: "mcp__records__write_record",
+        tool: "cue_records_write_record",
         callId: "write",
         arguments: { value: "kept" },
       },
@@ -105,7 +105,7 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
       id: "read",
       method: "item/tool/call",
       params: {
-        tool: "mcp__records__get_record",
+        tool: "cue_records_get_record",
         callId: "read",
         arguments: {},
       },

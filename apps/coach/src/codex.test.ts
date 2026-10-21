@@ -9,7 +9,11 @@ import { z } from "zod";
 import { codexAccount } from "./codex-account";
 import { CodexClient } from "./codex-client";
 import { CodexCode } from "./codex-code";
-import { startCodexSession } from "./codex-session";
+import {
+  codexInput,
+  codexToolReferences,
+  startCodexSession,
+} from "./codex-session";
 import { codexFileTools } from "./codex-tools";
 import { runLlm } from "./llm";
 import type { RuntimeMessage } from "./runtime-message";
@@ -100,6 +104,58 @@ test("Codex streams host tool output, rejects native/unknown tools, and preserve
     signedIn: true,
     email: "cue@example.com",
   });
+});
+
+test("Codex exposes meeting tools outside its reserved MCP namespace", async () => {
+  const options = await fixture();
+  const session = startCodexSession({
+    ...options,
+    prompt: "Call cue_meeting_live_transcript.",
+    tools: [
+      tool(
+        "mcp__meeting__live_transcript",
+        "Read the live transcript",
+        {},
+        async () => text("Transcript from the meeting"),
+      ),
+    ],
+  });
+  try {
+    session.ask("meeting-tool");
+    const events = await turn(session.messages[Symbol.asyncIterator]());
+
+    expect(events).toContainEqual({
+      type: "tool_start",
+      id: "meeting-1",
+      name: "mcp__meeting__live_transcript",
+      input: {},
+    });
+    expect(events).toContainEqual({
+      type: "text",
+      delta: "Transcript from the meeting",
+    });
+    expect(events.at(-1)).toMatchObject({
+      type: "result",
+      subtype: "success",
+    });
+  } finally {
+    session.close();
+  }
+});
+
+test("Codex prompts and generated requests use the exposed MCP tool names", () => {
+  expect(
+    codexToolReferences(
+      "Call mcp__meeting__live_transcript and mcp__records__get_record.",
+    ),
+  ).toBe("Call cue_meeting_live_transcript and cue_records_get_record.");
+  expect(codexInput("Call mcp__meeting__live_transcript.")).toEqual([
+    {
+      type: "text",
+      text: "Call cue_meeting_live_transcript.",
+      text_elements: [],
+    },
+  ]);
 });
 
 test("Codex interruption finishes the active turn and a resumed session can answer again", async () => {

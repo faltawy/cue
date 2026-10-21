@@ -3880,6 +3880,10 @@ msgstr "Vague promise"
 msgid "Verifying the SQLite migration status"
 msgstr "Verifying the SQLite migration status"
 
+#: src/changelog/index.tsx
+msgid "Version"
+msgstr "Version"
+
 #: src/session/components/outer-header/overflow/index.tsx
 #: src/session/components/version-history-dialog.tsx
 msgid "Version history"

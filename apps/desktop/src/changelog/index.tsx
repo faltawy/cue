@@ -1,4 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { useState } from "react";
 
 import { ChangelogContent } from "@anlg/changelog";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
@@ -6,7 +7,7 @@ import { X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import { cn } from "@anlg/utils";
 
-import { useChangelogContent } from "./data";
+import { availableChangelogVersions, useChangelogContent } from "./data";
 
 import { useShell } from "~/contexts/shell";
 import {
@@ -23,19 +24,21 @@ export function TabContentChangelog({
   tab: Extract<Tab, { type: "changelog" }>;
 }) {
   const { current } = tab.state;
+  const [selectedVersion, setSelectedVersion] = useState(current);
   const { leftsidebar } = useShell();
   const close = useTabs((state) => state.close);
   const showSidebarTimelineHeaderGutter = !leftsidebar.expanded;
   const showExpandedSidebarTimelineHeader = leftsidebar.expanded;
 
-  const content = useChangelogContent(current);
+  const versions = availableChangelogVersions();
+  const content = useChangelogContent(selectedVersion);
 
   return (
     <StandardContentWrapper>
       <div className="flex h-full flex-col">
         <div data-tauri-drag-region className="shrink-0 ps-3 pe-1">
           <ChangelogHeader
-            version={current}
+            version={selectedVersion}
             showSidebarTimelineHeaderGutter={showSidebarTimelineHeaderGutter}
             showExpandedSidebarTimelineHeader={
               showExpandedSidebarTimelineHeader
@@ -46,6 +49,24 @@ export function TabContentChangelog({
 
         <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
           <div className="scroll-fade-y h-full overflow-y-auto px-3 pb-4">
+            {versions.length > 1 && (
+              <div className="mb-3 flex justify-end">
+                <label className="text-muted-foreground text-label flex items-center gap-2">
+                  <Trans>Version</Trans>
+                  <select
+                    className="border-border bg-background text-foreground rounded-md border px-2 py-1"
+                    value={selectedVersion}
+                    onChange={(event) => setSelectedVersion(event.target.value)}
+                  >
+                    {versions.map((version) => (
+                      <option key={version} value={version}>
+                        {version}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            )}
             <ChangelogBody content={content} />
           </div>
         </div>

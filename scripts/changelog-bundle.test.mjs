@@ -6,7 +6,7 @@ import test from "node:test";
 
 import { changelog } from "../apps/desktop/plugins/changelog.ts";
 
-test("the app bundles only the notes for its own version", async (t) => {
+test("the app bundles current and historical release notes", async (t) => {
   const previous = process.env.VITE_APP_VERSION;
   const dir = mkdtempSync(join(tmpdir(), "changelog-"));
   t.after(() => {
@@ -15,20 +15,20 @@ test("the app bundles only the notes for its own version", async (t) => {
     else process.env.VITE_APP_VERSION = previous;
   });
   writeFileSync(join(dir, "0.1.0.md"), "Cue 0.1.0 notes");
-  writeFileSync(join(dir, "1.4.9.md"), "Upstream 1.4.9 notes");
+  writeFileSync(join(dir, "0.2.0.md"), "Cue 0.2.0 notes");
+  writeFileSync(join(dir, "draft.md"), "Unreleased notes");
   const bundle = async (version) => {
     if (version === undefined) delete process.env.VITE_APP_VERSION;
     else process.env.VITE_APP_VERSION = version;
     return changelog(dir).load.call({}, "\0virtual:changelog");
   };
 
-  const matching = await bundle("0.1.0");
-  const missing = await bundle("0.1.1");
-  const unversioned = await bundle(undefined);
+  const source = await bundle(undefined);
+  const loaded = await import(
+    `data:text/javascript,${encodeURIComponent(source)}`
+  );
 
-  assert.ok(matching.includes('latestContent = "Cue 0.1.0 notes"'));
-  assert.ok(missing.includes('latestVersion = "0.1.1"'));
-  assert.ok(missing.includes("latestContent = null"));
-  assert.ok(unversioned.includes("latestVersion = null"));
-  assert.ok(unversioned.includes("latestContent = null"));
+  assert.equal(loaded.changelogs["0.1.0"], "Cue 0.1.0 notes");
+  assert.equal(loaded.changelogs["0.2.0"], "Cue 0.2.0 notes");
+  assert.equal(Object.hasOwn(loaded.changelogs, "draft"), false);
 });

@@ -3880,6 +3880,10 @@ msgstr ""
 msgid "Verifying the SQLite migration status"
 msgstr ""
 
+#: src/changelog/index.tsx
+msgid "Version"
+msgstr ""
+
 #: src/session/components/outer-header/overflow/index.tsx
 #: src/session/components/version-history-dialog.tsx
 msgid "Version history"

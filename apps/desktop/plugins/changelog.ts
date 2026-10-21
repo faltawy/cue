@@ -1,4 +1,4 @@
-import { readFileSync, watch } from "node:fs";
+import { readdirSync, readFileSync, watch } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ViteDevServer } from "vite";
@@ -13,19 +13,18 @@ const VIRTUAL_ID = "virtual:changelog";
 const RESOLVED_ID = "\0" + VIRTUAL_ID;
 
 function buildModule(dir: string): string {
-  const version = process.env.VITE_APP_VERSION || null;
-  let content: string | null = null;
+  const changelogs = Object.fromEntries(
+    readdirSync(dir, { withFileTypes: true })
+      .filter(
+        (entry) => entry.isFile() && /^\d+\.\d+\.\d+\.md$/.test(entry.name),
+      )
+      .map((entry) => [
+        entry.name.slice(0, -3),
+        readFileSync(resolve(dir, entry.name), "utf-8"),
+      ]),
+  );
 
-  if (version) {
-    try {
-      content = readFileSync(resolve(dir, `${version}.md`), "utf-8");
-    } catch {}
-  }
-
-  return [
-    `export const latestVersion = ${JSON.stringify(version)};`,
-    `export const latestContent = ${JSON.stringify(content)};`,
-  ].join("\n");
+  return `export const changelogs = ${JSON.stringify(changelogs)};`;
 }
 
 export function changelog(dir = changelogDir): Plugin {
