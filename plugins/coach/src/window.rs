@@ -45,13 +45,28 @@ pub fn reload(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
 }
 
 pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
+    let window = coach_window(app, endpoint)?;
+    window.show()?;
+    window.set_focus()?;
+    Ok(())
+}
+
+/// Shows the coach without taking focus from the app in front, typically the meeting. An open
+/// coach stays as it is: it moves to the new meeting on its own.
+pub fn show_beside(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
+    let window = coach_window(app, endpoint)?;
+    if window.is_visible()? {
+        return Ok(());
+    }
+    order_front_without_focus(&window)
+}
+
+fn coach_window(app: &AppHandle, endpoint: &Endpoint) -> Result<WebviewWindow> {
     if let Some(window) = app.get_webview_window(LABEL) {
         if window.url()?.origin() != parse(&endpoint.url)?.origin() {
             window.navigate(login(endpoint)?)?;
         }
-        window.show()?;
-        window.set_focus()?;
-        return Ok(());
+        return Ok(window);
     }
 
     let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::External(login(endpoint)?))
@@ -83,8 +98,27 @@ pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
         _ => {}
     });
 
+    Ok(window)
+}
+
+#[cfg(target_os = "macos")]
+fn order_front_without_focus(window: &WebviewWindow) -> Result<()> {
+    use objc2_app_kit::NSWindow;
+
+    let target = window.clone();
+    window.run_on_main_thread(move || {
+        let Ok(pointer) = target.ns_window() else {
+            return;
+        };
+        let ns_window: &NSWindow = unsafe { &*pointer.cast() };
+        ns_window.orderFrontRegardless();
+    })?;
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+fn order_front_without_focus(window: &WebviewWindow) -> Result<()> {
     window.show()?;
-    window.set_focus()?;
     Ok(())
 }
 

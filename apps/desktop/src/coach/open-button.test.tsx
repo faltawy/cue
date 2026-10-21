@@ -19,17 +19,17 @@ vi.mock("~/stt/contexts", () => ({
     selector({ getSessionMode: () => mocks.sessionMode }),
 }));
 
-import { CoachButton } from "./open-button";
+import { CoachStrip } from "./open-button";
 
 function renderButton() {
   return render(
     <TooltipProvider>
-      <CoachButton sessionId="session-1" />
+      <CoachStrip sessionId="session-1" />
     </TooltipProvider>,
   );
 }
 
-describe("CoachButton", () => {
+describe("CoachStrip", () => {
   afterEach(() => {
     cleanup();
     mocks.show.mockClear();
@@ -43,7 +43,7 @@ describe("CoachButton", () => {
   ])("in %s mode, shown is %s", (mode, shown) => {
     mocks.sessionMode = mode;
     renderButton();
-    expect(screen.queryByRole("button", { name: "Open coach" }) !== null).toBe(
+    expect(screen.queryByRole("button", { name: "Coach is listening" }) !== null).toBe(
       shown,
     );
   });
@@ -51,7 +51,9 @@ describe("CoachButton", () => {
   it("opens the coach without toggling it", () => {
     mocks.sessionMode = "active";
     renderButton();
-    fireEvent.click(screen.getByRole("button", { name: "Open coach" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Coach is listening" }),
+    );
     expect(mocks.show).toHaveBeenCalledTimes(1);
   });
 });

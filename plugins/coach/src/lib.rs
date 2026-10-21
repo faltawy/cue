@@ -20,7 +20,7 @@ use std::process::Command;
 use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
-use tauri::{AppHandle, Manager, RunEvent};
+use tauri::{AppHandle, Emitter, Manager, RunEvent};
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 use auth::{KeychainSecrets, McpSecret};
@@ -93,9 +93,10 @@ impl bridge::Host for AppHost {
     }
 
     fn nudged(&self, nudge: CoachNudged) {
-        if window::is_focused(&self.0) {
-            return;
-        }
+        let nudge = CoachNudged {
+            seen: window::is_focused(&self.0),
+            ..nudge
+        };
         if let Err(error) = tauri_specta::Event::emit(&nudge, &self.0) {
             tracing::warn!(%error, "coach_nudge_emit_failed");
         }
@@ -148,12 +149,35 @@ impl Coach {
 
     pub fn show(&self) {
         let app = self.app.clone();
-        tauri::async_runtime::spawn_blocking(move || report(&app, open(&app, false)));
+        tauri::async_runtime::spawn_blocking(move || report(&app, open(&app, Opening::Show)));
+    }
+
+    /// Opens the coach beside a meeting that just started recording: no folder picker and no
+    /// error dialog mid-meeting, and the meeting app keeps focus.
+    pub fn show_for_recording(&self) {
+        let app = self.app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Err(error) = open(&app, Opening::ForRecording) {
+                tracing::error!(%error, "coach_open_for_recording_failed");
+            }
+        });
     }
 
     pub fn choose_project(&self) {
         let app = self.app.clone();
-        tauri::async_runtime::spawn_blocking(move || report(&app, open(&app, true)));
+        tauri::async_runtime::spawn_blocking(move || {
+            report(&app, open(&app, Opening::ChooseProject))
+        });
+    }
+
+    /// The coach is running, so it follows whatever the app records.
+    pub fn is_running(&self) -> bool {
+        let state = self.app.state::<CoachState>();
+        // Never wait: a coach that is still starting holds this lock for seconds.
+        state
+            .coach
+            .try_lock()
+            .is_ok_and(|mut slot| slot.as_mut().is_some_and(Sidecar::is_running))
     }
 
     pub fn settings(&self) -> Result<CoachSettings> {
@@ -599,7 +623,17 @@ fn restart_running_coach(app: &AppHandle, settings: &CoachSettings) -> Result<()
     window::reload(app, &endpoint)
 }
 
-fn open(app: &AppHandle, choose: bool) -> Result<()> {
+#[derive(Clone, Copy, PartialEq)]
+enum Opening {
+    Show,
+    ChooseProject,
+    ForRecording,
+}
+
+/// Emitted once the coach is running; the menu bar shows that it is listening.
+pub const RUNNING_EVENT: &str = "coach://running";
+
+fn open(app: &AppHandle, opening: Opening) -> Result<()> {
     let state = app.state::<CoachState>();
     let Ok(_opening) = state.opening.try_lock() else {
         return Ok(());
@@ -607,15 +641,25 @@ fn open(app: &AppHandle, choose: bool) -> Result<()> {
 
     let coach = app.coach();
     let mut current = coach.settings()?;
-    if (choose || current.project_dir().is_none())
-        && let Some(project) = pick_folder(app, DEFAULT_PICK_TITLE)?
-    {
+    let pick = match opening {
+        Opening::ChooseProject => true,
+        Opening::Show => current.project_dir().is_none(),
+        Opening::ForRecording => false,
+    };
+    if pick && let Some(project) = pick_folder(app, DEFAULT_PICK_TITLE)? {
         current.project = Some(project.to_string_lossy().into_owned());
         settings::save(&app.path().app_config_dir()?, &current)?;
     }
 
     let endpoint = ensure_coach(app, &state, &current)?;
-    window::show(app, &endpoint)
+    if let Err(error) = app.emit(RUNNING_EVENT, ()) {
+        tracing::warn!(%error, "coach_running_emit_failed");
+    }
+    if opening == Opening::ForRecording {
+        window::show_beside(app, &endpoint)
+    } else {
+        window::show(app, &endpoint)
+    }
 }
 
 fn pick_folder(app: &AppHandle, title: &str) -> Result<Option<PathBuf>> {
@@ -642,6 +686,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::find_claude_connectors,
             commands::add_knowledge,
             commands::show,
+            commands::show_for_recording,
             commands::claude_signed_in,
             commands::sign_in_to_claude,
             commands::claude_code_status,

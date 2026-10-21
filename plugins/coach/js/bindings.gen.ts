@@ -86,6 +86,14 @@ async show() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async showForRecording() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|show_for_recording") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async claudeSignedIn() : Promise<Result<ClaudeAccount, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:coach|claude_signed_in") };
@@ -195,7 +203,11 @@ export type ClaudeSetup =
  */
 { state: "preparing"; percent: number | null } | { state: "ready" } | { state: "failed"; message: string }
 export type CoachFocused = Record<string, never>
-export type CoachNudged = { session_id: string; tag: string; line: string }
+export type CoachNudged = { session_id: string; tag: string; line: string; 
+/**
+ * The coach panel had focus, so the person already saw it there.
+ */
+seen: boolean }
 export type CoachSettings = { project: string | null; model: ClaudeModel; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
 export type Endpoint = { url: string; token: string }
 export type FoundConnector = { name: string; id: string; url: string }

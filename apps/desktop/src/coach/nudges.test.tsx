@@ -47,14 +47,14 @@ vi.mock("~/stt/contexts", () => ({
     selector({ getSessionMode: () => "active" }),
 }));
 
-import { CoachNudgeLifecycle } from "./nudges";
-import { CoachButton } from "./open-button";
+import { CoachNudgeLifecycle, useCoachNudges } from "./nudges";
+import { CoachStrip } from "./open-button";
 
 function renderNote() {
   return render(
     <TooltipProvider>
       <CoachNudgeLifecycle />
-      <CoachButton sessionId="session-1" />
+      <CoachStrip sessionId="session-1" />
     </TooltipProvider>,
   );
 }
@@ -74,9 +74,10 @@ describe("nudges while the coach is out of view", () => {
     cleanup();
     vi.clearAllMocks();
     mocks.listeners = {};
+    useCoachNudges.setState({ unseen: [], counts: {} });
   });
 
-  it("show a notification with the line to say and mark the coach button until the coach is focused", async () => {
+  it("show a notification with the line to say and mark the coach strip until the coach is focused", async () => {
     renderNote();
     await waitFor(() => expect(mocks.listeners.nudged).toBeDefined());
 
@@ -91,7 +92,9 @@ describe("nudges while the coach is out of view", () => {
       ),
     );
     expect(
-      await screen.findByRole("button", { name: "Open coach, new nudge" }),
+      await screen.findByRole("button", {
+        name: "Coach is listening · 1 nudge, new nudge",
+      }),
     ).not.toBeNull();
 
     const [notification] = mocks.showNotification.mock.calls[0] as unknown as [
@@ -104,11 +107,11 @@ describe("nudges while the coach is out of view", () => {
 
     mocks.listeners.focused?.({ payload: {} });
     expect(
-      await screen.findByRole("button", { name: "Open coach" }),
+      await screen.findByRole("button", { name: "Coach is listening · 1 nudge" }),
     ).not.toBeNull();
   });
 
-  it("only marks the button when notifications are off", async () => {
+  it("only marks the strip when notifications are off", async () => {
     mocks.stored = { notification_disabled: true };
     renderNote();
     await waitFor(() => expect(mocks.listeners.nudged).toBeDefined());
@@ -116,8 +119,27 @@ describe("nudges while the coach is out of view", () => {
     mocks.listeners.nudged?.({ payload: nudge });
 
     expect(
-      await screen.findByRole("button", { name: "Open coach, new nudge" }),
+      await screen.findByRole("button", {
+        name: "Coach is listening · 1 nudge, new nudge",
+      }),
     ).not.toBeNull();
     expect(mocks.showNotification).not.toHaveBeenCalled();
+  });
+
+  it("counts nudges read in the coach without marking them new or notifying", async () => {
+    renderNote();
+    await waitFor(() => expect(mocks.listeners.nudged).toBeDefined());
+
+    mocks.listeners.nudged?.({ payload: { ...nudge, seen: false } });
+    await waitFor(() => expect(mocks.showNotification).toHaveBeenCalledTimes(1));
+    mocks.listeners.focused?.({ payload: {} });
+    mocks.listeners.nudged?.({ payload: { ...nudge, seen: true } });
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Coach is listening · 2 nudges",
+      }),
+    ).not.toBeNull();
+    expect(mocks.showNotification).toHaveBeenCalledTimes(1);
   });
 });

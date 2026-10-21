@@ -24,6 +24,11 @@ export const SETTING_DEFINITIONS = {
     path: ["coach", "shortcut"],
     default: "Super+Shift+KeyK" as string,
   },
+  coach_open_on_record: {
+    type: "boolean",
+    path: ["coach", "open_on_record"],
+    default: true as boolean,
+  },
   self_name_backfilled: {
     type: "boolean",
     path: ["general", "self_name_backfilled"],

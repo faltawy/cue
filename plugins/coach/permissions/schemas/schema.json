@@ -463,6 +463,18 @@
           "markdownDescription": "Denies the show command without any pre-configured scope."
         },
         {
+          "description": "Enables the show_for_recording command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-show-for-recording",
+          "markdownDescription": "Enables the show_for_recording command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the show_for_recording command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-show-for-recording",
+          "markdownDescription": "Denies the show_for_recording command without any pre-configured scope."
+        },
+        {
           "description": "Enables the sign_in_to_claude command without any pre-configured scope.",
           "type": "string",
           "const": "allow-sign-in-to-claude",
@@ -487,10 +499,10 @@
           "markdownDescription": "Denies the update_claude_code command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-show-for-recording`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-show-for-recording`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`"
         }
       ]
     }

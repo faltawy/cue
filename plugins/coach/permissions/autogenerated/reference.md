@@ -14,6 +14,7 @@ Default permissions for the plugin
 - `allow-find-claude-connectors`
 - `allow-add-knowledge`
 - `allow-show`
+- `allow-show-for-recording`
 - `allow-claude-signed-in`
 - `allow-sign-in-to-claude`
 - `allow-claude-code-status`
@@ -390,6 +391,32 @@ Enables the show command without any pre-configured scope.
 <td>
 
 Denies the show command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-show-for-recording`
+
+</td>
+<td>
+
+Enables the show_for_recording command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-show-for-recording`
+
+</td>
+<td>
+
+Denies the show_for_recording command without any pre-configured scope.
 
 </td>
 </tr>

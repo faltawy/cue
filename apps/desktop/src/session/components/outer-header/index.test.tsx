@@ -42,7 +42,7 @@ vi.mock("./overflow", () => ({
 }));
 
 vi.mock("~/coach/open-button", () => ({
-  CoachButton: () => null,
+  CoachStrip: () => null,
 }));
 
 vi.mock("../shared", () => ({

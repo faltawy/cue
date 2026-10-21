@@ -89,6 +89,7 @@ const {
   flushCanonicalSessionEditorChangesMock,
   idMock,
   openNewMock,
+  showCoachForRecordingMock,
   emptyCaptureMock,
 } = vi.hoisted(() => ({
   emptyCaptureMock: vi.fn(),
@@ -151,6 +152,14 @@ const {
   flushCanonicalSessionEditorChangesMock: vi.fn(),
   idMock: vi.fn(() => "generated-id"),
   openNewMock: vi.fn(),
+  showCoachForRecordingMock: vi.fn(async () => ({
+    status: "ok" as const,
+    data: null,
+  })),
+}));
+
+vi.mock("@anlg/plugin-coach", () => ({
+  commands: { showForRecording: showCoachForRecordingMock },
 }));
 
 vi.mock("@anlg/plugin-db", () => ({
@@ -1389,6 +1398,47 @@ describe("useStartListening", () => {
     );
     expect(setLeftSidebarExpandedMock).not.toHaveBeenCalled();
     consoleError.mockRestore();
+  });
+
+  test.each([
+    { openOnRecord: true, opened: 1 },
+    { openOnRecord: false, opened: 0 },
+  ])(
+    "a started recording opens the coach only when the setting is on ($openOnRecord)",
+    async ({ openOnRecord, opened }) => {
+      useConfigValueMock.mockImplementation((key) =>
+        key === "coach_open_on_record"
+          ? openOnRecord
+          : key === "ai_language"
+            ? "en"
+            : key === "consent_auto_send_chat"
+              ? false
+              : [],
+      );
+      const { result } = renderHook(() => useStartListening("session-1"));
+
+      await act(async () => {
+        await result.current();
+      });
+
+      expect(startMock).toHaveBeenCalledTimes(1);
+      expect(showCoachForRecordingMock).toHaveBeenCalledTimes(opened);
+    },
+  );
+
+  test("a recording that fails to start leaves the coach closed", async () => {
+    useConfigValueMock.mockImplementation((key) =>
+      key === "coach_open_on_record" ? true : key === "ai_language" ? "en" : [],
+    );
+    startMock.mockResolvedValueOnce(false);
+    const { result } = renderHook(() => useStartListening("session-1"));
+
+    await act(async () => {
+      await result.current();
+    });
+
+    expect(startMock).toHaveBeenCalledTimes(1);
+    expect(showCoachForRecordingMock).not.toHaveBeenCalled();
   });
 
   test("manual recording stays manual while a scheduled start is waiting for the same note", async () => {

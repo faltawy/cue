@@ -9,6 +9,7 @@ const COMMANDS: &[&str] = &[
     "find_claude_connectors",
     "add_knowledge",
     "show",
+    "show_for_recording",
     "claude_signed_in",
     "sign_in_to_claude",
     "claude_code_status",

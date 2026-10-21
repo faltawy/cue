@@ -23,6 +23,7 @@ import {
   type StartFailureStage,
 } from "./start-failure";
 
+import { showCoachForRecording } from "~/coach/commands";
 import { useShell } from "~/contexts/shell";
 import { normalizeAudioRetention } from "~/services/audio-retention";
 import { getBaseLanguageDisplayName } from "~/settings/general/language";
@@ -76,6 +77,7 @@ export function useStartListeningState(
   const meetingDisclosureAutoSendChat = useConfigValue(
     "consent_auto_send_chat",
   );
+  const openCoachOnRecord = useConfigValue("coach_open_on_record");
 
   const start = useListener((state) => state.start);
   const stop = useListener((state) => state.stop);
@@ -260,6 +262,10 @@ export function useStartListeningState(
 
     setLeftSidebarExpanded(false);
 
+    if (openCoachOnRecord) {
+      void showCoachForRecording();
+    }
+
     const stopChatCapture = startMeetingChatCapture({
       sessionId,
       excludedTexts: [MEETING_DISCLOSURE_MESSAGE],
@@ -301,6 +307,7 @@ export function useStartListeningState(
     setStopMeetingChatCapture,
     setLeftSidebarExpanded,
     meetingDisclosureAutoSendChat,
+    openCoachOnRecord,
     spokenLanguages,
     start,
     stop,

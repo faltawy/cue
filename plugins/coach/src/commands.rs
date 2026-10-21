@@ -83,6 +83,13 @@ pub async fn show(app: tauri::AppHandle) -> std::result::Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
+pub async fn show_for_recording(app: tauri::AppHandle) -> std::result::Result<(), String> {
+    app.coach().show_for_recording();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn mcp_statuses(
     app: tauri::AppHandle,
 ) -> std::result::Result<Vec<McpServerStatus>, String> {

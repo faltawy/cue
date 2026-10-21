@@ -14,7 +14,7 @@ import { OverflowButton } from "./overflow";
 
 import { useAudioPlayer } from "~/audio-player";
 import { useNow } from "~/calendar/hooks";
-import { CoachButton } from "~/coach/open-button";
+import { CoachStrip } from "~/coach/open-button";
 import { useShell } from "~/contexts/shell";
 import { useEventCountdown } from "~/session/hooks/useEventCountdown";
 import { useMeetingMicInUse } from "~/session/hooks/useMeetingMicInUse";
@@ -113,7 +113,7 @@ export function OuterHeader({
           sessionMode={sessionMode}
           meetingOver={meetingOver}
         />
-        <CoachButton sessionId={sessionId} />
+        <CoachStrip sessionId={sessionId} />
         <OverflowButton
           standaloneWindow={standaloneWindow}
           sessionId={sessionId}

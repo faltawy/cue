@@ -38,6 +38,7 @@ const SETTINGS_FORM_KEYS = [
   "auto_join_scheduled_meetings",
   "auto_start_scheduled_meetings",
   "auto_stop_meetings",
+  "coach_open_on_record",
   "show_app_in_dock",
   "show_tray_icon",
   "notification_detect",
@@ -62,6 +63,7 @@ function useSettingsForm(storedSettings: StoredSettingValues) {
       auto_start_scheduled_meetings:
         settingsValue.auto_start_scheduled_meetings,
       auto_stop_meetings: settingsValue.auto_stop_meetings,
+      coach_open_on_record: settingsValue.coach_open_on_record,
       show_app_in_dock: settingsValue.show_app_in_dock,
       show_tray_icon: settingsValue.show_tray_icon,
       notification_detect: settingsValue.notification_detect,
@@ -102,6 +104,7 @@ function useSettingsForm(storedSettings: StoredSettingValues) {
         auto_start_scheduled_meetings:
           normalizedValue.auto_start_scheduled_meetings,
         auto_stop_meetings: normalizedValue.auto_stop_meetings,
+        coach_open_on_record: normalizedValue.coach_open_on_record,
         show_app_in_dock: normalizedValue.show_app_in_dock,
         show_tray_icon: normalizedValue.show_tray_icon,
         notification_detect: normalizedValue.notification_detect,
@@ -230,7 +233,24 @@ function SettingsSectionContent({
             <h2 className="text-title mb-4">
               <Trans>Coach</Trans>
             </h2>
-            <CoachShortcut />
+            <div className="flex flex-col gap-4">
+              <form.Field name="coach_open_on_record">
+                {(field) => (
+                  <SettingSwitchRow
+                    title={<Trans>Open the coach when recording starts</Trans>}
+                    description={
+                      <Trans>
+                        The coach appears beside your meeting without taking
+                        focus.
+                      </Trans>
+                    }
+                    checked={field.state.value}
+                    onChange={field.handleChange}
+                  />
+                )}
+              </form.Field>
+              <CoachShortcut />
+            </div>
           </div>
 
           <div>

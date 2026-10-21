@@ -327,6 +327,7 @@ async fn nudged(
         session_id,
         tag: body.tag,
         line: body.line,
+        seen: false,
     });
     StatusCode::NO_CONTENT
 }
