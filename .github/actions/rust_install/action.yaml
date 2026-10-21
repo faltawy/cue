@@ -13,6 +13,11 @@ runs:
         toolchain: ${{ steps.toolchain.outputs.channel }}
         targets: aarch64-apple-darwin,x86_64-apple-darwin
         components: ${{ steps.toolchain.outputs.components }}
+    - uses: mozilla-actions/sccache-action@v0.0.11
+    - run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+        echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
+      shell: bash
     - uses: Swatinem/rust-cache@v2
       with:
         cache-targets: "true"
