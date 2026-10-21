@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.6.0
+
+### Minor Changes
+
+- Improve multilingual coaching with local nudge feedback and clickable meeting evidence. Add guided setup readiness and an optional test recording, a Home dashboard for meetings and follow-ups, scannable transcript turn timestamps, and task-oriented Settings groups.
+
 ## 0.5.2
 
 ### Patch Changes
