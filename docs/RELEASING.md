@@ -53,6 +53,8 @@ To rebuild an existing tag, delete its release in `cue` first, preserving the so
 gh release delete v0.2.0 -R faltawy/cue
 ```
 
+To build and verify an existing tag without changing its published release, run the workflow by hand with `publish_release: false`. This still builds and signs the app and reports the Rust compiler cache stats, but skips the release existence check and publishing.
+
 ## 4. Updates in the app
 
 Nothing to set up. Cue reads `https://github.com/faltawy/cue/releases/latest/download/latest.json` 30 seconds after launch and every 6 hours, and checks each download against the updater public key. Updates download in the background. "Restart to update" (in Settings > General > Updates or the tray) installs the update, but never while a recording is running or the coach is answering. Only the stable app (`com.hyprnote.stable`) updates. Dev builds show that updates are unavailable.
