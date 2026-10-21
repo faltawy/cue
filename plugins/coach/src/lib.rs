@@ -27,7 +27,8 @@ use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
 pub use bridge::RecordingFuture;
 pub use claude_code::{
-    ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup, InstalledClaudeCode,
+    ClaudeAccount, ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup,
+    InstalledClaudeCode,
 };
 pub use error::{Error, Result};
 pub use events::{CoachFocused, CoachNudged};
@@ -261,17 +262,13 @@ impl Coach {
         Ok(serde_json::from_slice(&stdout)?)
     }
 
-    pub fn claude_signed_in(&self) -> Result<bool> {
-        #[derive(serde::Deserialize)]
-        struct AuthStatus {
-            signed_in: bool,
-        }
+    pub fn claude_signed_in(&self) -> Result<ClaudeAccount> {
         let stdout = run_sidecar(
             &self.app,
             vec!["--auth-status".into()],
             "couldn't check the Claude sign-in",
         )?;
-        Ok(serde_json::from_slice::<AuthStatus>(&stdout)?.signed_in)
+        Ok(serde_json::from_slice(&stdout)?)
     }
 
     pub fn sign_in_to_claude(&self) -> Result<()> {

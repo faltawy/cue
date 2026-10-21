@@ -3114,10 +3114,6 @@ msgstr "Shown for your voice in transcripts. Empty shows “You”."
 msgid "Sign in"
 msgstr "Sign in"
 
-#: src/settings/claude/sign-in.tsx
-msgid "Sign in again"
-msgstr "Sign in again"
-
 #: src/onboarding/claude.tsx
 #: src/onboarding/index.tsx
 msgid "Sign in to Claude"
@@ -3126,6 +3122,10 @@ msgstr "Sign in to Claude"
 #: src/settings/claude/sign-in.tsx
 msgid "Signed in"
 msgstr "Signed in"
+
+#: src/settings/claude/sign-in.tsx
+msgid "Signed in as {email}"
+msgstr "Signed in as {email}"
 
 #: src/settings/appearance/app-icon.tsx
 msgid "Silver"
@@ -3359,6 +3359,10 @@ msgstr "Summary ready"
 #: src/settings/general/week-start.tsx
 msgid "Sunday"
 msgstr "Sunday"
+
+#: src/settings/claude/sign-in.tsx
+msgid "Switch account"
+msgstr "Switch account"
 
 #: src/templates/template-icon-picker.tsx
 msgid "Symbols"

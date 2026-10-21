@@ -19,7 +19,7 @@ import {
   wrappedTranscripts,
 } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
-import { claudeSignedIn } from "./claude-account";
+import { claudeAccount } from "./claude-account";
 import { claudeCodeFromArgs } from "./claude-code";
 import { coachError, GAVE_UP, StderrTail, withSignIn } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
@@ -182,9 +182,9 @@ function retrySetup() {
 function checkSignIn() {
   claude().then(
     (resolved) =>
-      claudeSignedIn(resolved).then(
-        (signedIn) => {
-          claudeSignedInNow = signedIn;
+      claudeAccount(resolved).then(
+        (account) => {
+          claudeSignedInNow = account.signedIn;
         },
         (error: unknown) => console.error("[coach] could not read the Claude sign-in", { _e: errorText(error) }),
       ),

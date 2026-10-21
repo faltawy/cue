@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { claudeSignedIn } from "./claude-account";
+import { claudeAccount } from "./claude-account";
 import { CLAUDE_ARGS, claudeCodeFromArgs, type ClaudeCodeStatus } from "./claude-code";
 import { signInCommand } from "./sign-in";
 
@@ -54,5 +54,6 @@ if (values["sign-in"]) {
   const { output, status } = await claudeCode.updateInstalled();
   await Bun.write(Bun.stdout, JSON.stringify({ output, status: statusJson(status) }));
 } else {
-  await Bun.write(Bun.stdout, JSON.stringify({ signed_in: await claudeSignedIn(await executable()) }));
+  const { signedIn, email } = await claudeAccount(await executable());
+  await Bun.write(Bun.stdout, JSON.stringify({ signed_in: signedIn, email }));
 }

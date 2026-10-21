@@ -64,6 +64,13 @@ pub fn download_percent(progress: &str) -> Option<u8> {
     Some(percent.min(99) as u8)
 }
 
+/// Who Claude Code is signed in as, from `--auth-status`.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+pub struct ClaudeAccount {
+    pub signed_in: bool,
+    pub email: Option<String>,
+}
+
 /// What a finished `--prepare-claude-code` run means for the app.
 pub fn finished(success: bool, stderr: &str) -> ClaudeSetup {
     if success {
@@ -97,6 +104,18 @@ mod tests {
             None
         );
         assert_eq!(download_percent("not json"), None);
+    }
+
+    #[test]
+    fn the_account_reads_the_sidecar_answer_with_or_without_an_email() {
+        let signed_in: ClaudeAccount =
+            serde_json::from_str(r#"{"signed_in":true,"email":"ada@example.com"}"#).unwrap();
+        assert_eq!(signed_in.email.as_deref(), Some("ada@example.com"));
+        assert!(signed_in.signed_in);
+        let no_email: ClaudeAccount = serde_json::from_str(r#"{"signed_in":true}"#).unwrap();
+        assert_eq!(no_email.email, None);
+        let signed_out: ClaudeAccount = serde_json::from_str(r#"{"signed_in":false}"#).unwrap();
+        assert!(!signed_out.signed_in);
     }
 
     #[test]

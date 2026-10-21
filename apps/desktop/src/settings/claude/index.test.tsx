@@ -112,7 +112,10 @@ beforeEach(() => {
     web_access: true,
   };
   coach.findClaudeConnectors.mockResolvedValue({ status: "ok", data: [] });
-  coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
+  coach.claudeSignedIn.mockResolvedValue({
+    status: "ok",
+    data: { signed_in: true, email: "ada@example.com" },
+  });
   coach.signInToClaude.mockResolvedValue({ status: "ok", data: null });
   coach.claudeSetup.mockResolvedValue({
     status: "ok",
@@ -151,16 +154,43 @@ afterEach(() => {
 
 describe("SettingsClaude", () => {
   it("says when Claude isn't signed in, starts the sign-in, and picks up the new sign-in", async () => {
-    coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: false });
+    coach.claudeSignedIn.mockResolvedValue({
+      status: "ok",
+      data: { signed_in: false, email: null },
+    });
     renderPage();
 
     expect(await screen.findByText("Not signed in")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(coach.signInToClaude).toHaveBeenCalledTimes(1));
 
-    coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: true });
+    coach.claudeSignedIn.mockResolvedValue({
+      status: "ok",
+      data: { signed_in: true, email: "ada@example.com" },
+    });
     expect(
-      await screen.findByText("Signed in", {}, { timeout: 5000 }),
+      await screen.findByText(
+        "Signed in as ada@example.com",
+        {},
+        { timeout: 5000 },
+      ),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Switch account" }),
+    ).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign in" })).toBeNull();
+  });
+
+  it("signed in without a known email still says Signed in", async () => {
+    coach.claudeSignedIn.mockResolvedValue({
+      status: "ok",
+      data: { signed_in: true, email: null },
+    });
+    renderPage();
+
+    expect(await screen.findByText("Signed in")).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Switch account" }),
     ).not.toBeNull();
   });
 
@@ -180,7 +210,11 @@ describe("SettingsClaude", () => {
       data: { state: "ready" },
     });
     expect(
-      await screen.findByText("Signed in", {}, { timeout: 5000 }),
+      await screen.findByText(
+        "Signed in as ada@example.com",
+        {},
+        { timeout: 5000 },
+      ),
     ).not.toBeNull();
     expect(coach.claudeSignedIn).toHaveBeenCalled();
   });

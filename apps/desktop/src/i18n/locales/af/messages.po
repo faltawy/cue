@@ -3114,10 +3114,6 @@ msgstr ""
 msgid "Sign in"
 msgstr ""
 
-#: src/settings/claude/sign-in.tsx
-msgid "Sign in again"
-msgstr ""
-
 #: src/onboarding/claude.tsx
 #: src/onboarding/index.tsx
 msgid "Sign in to Claude"
@@ -3125,6 +3121,10 @@ msgstr ""
 
 #: src/settings/claude/sign-in.tsx
 msgid "Signed in"
+msgstr ""
+
+#: src/settings/claude/sign-in.tsx
+msgid "Signed in as {email}"
 msgstr ""
 
 #: src/settings/appearance/app-icon.tsx
@@ -3358,6 +3358,10 @@ msgstr ""
 
 #: src/settings/general/week-start.tsx
 msgid "Sunday"
+msgstr ""
+
+#: src/settings/claude/sign-in.tsx
+msgid "Switch account"
 msgstr ""
 
 #: src/templates/template-icon-picker.tsx

@@ -31,7 +31,10 @@ function renderStep() {
 }
 
 beforeEach(() => {
-  coach.claudeSignedIn.mockResolvedValue({ status: "ok", data: false });
+  coach.claudeSignedIn.mockResolvedValue({
+    status: "ok",
+    data: { signed_in: false, email: null },
+  });
   coach.signInToClaude.mockResolvedValue({ status: "ok", data: null });
 });
 

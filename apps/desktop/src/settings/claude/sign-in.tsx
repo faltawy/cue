@@ -34,22 +34,26 @@ export function useClaudeSignIn() {
     refetchOnWindowFocus: "always",
     refetchInterval: (query) =>
       signIn.isSuccess &&
-      query.state.data === false &&
+      query.state.data?.signed_in === false &&
       Date.now() - signIn.submittedAt < SIGN_IN_WAIT_MS
         ? SIGN_IN_POLL_MS
         : false,
   });
   return {
     setup,
-    signedIn: status.data,
+    signedIn: status.data?.signed_in,
+    email: status.data?.email,
     error: setup.error ?? status.error ?? signIn.error,
-    signingIn: signIn.isPending || (signIn.isSuccess && status.data === false),
+    signingIn:
+      signIn.isPending ||
+      (signIn.isSuccess && status.data?.signed_in === false),
     signIn: () => signIn.mutate(),
   };
 }
 
 export function ClaudeSignInRow() {
-  const { setup, signedIn, error, signingIn, signIn } = useClaudeSignIn();
+  const { setup, signedIn, email, error, signingIn, signIn } =
+    useClaudeSignIn();
   const failed = setup.setup?.state === "failed";
   return (
     <SettingRow
@@ -69,7 +73,11 @@ export function ClaudeSignInRow() {
         ) : signedIn === undefined ? (
           <Trans>Checking…</Trans>
         ) : signedIn ? (
-          <Trans>Signed in</Trans>
+          email ? (
+            <Trans>Signed in as {email}</Trans>
+          ) : (
+            <Trans>Signed in</Trans>
+          )
         ) : signingIn ? (
           <Trans>Finish signing in in Terminal.</Trans>
         ) : (
@@ -93,13 +101,13 @@ export function ClaudeSignInRow() {
         ) : (
           <Button
             type="button"
-            variant={signedIn === false ? "default" : "outline"}
+            variant={signedIn === false ? "default" : "secondary"}
             size="sm"
             aria-describedby={describedBy}
             disabled={signingIn || !setup.ready}
             onClick={signIn}
           >
-            {signedIn ? <Trans>Sign in again</Trans> : <Trans>Sign in</Trans>}
+            {signedIn ? <Trans>Switch account</Trans> : <Trans>Sign in</Trans>}
           </Button>
         )
       }

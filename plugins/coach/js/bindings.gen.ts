@@ -86,7 +86,7 @@ async show() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async claudeSignedIn() : Promise<Result<boolean, string>> {
+async claudeSignedIn() : Promise<Result<ClaudeAccount, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:coach|claude_signed_in") };
 } catch (e) {
@@ -153,6 +153,10 @@ coachNudged: "plugin:coach:coach-nudged"
 
 /** user-defined types **/
 
+/**
+ * Who Claude Code is signed in as, from `--auth-status`.
+ */
+export type ClaudeAccount = { signed_in: boolean; email: string | null }
 /**
  * Which Claude Code the coach runs.
  */

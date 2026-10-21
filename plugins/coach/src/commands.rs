@@ -1,6 +1,6 @@
 use crate::{
-    ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup, Coach, CoachPluginExt, CoachSettings,
-    Endpoint, FoundConnector, McpProbe, McpSecretInput, McpServerStatus, Result,
+    ClaudeAccount, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup, Coach, CoachPluginExt,
+    CoachSettings, Endpoint, FoundConnector, McpProbe, McpSecretInput, McpServerStatus, Result,
 };
 
 async fn blocking<T: Send + 'static>(
@@ -91,7 +91,7 @@ pub async fn mcp_statuses(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn claude_signed_in(app: tauri::AppHandle) -> std::result::Result<bool, String> {
+pub async fn claude_signed_in(app: tauri::AppHandle) -> std::result::Result<ClaudeAccount, String> {
     blocking(app, Coach::claude_signed_in).await
 }
 
