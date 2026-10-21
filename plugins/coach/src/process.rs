@@ -166,12 +166,11 @@ const BUNDLED_COACH: &str = "cue-coach";
 fn bundled_coach() -> Option<PathBuf> {
     let executable = std::env::current_exe().ok()?;
     let directory = executable.parent()?;
-    let target = tauri::utils::platform::target_triple().ok()?;
-    bundled_coach_for(directory, &target)
+    bundled_coach_for(directory)
 }
 
-fn bundled_coach_for(directory: &Path, target: &str) -> Option<PathBuf> {
-    let coach = directory.join(format!("{BUNDLED_COACH}-{target}"));
+fn bundled_coach_for(directory: &Path) -> Option<PathBuf> {
+    let coach = directory.join(BUNDLED_COACH);
     coach.is_file().then_some(coach)
 }
 
@@ -298,16 +297,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bundled_coach_uses_tauri_external_binary_target_suffix() {
+    fn bundled_coach_uses_tauri_packaged_external_binary_name() {
         let directory = tempfile::tempdir().unwrap();
-        let coach = directory.path().join("cue-coach-aarch64-apple-darwin");
+        let coach = directory.path().join("cue-coach");
         std::fs::write(&coach, "sidecar").unwrap();
         assert!(coach.is_file());
 
-        assert_eq!(
-            bundled_coach_for(directory.path(), "aarch64-apple-darwin"),
-            Some(coach)
-        );
+        assert_eq!(bundled_coach_for(directory.path()), Some(coach));
     }
 
     fn sh(script: &str) -> Command {
