@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.6.1
+
+### Patch Changes
+
+- Live coaching now works reliably after launch. Earlier release notes are available in the app.
+
 ## 0.6.0
 
 ### Minor Changes
