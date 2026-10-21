@@ -40,6 +40,16 @@ pub fn init(quit: QuitHandler) -> tauri::plugin::TauriPlugin<tauri::Wry> {
             tauri_plugin_updater2::UpdaterState::listen(app, move |_| {
                 let _ = handle.tray().refresh_menu();
             });
+            let handle = app.clone();
+            tauri::Listener::listen_any(app, tauri_plugin_coach::ATTENTION_EVENT, move |_| {
+                // Off the emitting thread: the coach emits from its window's main-thread events.
+                let handle = handle.clone();
+                tauri::async_runtime::spawn_blocking(move || {
+                    if let Err(error) = handle.tray().refresh_coach_state() {
+                        tracing::warn!(%error, "failed to show the coach state in the menu bar");
+                    }
+                });
+            });
             Ok(())
         })
         .build()

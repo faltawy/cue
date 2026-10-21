@@ -28,6 +28,7 @@ use crate::menu_items::{AppInfo, AppNew, AppWhatsNew, TrayQuit};
 use crate::menu_items::{
     MenuItemHandler, TraySettings, build_agenda_item, build_agenda_record_item,
 };
+use tauri_plugin_coach::CoachPluginExt;
 use tauri_plugin_store2::Store2PluginExt;
 
 const TRAY_ID: &str = "anlg-tray";
@@ -478,14 +479,25 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
         on_main_thread(app, |app| Self::refresh_icon_on_main_thread(app))
     }
 
+    pub fn refresh_coach_state(&self) -> Result<()> {
+        Self::refresh_icon(self.manager.app_handle())
+    }
+
     fn refresh_icon_on_main_thread(app: &AppHandle<tauri::Wry>) -> Result<()> {
+        let coach = app.coach();
+        let state = TrayIconState::of(
+            IS_RECORDING.load(Ordering::SeqCst),
+            IS_DEGRADED.load(Ordering::SeqCst),
+            coach.is_running(),
+            coach.has_unseen_nudge(),
+        );
         {
             let mut task = ANIMATION_TASK.lock().unwrap();
             if let Some(handle) = task.take() {
                 handle.abort();
             }
 
-            if IS_RECORDING.load(Ordering::SeqCst) && !IS_DEGRADED.load(Ordering::SeqCst) {
+            if state == TrayIconState::Recording {
                 let app = app.clone();
                 *task = Some(tauri::async_runtime::spawn(async move {
                     let mut interval = tokio::time::interval(std::time::Duration::from_millis(250));
@@ -495,6 +507,7 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
                         let _ = on_main_thread(&app, move |app| {
                             if IS_RECORDING.load(Ordering::SeqCst)
                                 && !IS_DEGRADED.load(Ordering::SeqCst)
+                                && !app.coach().is_running()
                                 && crate::macos_position::wanted_visible()
                                 && let Some(tray) = app.tray_by_id(TRAY_ID)
                             {
@@ -515,13 +528,6 @@ impl<'a, M: tauri::Manager<tauri::Wry>> Tray<'a, tauri::Wry, M> {
         let Some(tray) = app.tray_by_id(TRAY_ID) else {
             return Ok(());
         };
-
-        let state = if IS_DEGRADED.load(Ordering::SeqCst) {
-            TrayIconState::Degraded
-        } else {
-            TrayIconState::Default
-        };
-
         tray.set_icon_with_as_template(Some(state.to_image()?), true)?;
 
         Ok(())

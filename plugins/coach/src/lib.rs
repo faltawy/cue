@@ -17,6 +17,7 @@ mod window;
 
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
@@ -52,6 +53,7 @@ struct CoachState {
     opening: Mutex<()>,
     bridge: Mutex<Option<bridge::Bridge>>,
     setup: Mutex<SetupSlot>,
+    unseen_nudge: AtomicBool,
 }
 
 #[derive(Default)]
@@ -97,6 +99,12 @@ impl bridge::Host for AppHost {
             seen: window::is_focused(&self.0),
             ..nudge
         };
+        if !nudge.seen
+            && let Some(state) = self.0.try_state::<CoachState>()
+        {
+            state.unseen_nudge.store(true, Ordering::SeqCst);
+            attention_changed(&self.0);
+        }
         if let Err(error) = tauri_specta::Event::emit(&nudge, &self.0) {
             tracing::warn!(%error, "coach_nudge_emit_failed");
         }
@@ -172,12 +180,20 @@ impl Coach {
 
     /// The coach is running, so it follows whatever the app records.
     pub fn is_running(&self) -> bool {
-        let state = self.app.state::<CoachState>();
         // Never wait: a coach that is still starting holds this lock for seconds.
-        state
-            .coach
-            .try_lock()
-            .is_ok_and(|mut slot| slot.as_mut().is_some_and(Sidecar::is_running))
+        self.app.try_state::<CoachState>().is_some_and(|state| {
+            state
+                .coach
+                .try_lock()
+                .is_ok_and(|mut slot| slot.as_mut().is_some_and(Sidecar::is_running))
+        })
+    }
+
+    /// A nudge arrived while the coach was out of view and hasn't been read there yet.
+    pub fn has_unseen_nudge(&self) -> bool {
+        self.app
+            .try_state::<CoachState>()
+            .is_some_and(|state| state.unseen_nudge.load(Ordering::SeqCst))
     }
 
     pub fn settings(&self) -> Result<CoachSettings> {
@@ -630,8 +646,23 @@ enum Opening {
     ForRecording,
 }
 
-/// Emitted once the coach is running; the menu bar shows that it is listening.
-pub const RUNNING_EVENT: &str = "coach://running";
+/// Emitted when [`Coach::is_running`] or [`Coach::has_unseen_nudge`] may have changed, for the
+/// menu bar icon.
+pub const ATTENTION_EVENT: &str = "coach://attention";
+
+fn attention_changed(app: &AppHandle) {
+    if let Err(error) = app.emit(ATTENTION_EVENT, ()) {
+        tracing::warn!(%error, "coach_attention_emit_failed");
+    }
+}
+
+pub(crate) fn nudges_seen(app: &AppHandle) {
+    if let Some(state) = app.try_state::<CoachState>()
+        && state.unseen_nudge.swap(false, Ordering::SeqCst)
+    {
+        attention_changed(app);
+    }
+}
 
 fn open(app: &AppHandle, opening: Opening) -> Result<()> {
     let state = app.state::<CoachState>();
@@ -652,9 +683,7 @@ fn open(app: &AppHandle, opening: Opening) -> Result<()> {
     }
 
     let endpoint = ensure_coach(app, &state, &current)?;
-    if let Err(error) = app.emit(RUNNING_EVENT, ()) {
-        tracing::warn!(%error, "coach_running_emit_failed");
-    }
+    attention_changed(app);
     if opening == Opening::ForRecording {
         window::show_beside(app, &endpoint)
     } else {
@@ -716,6 +745,7 @@ pub fn init(
                 opening: Mutex::new(()),
                 bridge: Mutex::new(None),
                 setup: Mutex::new(SetupSlot::default()),
+                unseen_nudge: AtomicBool::new(false),
             });
             if let Err(error) = app.coach().claude_setup() {
                 tracing::error!(%error, "claude_setup_start_failed");
@@ -775,6 +805,7 @@ mod test {
             opening: Mutex::new(()),
             bridge: Mutex::new(None),
             setup: Mutex::new(SetupSlot::default()),
+            unseen_nudge: AtomicBool::new(false),
         };
         let launch = coach_launch(&state, &CoachSettings::default(), &[], 0, None, None).unwrap();
         assert!(launch.project.is_dir());

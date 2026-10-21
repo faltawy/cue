@@ -91,6 +91,7 @@ fn coach_window(app: &AppHandle, endpoint: &Endpoint) -> Result<WebviewWindow> {
             let _ = hide_on_close.hide();
         }
         tauri::WindowEvent::Focused(true) => {
+            crate::nudges_seen(&focus_app);
             if let Err(error) = tauri_specta::Event::emit(&crate::CoachFocused {}, &focus_app) {
                 tracing::warn!(%error, "coach_focus_emit_failed");
             }
