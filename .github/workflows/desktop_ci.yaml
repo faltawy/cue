@@ -47,6 +47,10 @@ jobs:
       - uses: ./.github/actions/pnpm_install
       - uses: ./.github/actions/install_desktop_deps
       - uses: ./.github/actions/rust_install
+      - uses: mozilla-actions/sccache-action@v0.0.11
+      - run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
       - uses: ./.github/actions/bun_install
       - run: bun run build:sidecar
         working-directory: apps/coach
