@@ -21,11 +21,11 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-  RELEASES_REPO: faltawy/cue-releases
+  RELEASES_REPO: faltawy/cue
 
 jobs:
   release:
@@ -37,14 +37,14 @@ jobs:
     steps:
       - name: Check the releases repo
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::Secret RELEASES_TOKEN is missing. Add a fine-grained token with Contents read/write on $RELEASES_REPO (docs/RELEASING.md)."
+            echo "::error::The workflow token is missing."
             exit 1
           fi
           if ! gh api "repos/$RELEASES_REPO" --silent; then
-            echo "::error::RELEASES_TOKEN can't reach $RELEASES_REPO."
+            echo "::error::The workflow token can't reach $RELEASES_REPO."
             exit 1
           fi
           if gh release view "$TAG" --repo "$RELEASES_REPO" >/dev/null 2>"$RUNNER_TEMP/release-view.err"; then
@@ -192,7 +192,7 @@ jobs:
 
       - name: Publish the release
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           prerelease=()
           if [[ "$VERSION" == *-* ]]; then prerelease=(--prerelease); fi
@@ -207,7 +207,7 @@ jobs:
             --notes-file "$RUNNER_TEMP/notes.md" > dist/latest.json
           cat dist/latest.json
 
-          gh release create "$TAG" --repo "$RELEASES_REPO" --target main --draft \
+          gh release create "$TAG" --repo "$RELEASES_REPO" --verify-tag --draft \
             --title "Cue $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "${prerelease[@]}" \
             "dist/Cue_${VERSION}_aarch64.dmg" \
             "dist/$tarball" \
@@ -220,6 +220,13 @@ jobs:
             echo "::error::The published update isn't downloadable at $url."
             exit 1
           fi
+
+      - if: ${{ !contains(env.VERSION, '-') }}
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          legacy_tag=$(gh release view --repo faltawy/cue-releases --json tagName --jq .tagName)
+          gh release upload "$legacy_tag" --repo faltawy/cue-releases dist/latest.json --clobber
 
       - name: Remove the signing keychain
         if: always()

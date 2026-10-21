@@ -24,7 +24,7 @@ New to Cue? Follow these steps in order. Each takes a minute or two.
 
 ## Install
 
-1. Download `Cue_<version>_aarch64.dmg` from the [latest release](https://github.com/faltawy/cue-releases/releases/latest).
+1. Download `Cue_<version>_aarch64.dmg` from the [latest release](https://github.com/faltawy/cue/releases/latest).
 2. Open the DMG and drag **Cue** into **Applications**.
 3. Do this the first time only. In Applications, right-click **Cue**, choose **Open**, then click **Open** again. Cue isn't notarized by Apple yet, so macOS blocks a double-click the first time. If you don't see an **Open** button, go to **System Settings → Privacy & Security** and click **Open Anyway**.
 

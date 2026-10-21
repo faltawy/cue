@@ -25,7 +25,7 @@ Open **Settings → General → Updates** and click **Check for updates**. The s
 
 After an update, Cue opens What's new once to show what changed. To open it later, choose **Help → What's New** in the menu bar, or type "What's new" in ⌘K.
 
-The [releases page](https://github.com/faltawy/cue-releases/releases) lists the changes in every version.
+The [releases page](https://github.com/faltawy/cue/releases) lists the changes in every version.
 
 ## After an update, macOS asks for my password
 
@@ -33,4 +33,4 @@ macOS may ask for your login password the first time the new version reads the A
 
 ## Install by hand
 
-You can always download the latest version from the [releases page](https://github.com/faltawy/cue-releases/releases/latest) and drag it into Applications to replace the old one. Your notes and settings stay as they are.
+You can always download the latest version from the [releases page](https://github.com/faltawy/cue/releases/latest) and drag it into Applications to replace the old one. Your notes and settings stay as they are.

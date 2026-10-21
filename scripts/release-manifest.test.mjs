@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { buildManifest } from "./release-manifest.mjs";
 
 const URL =
-  "https://github.com/faltawy/cue-releases/releases/download/v0.2.0/Cue_0.2.0_aarch64.app.tar.gz";
+  "https://github.com/faltawy/cue/releases/download/v0.2.0/Cue_0.2.0_aarch64.app.tar.gz";
 
 test("builds the Tauri static update manifest for Apple silicon", () => {
   assert.deepEqual(
@@ -70,7 +70,7 @@ test("CLI points the manifest at the public download URL of the asset", () => {
       "--signature-file",
       join(dir, "Cue.app.tar.gz.sig"),
       "--repo",
-      "faltawy/cue-releases",
+      "faltawy/cue",
       "--tag",
       "v0.2.0",
       "--asset",
@@ -91,21 +91,4 @@ test("CLI points the manifest at the public download URL of the asset", () => {
       "darwin-aarch64": { signature: "c2lnbmF0dXJl", url: URL },
     },
   });
-});
-
-test("the app polls latest.json of the public repo releases go to", () => {
-  const root = fileURLToPath(new globalThis.URL("..", import.meta.url));
-  const workflow = readFileSync(
-    join(root, ".github/workflows/release.yaml"),
-    "utf8",
-  );
-  const conf = JSON.parse(
-    readFileSync(join(root, "apps/desktop/src-tauri/tauri.conf.json"), "utf8"),
-  );
-
-  assert.match(workflow, /^ {2}RELEASES_REPO: faltawy\/cue-releases$/m);
-  assert.match(workflow, /gh release create "\$TAG" --repo "\$RELEASES_REPO"/);
-  assert.deepEqual(conf.plugins.updater.endpoints, [
-    "https://github.com/faltawy/cue-releases/releases/latest/download/latest.json",
-  ]);
 });

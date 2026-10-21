@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.5.1
+
+### Patch Changes
+
+- Updates now come from the same public repository as the source code and user guides. Existing installations continue to receive updates automatically.
+
 ## 0.5.0
 
 ### Minor Changes
