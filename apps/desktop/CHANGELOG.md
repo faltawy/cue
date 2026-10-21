@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.5.2
+
+### Patch Changes
+
+- Use the app’s current name throughout background activity, startup, exports and developer tools. Existing data and saved credentials remain available after updating.
+
 ## 0.5.1
 
 ### Patch Changes
