@@ -2,6 +2,8 @@
 
 The first time you open Cue, it walks you through permissions, your calendar and your AI provider. This page explains each step, plus the settings worth checking before your first meeting.
 
+If macOS blocks Cue before setup opens, follow the [first-launch warning instructions](troubleshooting.md#cue-wont-open-the-first-time).
+
 To open Settings, press ⌘, (Command and comma), click **Settings** in the menu bar menu, or search for Settings with ⌘K.
 
 ## Allow permissions

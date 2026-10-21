@@ -26,7 +26,10 @@ New to Cue? Follow these steps in order. Each takes a minute or two.
 
 1. Download `Cue_<version>_aarch64.dmg` from the [latest release](https://github.com/faltawy/cue/releases/latest).
 2. Open the DMG and drag **Cue** into **Applications**.
-3. Do this the first time only. In Applications, right-click **Cue**, choose **Open**, then click **Open** again. Cue isn't notarized by Apple yet, so macOS blocks a double-click the first time. If you don't see an **Open** button, go to **System Settings → Privacy & Security** and click **Open Anyway**.
+3. Open **Cue** from Applications. macOS may say the developer cannot be verified or Apple cannot check Cue for malicious software. Current builds use a self-signed certificate, not an Apple-issued Developer ID, and are not notarized by Apple.
+4. If you trust the download from this repository, dismiss the warning, open **System Settings → Privacy & Security**, scroll to **Security**, and click **Open Anyway** next to Cue. Confirm **Open** and authenticate if asked. macOS saves an exception for the app.
+
+If **Open Anyway** is missing, try opening Cue again first. See [First-launch warning](docs/troubleshooting.md#cue-wont-open-the-first-time) for details and Apple’s instructions.
 
 New versions then install from inside Cue. See [Updates](docs/updates.md).
 

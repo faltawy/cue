@@ -10,7 +10,20 @@ If saving an API key fails with "macOS cannot access your login Keychain", click
 
 ## Cue won't open the first time
 
-Cue isn't notarized by Apple yet. In Applications, right-click **Cue**, choose **Open**, then **Open** again. If there's no **Open** button, go to **System Settings → Privacy & Security** and click **Open Anyway** next to the message about Cue. You only need to do this once.
+macOS may say the developer cannot be verified or Apple cannot check Cue for malicious software. Current Cue releases use a self-signed certificate rather than an Apple-issued Developer ID and have not been notarized by Apple. Apple therefore cannot verify the developer or confirm that the app passed its malware checks.
+
+If you trust the copy you downloaded from the [official Cue releases](https://github.com/faltawy/cue/releases/latest):
+
+1. Drag **Cue** from the DMG into **Applications**, then try opening it.
+2. Dismiss the warning and open **System Settings → Privacy & Security**.
+3. Scroll to **Security** and click **Open Anyway** next to the message about Cue.
+4. Confirm **Open** and authenticate with your Mac password or Touch ID if asked.
+
+macOS saves an exception, so you can open that copy normally afterward. **Open Anyway** is available for about an hour after an attempted launch; if it is missing, try opening Cue again. A managed work Mac may restrict this option; contact your administrator.
+
+These steps apply to an unverified-developer or missing-notarization warning. If macOS says Cue will damage your computer or contains malware, do not override it; [report the exact warning](#report-a-problem).
+
+See Apple’s [instructions for opening an app blocked by security settings](https://support.apple.com/en-sg/guide/mac-help/mh40617/mac). No Terminal commands or system-wide security changes are needed.
 
 ## "Live transcription is not configured"
 

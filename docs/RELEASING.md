@@ -61,9 +61,8 @@ Versions 0.1.4 through 0.5.0 read the old `cue-releases` feed. The 0.5.1 release
 
 ## 5. First install of a self-signed build
 
-The DMG isn't notarized until an Apple Developer ID is set up. Download it from https://github.com/faltawy/cue/releases/latest, then:
+Current builds use a self-signed certificate, not an Apple-issued Developer ID, and skip notarization. macOS may block the first launch because it cannot verify the developer or check the app for malicious software.
 
-1. Open the DMG and drag Cue to Applications.
-2. In Applications, right-click Cue and choose Open, then Open again in the dialog. On recent macOS versions, if there is no Open button, go to System Settings > Privacy & Security and choose "Open Anyway".
+Download from https://github.com/faltawy/cue/releases/latest and follow the [installation instructions](../README.md#install), including the per-app **Open Anyway** step. The [troubleshooting guide](troubleshooting.md#cue-wont-open-the-first-time) explains the warning and what to do if the button is missing.
 
-Later versions arrive through the in-app updater, so you only do this once.
+To remove the unidentified-developer warning for future releases, use an Apple-issued Developer ID Application certificate and configure notarization. Apple provides these distribution capabilities through its [Developer Program](https://developer.apple.com/programs); eligible organizations can apply for a [membership fee waiver](https://developer.apple.com/help/account/membership/fee-waivers/).
