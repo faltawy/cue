@@ -2,6 +2,9 @@ name: Migrate historical releases
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
 
 permissions:
   contents: write
@@ -12,6 +15,7 @@ concurrency:
 
 jobs:
   migrate:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
