@@ -13,6 +13,10 @@ import {
   planChat,
   remember,
   resumeFor,
+  recordFeedback,
+  clearFeedback,
+  feedbackPreferences,
+  prioritizeHitsByFeedback,
   saveChats,
   type SettledWrapUp,
   wrappedTranscripts,
@@ -277,6 +281,89 @@ describe("after the app restarts", () => {
     expect(plan.resume).toBeNull();
     expect(plan.history).toEqual(asked);
     expect(plan.seen).toBeUndefined();
+  });
+});
+
+describe("local nudge feedback", () => {
+  test("positive and negative category signals reorder competing transcript cues locally", () => {
+    const seeded = recordFeedback(
+      recordFeedback(storeWith("meeting-a", "/work/northwind"), {
+        category: "pushback",
+        useful: true,
+      }),
+      { category: "open_question", useful: false },
+    );
+    const hits = [
+      { kind: "question" as const, lineIndex: 1, text: "Can you confirm?" },
+      { kind: "objection" as const, lineIndex: 2, text: "Too expensive." },
+    ];
+
+    expect(prioritizeHitsByFeedback(seeded, hits)).toEqual([
+      hits[1]!,
+      hits[0]!,
+    ]);
+  });
+
+  test("ranks a downvoted cue behind an unscored cue", () => {
+    const seeded = recordFeedback(storeWith("meeting-a", "/work/northwind"), {
+      category: "open_question",
+      useful: false,
+    });
+    const question = {
+      kind: "question" as const,
+      lineIndex: 1,
+      text: "Can you confirm?",
+    };
+    const monologue = {
+      kind: "monologue" as const,
+      lineIndex: 2,
+      text: "Let me explain.",
+    };
+
+    expect(prioritizeHitsByFeedback(seeded, [question, monologue])).toEqual([
+      monologue,
+      question,
+    ]);
+  });
+
+  test("stores category preference and suppresses an already-handled moment across restart", () => {
+    const directory = mkdtempSync(
+      path.join(os.tmpdir(), "cue-coach-feedback-"),
+    );
+    const file = path.join(directory, "coach-chats.json");
+    const seeded = storeWith("meeting-a", "/work/northwind");
+    const updated = recordFeedback(seeded, {
+      category: "pushback",
+      useful: true,
+    });
+    const withHandledMoment = recordFeedback(updated, {
+      category: "open_question",
+      useful: false,
+      reason: "already_handled",
+      momentId: "meeting-a:65000:open_question",
+    });
+    saveChats(file, withHandledMoment);
+    const reloaded = loadChats(file);
+
+    expect(reloaded.meetings["meeting-a"]?.runtimeSessionId).toBe("claude-1");
+    expect(feedbackPreferences(reloaded)).toEqual({
+      categories: { pushback: 1, open_question: -1 },
+      handledMoments: ["meeting-a:65000:open_question"],
+    });
+  });
+
+  test("reset clears feedback signals but keeps saved coach chats", () => {
+    const seeded = recordFeedback(storeWith("meeting-a", "/work/northwind"), {
+      category: "pushback",
+      useful: true,
+    });
+    const reset = clearFeedback(seeded);
+
+    expect(reset.meetings["meeting-a"]?.runtimeSessionId).toBe("claude-1");
+    expect(feedbackPreferences(reset)).toEqual({
+      categories: {},
+      handledMoments: [],
+    });
   });
 });
 

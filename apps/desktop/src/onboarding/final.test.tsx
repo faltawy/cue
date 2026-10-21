@@ -33,6 +33,15 @@ vi.mock("~/session/queries", () => ({
   createSession: mocks.createSession,
 }));
 
+vi.mock("~/session/queries/deletion", () => ({
+  softDeleteSession: vi.fn(),
+}));
+
+vi.mock("~/stt/contexts", () => ({
+  useListener: (selector: (state: unknown) => unknown) =>
+    selector({ live: { sessionId: null, status: "inactive" } }),
+}));
+
 vi.mock("~/shared/relaunch", () => ({
   flushAutomaticRelaunch: mocks.flushAutomaticRelaunch,
 }));

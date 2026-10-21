@@ -172,10 +172,30 @@ describe("SettingsNav", () => {
     expect(screen.getByText("Appearance")).toBeTruthy();
     expect(screen.queryByText("Meetings")).toBeNull();
 
-    fireEvent.change(input, { target: { value: "workspace" } });
-    expect(screen.getByText("Meetings")).toBeTruthy();
-    expect(screen.getByText("Templates")).toBeTruthy();
+    fireEvent.change(input, { target: { value: "library" } });
+    expect(screen.getByText("Folders")).toBeTruthy();
+    expect(screen.getByText("Dictionary")).toBeTruthy();
     expect(screen.queryByText("Appearance")).toBeNull();
+  });
+
+  it("groups existing settings by the task users are trying to do", () => {
+    render(<SettingsNav />);
+
+    const contains = (group: string, label: string) =>
+      screen.getByText(group).parentElement?.textContent?.includes(label);
+
+    expect(contains("Setup", "AI")).toBe(true);
+    expect(contains("Setup", "Transcription")).toBe(true);
+    expect(contains("Setup", "Permissions")).toBe(true);
+    expect(contains("Meeting capture", "Meetings")).toBe(true);
+    expect(contains("Meeting capture", "Calendar")).toBe(true);
+    expect(contains("Meeting capture", "Notifications")).toBe(true);
+    expect(contains("Library", "Folders")).toBe(true);
+    expect(contains("Library", "Dictionary")).toBe(true);
+    expect(contains("Workflow", "Automations")).toBe(true);
+    expect(contains("Workflow", "Dictation")).toBe(true);
+    expect(contains("Appearance & general", "Appearance")).toBe(true);
+    expect(contains("Appearance & general", "General")).toBe(true);
   });
 
   it("shows an empty state when no settings match", () => {

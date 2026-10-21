@@ -9,6 +9,7 @@ import {
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { showCoach } from "~/coach/commands";
+import { openCoachEvidence } from "~/coach/evidence-navigation";
 import { shouldShowNotification } from "~/shared/notification-policy";
 
 const NUDGE_KEY_PREFIX = "coach-nudge:";
@@ -94,6 +95,12 @@ export function CoachNudgeLifecycle() {
     const listening = [
       coachEvents.coachNudged.listen(({ payload }) => {
         void surfaceNudge(payload);
+      }),
+      coachEvents.coachEvidence.listen(({ payload }) => {
+        openCoachEvidence({
+          sessionId: payload.session_id,
+          timestampMs: payload.timestamp_ms,
+        });
       }),
       coachEvents.coachFocused.listen(clearUnseen),
       notificationEvents.notificationEvent.listen(({ payload }) => {

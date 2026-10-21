@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   estimateTranscriptRowHeight,
+  findTranscriptSegmentIndex,
   useVirtualSegments,
   VirtualSegmentRow,
 } from "./virtual-segments";
@@ -30,6 +31,22 @@ describe("estimateTranscriptRowHeight", () => {
       0,
     );
     expect(long).toBeGreaterThan(short + 80);
+  });
+});
+
+describe("evidence timestamp navigation", () => {
+  it("locates the transcript turn containing the target and clamps a gap to the nearest turn", () => {
+    const first = createSegment("First turn");
+    first.words = first.words.map((word) => ({ ...word, start_ms: 100, end_ms: 180 }));
+    first.start_ms = 100;
+    first.end_ms = 180;
+    const second = createSegment("Second turn");
+    second.words = second.words.map((word) => ({ ...word, start_ms: 1_200, end_ms: 1_280 }));
+    second.start_ms = 1_200;
+    second.end_ms = 1_280;
+
+    expect(findTranscriptSegmentIndex([first, second], 1_250)).toBe(1);
+    expect(findTranscriptSegmentIndex([first, second], 900)).toBe(1);
   });
 });
 

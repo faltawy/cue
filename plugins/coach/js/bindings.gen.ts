@@ -180,9 +180,11 @@ async retryProviderSetup(provider: CoachProvider) : Promise<Result<ClaudeSetup, 
 
 
 export const events = __makeEvents__<{
+coachEvidence: CoachEvidence,
 coachFocused: CoachFocused,
 coachNudged: CoachNudged
 }>({
+coachEvidence: "plugin:coach:coach-evidence",
 coachFocused: "plugin:coach:coach-focused",
 coachNudged: "plugin:coach:coach-nudged"
 })
@@ -234,6 +236,7 @@ export type ClaudeSetup =
  * Looking for an installed Claude Code, or downloading Cue's copy.
  */
 { state: "preparing"; percent: number | null } | { state: "ready" } | { state: "failed"; message: string }
+export type CoachEvidence = { session_id: string; timestamp_ms: number }
 export type CoachFocused = Record<string, never>
 export type CoachNudged = { session_id: string; tag: string; line: string; 
 /**

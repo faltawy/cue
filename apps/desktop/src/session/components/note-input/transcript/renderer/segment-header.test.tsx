@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SegmentHeader } from "./segment-header";
@@ -16,18 +16,41 @@ beforeEach(() => {
 });
 
 describe("SegmentHeader", () => {
-  it("keeps the speaker label visible without exposing timestamps", () => {
+  it("shows a turn timestamp and seeks when its timestamp is selected", () => {
+    const onSeek = vi.fn();
     render(
       <SegmentHeader
         transcriptId="transcript-1"
         sessionId="session-1"
         label="Speaker 3"
         segment={createRemoteSegment(2)}
+        timestampMs={12_000}
+        audioExists
+        onSeek={onSeek}
       />,
     );
 
     expect(screen.getByRole("button", { name: "Speaker 3" })).toBeTruthy();
-    expect(screen.queryByText("00:12 - 00:18")).toBeNull();
+    const timestamp = screen.getByRole("button", { name: "Seek to 00:12" });
+    fireEvent.click(timestamp);
+    expect(onSeek).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the turn timestamp visible without audio seeking", () => {
+    render(
+      <SegmentHeader
+        transcriptId="transcript-1"
+        sessionId="session-1"
+        label="Speaker 3"
+        segment={createRemoteSegment(2)}
+        timestampMs={12_000}
+        audioExists={false}
+        onSeek={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("00:12")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Seek to 00:12" })).toBeNull();
   });
 
   it("labels remote live segments as the unique other participant", () => {
@@ -37,6 +60,7 @@ describe("SegmentHeader", () => {
         sessionId="session-1"
         label="Artem"
         segment={createRemoteSegment(0)}
+        timestampMs={12_000}
       />,
     );
 
@@ -51,6 +75,7 @@ describe("SegmentHeader", () => {
         sessionId="session-1"
         label="Artem"
         segment={segment}
+        timestampMs={12_000}
       />,
     );
 
@@ -62,6 +87,7 @@ describe("SegmentHeader", () => {
         sessionId="session-1"
         label="Speaker 1"
         segment={segment}
+        timestampMs={12_000}
       />,
     );
 

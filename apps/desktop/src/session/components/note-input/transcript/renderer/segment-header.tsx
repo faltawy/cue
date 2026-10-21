@@ -1,3 +1,5 @@
+import { t } from "@lingui/core/macro";
+
 import { Check } from "@anlg/ui/components/icons";
 import { cn } from "@anlg/utils";
 
@@ -13,12 +15,18 @@ export function SegmentHeader({
   sessionId,
   label,
   selected = false,
+  timestampMs,
+  audioExists = false,
+  onSeek,
 }: {
   segment: Segment;
   transcriptId: string;
   sessionId?: string;
   label: string;
   selected?: boolean;
+  timestampMs: number;
+  audioExists?: boolean;
+  onSeek?: () => void;
 }) {
   const { selectMode } = useTranscriptSelectionState();
   const headerClassName = cn([
@@ -49,6 +57,27 @@ export function SegmentHeader({
         dotColor={getSegmentSpeakerColor(segment.key)}
         label={label}
       />
+      {audioExists && onSeek && !selectMode ? (
+        <button
+          type="button"
+          aria-label={t`Seek to ${formatTurnTimestamp(timestampMs)}`}
+          onClick={onSeek}
+          className="text-muted-foreground hover:text-foreground rounded-sm px-1 tabular-nums"
+        >
+          {formatTurnTimestamp(timestampMs)}
+        </button>
+      ) : (
+        <time className="text-muted-foreground tabular-nums">
+          {formatTurnTimestamp(timestampMs)}
+        </time>
+      )}
     </div>
   );
+}
+
+function formatTurnTimestamp(timestampMs: number): string {
+  const totalSeconds = Math.floor(Math.max(0, timestampMs) / 1_000);
+  return `${Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0")}:${(totalSeconds % 60).toString().padStart(2, "0")}`;
 }

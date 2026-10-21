@@ -7,6 +7,7 @@ import { commands as sfxCommands } from "@anlg/plugin-sfx";
 import { CircleNotch, GithubLogo } from "@anlg/ui/components/icons";
 
 import { OnboardingButton } from "./shared";
+import { TestRecordingSection } from "./test-recording";
 import {
   getOrCreateWelcomeSession,
   setPendingWelcomeSession,
@@ -63,7 +64,8 @@ export function FinalSection({
   };
 
   return (
-    <div className="flex flex-col items-start gap-2">
+    <div className="flex flex-col items-start gap-4">
+      <TestRecordingSection />
       <OnboardingButton
         className="text-body px-6 py-2 disabled:cursor-wait disabled:opacity-70"
         disabled={status === "loading"}

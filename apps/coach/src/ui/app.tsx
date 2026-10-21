@@ -24,6 +24,7 @@ import {
   WrapUpCard,
 } from "./components/wrap-up-card";
 import type { PreparedImage } from "./images";
+import type { EvidenceTarget } from "../move";
 import {
   chipsAllowed,
   type CoachState,
@@ -181,6 +182,14 @@ export function CoachView({
       run: () => void copyLast(),
     });
     list.push({
+      id: "reset-nudge-feedback",
+      label: "Reset nudge feedback",
+      run: () => {
+        if (window.confirm("Reset the coach's learned nudge preferences?"))
+          void api.resetFeedback();
+      },
+    });
+    list.push({
       id: "focus",
       label: "Ask a question",
       shortcut: ["/"],
@@ -283,6 +292,8 @@ export function CoachView({
       undo: (id) => void api.undo(id),
       copy: copyText,
       signIn: () => void api.signIn(),
+      openEvidence: (target: EvidenceTarget) => void api.openEvidence(target),
+      feedback: (input) => void api.feedback(input),
       checkItem: (blockId, index, checked) =>
         void api.checkItem(blockId, index, checked),
       addItemToNote: api.addItemToNote,
@@ -301,6 +312,7 @@ export function CoachView({
       addActionItems: api.addActionItems,
       logToClients: api.logToClients,
       ask: (text: string) => void ask(text),
+      openEvidence: (target: EvidenceTarget) => void api.openEvidence(target),
     }),
     [api, ask],
   );

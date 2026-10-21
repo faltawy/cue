@@ -6,13 +6,13 @@ Source code, user guides, version tags and releases live in the public repositor
 
 Set these on `faltawy/cue` under Settings > Secrets and variables > Actions:
 
-| Secret                                        | Value                                               | Status           |
-| --------------------------------------------- | --------------------------------------------------- | ---------------- |
-| `APPLE_CERTIFICATE`                           | base64 of the code-signing `.p12`                   | set              |
-| `APPLE_CERTIFICATE_PASSWORD`                  | password of that `.p12`                             | set              |
-| `TAURI_SIGNING_PRIVATE_KEY`                   | contents of `~/.tauri/cue-updater.key`              | set              |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`          | contents of `~/.tauri/cue-updater.key.password`     | set              |
-| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | Apple Developer ID notarization (optional)          | not set: skipped |
+| Secret                                        | Value                                           | Status           |
+| --------------------------------------------- | ----------------------------------------------- | ---------------- |
+| `APPLE_CERTIFICATE`                           | base64 of the code-signing `.p12`               | set              |
+| `APPLE_CERTIFICATE_PASSWORD`                  | password of that `.p12`                         | set              |
+| `TAURI_SIGNING_PRIVATE_KEY`                   | contents of `~/.tauri/cue-updater.key`          | set              |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`          | contents of `~/.tauri/cue-updater.key.password` | set              |
+| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | Apple Developer ID notarization (optional)      | not set: skipped |
 
 The updater public key in `apps/desktop/src-tauri/tauri.conf.json` is `~/.tauri/cue-updater.key.pub`. The release workflow fails if the private key doesn't match it.
 

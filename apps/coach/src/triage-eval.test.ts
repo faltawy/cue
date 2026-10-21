@@ -62,12 +62,9 @@ describe("triage eval: labelled meeting moments through detectors, the reply par
       run.proactive.observe({ lines: run.lines, pending: "", live: true, selfName: "Ahmad Falta" });
     }
     await settle();
-    const flagged = moment.flagged ?? true;
-    expect(run.triage.mock.calls.length).toBe(flagged ? 1 : 0);
+    expect(run.triage).toHaveBeenCalledTimes(1);
     expect(run.nudge.mock.calls.length).toBe(moment.nudge ? 1 : 0);
-    if (flagged) {
-      expect(run.triage.mock.calls[0]?.[0].lines.map((line) => line.text)).toContain(moment.lines.at(-1)?.[1]);
-    }
+    expect(run.triage.mock.calls[0]?.[0].lines.map((line) => line.text)).toContain(moment.lines.at(-1)?.[1]);
   });
 
   test("the set has at least 20 moments in English and Arabic, and the replies decide for flagged small talk", () => {

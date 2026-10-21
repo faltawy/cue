@@ -9,6 +9,7 @@ import { renderLines, type TranscriptLine } from "./transcript";
 export const TRIAGE_MODEL = "haiku";
 
 export const TRIAGE_SYSTEM = `You decide whether a live meeting coach should interrupt the user right now with a short note. "You" in the lines is the user. The coach helps the user handle the moment better, not only with facts.
+The transcript may be in any language. Interpret it in that language, and say no when its meaning or language is unclear. A missing flagged cue does not mean there is no actionable moment; inspect the transcript window itself.
 Say yes only when the user could act on it right now:
 - a question or request aimed at the user, or at the group the user is in, that is still open
 - pushback or hesitation (price, a competitor, "we tried this before"), a buying signal ("how soon could we start?") or a risk signal (a new decision maker, a budget review)

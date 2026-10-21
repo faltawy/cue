@@ -9,3 +9,9 @@ pub struct CoachNudged {
 
 #[derive(Debug, Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
 pub struct CoachFocused {}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct CoachEvidence {
+    pub session_id: String,
+    pub timestamp_ms: u64,
+}

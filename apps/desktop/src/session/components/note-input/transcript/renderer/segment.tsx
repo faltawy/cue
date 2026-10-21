@@ -64,6 +64,7 @@ export const SegmentRenderer = memo(
     speakerLabel,
     currentMs,
     seekAndPlay,
+    seekToTime,
     audioExists,
     search,
     editMode = false,
@@ -75,6 +76,7 @@ export const SegmentRenderer = memo(
     speakerLabel: string;
     currentMs: number;
     seekAndPlay: (word: SegmentWord) => void;
+    seekToTime?: (timeMs: number) => void;
     audioExists: boolean;
     search: TranscriptSearchRenderState;
     editMode?: boolean;
@@ -144,6 +146,9 @@ export const SegmentRenderer = memo(
           sessionId={sessionId}
           label={speakerLabel}
           selected={selected}
+          timestampMs={offsetMs + segment.start_ms}
+          audioExists={audioExists}
+          onSeek={() => seekToTime?.(offsetMs + segment.start_ms)}
         />
 
         {editMode ? (
@@ -215,6 +220,7 @@ export const SegmentRenderer = memo(
       prev.speakerLabel !== next.speakerLabel ||
       prev.audioExists !== next.audioExists ||
       prev.seekAndPlay !== next.seekAndPlay ||
+      prev.seekToTime !== next.seekToTime ||
       prev.editMode !== next.editMode
     ) {
       return false;

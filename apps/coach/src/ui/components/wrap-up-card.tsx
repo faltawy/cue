@@ -2,6 +2,7 @@ import { Check, Copy, ListPlus, NotebookPen } from "lucide-react";
 import { useState } from "react";
 
 import type { WrapUpView } from "../../protocol";
+import type { EvidenceTarget } from "../../move";
 import { LineQuote, MomentQuote, TalkMeter } from "./coaching";
 import { Button, cx, useFlag } from "./primitives";
 
@@ -10,6 +11,7 @@ export type WrapUpActions = {
   addActionItems(): Promise<unknown>;
   logToClients(): Promise<unknown>;
   ask(text: string): void;
+  openEvidence(target: EvidenceTarget): void;
 };
 
 export function isEmptyWrapUp(view: WrapUpView | null): boolean {
@@ -166,7 +168,18 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
           <ul aria-label="Next time" className="flex flex-col gap-2">
             {wrapUp.coaching.next_time.map((item, index) => (
               <li key={index} className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2.5">
-                <MomentQuote moment={item.moment} />
+                <MomentQuote
+                  moment={item.moment}
+                  onOpen={
+                    view.sessionId && item.moment.at
+                      ? () =>
+                          actions.openEvidence({
+                            sessionId: view.sessionId!,
+                            timestampMs: timestampMs(item.moment.at!),
+                          })
+                      : undefined
+                  }
+                />
                 <p dir="auto" className="text-[13.5px] leading-[1.4] font-semibold [overflow-wrap:anywhere]">
                   {item.headline}
                 </p>
@@ -178,6 +191,11 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
       )}
     </div>
   );
+}
+
+function timestampMs(at: string): number {
+  const [minutes, seconds] = at.split(":").map(Number);
+  return (minutes ?? 0) * 60_000 + (seconds ?? 0) * 1_000;
 }
 
 export function hasFollowUp(draft: string): boolean {

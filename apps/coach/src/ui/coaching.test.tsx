@@ -52,6 +52,9 @@ function setup(state: CoachState) {
     signIn: mock(ok),
     chooseProjectFolder: mock(ok),
     retrySetup: mock(ok),
+    openEvidence: mock(ok),
+    feedback: mock(ok),
+    resetFeedback: mock(ok),
     notify: mock(() => {}),
   } satisfies CoachApi;
   view = render(<CoachView state={state} api={api} />);
@@ -129,6 +132,53 @@ describe("a coaching move", () => {
     expect(moment.getAttribute("dir")).toBe("auto");
     expect(within(moment).getByText("Marco")).toBeTruthy();
     expect(within(moment).getByText("12:40")).toBeTruthy();
+  });
+
+  test("an automatic nudge opens its own transcript moment and records useful feedback", async () => {
+    const move = {
+      ...PUSHBACK,
+      evidence: { sessionId: "session-a", timestampMs: 760_000 },
+    };
+    const api = setup(stateFrom([status(), ...nudge(move)]));
+    const card = view.getByTestId("move");
+
+    await act(async () => {
+      fireEvent.click(within(card).getByRole("button", { name: "Open transcript at 12:40" }));
+    });
+    await act(async () => {
+      fireEvent.click(within(card).getByRole("button", { name: "Useful" }));
+    });
+
+    expect(api.openEvidence).toHaveBeenCalledWith({
+      sessionId: "session-a",
+      timestampMs: 760_000,
+    });
+    expect(api.feedback).toHaveBeenCalledWith({
+      category: "pushback",
+      useful: true,
+      momentId: "session-a:760000",
+    });
+  });
+
+  test("not-useful feedback can suppress a repeat for the same handled moment", async () => {
+    const move = {
+      ...PUSHBACK,
+      evidence: { sessionId: "session-b", timestampMs: 321_000 },
+    };
+    const api = setup(stateFrom([status(), ...nudge(move)]));
+    const card = view.getByTestId("move");
+
+    fireEvent.click(within(card).getByRole("button", { name: "Not useful" }));
+    await act(async () => {
+      fireEvent.click(within(card).getByRole("button", { name: "Already handled" }));
+    });
+
+    expect(api.feedback).toHaveBeenCalledWith({
+      category: "pushback",
+      useful: false,
+      reason: "already_handled",
+      momentId: "session-b:321000",
+    });
   });
 
   test("Copy puts only the words of the line on the clipboard, then says Copied", async () => {
@@ -369,6 +419,25 @@ describe("wrap-up coaching", () => {
     expect(writeText.mock.calls[0]?.[0]).toBe(
       "نحجز ربع ساعة يوم الثلاثاء نراجع فيها الإعدادات؟",
     );
+  });
+
+  test("a post-meeting coaching quote opens its own session at the cited time", async () => {
+    const api = setup(
+      stateFrom(
+        ended(null).map((event) =>
+          event.type === "wrapup" && event.wrapUp?.state === "ready"
+            ? { ...event, wrapUp: { ...event.wrapUp, sessionId: "session-wrap" } }
+            : event,
+        ),
+      ),
+    );
+    const card = view.getByTestId("wrap-up");
+    fireEvent.click(within(card).getByRole("button", { name: "Open transcript at 12:40" }));
+
+    expect(api.openEvidence).toHaveBeenCalledWith({
+      sessionId: "session-wrap",
+      timestampMs: 760_000,
+    });
   });
 
   test("the whole meeting's talk time sits in the card when there was enough talk, and is absent otherwise", () => {

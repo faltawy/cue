@@ -38,13 +38,13 @@ When a new meeting starts, the coach starts a new chat about that meeting. If yo
 
 ### Coach keyboard shortcuts
 
-| Keys | Action |
-| ---- | ------ |
-| ⌘K | Actions menu |
-| ⌘J | Catch me up (while recording) |
-| ⇧⌘O | New chat |
-| ⇧⌘C | Copy the last answer |
-| / | Go to the question box |
+| Keys      | Action                                        |
+| --------- | --------------------------------------------- |
+| ⌘K        | Actions menu                                  |
+| ⌘J        | Catch me up (while recording)                 |
+| ⇧⌘O       | New chat                                      |
+| ⇧⌘C       | Copy the last answer                          |
+| /         | Go to the question box                        |
 | Esc or ⌘. | Stop the answer, or skip the coach's question |
 
 When the **New chat** button shows a dot, the chat is long and the coach may forget how it started. Start a new chat.
@@ -69,16 +69,16 @@ If the coach panel is hidden or behind other windows, the nudge also shows as a 
 
 ### When does the coach nudge?
 
-| Label | When |
-| ----- | ---- |
-| Question for you | Someone asks you a question or asks what you think. Small talk such as "How are you?" or "Can you hear me?" doesn't count. |
-| You were mentioned | Someone says your name. Set **Your name** in **Settings → General** so this works. |
-| Commitment | Anyone promises something, for example "I'll send it by Friday". |
-| Number mentioned | Someone says a price, amount, percentage, date or quarter. |
-| Pushback (from 0.2.0) | The other side objects to the price or the timing, mentions a tool they already use, needs a decision maker, or has doubts. |
-| Long monologue (from 0.2.0) | You have talked for about 90 seconds without a break. The coach suggests a question to give the floor back. |
+| Label                       | When                                                                                                                        |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Question for you            | Someone asks you a question or asks what you think. Small talk such as "How are you?" or "Can you hear me?" doesn't count.  |
+| You were mentioned          | Someone says your name. Set **Your name** in **Settings → General** so this works.                                          |
+| Commitment                  | Anyone promises something, for example "I'll send it by Friday".                                                            |
+| Number mentioned            | Someone says a price, amount, percentage, date or quarter.                                                                  |
+| Pushback (from 0.2.0)       | The other side objects to the price or the timing, mentions a tool they already use, needs a decision maker, or has doubts. |
+| Long monologue (from 0.2.0) | You have talked for about 90 seconds without a break. The coach suggests a question to give the floor back.                 |
 
-The coach understands English and Arabic for these.
+The coach can work with any language supported by the AI provider you chose. It checks the recent transcript in that language, even when Cue's local phrase detectors do not recognize the words. It stays quiet if the meaning is unclear or there is no useful action to take.
 
 Not every moment becomes a nudge. The coach first checks whether you need help. If you already answered well, it stays quiet. It also limits how often it speaks:
 
@@ -89,6 +89,8 @@ Not every moment becomes a nudge. The coach first checks whether you need help. 
 
 To stop nudges, turn off **Nudges** in **Settings → AI**. You can still ask the coach questions.
 
+Use **Useful** or **Not useful** on a nudge to tune future coaching. You can say why it was not useful, including if you had already handled the moment. Cue keeps these category preferences on your Mac; they are not sent to the AI provider. Already-handled feedback also prevents another nudge for that same transcript moment. Reset feedback from the coach actions menu.
+
 ## The suggestion card
 
 Nudges and Catch me up end with a card that has:
@@ -98,6 +100,8 @@ Nudges and Catch me up end with a card that has:
 - **Say** or **Ask** with the exact words, and a button to copy them
 - Sometimes a short warning
 - The quote and the speaker that started it
+
+Click the quote or timestamp to open that meeting's transcript at the moment. When audio is still available, Cue seeks and plays from there. This works for live nudges, Catch me up and the post-meeting Next time suggestions.
 
 ## Talk time
 

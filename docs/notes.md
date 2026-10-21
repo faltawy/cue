@@ -2,6 +2,10 @@
 
 Every meeting is a note, and you can also write notes without recording. This page shows how to find notes, write in them, sort them into folders and tags, lock them, and delete them.
 
+## Home
+
+When no note or destination is open, Home shows the next calendar meeting and a recording action. If the event has a meeting link, **Join & record** opens it and starts recording in the event's note; without a link, **Record this event** starts recording against the event. With no upcoming event, **Start recording** makes a new note. Home also links to recent notes and open follow-ups when available. The timeline and its filters remain in the sidebar.
+
 ## The note list
 
 The sidebar lists your notes and calendar events by day: Today, Yesterday, Tomorrow, then "3 days ago", "next week" and so on. A line marks the current time. The list shows items up to the end of tomorrow. Click **Open calendar** at the top to see later ones.
@@ -50,6 +54,10 @@ The note header has:
 
 Under the header are the tabs **Summary**, **Memos** and **Transcript**, once a note has more than one. Switch tabs with ⌥⌘← and ⌥⌘→. The first line of the note is its title. Cue suggests a title after the meeting. [What's in a note](recording.md#whats-in-a-note) explains the tabs.
 
+### Transcript turns
+
+Each speaker turn starts with its speaker and a timestamp. If audio is available, click the timestamp to seek and play from the beginning of that turn. Word-level seeking still works by clicking a word. When audio is unavailable, the timestamp remains visible as a reading aid.
+
 ### Writing
 
 - Type / for a menu: Text, Heading 1 to 3, Bullet List, Numbered List, Task List, Quote, Code Block, Divider.
@@ -58,7 +66,7 @@ Under the header are the tabs **Summary**, **Memos** and **Transcript**, once a 
 - Type @ to mention a note, person, organization or folder.
 - Paste or drop images, and drag their edges to resize.
 
-Task List items (`[ ] `) are the note's action items. The coach's wrap-up can add commitments as tasks, and automations can collect them into an export.
+Task List items (`[ ]`) are the note's action items. The coach's wrap-up can add commitments as tasks, and automations can collect them into an export.
 
 ### Meeting info
 
@@ -121,18 +129,18 @@ You can also manage folders in **Settings → Folders**.
 
 ## The ⋯ menu
 
-| Item | What it does |
-| ---- | ------------ |
-| Meeting info | Shows the event, date, participants and tags |
-| Version history | Shows earlier versions of your memos |
-| Start listening, Resume listening or Stop listening | Records into this note |
-| Re-transcribe | Transcribes the recording again with your current model |
-| Upload audio, Upload transcript | Fills an empty note from a file ([how](recording.md#make-a-note-from-a-recording-or-transcript)) |
-| Export | Saves the note as PDF, TXT, Markdown or Org ([how](recording.md#export-a-note)) |
-| Open in New Window | Opens the note in its own window. Esc closes that window. |
-| Always on Top | Keeps this window above other windows |
-| Lock Note or Unlock Note | Hides the note behind Touch ID or your password |
-| Delete | Deletes the note |
+| Item                                                | What it does                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Meeting info                                        | Shows the event, date, participants and tags                                                     |
+| Version history                                     | Shows earlier versions of your memos                                                             |
+| Start listening, Resume listening or Stop listening | Records into this note                                                                           |
+| Re-transcribe                                       | Transcribes the recording again with your current model                                          |
+| Upload audio, Upload transcript                     | Fills an empty note from a file ([how](recording.md#make-a-note-from-a-recording-or-transcript)) |
+| Export                                              | Saves the note as PDF, TXT, Markdown or Org ([how](recording.md#export-a-note))                  |
+| Open in New Window                                  | Opens the note in its own window. Esc closes that window.                                        |
+| Always on Top                                       | Keeps this window above other windows                                                            |
+| Lock Note or Unlock Note                            | Hides the note behind Touch ID or your password                                                  |
+| Delete                                              | Deletes the note                                                                                 |
 
 ## Get an older version back
 

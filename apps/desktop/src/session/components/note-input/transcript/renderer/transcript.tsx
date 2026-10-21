@@ -32,8 +32,16 @@ import {
   type TranscriptWordSelection,
 } from "./selection";
 import { useRegisterTranscriptSelectionSource } from "./selection-context";
-import { useVirtualSegments, VirtualSegmentRow } from "./virtual-segments";
+import {
+  findTranscriptSegmentIndex,
+  useVirtualSegments,
+  VirtualSegmentRow,
+} from "./virtual-segments";
 
+import {
+  consumeCoachEvidenceTarget,
+  useCoachEvidenceTarget,
+} from "~/coach/evidence-navigation";
 import {
   applyRenderRequestIdentitiesToSegments,
   getMaxSpeakerNumberForParticipants,
@@ -329,7 +337,38 @@ const SegmentsList = memo(
       currentMs,
       offsetMs,
     });
+    const evidenceTarget = useCoachEvidenceTarget((state) => state.target);
     useRegisterTranscriptSegments(transcriptId, sessionId, offsetMs, segments);
+
+    useLayoutEffect(() => {
+      if (
+        !sessionId ||
+        evidenceTarget?.sessionId !== sessionId ||
+        !scrollElement
+      )
+        return;
+      const index = findTranscriptSegmentIndex(
+        segments,
+        evidenceTarget.timestampMs,
+      );
+      if (index < 0) return;
+      virtual.scrollToIndex(index, "smooth");
+      if (audioExists) {
+        seek((offsetMs + evidenceTarget.timestampMs) / 1_000);
+        startPlayback();
+      }
+      consumeCoachEvidenceTarget(sessionId);
+    }, [
+      audioExists,
+      evidenceTarget,
+      offsetMs,
+      scrollElement,
+      seek,
+      segments,
+      sessionId,
+      startPlayback,
+      virtual.scrollToIndex,
+    ]);
 
     const seekAndPlay = useCallback(
       (word: SegmentWord) => {
@@ -339,6 +378,15 @@ const SegmentsList = memo(
         }
       },
       [audioExists, offsetMs, seek, startPlayback],
+    );
+
+    const seekToTime = useCallback(
+      (timeMs: number) => {
+        if (!audioExists) return;
+        seek(timeMs / 1000);
+        startPlayback();
+      },
+      [audioExists, seek, startPlayback],
     );
 
     useLayoutEffect(() => {
@@ -385,6 +433,7 @@ const SegmentsList = memo(
                   }
                   currentMs={currentMs}
                   seekAndPlay={seekAndPlay}
+                  seekToTime={seekToTime}
                   audioExists={audioExists}
                   search={transcriptSearch}
                   editMode={editMode}

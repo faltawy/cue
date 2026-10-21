@@ -44,6 +44,26 @@ export function estimateTranscriptRowHeight(segment: Segment, index: number) {
   );
 }
 
+export function findTranscriptSegmentIndex(
+  segments: Segment[],
+  timestampMs: number,
+): number {
+  let nearestIndex = -1;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const [index, segment] of segments.entries()) {
+    const start = segment.words[0]?.start_ms ?? segment.start_ms;
+    const end =
+      segment.words[segment.words.length - 1]?.end_ms ?? segment.end_ms;
+    if (timestampMs >= start && timestampMs <= end) return index;
+    const distance = timestampMs < start ? start - timestampMs : timestampMs - end;
+    if (distance < nearestDistance) {
+      nearestIndex = index;
+      nearestDistance = distance;
+    }
+  }
+  return nearestIndex;
+}
+
 export function useVirtualSegments({
   segments,
   segmentKeys,
@@ -305,6 +325,7 @@ export function useVirtualSegments({
     handleRowFocus,
     listRef,
     measureRow,
+    scrollToIndex,
     totalHeight,
     virtualItems,
   };

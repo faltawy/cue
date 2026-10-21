@@ -32,7 +32,7 @@ pub use claude_code::{
     InstalledClaudeCode,
 };
 pub use error::{Error, Result};
-pub use events::{CoachFocused, CoachNudged};
+pub use events::{CoachEvidence, CoachFocused, CoachNudged};
 use mcp::ResolvedServer;
 pub use probe::McpProbe;
 pub use process::Endpoint;
@@ -111,6 +111,12 @@ impl bridge::Host for AppHost {
         }
         if let Err(error) = tauri_specta::Event::emit(&nudge, &self.0) {
             tracing::warn!(%error, "coach_nudge_emit_failed");
+        }
+    }
+
+    fn evidence(&self, evidence: CoachEvidence) {
+        if let Err(error) = tauri_specta::Event::emit(&evidence, &self.0) {
+            tracing::warn!(%error, "coach_evidence_emit_failed");
         }
     }
 
@@ -796,7 +802,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::provider_setup,
             commands::retry_provider_setup,
         ])
-        .events(tauri_specta::collect_events![CoachNudged, CoachFocused])
+        .events(tauri_specta::collect_events![CoachNudged, CoachFocused, CoachEvidence])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 

@@ -6,6 +6,7 @@ import { jsonOf, runLlm } from "./llm";
 import {
   type Moment,
   type Move,
+  type EvidenceTarget,
   MOVE_TAGS,
   type MoveTag,
   moveFields,
@@ -182,6 +183,7 @@ export type NudgeInput = {
   hits: readonly Hit[];
   why: string;
   lines: readonly TranscriptLine[];
+  sessionId?: string;
 };
 
 export function nudgeMessage(input: NudgeInput): string {
@@ -267,9 +269,32 @@ export function nudgeMove(
   input: NudgeInput,
   reply: NudgeReply,
 ): { move: Move; talk: TalkStats | null } {
-  const moment = triggerMoment(input);
+  const sourceHit = input.hits.reduce<Hit | undefined>(
+    (found, hit) => (found && found.lineIndex >= hit.lineIndex ? found : hit),
+    undefined,
+  );
+  const sourceLine = sourceHit
+    ? input.lines[sourceHit.lineIndex]
+    : input.lines.at(-1);
+  const moment =
+    triggerMoment(input) ??
+    (sourceLine
+      ? {
+          speaker: sourceLine.speaker,
+          quote: sourceLine.text.trim().slice(0, QUOTE_MAX),
+          at: formatTimestamp(sourceLine.start_ms),
+        }
+      : undefined);
+  const evidence: EvidenceTarget | undefined =
+    input.sessionId && sourceLine
+      ? { sessionId: input.sessionId, timestampMs: sourceLine.start_ms }
+      : undefined;
   return {
-    move: { ...reply, ...(moment ? { moment } : {}) },
+    move: {
+      ...reply,
+      ...(moment ? { moment } : {}),
+      ...(evidence ? { evidence } : {}),
+    },
     talk: reply.tag === "talk_time" ? talkStats(input.lines) : null,
   };
 }

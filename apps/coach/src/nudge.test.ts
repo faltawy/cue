@@ -161,6 +161,24 @@ describe("the nudge reply", () => {
     expect(talking.talk?.youLongestMs).toBe(120_000);
   });
 
+  test("an evidence target uses the exact source session and transcript offset", () => {
+    const input = {
+      context: "Discovery",
+      sessionId: "session-a",
+      hits: [hit(1)],
+      why: "open question",
+      lines: [line("Sara", "Earlier context", 460), line("Omar", QUESTION, 481)],
+    };
+    const { move } = nudgeMove(input, {
+      tag: "open_question",
+      headline: "Answer directly",
+      verb: "Say",
+      line: "We can do that.",
+    });
+
+    expect(move.evidence).toEqual({ sessionId: "session-a", timestampMs: 481_000 });
+  });
+
   test("a very long flagged line is clipped to the moment limit", () => {
     const long = `${"We need every reply logged in the CRM. ".repeat(12)}Can you do that?`;
     const input = { context: "x", hits: [hit(0, long)], why: "y", lines: [line("Sara", long, 60)] };

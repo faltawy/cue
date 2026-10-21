@@ -125,6 +125,13 @@ export function appBridge(url: string, token: string) {
     chooseDefaultProject: () => call("POST", "/project", z.null()),
     nudged: (sessionId: string, nudge: { tag: string; line: string }) =>
       call("POST", `${meeting(sessionId)}/nudge`, z.null(), nudge),
+    evidence: (target: { sessionId: string; timestampMs: number }) =>
+      call(
+        "POST",
+        `${meeting(target.sessionId)}/evidence`,
+        z.null(),
+        { timestamp_ms: target.timestampMs },
+      ),
     meetingProject: (sessionId: string) =>
       required(call("GET", `${meeting(sessionId)}/project`, meetingProjectSchema)),
     chooseSeriesProject: (sessionId: string) =>

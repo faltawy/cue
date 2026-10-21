@@ -1,6 +1,8 @@
 # Setup
 
-The first time you open Cue, it walks you through permissions, your calendar and your AI provider. This page explains each step, plus the settings worth checking before your first meeting.
+The first time you open Cue, it walks you through capture permissions, calendar, your AI provider and transcription readiness. Microphone and system audio are needed to record; calendar and AI are optional. Recording still works if you skip calendar or AI setup. Transcripts and summaries need a configured transcription model and AI provider respectively.
+
+At the end of setup, you can choose **Try a short test recording**. Cue creates a clearly named test note and starts the normal recording flow only after you click the button. Return to setup after checking the note and choose **Delete test note**; stop the recording first if it is still active. Audio is saved on your Mac. If a remote transcription service is configured, it processes the test audio under your current provider settings; on-device models keep processing local.
 
 If macOS blocks Cue before setup opens, follow the [first-launch warning instructions](troubleshooting.md#cue-wont-open-the-first-time).
 
@@ -10,12 +12,12 @@ To open Settings, press ⌘, (Command and comma), click **Settings** in the menu
 
 Cue asks for these on first launch. You can check and fix them later in **Settings → Permissions**.
 
-| Permission | What Cue uses it for |
-| ---------- | -------------------- |
-| Microphone | Recording your voice |
-| System audio | Recording the other people on the call (the sound your Mac plays) |
-| Accessibility | Typing dictation into other apps, and reading meeting controls and visible chat |
-| Calendar (optional) | Showing your Apple Calendar events |
+| Permission          | What Cue uses it for                                                            |
+| ------------------- | ------------------------------------------------------------------------------- |
+| Microphone          | Recording your voice                                                            |
+| System audio        | Recording the other people on the call (the sound your Mac plays)               |
+| Accessibility       | Typing dictation into other apps, and reading meeting controls and visible chat |
+| Calendar (optional) | Showing your Apple Calendar events                                              |
 
 For Accessibility, Cue opens System Settings and shows you where to add it.
 
@@ -62,15 +64,15 @@ Cue downloads the Codex runtime on first use. You don't need to install a comman
 
 All in **Settings → AI**:
 
-| Setting | What it does | Default |
-| ------- | ------------ | ------- |
-| Provider | Claude or Codex for new chats, summaries, titles and background coaching | Claude |
-| Sign-in | Shows the selected provider's account; **Sign in** or **Sign in again** | |
-| Model | Claude: Sonnet, Opus or Haiku. Codex: leave blank for its default, or enter a model name available to your account. | Sonnet for Claude; blank for Codex |
-| Coach project | A folder the coach can read, such as your docs | None |
-| Nudges | While you record, the coach speaks up on its own when a question, promise or number may need you | On |
-| Spend limit per meeting | Nudges pause when they reach this estimated amount in one meeting ($0.01 to $100). Asking the coach always works. | $0.50 |
-| Web access | The coach can search the web and read public pages when you ask | On |
+| Setting                 | What it does                                                                                                        | Default                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Provider                | Claude or Codex for new chats, summaries, titles and background coaching                                            | Claude                             |
+| Sign-in                 | Shows the selected provider's account; **Sign in** or **Sign in again**                                             |                                    |
+| Model                   | Claude: Sonnet, Opus or Haiku. Codex: leave blank for its default, or enter a model name available to your account. | Sonnet for Claude; blank for Codex |
+| Coach project           | A folder the coach can read, such as your docs                                                                      | None                               |
+| Nudges                  | While you record, the coach speaks up on its own when a question, promise or number may need you                    | On                                 |
+| Spend limit per meeting | Nudges pause when they reach this estimated amount in one meeting ($0.01 to $100). Asking the coach always works.   | $0.50                              |
+| Web access              | The coach can search the web and read public pages when you ask                                                     | On                                 |
 
 The same page holds **Coach instructions**, **Knowledge** and **Tools**. **Claude connectors** work only with Claude; their settings are preserved when you switch to Codex. See [The coach](coach.md).
 
@@ -113,17 +115,17 @@ Add names, acronyms and product terms in **Settings → Dictionary** so they're 
 
 Cue shows its own alerts, so macOS doesn't ask for notification permission. Set them in **Settings → Notifications**.
 
-| Option | What it does | Default |
-| ------ | ------------ | ------- |
-| Disable all notifications | Turn off every alert, Dock bounce and sound | Off |
-| Summary complete | Tell you when a summary is ready | On |
-| Coach nudges | Show the coach's suggestion when its window isn't in front | On |
-| Event notifications | Remind you 5 minutes before each event, with **Join & record** or **Start recording** | On |
-| Recording status prompts | Ask before stopping when a meeting may have ended. When off, Cue keeps recording. | On |
-| Completion sound | Play a sound when transcription or a summary finishes; choose one of five sounds and preview it | On |
-| Bounce app icon | Bounce the Dock icon when a summary is ready in the background (only when Cue is in the Dock) | On |
-| Microphone detection | Ask "Are you in a meeting?" when an app starts using your microphone | On |
-| Respect Do-Not-Disturb mode | Hold event and microphone alerts while Do Not Disturb is on | Off |
+| Option                      | What it does                                                                                    | Default |
+| --------------------------- | ----------------------------------------------------------------------------------------------- | ------- |
+| Disable all notifications   | Turn off every alert, Dock bounce and sound                                                     | Off     |
+| Summary complete            | Tell you when a summary is ready                                                                | On      |
+| Coach nudges                | Show the coach's suggestion when its window isn't in front                                      | On      |
+| Event notifications         | Remind you 5 minutes before each event, with **Join & record** or **Start recording**           | On      |
+| Recording status prompts    | Ask before stopping when a meeting may have ended. When off, Cue keeps recording.               | On      |
+| Completion sound            | Play a sound when transcription or a summary finishes; choose one of five sounds and preview it | On      |
+| Bounce app icon             | Bounce the Dock icon when a summary is ready in the background (only when Cue is in the Dock)   | On      |
+| Microphone detection        | Ask "Are you in a meeting?" when an app starts using your microphone                            | On      |
+| Respect Do-Not-Disturb mode | Hold event and microphone alerts while Do Not Disturb is on                                     | Off     |
 
 Under **Microphone detection** you can set the **Detection delay** (5 seconds to 2 minutes, default 15 seconds) and **Exclude apps from detection**. Some apps are excluded by default and marked "(default)".
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 
 import type { CoachEvent } from "../protocol";
+import type { CoachFeedback, EvidenceTarget } from "../move";
 import type { PreparedImage } from "./images";
 import { type CoachState, initialState, reduce } from "./state";
 
@@ -25,6 +26,9 @@ export type CoachApi = {
   checkItem(blockId: string, index: number, checked: boolean): Promise<ActionResult>;
   addItemToNote(blockId: string, index: number): Promise<ActionResult>;
   open(url: string): Promise<ActionResult>;
+  openEvidence(target: EvidenceTarget): Promise<ActionResult>;
+  feedback(input: CoachFeedback): Promise<ActionResult>;
+  resetFeedback(): Promise<ActionResult>;
   stop(): Promise<ActionResult>;
   checkIn(): Promise<ActionResult>;
   newChat(): Promise<ActionResult>;
@@ -172,6 +176,9 @@ export function useCoach(): [CoachState, CoachApi] {
       checkItem: (blockId, index, checked) => withNotice(post("/blocks/check", { block_id: blockId, index, checked })),
       addItemToNote: (blockId, index) => withNotice(post("/blocks/action-item", { block_id: blockId, index })),
       open: (url) => withNotice(post("/open", { url })),
+      openEvidence: (target) => withNotice(post("/evidence", target)),
+      feedback: (input) => withNotice(post("/feedback", input)),
+      resetFeedback: () => withNotice(post("/feedback/reset")),
       stop: () => withNotice(post("/stop")),
       checkIn: () => withNotice(post("/checkin")),
       newChat: () => withNotice(post("/new-chat")),

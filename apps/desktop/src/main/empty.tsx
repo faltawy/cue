@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useCallback, useMemo } from "react";
 
+import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { Button } from "@anlg/ui/components/ui/button";
 import { Kbd, KbdGroup } from "@anlg/ui/components/ui/kbd";
 import { cn, startOfDay } from "@anlg/utils";
@@ -9,6 +10,7 @@ import { toTz, useNow } from "~/calendar/hooks";
 import { useIgnoredEvents } from "~/calendar/ignored-events";
 import { useTimelineEventsTable } from "~/calendar/queries";
 import { showCoach } from "~/coach/commands";
+import { useHomeOpenFollowUps, useHomeRecentNotes } from "~/main/home-data";
 import { buildTrayScheduleEvents } from "~/services/tray-schedule";
 import { getOrCreateSessionForEventId } from "~/session/queries";
 import { useConfigValue } from "~/shared/config";
@@ -19,7 +21,7 @@ import {
   useNewNote,
   useNewNoteAndListen,
 } from "~/shared/useNewNote";
-import { type Tab } from "~/store/zustand/tabs";
+import { type Tab, useTabs } from "~/store/zustand/tabs";
 
 export function TabContentEmpty({
   tab: _tab,
@@ -71,16 +73,23 @@ function EmptyView() {
   const newNoteAndListen = useNewNoteAndListen({ behavior: "current" });
   const coachShortcut = useConfigValue("coach_shortcut");
   const next = useNextMeeting();
+  const recentNotes = useHomeRecentNotes();
+  const followUps = useHomeOpenFollowUps();
+  const openCurrent = useTabs((state) => state.openCurrent);
 
-  const recordNext = useCallback(() => {
+  const recordNext = useCallback(async () => {
     if (!next) return;
-    void getOrCreateSessionForEventId(next.id)
-      .then((sessionId) => {
-        openSessionAndListen(sessionId, { behavior: "current" });
-      })
-      .catch((error) => {
-        console.error("[home] failed to record the next meeting", error);
+    if (next.meetingLink) {
+      await openerCommands.openUrl(next.meetingLink, null).catch((error) => {
+        console.error("[home] failed to open the meeting link", error);
       });
+    }
+    try {
+      const sessionId = await getOrCreateSessionForEventId(next.id);
+      openSessionAndListen(sessionId, { behavior: "current" });
+    } catch (error) {
+      console.error("[home] failed to record the next meeting", error);
+    }
   }, [next]);
 
   return (
@@ -88,9 +97,9 @@ function EmptyView() {
       data-tauri-drag-region
       className="flex h-full flex-col items-center justify-center"
     >
-      <div className="flex w-full max-w-[340px] flex-col items-center gap-5 px-4 text-center">
-        <h1 className="text-title text-balance">
-          <Trans>Your coach is ready for the next meeting</Trans>
+      <div className="flex w-full max-w-2xl flex-col gap-7 px-6 py-8">
+        <h1 className="text-title text-center text-balance">
+          <Trans>A clearer place to start</Trans>
         </h1>
 
         {next ? (
@@ -119,7 +128,11 @@ function EmptyView() {
               </span>
             </div>
             <Button type="button" className="w-full" onClick={recordNext}>
-              <Trans>Record with coach</Trans>
+              {next.meetingLink ? (
+                <Trans>Join & record</Trans>
+              ) : (
+                <Trans>Record this event</Trans>
+              )}
             </Button>
           </div>
         ) : (
@@ -136,6 +149,60 @@ function EmptyView() {
             />
           </Button>
         )}
+
+        <div className="flex flex-col gap-5">
+          {recentNotes.length > 0 && (
+            <section
+              className="flex flex-col gap-1"
+              aria-labelledby="home-recent-notes"
+            >
+              <h2
+                id="home-recent-notes"
+                className="text-label text-muted-foreground px-2 font-medium"
+              >
+                <Trans>Recent notes</Trans>
+              </h2>
+              {recentNotes.map((note) => (
+                <ActionItem
+                  key={note.id}
+                  label={note.title}
+                  shortcut={[]}
+                  onClick={() => openCurrent({ type: "sessions", id: note.id })}
+                />
+              ))}
+            </section>
+          )}
+          {followUps.length > 0 && (
+            <section
+              className="flex flex-col gap-1"
+              aria-labelledby="home-open-follow-ups"
+            >
+              <h2
+                id="home-open-follow-ups"
+                className="text-label text-muted-foreground px-2 font-medium"
+              >
+                <Trans>Open follow-ups</Trans>
+              </h2>
+              {followUps.map((item) => (
+                <ActionItem
+                  key={item.id}
+                  label={
+                    <span className="flex min-w-0 flex-col text-start">
+                      <span className="truncate">{item.text}</span>
+                      <span className="text-muted-foreground text-label">
+                        {item.session_title}
+                      </span>
+                    </span>
+                  }
+                  shortcut={[]}
+                  onClick={() =>
+                    openCurrent({ type: "sessions", id: item.session_id })
+                  }
+                />
+              ))}
+            </section>
+          )}
+        </div>
 
         <div className="flex w-full flex-col gap-0.5">
           <ActionItem

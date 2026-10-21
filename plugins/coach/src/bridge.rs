@@ -19,7 +19,7 @@ use crate::library::{
 };
 use crate::series::{self, MeetingProject};
 use crate::settings::{self, SeriesProject};
-use crate::{CoachNudged, Error, Result};
+use crate::{CoachEvidence, CoachNudged, Error, Result};
 
 pub const URL_ENV: &str = "CUE_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "CUE_COACH_APP_TOKEN";
@@ -34,6 +34,7 @@ pub trait Host: Send + Sync + 'static {
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>>;
     fn choose_default_project(&self) -> Result<()>;
     fn nudged(&self, nudge: CoachNudged);
+    fn evidence(&self, evidence: CoachEvidence);
 }
 
 struct BridgeState {
@@ -95,6 +96,7 @@ fn router(token: &str, host: impl Host) -> Router {
             post(choose_series_project).delete(clear_series_project),
         )
         .route("/meeting/{session_id}/nudge", post(nudged))
+        .route("/meeting/{session_id}/evidence", post(open_evidence))
         .route("/meeting/{session_id}/notes", post(append_note))
         .route("/meeting/{session_id}/action-items", post(add_action_item))
         .route(
@@ -333,6 +335,23 @@ async fn nudged(
 }
 
 #[derive(serde::Deserialize)]
+struct EvidenceBody {
+    timestamp_ms: u64,
+}
+
+async fn open_evidence(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<EvidenceBody>,
+) -> StatusCode {
+    state.host.evidence(CoachEvidence {
+        session_id,
+        timestamp_ms: body.timestamp_ms,
+    });
+    StatusCode::NO_CONTENT
+}
+
+#[derive(serde::Deserialize)]
 struct NoteBody {
     lines: Vec<String>,
     style: NoteStyle,
@@ -554,6 +573,7 @@ async fn update_template(
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
+    use tower::ServiceExt;
 
     use super::*;
 
@@ -563,6 +583,7 @@ mod tests {
         default_project: tempfile::TempDir,
         picks: Mutex<Vec<Option<PathBuf>>>,
         recording: Mutex<Option<Vec<String>>>,
+        evidence: Mutex<Vec<CoachEvidence>>,
     }
 
     impl Host for Arc<TestHost> {
@@ -586,9 +607,49 @@ mod tests {
             Ok(())
         }
         fn nudged(&self, _nudge: CoachNudged) {}
+        fn evidence(&self, evidence: CoachEvidence) {
+            self.evidence.lock().unwrap().push(evidence);
+        }
     }
 
     const TOKEN: &str = "test-token";
+
+    async fn test_host() -> Arc<TestHost> {
+        let db = anlg_db_core::Db::connect_memory_plain().await.unwrap();
+        anlg_db_app::prepare_schema(&db).await.unwrap();
+        let pool = db.pool().clone();
+        for (id, series_id, event, started) in [
+            ("tuesday", "rec-1", r#"{"title":"Acme weekly"}"#, 1_000),
+            ("thursday", "rec-1", r#"{"title":"Acme weekly"}"#, 2_000),
+            ("adhoc", "", "", 500),
+        ] {
+            sqlx::query(
+                "INSERT INTO sessions (id, series_id, event_json, title) VALUES (?, ?, ?, ?)",
+            )
+            .bind(id)
+            .bind(series_id)
+            .bind(event)
+            .bind(id)
+            .execute(&pool)
+            .await
+            .unwrap();
+            sqlx::query("INSERT INTO transcripts (id, session_id, started_at_ms) VALUES (?, ?, ?)")
+                .bind(format!("t-{id}"))
+                .bind(id)
+                .bind(started)
+                .execute(&pool)
+                .await
+                .unwrap();
+        }
+        Arc::new(TestHost {
+            pool,
+            config: tempfile::tempdir().unwrap(),
+            default_project: tempfile::tempdir().unwrap(),
+            picks: Mutex::new(Vec::new()),
+            recording: Mutex::new(Some(Vec::new())),
+            evidence: Mutex::new(Vec::new()),
+        })
+    }
 
     async fn serve() -> (String, Arc<TestHost>) {
         let db = anlg_db_core::Db::connect_memory_plain().await.unwrap();
@@ -623,6 +684,7 @@ mod tests {
             default_project: tempfile::tempdir().unwrap(),
             picks: Mutex::new(Vec::new()),
             recording: Mutex::new(Some(Vec::new())),
+            evidence: Mutex::new(Vec::new()),
         });
         let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
             .await
@@ -635,6 +697,32 @@ mod tests {
 
     fn client() -> reqwest::Client {
         reqwest::Client::new()
+    }
+
+    #[tokio::test]
+    async fn evidence_route_carries_the_requested_session_and_millisecond_offset() {
+        let host = test_host().await;
+        let response = router(TOKEN, host.clone())
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/meeting/thursday/evidence")
+                    .header("authorization", format!("Bearer {TOKEN}"))
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(r#"{"timestamp_ms":456789}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
+        assert_eq!(
+            *host.evidence.lock().unwrap(),
+            vec![CoachEvidence {
+                session_id: "thursday".into(),
+                timestamp_ms: 456_789,
+            }]
+        );
     }
 
     #[tokio::test]

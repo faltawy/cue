@@ -155,6 +155,10 @@ msgstr "1 week"
 msgid "3 days"
 msgstr "3 days"
 
+#: src/main/empty.tsx
+msgid "A clearer place to start"
+msgstr "A clearer place to start"
+
 #: src/sidebar/folder-name-dialog.tsx
 msgid "A folder with this name already exists."
 msgstr "A folder with this name already exists."
@@ -162,6 +166,10 @@ msgstr "A folder with this name already exists."
 #: src/automations/starters.tsx
 msgid "A Markdown file with the note, summary, and transcript."
 msgstr "A Markdown file with the note, summary, and transcript."
+
+#: src/onboarding/transcription-readiness.tsx
+msgid "A model is selected. Provider access and model readiness determine when transcripts are available."
+msgstr "A model is selected. Provider access and model readiness determine when transcripts are available."
 
 #: src/sidebar/timeline/utils/index.ts
 msgid "a month ago"
@@ -314,7 +322,6 @@ msgid "Additional spoken languages"
 msgstr "Additional spoken languages"
 
 #: src/settings/ai/shared/index.tsx
-#: src/sidebar/settings-nav-groups.ts
 msgid "Advanced"
 msgstr "Advanced"
 
@@ -400,10 +407,6 @@ msgstr "API Key"
 msgid "API key saved"
 msgstr "API key saved"
 
-#: src/sidebar/settings-nav-groups.ts
-msgid "App"
-msgstr "App"
-
 #: src/settings/appearance/app-icon.tsx
 msgid "App icon"
 msgstr "App icon"
@@ -412,6 +415,10 @@ msgstr "App icon"
 #: src/sidebar/settings-nav-groups.ts
 msgid "Appearance"
 msgstr "Appearance"
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Appearance & general"
+msgstr "Appearance & general"
 
 #: src/calendar/components/apple/permission.tsx
 msgid "Apple Calendar access is off"
@@ -1089,6 +1096,10 @@ msgstr "Cue can read meeting details"
 msgid "Cue needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat."
 msgstr "Cue needs microphone and system audio to transcribe your meetings, plus Accessibility to read meeting controls, visible chat."
 
+#: src/onboarding/test-recording.tsx
+msgid "Cue saves the recording on this Mac. If you have transcription set up, the selected transcription provider will process it using your current provider settings. Nothing starts until you choose this option."
+msgstr "Cue saves the recording on this Mac. If you have transcription set up, the selected transcription provider will process it using your current provider settings. Nothing starts until you choose this option."
+
 #: src/settings/general/storage/legacy-cleanup.tsx
 msgid "Cue will retry automatically. This does not affect your notes."
 msgstr "Cue will retry automatically. This does not affect your notes."
@@ -1176,6 +1187,10 @@ msgstr "Delete Note"
 #: src/session/components/note-input/header-transcript.tsx
 msgid "Delete recording"
 msgstr "Delete recording"
+
+#: src/onboarding/test-recording.tsx
+msgid "Delete test note"
+msgstr "Delete test note"
 
 #: src/sidebar/timeline/item.tsx
 msgid "Delete This Event"
@@ -1731,6 +1746,7 @@ msgstr "Insert below"
 msgid "Job Title"
 msgstr "Job Title"
 
+#: src/main/empty.tsx
 #: src/services/event-notification/index.ts
 #: src/session/components/outer-header/index.tsx
 msgid "Join & record"
@@ -1785,6 +1801,10 @@ msgstr "Leave blank to use the Codex default model."
 #: src/settings/automations/markdown-export-options.tsx
 msgid "Leave blank to use the meeting date and title."
 msgstr "Leave blank to use the meeting date and title."
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Library"
+msgstr "Library"
 
 #: src/settings/appearance/theme.tsx
 msgid "Light"
@@ -1909,6 +1929,10 @@ msgstr "MCP servers the coach can use in every meeting. Their tools only read un
 #: src/sidebar/timeline/index.tsx
 msgid "Meeting"
 msgstr "Meeting"
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Meeting capture"
+msgstr "Meeting capture"
 
 #: src/session/components/note-input/meeting-chat-highlights.tsx
 #: src/shared/open-note-dialog.tsx
@@ -2383,6 +2407,10 @@ msgstr "Open Cue"
 msgid "Open Cue from the menu bar."
 msgstr "Open Cue from the menu bar."
 
+#: src/main/empty.tsx
+msgid "Open follow-ups"
+msgstr "Open follow-ups"
+
 #: src/shared/open-note-dialog.tsx
 msgid "Open in new tab"
 msgstr "Open in new tab"
@@ -2415,6 +2443,10 @@ msgstr "Open the coach when recording starts"
 #: src/settings/general/meeting-settings.tsx
 msgid "Open the meeting link when a scheduled meeting begins."
 msgstr "Open the meeting link when a scheduled meeting begins."
+
+#: src/onboarding/transcription-readiness.tsx
+msgid "Open transcription settings"
+msgstr "Open transcription settings"
 
 #. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
 #: src/onboarding/permissions.tsx
@@ -2620,6 +2652,10 @@ msgstr "received"
 msgid "Recent"
 msgstr "Recent"
 
+#: src/main/empty.tsx
+msgid "Recent notes"
+msgstr "Recent notes"
+
 #: src/calendar/components/sidebar.tsx
 msgid "Reconnect"
 msgstr "Reconnect"
@@ -2637,8 +2673,8 @@ msgid "Record other participants in meetings."
 msgstr "Record other participants in meetings."
 
 #: src/main/empty.tsx
-msgid "Record with coach"
-msgstr "Record with coach"
+msgid "Record this event"
+msgstr "Record this event"
 
 #: src/settings/general/permissions.tsx
 msgid "Record your voice in meetings and calls."
@@ -2651,6 +2687,10 @@ msgstr "Recording not found. It may have been deleted."
 #: src/settings/general/notification.tsx
 msgid "Recording status prompts"
 msgstr "Recording status prompts"
+
+#: src/onboarding/transcription-readiness.tsx
+msgid "Recording works without transcription. Set up a transcription model before Cue can create transcripts or summaries."
+msgstr "Recording works without transcription. Set up a transcription model before Cue can create transcripts or summaries."
 
 #: src/calendar/components/calendar-selection.tsx
 msgid "Refresh calendars"
@@ -2970,6 +3010,11 @@ msgstr "See all folders"
 msgid "See all templates"
 msgstr "See all templates"
 
+#. placeholder {0}: formatTurnTimestamp(timestampMs)
+#: src/session/components/note-input/transcript/renderer/segment-header.tsx
+msgid "Seek to {0}"
+msgstr "Seek to {0}"
+
 #: src/settings/ai/stt/select.tsx
 msgid "Select a model"
 msgstr "Select a model"
@@ -3064,6 +3109,10 @@ msgstr "Setting up dictation…"
 #: src/sidebar/toast/registry.tsx
 msgid "Settings"
 msgstr "Settings"
+
+#: src/sidebar/settings-nav-groups.ts
+msgid "Setup"
+msgstr "Setup"
 
 #: src/session/components/note-input/meeting-screen-gallery.tsx
 msgid "Shared screen at {time}"
@@ -3338,6 +3387,10 @@ msgstr "Stop listening"
 msgid "Stop listening when your call ends."
 msgstr "Stop listening when your call ends."
 
+#: src/onboarding/test-recording.tsx
+msgid "Stop the test recording in its note before deleting it."
+msgstr "Stop the test recording in its note before deleting it."
+
 #: src/session/components/note-input/transcript/screens/empty.tsx
 msgid "Stop transcription"
 msgstr "Stop transcription"
@@ -3470,6 +3523,10 @@ msgstr "Test export failed: {0}"
 msgid "Test export saved to {0}"
 msgstr "Test export saved to {0}"
 
+#: src/onboarding/test-recording.tsx
+msgid "Test note created. Return here after checking it to delete it."
+msgstr "Test note created. Return here after checking it to delete it."
+
 #: src/settings/general/index.tsx
 msgid "The coach appears beside your meeting without taking focus."
 msgstr "The coach appears beside your meeting without taking focus."
@@ -3585,6 +3642,7 @@ msgstr "Transcribing…"
 msgid "Transcript"
 msgstr "Transcript"
 
+#: src/onboarding/transcription-readiness.tsx
 #: src/settings/ai/stt/index.tsx
 #: src/sidebar/settings-nav-groups.ts
 msgid "Transcription"
@@ -3610,6 +3668,10 @@ msgstr "Travel & Places"
 #: src/settings/automations/workflow-builder.tsx
 msgid "Trigger"
 msgstr "Trigger"
+
+#: src/onboarding/test-recording.tsx
+msgid "Try a short test recording"
+msgstr "Try a short test recording"
 
 #: src/contacts/details.tsx
 msgid "Try again"
@@ -3888,12 +3950,9 @@ msgid "White"
 msgstr "White"
 
 #: src/settings/automations/workflow-builder.tsx
+#: src/sidebar/settings-nav-groups.ts
 msgid "Workflow"
 msgstr "Workflow"
-
-#: src/sidebar/settings-nav-groups.ts
-msgid "Workspace"
-msgstr "Workspace"
 
 #: src/automations/starters.tsx
 msgid "Write to a folder"
@@ -3922,10 +3981,6 @@ msgstr "You can use up to three example summaries."
 #: src/stt/live-transcript-interrupted.ts
 msgid "Your audio is still being saved, and the missing part will be filled in from the recording."
 msgstr "Your audio is still being saved, and the missing part will be filled in from the recording."
-
-#: src/main/empty.tsx
-msgid "Your coach is ready for the next meeting"
-msgstr "Your coach is ready for the next meeting"
 
 #: src/settings/dictionary/index.tsx
 msgid "Your dictionary is empty"

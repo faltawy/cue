@@ -1,5 +1,6 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { z } from "zod";
 
 import {
   createAccess,
@@ -18,12 +19,16 @@ import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { actionItemText, blockItemCount } from "./blocks";
 import {
   type ChatStore,
+  clearFeedback,
   dropResume,
   keepWrapUp,
+  isHandledMoment,
   loadChats,
   type OpenReason,
   planChat,
+  prioritizeHitsByFeedback,
   remember,
+  recordFeedback,
   saveChats,
   type SettledWrapUp,
   wrappedTranscripts,
@@ -52,6 +57,14 @@ import {
   type WrapUpActions,
   wrapUpActions,
 } from "./meeting-state";
+import {
+  evidenceMomentId,
+  evidenceTargetSchema,
+  FEEDBACK_REASONS,
+  type EvidenceTarget,
+  type Moment,
+  MOVE_TAGS,
+} from "./move";
 import { moveText } from "./move";
 import {
   nudgeLabel,
@@ -93,6 +106,7 @@ import {
   readMeetingInfo,
   readMeetingStatus,
   readSelfName,
+  type TranscriptLine,
 } from "./transcript";
 import { runTriage } from "./triage";
 import { TurnTracker } from "./turn-events";
@@ -132,6 +146,12 @@ const proactiveConfig = {
 };
 const TRIAGE_TIMEOUT_MS = 30_000;
 const NUDGE_TIMEOUT_MS = 45_000;
+const coachFeedbackSchema = z.strictObject({
+  category: z.enum(MOVE_TAGS),
+  useful: z.boolean(),
+  reason: z.enum(FEEDBACK_REASONS).optional(),
+  momentId: z.string().min(1).optional(),
+});
 const CONTEXT_PEOPLE_MAX = 8;
 const options = await coachOptionsFromArgs(values);
 const bridge = appBridgeFromEnv(process.env);
@@ -418,6 +438,25 @@ function startProactive(sessionId: string | undefined) {
       }),
     nudge: (request) => {
       if (!coach || busy || proactive !== current) return false;
+      const sourceLines = request.hits.length
+        ? request.hits.flatMap((hit) => {
+            const line = request.lines[hit.lineIndex];
+            return line ? [line] : [];
+          })
+        : request.lines.slice(-1);
+      if (
+        sessionId &&
+        sourceLines.some((line) =>
+          isHandledMoment(
+            store,
+            evidenceMomentId({
+              sessionId,
+              timestampMs: line.start_ms,
+            }),
+          ),
+        )
+      )
+        return false;
       void runLightNudge(current, request);
       return true;
     },
@@ -430,26 +469,30 @@ function startProactive(sessionId: string | undefined) {
 
 async function runLightNudge(owner: Proactive, request: NudgeRequest) {
   const sessionId = proactiveMeeting;
+  const hits = prioritizeHitsByFeedback(store, request.hits);
   const abort = new AbortController();
   nudgeAbort = abort;
-  const label = `${nudgeLabel(request.hits)} · ${clockTime()}`;
+  const label = `${nudgeLabel(hits)} · ${clockTime()}`;
   busy = true;
   askedAt = Date.now();
   feed({ type: "user", kind: "nudge", text: label });
   broadcast(status());
   const result = await executable(selected.provider)
     .then((claudePath) =>
-      runNudge(request, {
-        instructions: options.instructions ?? "",
-        signal: AbortSignal.any([
-          abort.signal,
-          AbortSignal.timeout(NUDGE_TIMEOUT_MS),
-        ]),
-        claudePath,
-        provider: selected.provider,
-        model: selected.model,
-        codexHome,
-      }),
+      runNudge(
+        { ...request, hits, sessionId: sessionId ?? undefined },
+        {
+          instructions: options.instructions ?? "",
+          signal: AbortSignal.any([
+            abort.signal,
+            AbortSignal.timeout(NUDGE_TIMEOUT_MS),
+          ]),
+          claudePath,
+          provider: selected.provider,
+          model: selected.model,
+          codexHome,
+        },
+      ),
     )
     .catch((error: unknown) => ({
       ok: false as const,
@@ -501,6 +544,25 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
 
 function clockTime(): string {
   return new Date().toTimeString().slice(0, 5);
+}
+
+function evidenceForMoment(
+  moment: Moment,
+  sessionId: string,
+  lines: readonly TranscriptLine[],
+): EvidenceTarget | undefined {
+  const source = lines.find(
+    (line) =>
+      line.speaker === moment.speaker &&
+      (line.text.includes(moment.quote) ||
+        moment.quote.includes(line.text.trim())),
+  );
+  if (source) return { sessionId, timestampMs: source.start_ms };
+  if (!moment.at) return undefined;
+  const [minutes, seconds] = moment.at.split(":").map(Number);
+  if (!Number.isInteger(minutes) || !Number.isInteger(seconds) || seconds! > 59)
+    return undefined;
+  return { sessionId, timestampMs: (minutes! * 60 + seconds!) * 1_000 };
 }
 
 function projectView(resolved: MeetingProject): ProjectView {
@@ -686,7 +748,21 @@ async function openChat(reason: OpenReason) {
     ...(bridge ? { edits: editHooks(bridge) } : {}),
     ...(plan.resume ? { resume: plan.resume } : {}),
     askUser: (id, asked, signal) => questions.ask(id, asked, signal),
-    show: (block) => feed({ type: "block", id: crypto.randomUUID(), block }),
+    show: (block) => {
+      const transcript = sessionId
+        ? readLiveTranscript(db, { sessionId, recording })
+        : null;
+      const move = block.kind === "move" ? block : null;
+      const evidence =
+        move?.moment && sessionId
+          ? evidenceForMoment(move.moment, sessionId, transcript?.lines ?? [])
+          : undefined;
+      feed({
+        type: "block",
+        id: crypto.randomUUID(),
+        block: move && evidence ? { ...move, evidence } : block,
+      });
+    },
     onToolResult: (id, response, name) =>
       tracker.hookResult(id, response, name),
     stderr: (chunk) => stderr.push(chunk),
@@ -712,7 +788,7 @@ async function openChat(reason: OpenReason) {
     const { view, transcriptId } = plan.wrapUp;
     wrapUp =
       view.state === "ready"
-        ? { ...view, actions: actionsFor(view.wrapUp) }
+        ? { ...view, sessionId, actions: actionsFor(view.wrapUp) }
         : view;
     wrapUpMeeting = { sessionId, transcriptId };
   }
@@ -804,9 +880,11 @@ function transcriptEvent(transcript = readTranscript()): CoachEvent {
 
 function setWrapUp(next: WrapUpView | null) {
   wrapUp = next;
+  if (wrapUp?.state === "ready" && wrapUpMeeting)
+    wrapUp = { ...wrapUp, sessionId: wrapUpMeeting.sessionId };
   broadcast({ type: "wrapup", wrapUp });
-  if (wrapUpMeeting && next && next.state !== "running")
-    storeWrapUp(wrapUpMeeting, next);
+  if (wrapUpMeeting && wrapUp && wrapUp.state !== "running")
+    storeWrapUp(wrapUpMeeting, wrapUp);
 }
 
 function storeWrapUp(
@@ -1232,6 +1310,36 @@ const server = Bun.serve({
         if (setup.state !== "failed")
           return conflict("There's nothing to retry.");
         retrySetup();
+        return new Response(null, { status: 204 });
+      },
+    },
+    "/feedback": {
+      POST: async (request) => {
+        const feedback = coachFeedbackSchema.safeParse(await jsonBody(request));
+        if (!feedback.success)
+          return new Response("That nudge feedback is invalid.", {
+            status: 400,
+          });
+        store = recordFeedback(store, feedback.data);
+        saveStore();
+        return new Response(null, { status: 204 });
+      },
+    },
+    "/feedback/reset": {
+      POST: () => {
+        store = clearFeedback(store);
+        saveStore();
+        return new Response(null, { status: 204 });
+      },
+    },
+    "/evidence": {
+      POST: async (request) => {
+        const target = evidenceTargetSchema.safeParse(await jsonBody(request));
+        if (!target.success || !bridge)
+          return new Response("That transcript moment is unavailable.", {
+            status: 400,
+          });
+        await bridge.evidence(target.data);
         return new Response(null, { status: 204 });
       },
     },

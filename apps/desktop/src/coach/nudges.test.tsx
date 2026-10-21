@@ -25,6 +25,7 @@ vi.mock("@anlg/plugin-coach", () => ({
   commands: { show: mocks.show },
   events: {
     coachNudged: listenAs("nudged"),
+    coachEvidence: listenAs("evidence"),
     coachFocused: listenAs("focused"),
   },
 }));
@@ -107,7 +108,9 @@ describe("nudges while the coach is out of view", () => {
 
     mocks.listeners.focused?.({ payload: {} });
     expect(
-      await screen.findByRole("button", { name: "Coach is listening · 1 nudge" }),
+      await screen.findByRole("button", {
+        name: "Coach is listening · 1 nudge",
+      }),
     ).not.toBeNull();
   });
 
@@ -131,7 +134,9 @@ describe("nudges while the coach is out of view", () => {
     await waitFor(() => expect(mocks.listeners.nudged).toBeDefined());
 
     mocks.listeners.nudged?.({ payload: { ...nudge, seen: false } });
-    await waitFor(() => expect(mocks.showNotification).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledTimes(1),
+    );
     mocks.listeners.focused?.({ payload: {} });
     mocks.listeners.nudged?.({ payload: { ...nudge, seen: true } });
 

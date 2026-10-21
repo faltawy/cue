@@ -14,6 +14,34 @@ export const MOVE_TAGS = [
 ] as const;
 
 export type MoveTag = (typeof MOVE_TAGS)[number];
+export type FeedbackReason =
+  | "already_handled"
+  | "poor_timing"
+  | "irrelevant"
+  | "wrong_language";
+export const FEEDBACK_REASONS = [
+  "already_handled",
+  "poor_timing",
+  "irrelevant",
+  "wrong_language",
+] as const satisfies readonly FeedbackReason[];
+export type CoachFeedback = {
+  category: MoveTag;
+  useful: boolean;
+  reason?: FeedbackReason;
+  momentId?: string;
+};
+
+export const evidenceTargetSchema = z.strictObject({
+  sessionId: z.string().min(1),
+  timestampMs: z.number().int().nonnegative(),
+});
+export type EvidenceTarget = z.infer<typeof evidenceTargetSchema>;
+
+export function evidenceMomentId(target: EvidenceTarget): string {
+  return `${target.sessionId}:${target.timestampMs}`;
+}
+
 
 export const MOVE_VERBS = ["Say", "Ask"] as const;
 export const HEADLINE_MAX = 100;
@@ -41,7 +69,11 @@ export const moveFields = {
   watch_out: text(WATCH_OUT_MAX).optional(),
 };
 
-export const moveSchema = z.strictObject({ ...moveFields, moment: momentSchema.optional() });
+export const moveSchema = z.strictObject({
+  ...moveFields,
+  moment: momentSchema.optional(),
+  evidence: evidenceTargetSchema.optional(),
+});
 
 export type Moment = z.infer<typeof momentSchema>;
 export type Move = z.infer<typeof moveSchema>;

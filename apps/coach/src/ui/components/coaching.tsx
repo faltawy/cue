@@ -1,6 +1,7 @@
 import { Check, Copy, TriangleAlert } from "lucide-react";
+import { useState } from "react";
 
-import type { Moment, Move, MoveTag, MoveVerb } from "../../move";
+import { evidenceMomentId, type CoachFeedback, type EvidenceTarget, type Moment, type Move, type MoveTag, type MoveVerb } from "../../move";
 import { percentLabel, type TalkStats, talkShares, windowMinutes } from "../../talk-time";
 import { formatTimestamp } from "../../timestamp";
 import { cx, IconButton, useFlag } from "./primitives";
@@ -20,7 +21,17 @@ const TAG_LABEL: Record<MoveTag, string> = {
   agenda: "Agenda",
 };
 
-export function MoveCard({ move, copy }: { move: Move; copy: CopyText }) {
+export function MoveCard({
+  move,
+  copy,
+  onEvidence,
+  onFeedback,
+}: {
+  move: Move;
+  copy: CopyText;
+  onEvidence?: (target: EvidenceTarget) => void;
+  onFeedback?: (feedback: CoachFeedback) => void;
+}) {
   return (
     <section className="coach-enter flex flex-col gap-2 [&:not(:first-child)]:mt-3" aria-label="Coaching move" data-testid="move">
       <div className="flex flex-col items-start gap-1">
@@ -40,7 +51,13 @@ export function MoveCard({ move, copy }: { move: Move; copy: CopyText }) {
           </span>
         </p>
       )}
-      {move.moment && <MomentQuote moment={move.moment} />}
+      {move.moment && (
+        <MomentQuote
+          moment={move.moment}
+          onOpen={move.evidence && onEvidence ? () => onEvidence(move.evidence!) : undefined}
+        />
+      )}
+      {onFeedback && <FeedbackControl move={move} onFeedback={onFeedback} />}
     </section>
   );
 }
@@ -68,16 +85,35 @@ export function LineQuote({ verb, line, copy }: { verb: MoveVerb; line: string; 
   );
 }
 
-export function MomentQuote({ moment }: { moment: Pick<Moment, "speaker" | "quote"> & { at?: string | null } }) {
+export function MomentQuote({
+  moment,
+  onOpen,
+}: {
+  moment: Pick<Moment, "speaker" | "quote"> & { at?: string | null };
+  onOpen?: () => void;
+}) {
   return (
     <figure
       dir="auto"
       className="m-0 border-s-2 border-border ps-2.5 text-[12px] leading-[1.45] text-muted-foreground"
       data-testid="move-moment"
     >
-      <blockquote title={moment.quote} className="line-clamp-2 [overflow-wrap:anywhere]">
-        {moment.quote}
-      </blockquote>
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-label={`Open transcript at ${moment.at ?? "this moment"}`}
+          className="block w-full text-start hover:text-foreground"
+        >
+          <blockquote title={moment.quote} className="line-clamp-2 [overflow-wrap:anywhere]">
+            {moment.quote}
+          </blockquote>
+        </button>
+      ) : (
+        <blockquote title={moment.quote} className="line-clamp-2 [overflow-wrap:anywhere]">
+          {moment.quote}
+        </blockquote>
+      )}
       <figcaption className="mt-0.5 flex min-w-0 items-baseline gap-1">
         <bdi title={moment.speaker} className="min-w-0 truncate font-medium">
           {moment.speaker}
@@ -90,6 +126,53 @@ export function MomentQuote({ moment }: { moment: Pick<Moment, "speaker" | "quot
         )}
       </figcaption>
     </figure>
+  );
+}
+
+const FEEDBACK_REASONS = [
+  ["already_handled", "Already handled"],
+  ["poor_timing", "Poor timing"],
+  ["irrelevant", "Not relevant"],
+  ["wrong_language", "Wrong language"],
+] as const;
+
+function FeedbackControl({
+  move,
+  onFeedback,
+}: {
+  move: Move;
+  onFeedback(feedback: CoachFeedback): void;
+}) {
+  const [reasonsOpen, setReasonsOpen] = useState(false);
+  const momentId = move.evidence ? evidenceMomentId(move.evidence) : undefined;
+  const send = (input: Omit<CoachFeedback, "category" | "momentId">) =>
+    onFeedback({ category: move.tag, ...(momentId ? { momentId } : {}), ...input });
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground" data-testid="nudge-feedback">
+      <button type="button" onClick={() => send({ useful: true })} className="hover:text-foreground">
+        Useful
+      </button>
+      <button
+        type="button"
+        aria-expanded={reasonsOpen}
+        onClick={() => setReasonsOpen((open) => !open)}
+        className="hover:text-foreground"
+      >
+        Not useful
+      </button>
+      {reasonsOpen && (
+        <div role="group" aria-label="Why was this nudge not useful?" className="flex flex-wrap gap-2">
+          {FEEDBACK_REASONS.map(([reason, label]) => (
+            <button key={reason} type="button" onClick={() => send({ useful: false, reason })} className="hover:text-foreground">
+              {label}
+            </button>
+          ))}
+          <button type="button" onClick={() => send({ useful: false })} className="hover:text-foreground">
+            No reason
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

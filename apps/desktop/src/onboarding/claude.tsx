@@ -11,6 +11,7 @@ import {
 } from "@anlg/ui/components/ui/select";
 
 import { OnboardingButton } from "./shared";
+import { TranscriptionReadiness } from "./transcription-readiness";
 
 import { ClaudeSetupLabel } from "~/ai/claude-setup-label";
 import { COACH_SETTINGS_QUERY_KEY, useCoachSettings } from "~/ai/hooks";
@@ -53,6 +54,7 @@ export function ClaudeSection({ onContinue }: { onContinue: () => void }) {
         provider={provider}
         onContinue={onContinue}
       />
+      <TranscriptionReadiness />
       {(save.error ?? settings.error) && (
         <p role="alert" className="text-destructive text-body">
           {(save.error ?? settings.error)?.message}

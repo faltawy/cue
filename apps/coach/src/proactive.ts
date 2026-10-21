@@ -77,6 +77,7 @@ export class Proactive {
   private lastActivityAt: number;
   private held: HeldHit[] = [];
   private lastTriageAt = Number.NEGATIVE_INFINITY;
+  private lastTriagedLineEnd = Number.NEGATIVE_INFINITY;
   private lastNudgeAt = Number.NEGATIVE_INFINITY;
   private lastMonologueAt = Number.NEGATIVE_INFINITY;
   private monologueNudged: number | null = null;
@@ -204,8 +205,17 @@ export class Proactive {
 
   private due(now: number, paused: boolean): boolean {
     const first = this.held[0];
-    if (!first || this.blocked(now)) return false;
-    if (!paused && now - first.seenAt < this.config.maxHoldMs) return false;
+    if (this.blocked(now)) return false;
+    if (!this.lines.length) return false;
+    if (!first && now - this.lastActivityAt > this.config.hitTtlMs)
+      return false;
+    if (!first && (this.lines.at(-1)?.end_ms ?? 0) <= this.lastTriagedLineEnd)
+      return false;
+    if (
+      !paused &&
+      now - (first?.seenAt ?? this.lastActivityAt) < this.config.maxHoldMs
+    )
+      return false;
     return (
       now - this.lastTriageAt >= this.config.triageGapMs &&
       now - this.lastNudgeAt >= this.config.nudgeGapMs
@@ -240,6 +250,7 @@ export class Proactive {
     this.triaging = true;
     this.lastTriageAt = now;
     const latestEnd = this.lines.at(-1)?.end_ms ?? 0;
+    this.lastTriagedLineEnd = Math.max(this.lastTriagedLineEnd, latestEnd);
     const kinds = [...new Set<HitKind>(hits.map((hit) => hit.kind))];
     const context = this.deps.context();
     this.deps

@@ -27,6 +27,7 @@ export type WrapUpView =
   | {
       state: "ready";
       title: string | null;
+      sessionId?: string;
       wrapUp: WrapUp;
       commitments: string[];
       actions: WrapUpActions;

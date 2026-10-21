@@ -148,14 +148,51 @@ describe("Proactive: hit → triage → nudge", () => {
     expect(coach.nudge).not.toHaveBeenCalled();
   });
 
-  test("small talk alone never reaches triage, the same meeting's question does", async () => {
-    const coach = harness();
+  test("small talk reaches triage and stays quiet, then a later question reaches triage", async () => {
+    const coach = harness({ verdict: { nudge: false, why: "small talk" } });
     coach.say(SMALL_TALK);
     coach.tick(5);
-    expect(coach.triage).not.toHaveBeenCalled();
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    await settle();
+    expect(coach.nudge).not.toHaveBeenCalled();
+    coach.tick(15);
     coach.say(QUESTION);
     coach.tick(3);
+    expect(coach.triage).toHaveBeenCalledTimes(2);
+  });
+
+  test("triages a non-English window even when local detectors find no hit", async () => {
+    const coach = harness({ verdict: { nudge: true, why: "Open question" } });
+    const spanish = line(
+      "Omar",
+      "Podrías confirmar quién aprobará el presupuesto",
+      60,
+      64,
+    );
+    coach.say(spanish);
+    coach.tick(3);
+
     expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.triage.mock.calls[0]?.[0]).toEqual({
+      context: "Weekly sync · with Omar",
+      kinds: [],
+      lines: [spanish],
+    });
+    await settle();
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.nudge.mock.calls[0]?.[0].lines).toEqual([spanish]);
+  });
+
+  test("an unclear non-English window is triaged and stays quiet", async () => {
+    const coach = harness({ verdict: { nudge: false, why: "unclear" } });
+    const spanish = line("Omar", "Bueno, seguimos con lo siguiente.", 60, 64);
+    coach.say(spanish);
+    coach.tick(3);
+    await settle();
+
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.triage.mock.calls[0]?.[0].lines).toEqual([spanish]);
+    expect(coach.nudge).not.toHaveBeenCalled();
   });
 
   test("the window sent to triage is the last 90 seconds only", () => {
@@ -466,11 +503,13 @@ describe("Proactive: objections", () => {
     ]);
   });
 
-  test("the user saying the same words never reaches triage", () => {
-    const coach = harness();
+  test("the user's pushback-shaped speech reaches triage and stays quiet", async () => {
+    const coach = harness({ verdict: { nudge: false, why: "not a useful moment" } });
     coach.say(line("You", PUSHBACK.text, 60, 64));
     coach.tick(10);
-    expect(coach.triage).not.toHaveBeenCalled();
+    await settle();
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.nudge).not.toHaveBeenCalled();
   });
 
   test("a triage still running when the meeting ends starts no nudge", async () => {
@@ -512,8 +551,8 @@ describe("Proactive: long monologues", () => {
   };
   const NO = { nudge: false, why: "already handled" };
 
-  test("the user talking 90 seconds straight gets one hand-over nudge, without triage, and no repeat while it goes on", async () => {
-    const coach = harness();
+  test("the user talking 90 seconds straight gets one hand-over nudge while transcript windows keep triaging", async () => {
+    const coach = harness({ verdict: NO });
     await talk(coach, 0, 80);
     expect(coach.nudge).not.toHaveBeenCalled();
     await talk(coach, 80, 90);
@@ -526,11 +565,11 @@ describe("Proactive: long monologues", () => {
     expect(request?.context).toBe("Weekly sync · with Omar");
     await talk(coach, 90, 300);
     expect(coach.nudge).toHaveBeenCalledTimes(1);
-    expect(coach.triage).not.toHaveBeenCalled();
+    expect(coach.triage).toHaveBeenCalled();
   });
 
   test("backchannels do not reset the stretch; a question from the other side does", async () => {
-    const backchannel = harness();
+    const backchannel = harness({ verdict: NO });
     await talk(backchannel, 0, 50);
     backchannel.say(line("Omar", "Mm-hm.", 50, 51));
     await talk(backchannel, 51, 91);
@@ -540,7 +579,11 @@ describe("Proactive: long monologues", () => {
     await talk(asked, 0, 50);
     asked.say(line("Omar", "How much?", 50, 51));
     await talk(asked, 51, 91);
-    expect(asked.triage).toHaveBeenCalledTimes(1);
+    expect(
+      asked.triage.mock.calls.some(([request]) =>
+        request.lines.some((entry) => entry.text === "How much?"),
+      ),
+    ).toBe(true);
     expect(asked.nudge).not.toHaveBeenCalled();
     await talk(asked, 91, 141);
     expect(asked.nudge).toHaveBeenCalledTimes(1);
@@ -570,13 +613,13 @@ describe("Proactive: long monologues", () => {
   });
 
   test("the other side talking for minutes is not the user's monologue", async () => {
-    const coach = harness();
+    const coach = harness({ verdict: NO });
     await talk(coach, 0, 200, "Omar");
     expect(coach.nudge).not.toHaveBeenCalled();
   });
 
   test("off, capped, busy or after the meeting ended: no monologue nudge; the same talk nudges when open", async () => {
-    const open = harness();
+    const open = harness({ verdict: NO });
     await talk(open, 0, 90);
     expect(open.nudge).toHaveBeenCalledTimes(1);
 
@@ -589,10 +632,10 @@ describe("Proactive: long monologues", () => {
       cachedTokens: 0,
     });
     await talk(capped, 0, 120);
-    const busy = harness();
+    const busy = harness({ verdict: NO });
     busy.setBusy(true);
     await talk(busy, 0, 120);
-    const ended = harness();
+    const ended = harness({ verdict: NO });
     await talk(ended, 0, 80);
     ended.end();
     await talk(ended, 80, 120);
@@ -601,7 +644,7 @@ describe("Proactive: long monologues", () => {
   });
 
   test("a nudge declined by the app is retried on the next look, not dropped", async () => {
-    const coach = harness();
+    const coach = harness({ verdict: NO });
     coach.nudge.mockImplementationOnce(() => false);
     await talk(coach, 0, 80);
     coach.say(line("You", MORE, 80, 90));

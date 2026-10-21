@@ -40,36 +40,34 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
 
   return [
     {
-      label: t`App`,
+      label: t`Setup`,
       items: [
-        { id: "app", label: t`General`, icon: Gear },
         { id: "claude", label: t`AI`, icon: Sparkle },
-        { id: "appearance", label: t`Appearance`, icon: Sun },
-        { id: "notifications", label: t`Notifications`, icon: Bell },
-      ],
-    },
-    {
-      label: "AI",
-      items: [
         { id: "transcription", label: t`Transcription`, icon: Waveform },
-        { id: "dictionary", label: t`Dictionary`, icon: BookOpen },
+        { id: "permissions", label: t`Permissions`, icon: Lock },
       ],
     },
     {
-      label: t`Workspace`,
+      label: t`Meeting capture`,
       items: [
         { id: "meetings", label: t`Meetings`, icon: VideoCamera },
-        {
-          id: "folders",
-          label: t`Folders`,
-          icon: FolderSimple,
-          destination: { type: "folders" },
-        },
         {
           id: "calendar",
           label: t`Calendar`,
           icon: CalendarDots,
           destination: { type: "calendar" },
+        },
+        { id: "notifications", label: t`Notifications`, icon: Bell },
+      ],
+    },
+    {
+      label: t`Library`,
+      items: [
+        {
+          id: "folders",
+          label: t`Folders`,
+          icon: FolderSimple,
+          destination: { type: "folders" },
         },
         {
           id: "contacts",
@@ -83,19 +81,26 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
           icon: FileText,
           destination: { type: "templates" },
         },
+        { id: "dictionary", label: t`Dictionary`, icon: BookOpen },
       ],
     },
     {
-      label: t`Advanced`,
+      label: t`Workflow`,
       items: [
-        { id: "dictation", label: t`Dictation`, icon: Microphone },
         {
           id: "automations",
           label: t`Automations`,
           icon: Lightning,
           destination: { type: "automations" },
         },
-        { id: "permissions", label: t`Permissions`, icon: Lock },
+        { id: "dictation", label: t`Dictation`, icon: Microphone },
+      ],
+    },
+    {
+      label: t`Appearance & general`,
+      items: [
+        { id: "appearance", label: t`Appearance`, icon: Sun },
+        { id: "app", label: t`General`, icon: Gear },
       ],
     },
   ];

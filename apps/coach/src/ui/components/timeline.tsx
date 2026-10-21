@@ -26,6 +26,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import type { CoachError } from "../../errors";
 import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
+import type { CoachFeedback, EvidenceTarget } from "../../move";
 import { ActionsBlock, type BlockActions, ImageThumbs, Replies, SourceChips } from "./blocks";
 import { MoveCard, TalkMeter } from "./coaching";
 import { CoachMarkdown } from "./markdown";
@@ -37,6 +38,8 @@ export type TimelineActions = BlockActions & {
   newChat(): void;
   copy(text: string): Promise<boolean>;
   signIn(): void;
+  openEvidence(target: EvidenceTarget): void;
+  feedback(input: CoachFeedback): void;
 };
 
 export function Timeline({
@@ -297,7 +300,15 @@ function TurnView({
               />
             );
           case "move":
-            return <MoveCard key={block.id} move={block} copy={actions.copy} />;
+            return (
+              <MoveCard
+                key={block.id}
+                move={block}
+                copy={actions.copy}
+                onEvidence={actions.openEvidence}
+                onFeedback={turn.ask === "nudge" ? actions.feedback : undefined}
+              />
+            );
           case "replies":
             return null;
         }

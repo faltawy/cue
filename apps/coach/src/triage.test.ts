@@ -50,6 +50,9 @@ describe("triagePrompt", () => {
       "Meeting: Weekly sync with Northwind · with Omar, Sara\nFlagged: question, number\n[01:01] Omar: Can you Bcc the CRM?\n[01:05] You: Let me check.",
     );
     expect(TRIAGE_SYSTEM).toContain('"nudge"');
+    expect(TRIAGE_SYSTEM).toContain("transcript may be in any language");
+    expect(TRIAGE_SYSTEM).toContain("meaning or language is unclear");
+    expect(TRIAGE_SYSTEM).toContain("A missing flagged cue does not mean there is no actionable moment");
     expect(prompt).not.toContain(TRIAGE_SYSTEM.slice(0, 40));
   });
 });

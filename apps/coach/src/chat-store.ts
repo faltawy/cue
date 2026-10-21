@@ -2,7 +2,9 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
+import type { Hit, HitKind } from "./detect";
 import { type MeetingSeen, meetingSeenSchema } from "./meeting-context";
+import type { CoachFeedback, MoveTag } from "./move";
 import type { CoachEvent, ResetReason, WrapUpView } from "./protocol";
 import { type CoachProvider, providerSchema } from "./provider";
 
@@ -52,13 +54,87 @@ const wrapUpSchema = z.object({
 const storeSchema = z.object({
   meetings: z.record(z.string(), chatSchema),
   wrapUps: z.record(z.string(), wrapUpSchema).default({}),
+  feedback: z
+    .object({
+      categories: z
+        .record(z.string(), z.number().int().min(-3).max(3))
+        .default({}),
+      handledMoments: z.array(z.string()).max(500).default([]),
+    })
+    .default({ categories: {}, handledMoments: [] }),
 });
 
 export type StoredChat = z.infer<typeof chatSchema>;
 export type StoredWrapUp = z.infer<typeof wrapUpSchema>;
 export type ChatStore = z.infer<typeof storeSchema>;
 
-export const emptyStore = (): ChatStore => ({ meetings: {}, wrapUps: {} });
+export const emptyStore = (): ChatStore => ({
+  meetings: {},
+  wrapUps: {},
+  feedback: { categories: {}, handledMoments: [] },
+});
+
+export function recordFeedback(
+  store: ChatStore,
+  input: CoachFeedback,
+): ChatStore {
+  const current = store.feedback.categories[input.category] ?? 0;
+  const categories = {
+    ...store.feedback.categories,
+    [input.category]: Math.max(
+      -3,
+      Math.min(3, current + (input.useful ? 1 : -1)),
+    ),
+  };
+  const handledMoments =
+    input.reason === "already_handled" && input.momentId
+      ? [...new Set([...store.feedback.handledMoments, input.momentId])].slice(
+          -500,
+        )
+      : store.feedback.handledMoments;
+  return { ...store, feedback: { categories, handledMoments } };
+}
+
+export function feedbackPreferences(store: ChatStore) {
+  return store.feedback;
+}
+
+export function isHandledMoment(store: ChatStore, momentId: string): boolean {
+  return store.feedback.handledMoments.includes(momentId);
+}
+
+const hitCategories: Record<HitKind, readonly MoveTag[]> = {
+  question: ["open_question", "buying_signal"],
+  name: ["risk"],
+  objection: ["pushback", "giving_ground", "risk"],
+  commitment: ["vague_promise", "over_promise", "decision_owner"],
+  number: ["risk", "buying_signal"],
+  monologue: ["talk_time"],
+};
+
+export function prioritizeHitsByFeedback(
+  store: ChatStore,
+  hits: readonly Hit[],
+): Hit[] {
+  return hits
+    .map((hit, index) => ({
+      hit,
+      index,
+      priority: hitCategories[hit.kind].reduce(
+        (total, category) => total + (store.feedback.categories[category] ?? 0),
+        0,
+      ),
+    }))
+    .sort(
+      (left, right) =>
+        right.priority - left.priority || left.index - right.index,
+    )
+    .map(({ hit }) => hit);
+}
+
+export function clearFeedback(store: ChatStore): ChatStore {
+  return { ...store, feedback: { categories: {}, handledMoments: [] } };
+}
 
 export function loadChats(file: string): ChatStore {
   let raw: string;
