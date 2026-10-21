@@ -1,6 +1,6 @@
 # Releasing Cue
 
-The code lives in the private repo `faltawy/cue`. Builds are published to the public repo [`faltawy/cue-releases`](https://github.com/faltawy/cue-releases), which holds only release assets. The installed app downloads updates from there without credentials.
+The source code and user guides live in the public repo [`faltawy/cue`](https://github.com/faltawy/cue). Builds are published to [`faltawy/cue-releases`](https://github.com/faltawy/cue-releases). Keep that repository available: installed apps download updates from its release feed without credentials. Its former documentation pages link to the guides here.
 
 ## 1. Repository secrets (once)
 
