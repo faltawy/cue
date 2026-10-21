@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.6.2
+
+### Patch Changes
+
+- The coach starts correctly in the released app.
+
 ## 0.6.1
 
 ### Patch Changes
