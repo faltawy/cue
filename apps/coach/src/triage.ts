@@ -4,9 +4,11 @@ import type { HitKind } from "./detect";
 import { jsonOf, runLlm } from "./llm";
 import { NO_SPEND, type Spend, spendOf } from "./pricing";
 import type { CoachProvider } from "./provider";
-import { renderLines, type TranscriptLine } from "./transcript";
+import { headWithin, renderRecentLines } from "./transcript-window";
+import type { TranscriptLine } from "./transcript";
 
 export const TRIAGE_MODEL = "haiku";
+const TRIAGE_TOKENS = { context: 100, lines: 900 };
 
 export const TRIAGE_SYSTEM = `You decide whether a live meeting coach should interrupt the user right now with a short note. "You" in the lines is the user. The coach helps the user handle the moment better, not only with facts.
 The transcript may be in any language. Interpret it in that language, and say no when its meaning or language is unclear. A missing flagged cue does not mean there is no actionable moment; inspect the transcript window itself.
@@ -32,7 +34,7 @@ export type TriageRequest = {
 export type TriageResult = { verdict: TriageVerdict | null; spend: Spend };
 
 export function triagePrompt(request: TriageRequest): string {
-  return `Meeting: ${request.context}\nFlagged: ${request.kinds.join(", ")}\n${renderLines(request.lines)}`;
+  return `Meeting: ${headWithin(request.context, TRIAGE_TOKENS.context)}\nFlagged: ${request.kinds.join(", ")}\n${renderRecentLines(request.lines, TRIAGE_TOKENS.lines)}`;
 }
 
 export function parseTriage(reply: string): TriageVerdict | null {

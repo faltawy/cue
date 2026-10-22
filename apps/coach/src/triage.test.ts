@@ -6,6 +6,7 @@ import {
   triagePrompt,
   type TriageRequest,
 } from "./triage";
+import { estimateTokens } from "./pricing";
 
 let log: Mock<typeof console.error>;
 
@@ -98,5 +99,41 @@ describe("triagePrompt", () => {
     expect(TRIAGE_SYSTEM).toMatch(
       /later lines.{0,80}(resolve|answer)|(?:resolve|answer).{0,80}later lines/i,
     );
+  });
+
+  test("bounds a long transcript while preserving its newest Spanish line", () => {
+    const longRequest: TriageRequest = {
+      context: "Planning call",
+      kinds: ["question"],
+      lines: [
+        {
+          speaker: "Omar",
+          channel: 1,
+          start_ms: 1_000,
+          end_ms: 2_000,
+          text: `OLDEST ${"earlier planning detail ".repeat(300)}`,
+        },
+        ...Array.from({ length: 30 }, (_, index) => ({
+          speaker: "Sara",
+          channel: 1,
+          start_ms: (index + 3) * 1_000,
+          end_ms: (index + 4) * 1_000,
+          text: `Status ${index}: ${"progress update ".repeat(35)}`,
+        })),
+        {
+          speaker: "Leila",
+          channel: 1,
+          start_ms: 90_000,
+          end_ms: 92_000,
+          text: "¿Quién puede confirmar la fecha de entrega?",
+        },
+      ],
+    };
+
+    const prompt = triagePrompt(longRequest);
+
+    expect(prompt).toContain("Leila: ¿Quién puede confirmar la fecha de entrega?");
+    expect(prompt).not.toContain("OLDEST");
+    expect(estimateTokens(prompt)).toBeLessThanOrEqual(1_050);
   });
 });

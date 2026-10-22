@@ -13,8 +13,6 @@ import {
   QUOTE_MAX,
 } from "./move";
 import {
-  charTokens,
-  estimateTokens,
   NO_SPEND,
   type Spend,
   spendOf,
@@ -23,7 +21,8 @@ import type { CoachProvider } from "./provider";
 import { INSTRUCTIONS_HEADING } from "./session";
 import { type TalkStats, talkStats, talkSummary } from "./talk-time";
 import { formatTimestamp } from "./timestamp";
-import { renderLines, type TranscriptLine } from "./transcript";
+import { headWithin, renderRecentLines } from "./transcript-window";
+import type { TranscriptLine } from "./transcript";
 
 export const NUDGE_MODEL = "sonnet";
 export const NUDGE_WINDOW_MS = 3 * 60_000;
@@ -117,60 +116,6 @@ function moments(hits: readonly Hit[]): string {
 
 const TOKENS = { instructions: 1_000, context: 100, why: 40, lines: 1_150 };
 
-function headWithin(text: string, maxTokens: number): string {
-  let used = 0;
-  let end = 0;
-  for (const char of text) {
-    used += charTokens(char);
-    if (used > maxTokens) return `${text.slice(0, end).trimEnd()}…`;
-    end += char.length;
-  }
-  return text;
-}
-
-function tailWithin(text: string, maxTokens: number): string {
-  const chars = [...text];
-  let used = 0;
-  for (let index = chars.length - 1; index >= 0; index -= 1) {
-    used += charTokens(chars[index] ?? "");
-    if (used > maxTokens)
-      return `…${chars
-        .slice(index + 1)
-        .join("")
-        .trimStart()}`;
-  }
-  return text;
-}
-
-function recentLines(
-  lines: readonly TranscriptLine[],
-  maxTokens: number,
-): string {
-  const kept: string[] = [];
-  let used = 0;
-  for (let index = lines.length - 1; index >= 0; index -= 1) {
-    const current = lines[index];
-    if (!current) continue;
-    const rendered = renderLines([current]);
-    const cost = estimateTokens(rendered) + 1;
-    if (used + cost > maxTokens) {
-      if (kept.length === 0)
-        kept.push(
-          renderLines([
-            {
-              ...current,
-              text: tailWithin(current.text.trim(), maxTokens - 20),
-            },
-          ]),
-        );
-      break;
-    }
-    kept.unshift(rendered);
-    used += cost;
-  }
-  return kept.join("\n");
-}
-
 export function nudgeSystem(instructions: string): string {
   const own = instructions.trim();
   return own
@@ -198,7 +143,7 @@ Flagged moment:
 ${moments(input.hits)}
 Flagged because: ${headWithin(input.why, TOKENS.why)}
 ${tag ? `Suggested tag: ${tag}\n` : ""}${stats ? `${talkSummary(stats)}\n` : ""}The last 3 minutes:
-${recentLines(recent, TOKENS.lines) || "(nothing yet)"}`;
+${renderRecentLines(recent, TOKENS.lines) || "(nothing yet)"}`;
 }
 
 const NOTES_MAX = 3;
