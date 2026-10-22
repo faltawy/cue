@@ -98,6 +98,14 @@ fn router(token: &str, host: impl Host) -> Router {
         .route("/meeting/{session_id}/nudge", post(nudged))
         .route("/meeting/{session_id}/evidence", post(open_evidence))
         .route("/meeting/{session_id}/notes", post(append_note))
+        .route(
+            "/meeting/{session_id}/transcript/speakers",
+            post(assign_transcript_speaker),
+        )
+        .route(
+            "/meeting/{session_id}/transcript/corrections",
+            post(correct_transcript),
+        )
         .route("/meeting/{session_id}/action-items", post(add_action_item))
         .route(
             "/meeting/{session_id}/action-items/{task_id}/complete",
@@ -367,6 +375,60 @@ async fn append_note(
         state
             .edits
             .append_note(&pool, &session_id, &body.lines, body.style)
+            .await?,
+    ))
+}
+
+#[derive(serde::Deserialize)]
+struct AssignTranscriptSpeakerBody {
+    channel: i64,
+    speaker_index: i64,
+    human_id: String,
+}
+
+async fn assign_transcript_speaker(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<AssignTranscriptSpeakerBody>,
+) -> Reply<crate::edits::CoachEdit> {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .assign_transcript_speaker(
+                &pool,
+                &session_id,
+                body.channel,
+                body.speaker_index,
+                &body.human_id,
+            )
+            .await?,
+    ))
+}
+
+#[derive(serde::Deserialize)]
+struct CorrectTranscriptBody {
+    word_ids: Vec<String>,
+    expected_text: String,
+    replacement: String,
+}
+
+async fn correct_transcript(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+    Json(body): Json<CorrectTranscriptBody>,
+) -> Reply<crate::edits::CoachEdit> {
+    let pool = state.host.pool()?;
+    Ok(Json(
+        state
+            .edits
+            .correct_transcript_words(
+                &pool,
+                &session_id,
+                &body.word_ids,
+                &body.expected_text,
+                &body.replacement,
+            )
             .await?,
     ))
 }
@@ -723,6 +785,71 @@ mod tests {
                 timestamp_ms: 456_789,
             }]
         );
+    }
+
+    #[tokio::test]
+    async fn transcript_routes_require_the_attached_meeting_and_return_undoable_edits() {
+        let host = test_host().await;
+        sqlx::query("INSERT INTO humans (id, name) VALUES ('sara', 'Sara')")
+            .execute(&host.pool)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO session_participants (id, session_id, human_id, source) VALUES ('p-sara', 'thursday', 'sara', 'manual')")
+            .execute(&host.pool).await.unwrap();
+        let words = serde_json::json!([
+            {"id":"w1","text":" We","start_ms":0,"end_ms":200,"channel":1,"speaker_index":2},
+            {"id":"w2","text":" ship","start_ms":210,"end_ms":400,"channel":1,"speaker_index":2},
+            {"id":"w3","text":" Friday","start_ms":410,"end_ms":700,"channel":1,"speaker_index":2}
+        ]);
+        sqlx::query("UPDATE transcripts SET words_json = ?, ended_at_ms = 2000 WHERE session_id = 'thursday'")
+            .bind(words.to_string()).execute(&host.pool).await.unwrap();
+        let app = router(TOKEN, host.clone());
+        let assigned = app
+            .clone()
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/meeting/thursday/transcript/speakers")
+                    .header("authorization", format!("Bearer {TOKEN}"))
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(
+                        r#"{"channel":1,"speaker_index":2,"human_id":"sara"}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(assigned.status(), StatusCode::OK);
+        let assignment_bytes = axum::body::to_bytes(assigned.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let assignment: serde_json::Value = serde_json::from_slice(&assignment_bytes).unwrap();
+        assert_eq!(assignment["kind"], "assign_speaker");
+
+        let corrected = app.clone().oneshot(
+            axum::http::Request::builder().method("POST")
+                .uri("/meeting/thursday/transcript/corrections")
+                .header("authorization", format!("Bearer {TOKEN}"))
+                .header("content-type", "application/json")
+                .body(axum::body::Body::from(r#"{"word_ids":["w1","w2","w3"],"expected_text":"We ship Friday","replacement":"We ship Monday"}"#)).unwrap()
+        ).await.unwrap();
+        assert_eq!(corrected.status(), StatusCode::OK);
+
+        let wrong_meeting = router(TOKEN, host)
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/meeting/tuesday/transcript/corrections")
+                    .header("authorization", format!("Bearer {TOKEN}"))
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(
+                        r#"{"word_ids":["w1"],"expected_text":"We","replacement":"I"}"#,
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(wrong_meeting.status(), StatusCode::FORBIDDEN);
     }
 
     #[tokio::test]
