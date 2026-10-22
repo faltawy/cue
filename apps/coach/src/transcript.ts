@@ -225,9 +225,15 @@ export type TranscriptEditLine = {
   speaker: string;
 };
 
+export type TranscriptEditSpeaker = {
+  channel: number;
+  speaker_index: number;
+  speaker: string;
+};
+
 export type TranscriptEditContext =
   | { status: "ready"; lines: TranscriptEditLine[] }
-  | { status: "not_finalized" }
+  | { status: "live"; speakers: TranscriptEditSpeaker[] }
   | { status: "not_found" };
 
 export function readTranscriptEditContext(
@@ -237,7 +243,6 @@ export function readTranscriptEditContext(
   return db.transaction(() => {
     const row = transcriptRow(db, { sessionId });
     if (!row) return { status: "not_found" as const };
-    if (row.ended_at_ms === null) return { status: "not_finalized" as const };
 
     const base: Word[] = row.words_json ? JSON.parse(row.words_json) : [];
     const deltas = db
@@ -255,6 +260,22 @@ export function readTranscriptEditContext(
       assignmentsFrom(hints, words),
       readSpeakerContext(db, row.session_id, row.owner_user_id),
     );
+    if (row.ended_at_ms === null) {
+      const speakers = new Map<string, TranscriptEditSpeaker>();
+      for (const word of words) {
+        if (word.speaker_index == null) continue;
+        const key = `${word.channel}:${word.speaker_index}`;
+        if (!speakers.has(key)) {
+          speakers.set(key, {
+            channel: word.channel,
+            speaker_index: word.speaker_index,
+            speaker: labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them"),
+          });
+        }
+      }
+      return { status: "live" as const, speakers: [...speakers.values()] };
+    }
+
     const lines: TranscriptEditLine[] = [];
 
     for (const word of words) {

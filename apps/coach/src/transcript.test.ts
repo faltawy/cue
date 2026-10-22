@@ -224,7 +224,7 @@ describe("a recording left open by a crash", () => {
 });
 
 describe("readTranscriptEditContext", () => {
-  test("returns finalized word ids after folding replacement deltas and refuses a live transcript", () => {
+  test("returns finalized word ids after folding replacement deltas and only speaker coordinates while live", () => {
     const db = schema();
     db.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', NULL, NULL), ('s2', 'Live', NULL, NULL)`);
     db.run(
@@ -232,7 +232,7 @@ describe("readTranscriptEditContext", () => {
        ('t1', 's1', 1000, 2000, ?), ('t2', 's2', 1000, NULL, ?)`,
       [
         JSON.stringify([word("old", " old", 0), word("keep", " text", 400)]),
-        JSON.stringify([word("live", " live", 0)]),
+        JSON.stringify([{ ...word("live", " live", 0), speaker_index: 2 }]),
       ],
     );
     db.run(
@@ -245,7 +245,10 @@ describe("readTranscriptEditContext", () => {
       status: "ready",
       lines: [{ start_ms: 0, end_ms: 700, text: "corrected text", word_ids: ["current", "keep"], channel: 1, speaker_index: null, speaker: "Them" }],
     });
-    expect(readTranscriptEditContext(db, "s2")).toEqual({ status: "not_finalized" });
+    expect(readTranscriptEditContext(db, "s2")).toEqual({
+      status: "live",
+      speakers: [{ channel: 1, speaker_index: 2, speaker: "Speaker 3" }],
+    });
   });
 });
 
