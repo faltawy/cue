@@ -457,6 +457,7 @@
 
 /* Editor-only: caret, placeholder, focus backdrop. */
 .note-typography.prosemirror-editor {
+  max-inline-size: 100%;
   caret-color: var(--color-foreground, #374151);
 }
 
