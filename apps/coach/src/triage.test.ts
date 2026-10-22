@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, type Mock, spyOn, test } from "bun:test";
 
-import { parseTriage, TRIAGE_SYSTEM, triagePrompt } from "./triage";
+import {
+  parseTriage,
+  TRIAGE_SYSTEM,
+  triagePrompt,
+  type TriageRequest,
+} from "./triage";
 
 let log: Mock<typeof console.error>;
 
@@ -57,9 +62,9 @@ describe("triagePrompt", () => {
   });
 
   test("keeps later resolution and an unresolved commitment in the triage window", () => {
-    const request = {
+    const request: TriageRequest = {
       context: "Planning call",
-      kinds: ["question", "commitment"] as const,
+      kinds: ["question", "commitment"],
       lines: [
         {
           speaker: "Omar",
