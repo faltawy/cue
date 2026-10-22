@@ -98,6 +98,11 @@ function EmptyView() {
       className="flex h-full flex-col items-center justify-center"
     >
       <div className="flex w-full max-w-2xl flex-col gap-7 px-6 py-8">
+        <img
+          src="/assets/logo.svg"
+          alt="Cue"
+          className="mx-auto h-auto w-56 dark:brightness-0 dark:invert"
+        />
         <h1 className="text-title text-center text-balance">
           <Trans>A clearer place to start</Trans>
         </h1>

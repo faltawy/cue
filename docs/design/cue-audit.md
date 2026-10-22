@@ -724,19 +724,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 #### `settings/appearance/sidebar-item-fields.tsx`
 - L16: `text-[15px]` → `text-title`
 
-#### `settings/automations/index.tsx`
-- L111: `rounded-2xl` → `rounded-lg` — off-scale radius
-- L112: `rounded-2xl` → `rounded-lg` — off-scale radius
-- L386: `rounded-2xl` → `rounded-lg` — off-scale radius
-- L474: `rounded-xl` → `rounded-lg` — off-scale radius
-- L477: `rounded-full` → keep rounded-full — avatar/icon disc
-
-#### `settings/automations/workflow-builder.tsx`
-- L59: `rounded-2xl` → `rounded-lg` — off-scale radius
-- L180: `rounded-xl` → `rounded-lg` — off-scale radius
-- L219: `rounded-xl` → `rounded-lg` — off-scale radius
-- L222: `rounded-full` → keep rounded-full — avatar/icon disc
-
 #### `settings/claude/instructions.tsx`
 - L39: `text-[15px]` → `text-title`
 
@@ -838,12 +825,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 
 ### sidebar/
 
-#### `sidebar/automations.tsx`
-- L92: `rounded-lg` → `rounded-md` — control/row on 8px → 6px
-- L248: `rounded-lg` → `rounded-md` — control/row on 8px → 6px
-- L304: `rounded-lg` → `rounded-md` — control/row on 8px → 6px
-- L360: `rounded-lg` → `rounded-md` — control/row on 8px → 6px
-
 #### `sidebar/custom-sidebar-header.tsx`
 - L103: `rounded-full` → `rounded-md` — icon button
 
@@ -918,7 +899,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 
 **Physical → logical.** Rename `pl/pr/ml/mr/left/right/text-left/text-right/border-l/border-r` → `ps/pe/ms/me/start/end/text-start/text-end/border-s/border-e`. Centring with `left-1/2 -translate-x-1/2` is excluded. Negative margins (`-ml-*`) were not scanned, so grep them too.
 
-- `sidebar/automations.tsx`: L248 `text-left`→`text-start`, L304 `text-left`→`text-start`, L360 `text-left`→`text-start`
 - `sidebar/custom-sidebar-header.tsx`: L49 `pr-1`→`pe-1`, L55 `pl-2`→`ps-2`, L73 `ml-1`→`ms-1`
 - `sidebar/index.tsx`: L55 `pr-1`→`pe-1`
 - `sidebar/settings.tsx`: L124 `text-left`→`text-start`
@@ -937,8 +917,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 - `settings/ai/shared/provider-search.tsx`: L34 `ml-auto`→`ms-auto`
 - `settings/ai/stt/local-file-model.tsx`: L89 `text-left`→`text-start`, L92 `text-left`→`text-start`
 - `settings/ai/stt/select.tsx`: L342 `text-left`→`text-start`, L858 `group-focus-within:pr-16`→`group-focus-within:pe-16`, L858 `group-hover:pr-16`→`group-hover:pe-16`, L888 `pr-20`→`pe-20`, L941 `right-1.5`→`end-1.5`, L1073 `right-0`→`end-0`, L1073 `pl-6`→`ps-6`
-- `settings/automations/index.tsx`: L154 `pr-1`→`pe-1`, L154 `pl-3`→`ps-3`, L506 `pl-6`→`ps-6`
-- `settings/automations/workflow-builder.tsx`: L115 `pl-6`→`ps-6`, L138 `pl-6`→`ps-6`, L246 `ml-auto`→`ms-auto`
 - `calendar/components/calendar-selection.tsx`: L220 `pr-2`→`pe-2`, L220 `pl-0`→`ps-0`, L220 `text-left`→`text-start`
 - `calendar/components/calendar-view.tsx`: L230 `pr-3`→`pe-3`, L230 `pl-3`→`ps-3`, L297 `border-r-border`→`border-e-border`, L297 `border-r`→`border-e`, L344 `border-r-border`→`border-e-border`, L344 `border-r`→`border-e`
 - `calendar/components/day-cell.tsx`: L98 `border-r-border`→`border-e-border`, L98 `border-r`→`border-e`, L144 `pl-1`→`ps-1`, L144 `text-left`→`text-start`
@@ -1011,8 +989,6 @@ Shared dialogs: `shared/ui/glass-dialog.tsx`, `shared/ui/destructive-confirmatio
 - `sidebar/timeline/chips.tsx`: L23 `weight="bold"`, L111 `size={13}`
 - `sidebar/timeline/item.tsx`: L346 `size={10}`
 - `settings/appearance/theme.tsx`: L86 `weight="bold"`
-- `settings/automations/index.tsx`: L113 `size={20}`, L392 `size={17}`, L485 `size={13}`, L507 `size={13}`, L522 `size={15}`
-- `settings/automations/workflow-builder.tsx`: L116 `size={13}`, L139 `size={13}`, L250 `size={13}`
 - `calendar/components/calendar-selection.tsx`: L234 `weight="bold"`
 - `contacts/person-item.tsx`: L94 `weight="bold"`
 - `contacts/related-notes.tsx`: L51 `size={15}`
@@ -1053,7 +1029,7 @@ Capture each item twice per theme, at a 1280×800 window with system text size a
 | 10 | Settings → Storage → legacy cleanup | General → Storage → Clean up | glass dialog → standard dialog |
 | 11 | Settings → App: theme and app icon | ⌘, → App | theme cards (`rounded-lg`), preview using tokens, icon tiles |
 | 12 | Settings → Transcription | ⌘, → Transcription | model rows, badges (was gradient chips), local model row, warning icon |
-| 13 | Settings → Dictionary / Automations / Claude / Permissions / Folders | ⌘, → each tab | empty states, cards (`rounded-2xl` → 8), primary button (was `bg-black`) |
+| 13 | Settings → Dictionary / Claude / Permissions / Folders | ⌘, → each tab | empty states, cards (`rounded-2xl` → 8), primary button (was `bg-black`) |
 | 14 | Contacts: person and organization | Sidebar → Contacts → a person; an org | inline fields `text-body`, avatar circle, org picker popover, list rows |
 | 15 | Calendar | Sidebar → Calendar (month) | day disc, event chip popover, calendar list rows, Apple permission dialog (revoke access first) |
 | 16 | Templates | Sidebar → Templates → one template; icon picker | sidebar rows, form, swatches, auto-format examples dialog |

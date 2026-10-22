@@ -10,11 +10,11 @@ describe("release changelogs", () => {
   it("makes current and past release notes available by version", () => {
     expect(hasChangelogFor("0.6.0")).toBe(true);
     expect(hasChangelogFor("0.5.2")).toBe(true);
-    expect(useChangelogContent("0.6.0")).toContain(
-      "Improve multilingual coaching",
+    expect(useChangelogContent("0.7.0")).toContain(
+      "Keep speaker names and transcript corrections",
     );
     expect(useChangelogContent("0.5.2")).toContain("current name");
-    expect(availableChangelogVersions()[0]).toBe("0.6.0");
+    expect(availableChangelogVersions()[0]).toBe("0.7.0");
     expect(availableChangelogVersions()).toContain("0.5.2");
   });
 });

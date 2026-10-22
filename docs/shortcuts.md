@@ -20,7 +20,7 @@ This page lists every keyboard shortcut in Cue. You can change the coach and dic
 | ⌘, | Opens Settings |
 | ⌘\ | Shows or hides the sidebar |
 | ⌘= / ⌘- / ⌘0 | Makes everything bigger, smaller, or normal size |
-| Esc | Leaves Settings, Calendar, Contacts, Folders, Templates or Automations, and closes a note window |
+| Esc | Leaves Settings, Calendar, Contacts, Folders or Templates, and closes a note window |
 | ⌘Q | Quits Cue. If you're recording, Cue asks first. |
 
 ### Note list

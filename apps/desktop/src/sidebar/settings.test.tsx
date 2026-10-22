@@ -131,16 +131,16 @@ describe("SettingsNav", () => {
     );
   });
 
-  it.each([
-    ["Calendar", "calendar"],
-    ["Automations", "automations"],
-  ])("opens the %s workspace in a new tab", (label, type) => {
-    render(<SettingsNav />);
+  it.each([["Calendar", "calendar"]])(
+    "opens the %s workspace in a new tab",
+    (label, type) => {
+      render(<SettingsNav />);
 
-    fireEvent.click(screen.getByRole("button", { name: label }));
+      fireEvent.click(screen.getByRole("button", { name: label }));
 
-    expect(mocks.openNew).toHaveBeenCalledWith({ type });
-  });
+      expect(mocks.openNew).toHaveBeenCalledWith({ type });
+    },
+  );
 
   it("no longer offers Insights or Stats", () => {
     render(<SettingsNav />);
@@ -159,9 +159,6 @@ describe("SettingsNav", () => {
       fireEvent.click(screen.getByRole("button", { name: label }));
       expect(openedSettingsTab()).toEqual({ tab });
     }
-    fireEvent.click(screen.getByRole("button", { name: "Automations" }));
-
-    expect(mocks.openNew).toHaveBeenCalledWith({ type: "automations" });
   });
 
   it("filters nav items by item or group label", () => {
@@ -187,13 +184,13 @@ describe("SettingsNav", () => {
     expect(contains("Setup", "AI")).toBe(true);
     expect(contains("Setup", "Transcription")).toBe(true);
     expect(contains("Setup", "Permissions")).toBe(true);
+    expect(contains("Setup", "Dictation")).toBe(true);
     expect(contains("Meeting capture", "Meetings")).toBe(true);
     expect(contains("Meeting capture", "Calendar")).toBe(true);
     expect(contains("Meeting capture", "Notifications")).toBe(true);
     expect(contains("Library", "Folders")).toBe(true);
     expect(contains("Library", "Dictionary")).toBe(true);
-    expect(contains("Workflow", "Automations")).toBe(true);
-    expect(contains("Workflow", "Dictation")).toBe(true);
+    expect(screen.queryByRole("button", { name: "Automations" })).toBeNull();
     expect(contains("Appearance & general", "Appearance")).toBe(true);
     expect(contains("Appearance & general", "General")).toBe(true);
   });

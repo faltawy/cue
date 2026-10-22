@@ -163,10 +163,6 @@ msgstr "A clearer place to start"
 msgid "A folder with this name already exists."
 msgstr "A folder with this name already exists."
 
-#: src/automations/starters.tsx
-msgid "A Markdown file with the note, summary, and transcript."
-msgstr "A Markdown file with the note, summary, and transcript."
-
 #: src/onboarding/transcription-readiness.tsx
 msgid "A model is selected. Provider access and model readiness determine when transcripts are available."
 msgstr "A model is selected. Provider access and model readiness determine when transcripts are available."
@@ -196,11 +192,6 @@ msgstr "Access token"
 msgid "Accessibility"
 msgstr "Accessibility"
 
-#: src/settings/automations/index.tsx
-#: src/settings/automations/workflow-builder.tsx
-msgid "Action"
-msgstr "Action"
-
 #: src/shared/open-note-dialog.tsx
 msgid "Actions"
 msgstr "Actions"
@@ -228,26 +219,6 @@ msgstr "Add {0} in System Settings > General > Language & Region to transcribe w
 #: src/sidebar/folder-materials.tsx
 msgid "Add a syllabus or PDF for this folder"
 msgstr "Add a syllabus or PDF for this folder"
-
-#: src/settings/automations/index.tsx
-msgid "Add a trigger and actions."
-msgstr "Add a trigger and actions."
-
-#: src/settings/automations/workflow-builder.tsx
-msgid "Add a trigger, then stack actions like Zapier."
-msgstr "Add a trigger, then stack actions like Zapier."
-
-#: src/settings/automations/workflow-builder.tsx
-msgid "Add an action"
-msgstr "Add an action"
-
-#: src/settings/automations/index.tsx
-msgid "Add and configure at least one action first."
-msgstr "Add and configure at least one action first."
-
-#: src/settings/automations/workflow-builder.tsx
-msgid "Add at least one configured action before enabling."
-msgstr "Add at least one configured action before enabling."
 
 #: src/templates/auto-format-examples-dialog.tsx
 msgid "Add at least one example summary."
@@ -330,14 +301,6 @@ msgstr "Advanced"
 msgid "After recording"
 msgstr "After recording"
 
-#: src/settings/automations/workflow-builder.tsx
-msgid "After the meeting ends"
-msgstr "After the meeting ends"
-
-#: src/settings/automations/workflow-builder.tsx
-msgid "After the meeting summary is ready"
-msgstr "After the meeting summary is ready"
-
 #: src/coach/nudges.tsx
 msgid "Agenda"
 msgstr "Agenda"
@@ -354,10 +317,6 @@ msgstr "AI isn’t available"
 #: src/onboarding/index.tsx
 msgid "AI setup"
 msgstr "AI setup"
-
-#: src/settings/automations/index.tsx
-msgid "AI step"
-msgstr "AI step"
 
 #: src/contacts/details.tsx
 msgid "AI-generated summary of all interactions and notes with this contact will appear here. This will synthesize key discussion points, action items, and relationship context across all meetings and notes."
@@ -473,46 +432,9 @@ msgstr "Auto-add"
 msgid "Auto-add future meetings?"
 msgstr "Auto-add future meetings?"
 
-#: src/settings/automations/index.tsx
-msgid "Automate what happens before, during, or after meetings based on the conditions you choose."
-msgstr "Automate what happens before, during, or after meetings based on the conditions you choose."
-
 #: src/calendar/components/event-chip.tsx
 msgid "Automatically put all future instances of this recurring meeting into a folder."
 msgstr "Automatically put all future instances of this recurring meeting into a folder."
-
-#: src/settings/automations/index.tsx
-msgid "Automation actions"
-msgstr "Automation actions"
-
-#: src/automations/actions.ts
-msgid "Automation deleted"
-msgstr "Automation deleted"
-
-#: src/settings/automations/index.tsx
-msgid "Automation disabled"
-msgstr "Automation disabled"
-
-#: src/settings/automations/index.tsx
-msgid "Automation draft saved"
-msgstr "Automation draft saved"
-
-#: src/settings/automations/index.tsx
-msgid "Automation enabled"
-msgstr "Automation enabled"
-
-#: src/settings/automations/index.tsx
-msgid "Automation name"
-msgstr "Automation name"
-
-#: src/automations/actions.ts
-msgid "Automation removed"
-msgstr "Automation removed"
-
-#: src/settings/automations/index.tsx
-#: src/sidebar/settings-nav-groups.ts
-msgid "Automations"
-msgstr "Automations"
 
 #: src/calendar/components/apple/permission.tsx
 #: src/calendar/components/event-chip.tsx
@@ -668,10 +590,6 @@ msgstr "Choose a .bin model"
 msgid "Choose a file format and what to include."
 msgstr "Choose a file format and what to include."
 
-#: src/settings/automations/index.tsx
-msgid "Choose a starter from the sidebar, or create a workflow and add steps like Zapier."
-msgstr "Choose a starter from the sidebar, or create a workflow and add steps like Zapier."
-
 #: src/settings/ai/stt/local-file-model.tsx
 msgid "Choose a transcription model"
 msgstr "Choose a transcription model"
@@ -684,15 +602,6 @@ msgstr "Choose a transcription model to start listening."
 msgid "Choose an AI model before generating a format."
 msgstr "Choose an AI model before generating a format."
 
-#: src/settings/automations/index.tsx
-msgid "Choose an export folder first."
-msgstr "Choose an export folder first."
-
-#: src/settings/automations/index.tsx
-#: src/settings/automations/markdown-export-options.tsx
-msgid "Choose at least one section to export."
-msgstr "Choose at least one section to export."
-
 #: src/settings/claude/index.tsx
 msgid "Choose Claude or Codex for summaries, titles, briefs and the coach. New chats use this provider; existing chats keep their original provider."
 msgstr "Choose Claude or Codex for summaries, titles, briefs and the coach. New chats use this provider; existing chats keep their original provider."
@@ -701,7 +610,6 @@ msgstr "Choose Claude or Codex for summaries, titles, briefs and the coach. New 
 msgid "Choose custom color"
 msgstr "Choose custom color"
 
-#: src/settings/automations/starter-config.tsx
 #: src/settings/general/storage/export-location.tsx
 msgid "Choose export folder"
 msgstr "Choose export folder"
@@ -710,7 +618,6 @@ msgstr "Choose export folder"
 msgid "Choose extra fields to show on each note."
 msgstr "Choose extra fields to show on each note."
 
-#: src/settings/automations/starter-config.tsx
 #: src/settings/general/storage/export-location.tsx
 msgid "Choose folder"
 msgstr "Choose folder"
@@ -809,7 +716,6 @@ msgstr "Cleaning up..."
 #: src/contacts/shared.tsx
 #: src/folders/sidebar.tsx
 #: src/settings/ai/shared/provider-search.tsx
-#: src/sidebar/automations.tsx
 #: src/sidebar/search-field.tsx
 #: src/templates/template-icon-picker.tsx
 #: src/templates/template-sidebar.tsx
@@ -875,17 +781,9 @@ msgstr "Codex sign-in"
 msgid "Collapse {0}"
 msgstr "Collapse {0}"
 
-#: src/settings/automations/markdown-export-options.tsx
-msgid "Collect action items"
-msgstr "Collect action items"
-
 #: src/settings/appearance/theme.tsx
 msgid "Color theme"
 msgstr "Color theme"
-
-#: src/automations/starters.tsx
-msgid "Combine metadata, summary, notes, and transcript."
-msgstr "Combine metadata, summary, notes, and transcript."
 
 #: src/task/resource-view.tsx
 msgid "commented on"
@@ -971,10 +869,6 @@ msgstr "Could not copy to clipboard"
 msgid "Could not create the pre-meeting brief. Try again."
 msgstr "Could not create the pre-meeting brief. Try again."
 
-#: src/automations/actions.ts
-msgid "Could not delete the automation"
-msgstr "Could not delete the automation"
-
 #: src/contacts/use-delete-contact.ts
 msgid "Could not delete this contact. Please try again."
 msgstr "Could not delete this contact. Please try again."
@@ -991,10 +885,6 @@ msgstr "Could not export. Check the export location in Settings and try again."
 msgid "Could not generate meeting insights. Try again."
 msgstr "Could not generate meeting insights. Try again."
 
-#: src/automations/actions.ts
-msgid "Could not remove the automation"
-msgstr "Could not remove the automation"
-
 #: src/sidebar/toast/undo-delete-toast.tsx
 msgid "Could not restore deleted note"
 msgstr "Could not restore deleted note"
@@ -1002,14 +892,6 @@ msgstr "Could not restore deleted note"
 #: src/contacts/use-delete-contact.ts
 msgid "Could not restore the contact"
 msgstr "Could not restore the contact"
-
-#: src/settings/automations/index.tsx
-msgid "Could not run the test export"
-msgstr "Could not run the test export"
-
-#: src/settings/automations/index.tsx
-msgid "Could not save the automation draft"
-msgstr "Could not save the automation draft"
 
 #: src/sidebar/folder-name-dialog.tsx
 msgid "Could not save the folder."
@@ -1019,12 +901,6 @@ msgstr "Could not save the folder."
 msgid "Could not update tags."
 msgstr "Could not update tags."
 
-#: src/settings/automations/index.tsx
-#: src/settings/automations/workflow-builder.tsx
-msgid "Could not update the automation"
-msgstr "Could not update the automation"
-
-#: src/settings/automations/starter-config.tsx
 #: src/settings/general/storage/export-location.tsx
 msgid "Could not update the export folder"
 msgstr "Could not update the export folder"
@@ -1121,7 +997,6 @@ msgstr "Customized"
 msgid "Dark"
 msgstr "Dark"
 
-#: src/settings/automations/markdown-export-options.tsx
 #: src/sidebar/note-filter-menu.tsx
 msgid "Date"
 msgstr "Date"
@@ -1146,7 +1021,6 @@ msgstr "Default language for transcription and AI responses."
 #: src/folders/folder-editor.tsx
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 #: src/session/components/outer-header/overflow/delete.tsx
-#: src/sidebar/automations.tsx
 #: src/sidebar/timeline/index.tsx
 #: src/templates/confirm-template-delete.tsx
 #: src/templates/sections-editor.tsx
@@ -1161,10 +1035,6 @@ msgstr "Delete “{title}”?"
 #: src/sidebar/timeline/item.tsx
 msgid "Delete All Recurring Events"
 msgstr "Delete All Recurring Events"
-
-#: src/settings/automations/index.tsx
-msgid "Delete automation"
-msgstr "Delete automation"
 
 #: src/sidebar/timeline/item.tsx
 msgid "Delete Event"
@@ -1235,10 +1105,6 @@ msgstr "Dictation uses your microphone, transcription provider, languages, and d
 msgid "Dictionary"
 msgstr "Dictionary"
 
-#: src/settings/automations/index.tsx
-msgid "Disable"
-msgstr "Disable"
-
 #: src/settings/general/notification.tsx
 msgid "Disable all notifications"
 msgstr "Disable all notifications"
@@ -1272,12 +1138,6 @@ msgstr "Downloading {downloadingModel}"
 msgid "Downloading model"
 msgstr "Downloading model"
 
-#: src/settings/automations/index.tsx
-#: src/settings/automations/workflow-builder.tsx
-#: src/sidebar/automations.tsx
-msgid "Draft"
-msgstr "Draft"
-
 #: src/templates/details.tsx
 #: src/templates/template-form.tsx
 msgid "Duplicate"
@@ -1301,7 +1161,6 @@ msgstr "Earlier versions of this note, newest first."
 
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 #: src/settings/dictionary/index.tsx
-#: src/sidebar/automations.tsx
 msgid "Edit"
 msgstr "Edit"
 
@@ -1337,12 +1196,6 @@ msgstr "Enable {0}"
 #: src/settings/dictation.tsx
 msgid "Enable dictation"
 msgstr "Enable dictation"
-
-#: src/settings/automations/index.tsx
-#: src/settings/automations/workflow-builder.tsx
-#: src/sidebar/automations.tsx
-msgid "Enabled"
-msgstr "Enabled"
 
 #: src/session/components/outer-header/metadata/participants/chip.tsx
 msgid "Enhance contact"
@@ -1418,34 +1271,14 @@ msgstr "Exclude apps from detection"
 msgid "Expand {0}"
 msgstr "Expand {0}"
 
-#: src/settings/automations/index.tsx
-msgid "Expected output"
-msgstr "Expected output"
-
 #: src/session/components/outer-header/overflow/export-modal.tsx
 #: src/session/components/outer-header/overflow/index.tsx
 msgid "Export"
 msgstr "Export"
 
-#: src/automations/starters.tsx
-msgid "Export every meeting as Markdown"
-msgstr "Export every meeting as Markdown"
-
-#: src/settings/automations/starter-config.tsx
-msgid "Export folder"
-msgstr "Export folder"
-
 #: src/settings/general/storage/export-location.tsx
 msgid "Export location"
 msgstr "Export location"
-
-#: src/settings/automations/workflow-builder.tsx
-msgid "Export the meeting as Markdown"
-msgstr "Export the meeting as Markdown"
-
-#: src/settings/automations/index.tsx
-msgid "Export your latest note now with these settings."
-msgstr "Export your latest note now with these settings."
 
 #: src/session/components/outer-header/overflow/export-modal.tsx
 msgid "Exporting..."
@@ -1466,10 +1299,6 @@ msgstr "Favorite template"
 #: src/session/components/outer-header/overflow/export-modal.tsx
 msgid "File format"
 msgstr "File format"
-
-#: src/settings/automations/markdown-export-options.tsx
-msgid "Filename"
-msgstr "Filename"
 
 #: src/settings/claude/instructions.tsx
 msgid "Files and folders the coach can read when they're relevant. They are read on demand, not sent with every message."
@@ -1564,10 +1393,6 @@ msgstr "Generating title..."
 #: src/session/components/note-input/transcript/screens/empty.tsx
 msgid "Generating transcript..."
 msgstr "Generating transcript..."
-
-#: src/sidebar/automations.tsx
-msgid "Get started"
-msgstr "Get started"
 
 #: src/settings/general/notification.tsx
 msgid "Get your attention when a summary is ready in the background."
@@ -1669,10 +1494,6 @@ msgstr "Hide all notification panels, Dock alerts, and completion sounds."
 msgid "Hide Deleted Events"
 msgstr "Hide Deleted Events"
 
-#: src/settings/automations/index.tsx
-msgid "Hide preview"
-msgstr "Hide preview"
-
 #: src/session/components/note-conflict-banner.tsx
 msgid "History"
 msgstr "History"
@@ -1726,13 +1547,8 @@ msgid "in {weeks} weeks"
 msgstr "in {weeks} weeks"
 
 #: src/session/components/outer-header/overflow/export-modal.tsx
-#: src/settings/automations/markdown-export-options.tsx
 msgid "Include"
 msgstr "Include"
-
-#: src/settings/automations/markdown-export-options.tsx
-msgid "Include meeting ID"
-msgstr "Include meeting ID"
 
 #: src/templates/sections-editor.tsx
 msgid "Insert above"
@@ -1784,23 +1600,9 @@ msgstr "Language & transcription"
 msgid "Last dictation"
 msgstr "Last dictation"
 
-#. placeholder {0}: lastRun.detail
-#: src/settings/automations/starter-config.tsx
-msgid "Last run {relative}: {0}"
-msgstr "Last run {relative}: {0}"
-
-#. placeholder {0}: lastRun.detail
-#: src/settings/automations/starter-config.tsx
-msgid "Last run failed {relative}: {0}"
-msgstr "Last run failed {relative}: {0}"
-
 #: src/settings/claude/index.tsx
 msgid "Leave blank to use the Codex default model."
 msgstr "Leave blank to use the Codex default model."
-
-#: src/settings/automations/markdown-export-options.tsx
-msgid "Leave blank to use the meeting date and title."
-msgstr "Leave blank to use the meeting date and title."
 
 #: src/sidebar/settings-nav-groups.ts
 msgid "Library"
@@ -1901,10 +1703,6 @@ msgstr "macOS cannot access your login Keychain. Repairing briefly locks it and 
 msgid "Main language"
 msgstr "Main language"
 
-#: src/settings/automations/workflow-builder.tsx
-msgid "Markdown export"
-msgstr "Markdown export"
-
 #: src/session/components/note-input/search/bar.tsx
 msgid "Match case"
 msgstr "Match case"
@@ -1943,10 +1741,6 @@ msgstr "Meeting chat"
 msgid "Meeting details access turned on"
 msgstr "Meeting details access turned on"
 
-#: src/automations/starters.tsx
-msgid "Meeting ends"
-msgstr "Meeting ends"
-
 #: src/session/components/outer-header/overflow/index.tsx
 msgid "Meeting info"
 msgstr "Meeting info"
@@ -1957,7 +1751,6 @@ msgid "Meetings"
 msgstr "Meetings"
 
 #: src/session/components/outer-header/overflow/export-modal.tsx
-#: src/settings/automations/markdown-export-options.tsx
 msgid "Memo"
 msgstr "Memo"
 
@@ -2045,10 +1838,6 @@ msgstr "Move to"
 msgid "Move up"
 msgstr "Move up"
 
-#: src/sidebar/automations.tsx
-msgid "My automations"
-msgstr "My automations"
-
 #: src/contacts/details.tsx
 #: src/contacts/organization-details.tsx
 msgid "Name"
@@ -2078,17 +1867,9 @@ msgstr "Needs an access token."
 msgid "Needs an access token. This server usually signs in through a browser; paste an API key or personal token from its settings."
 msgstr "Needs an access token. This server usually signs in through a browser; paste an API key or personal token from its settings."
 
-#: src/settings/automations/workflow-builder.tsx
-msgid "Needs setup"
-msgstr "Needs setup"
-
 #: src/settings/claude/tools.tsx
 msgid "New access token"
 msgstr "New access token"
-
-#: src/sidebar/automations.tsx
-msgid "New automation"
-msgstr "New automation"
 
 #: src/folders/sidebar.tsx
 #: src/sidebar/folder-nav.tsx
@@ -2154,19 +1935,6 @@ msgstr "No"
 msgid "No apps found."
 msgstr "No apps found."
 
-#: src/settings/automations/index.tsx
-msgid "No automation draft yet"
-msgstr "No automation draft yet"
-
-#. placeholder {0}: search.trim()
-#: src/sidebar/automations.tsx
-msgid "No automations match “{0}”"
-msgstr "No automations match “{0}”"
-
-#: src/sidebar/automations.tsx
-msgid "No automations yet"
-msgstr "No automations yet"
-
 #: src/calendar/components/calendar-selection.tsx
 msgid "No calendars found"
 msgstr "No calendars found"
@@ -2202,10 +1970,6 @@ msgstr "No emoji found"
 #: src/sidebar/timeline/utils/index.ts
 msgid "No folder"
 msgstr "No folder"
-
-#: src/settings/automations/starter-config.tsx
-msgid "No folder selected yet."
-msgstr "No folder selected yet."
 
 #: src/session/components/folder-picker.tsx
 msgid "No folders found."
@@ -2591,7 +2355,6 @@ msgstr "Press your shortcut to start, then press it again to finish."
 msgid "Prevent selected apps from triggering meeting detection."
 msgstr "Prevent selected apps from triggering meeting detection."
 
-#: src/settings/automations/index.tsx
 #: src/settings/general/notification.tsx
 msgid "Preview"
 msgstr "Preview"
@@ -2718,7 +2481,6 @@ msgstr "Reminders"
 
 #: src/settings/claude/instructions.tsx
 #: src/settings/claude/tools.tsx
-#: src/sidebar/automations.tsx
 msgid "Remove"
 msgstr "Remove"
 
@@ -2737,10 +2499,6 @@ msgstr "Remove {path}"
 #: src/settings/dictionary/index.tsx
 msgid "Remove {term}"
 msgstr "Remove {term}"
-
-#: src/settings/automations/index.tsx
-msgid "Remove automation"
-msgstr "Remove automation"
 
 #: src/contacts/details.tsx
 msgid "Remove email"
@@ -2772,10 +2530,6 @@ msgstr "Rename folder"
 #: src/sidebar/folder-nav.tsx
 msgid "Rename…"
 msgstr "Rename…"
-
-#: src/automations/starters.tsx
-msgid "Render canonical Markdown"
-msgstr "Render canonical Markdown"
 
 #: src/settings/ai/shared/index.tsx
 msgid "Repair Keychain Access"
@@ -2868,10 +2622,6 @@ msgstr "Risk"
 msgid "Run"
 msgstr "Run"
 
-#: src/sidebar/automations.tsx
-msgid "Run steps automatically when a meeting ends."
-msgstr "Run steps automatically when a meeting ends."
-
 #: src/settings/ai/shared/index.tsx
 #: src/settings/ai/stt/select.tsx
 msgid "Runs after the recording finishes, not during the meeting."
@@ -2883,21 +2633,9 @@ msgstr "Runs after the recording finishes, not during the meeting."
 msgid "Save"
 msgstr "Save"
 
-#: src/settings/automations/index.tsx
-msgid "Save & enable"
-msgstr "Save & enable"
-
-#: src/automations/starters.tsx
-msgid "Save completed meetings as local Markdown files."
-msgstr "Save completed meetings as local Markdown files."
-
 #: src/session/components/outer-header/metadata/date.tsx
 msgid "Save date"
 msgstr "Save date"
-
-#: src/settings/automations/index.tsx
-msgid "Save draft"
-msgstr "Save draft"
 
 #: src/settings/general/storage/export-location.tsx
 msgid "Save PDF, text, Markdown, and Org exports to this folder."
@@ -2922,10 +2660,6 @@ msgstr "Scroll to bottom"
 #: src/session/components/note-input/transcript/renderer/index.tsx
 msgid "Scroll to top"
 msgstr "Scroll to top"
-
-#: src/sidebar/automations.tsx
-msgid "Search automations..."
-msgstr "Search automations..."
 
 #: src/contacts/shared.tsx
 msgid "Search contacts..."
@@ -3068,7 +2802,6 @@ msgid "Session note views"
 msgstr "Session note views"
 
 #: src/session/components/title-input.tsx
-#: src/settings/automations/markdown-export-options.tsx
 msgid "Session title"
 msgstr "Session title"
 
@@ -3303,10 +3036,6 @@ msgstr "Spend limit per meeting"
 msgid "SQLite migration verification is incomplete"
 msgstr "SQLite migration verification is incomplete"
 
-#: src/settings/automations/workflow-builder.tsx
-msgid "Stack another destination. Steps run top to bottom."
-msgstr "Stack another destination. Steps run top to bottom."
-
 #: src/settings/general/app-settings.tsx
 msgid "Start Cue at login"
 msgstr "Start Cue at login"
@@ -3361,10 +3090,6 @@ msgstr "Starting microphone…"
 msgid "Starting transcription..."
 msgstr "Starting transcription..."
 
-#: src/settings/automations/index.tsx
-msgid "Steps run from top to bottom."
-msgstr "Steps run from top to bottom."
-
 #: src/session/components/outer-header/index.tsx
 msgid "Stop"
 msgstr "Stop"
@@ -3413,7 +3138,6 @@ msgstr "Suggested templates"
 
 #: src/contacts/details.tsx
 #: src/session/components/outer-header/overflow/export-modal.tsx
-#: src/settings/automations/markdown-export-options.tsx
 #: src/shared/open-note-dialog.tsx
 msgid "Summary"
 msgstr "Summary"
@@ -3509,20 +3233,6 @@ msgstr "Templates"
 msgid "Templates shape how your meeting notes are written."
 msgstr "Templates shape how your meeting notes are written."
 
-#: src/settings/automations/index.tsx
-msgid "Test"
-msgstr "Test"
-
-#. placeholder {0}: record.detail
-#: src/settings/automations/index.tsx
-msgid "Test export failed: {0}"
-msgstr "Test export failed: {0}"
-
-#. placeholder {0}: record.detail
-#: src/settings/automations/index.tsx
-msgid "Test export saved to {0}"
-msgstr "Test export saved to {0}"
-
 #: src/onboarding/test-recording.tsx
 msgid "Test note created. Return here after checking it to delete it."
 msgstr "Test note created. Return here after checking it to delete it."
@@ -3550,14 +3260,6 @@ msgstr "the transcription service"
 #: src/settings/appearance/theme.tsx
 msgid "Theme"
 msgstr "Theme"
-
-#: src/settings/automations/workflow-builder.tsx
-msgid "Then"
-msgstr "Then"
-
-#: src/settings/automations/index.tsx
-msgid "There are no notes to export yet."
-msgstr "There are no notes to export yet."
 
 #: src/settings/claude/instructions.tsx
 msgid "These are sent with every message, so long instructions use more of your Claude plan."
@@ -3637,7 +3339,6 @@ msgstr "Transcribing…"
 
 #: src/session/components/note-input/header-transcript.tsx
 #: src/session/components/outer-header/overflow/export-modal.tsx
-#: src/settings/automations/markdown-export-options.tsx
 #: src/shared/open-note-dialog.tsx
 msgid "Transcript"
 msgstr "Transcript"
@@ -3663,11 +3364,6 @@ msgstr "Transcription unavailable"
 #: src/templates/template-icon-picker.tsx
 msgid "Travel & Places"
 msgstr "Travel & Places"
-
-#: src/settings/automations/index.tsx
-#: src/settings/automations/workflow-builder.tsx
-msgid "Trigger"
-msgstr "Trigger"
 
 #: src/onboarding/test-recording.tsx
 msgid "Try a short test recording"
@@ -3745,11 +3441,6 @@ msgstr "Unpin"
 msgid "Untitled"
 msgstr "Untitled"
 
-#: src/settings/automations/index.tsx
-#: src/sidebar/automations.tsx
-msgid "Untitled automation"
-msgstr "Untitled automation"
-
 #: src/contacts/related-notes.tsx
 msgid "Untitled Note"
 msgstr "Untitled Note"
@@ -3815,10 +3506,6 @@ msgstr "Use 24-hour time"
 #: src/settings/claude/tools.tsx
 msgid "Use a custom header instead"
 msgstr "Use a custom header instead"
-
-#: src/automations/starters.tsx
-msgid "Use a stable filename in the configured export directory."
-msgstr "Use a stable filename in the configured export directory."
 
 #: src/onboarding/index.tsx
 msgid "Use Claude or Codex for summaries and the coach. You can switch providers later in Settings."
@@ -3901,10 +3588,6 @@ msgstr "View Note"
 msgid "Wait before treating microphone activity as a meeting."
 msgstr "Wait before treating microphone activity as a meeting."
 
-#: src/automations/starters.tsx
-msgid "Wait until the transcript and note are complete."
-msgstr "Wait until the transcript and note are complete."
-
 #: src/settings/claude/index.tsx
 msgid "Web access"
 msgstr "Web access"
@@ -3937,10 +3620,6 @@ msgstr "What's new in {version}?"
 msgid "When off, summaries follow the detected meeting language."
 msgstr "When off, summaries follow the detected meeting language."
 
-#: src/settings/automations/workflow-builder.tsx
-msgid "When this happens"
-msgstr "When this happens"
-
 #: src/settings/claude/index.tsx
 msgid "While recording, the coach speaks up on its own when a question, promise or number may need you."
 msgstr "While recording, the coach speaks up on its own when a question, promise or number may need you."
@@ -3952,15 +3631,6 @@ msgstr "whisper.cpp models"
 #: src/settings/appearance/app-icon.tsx
 msgid "White"
 msgstr "White"
-
-#: src/settings/automations/workflow-builder.tsx
-#: src/sidebar/settings-nav-groups.ts
-msgid "Workflow"
-msgstr "Workflow"
-
-#: src/automations/starters.tsx
-msgid "Write to a folder"
-msgstr "Write to a folder"
 
 #: src/sidebar/timeline/utils/index.ts
 msgid "Yesterday"

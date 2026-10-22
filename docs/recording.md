@@ -29,11 +29,11 @@ To carry on in the same note later, choose **Resume listening** from the note's 
 
 In **Settings → Meetings**:
 
-| Setting | What it does | Default |
-| ------- | ------------ | ------- |
-| Start when meeting begins | Start recording when a scheduled meeting begins | On |
-| Join scheduled meetings | Also open the meeting link (needs the setting above) | Off |
-| Stop when meeting ends | Stop recording when your call ends | On |
+| Setting                   | What it does                                         | Default |
+| ------------------------- | ---------------------------------------------------- | ------- |
+| Start when meeting begins | Start recording when a scheduled meeting begins      | On      |
+| Join scheduled meetings   | Also open the meeting link (needs the setting above) | Off     |
+| Stop when meeting ends    | Stop recording when your call ends                   | On      |
 
 Automatic start needs a [connected calendar](setup.md#connect-your-calendar) and only applies to events with a meeting link that aren't all-day. If your Mac was asleep, Cue still picks up a meeting that started in the last 5 minutes.
 
@@ -120,8 +120,6 @@ Cue transcribes the audio with your current model, then writes the summary.
 4. Click **Export**.
 
 The file goes to your export folder (Downloads unless you change **Settings → General → Storage → Export location**) and Cue shows it in Finder. The summary included is the one in the Summary tab you have open.
-
-To save every meeting as Markdown automatically, see [Automations](automations.md).
 
 ## If something goes wrong during a meeting
 

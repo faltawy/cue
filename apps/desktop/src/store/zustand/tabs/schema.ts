@@ -27,10 +27,7 @@ export type SupportedWindowTabInput =
       state?: SessionsState | null;
     });
 
-export type TabInput =
-  | SupportedWindowTabInput
-  | { type: "automations" }
-  | { type: "folders" };
+export type TabInput = SupportedWindowTabInput | { type: "folders" };
 
 export const isTabInputSupported = (
   tab: WindowsTabInput,
@@ -109,7 +106,6 @@ export type Tab =
       type: "templates";
       state: TemplatesState;
     })
-  | (BaseTab & { type: "automations" })
   | (BaseTab & { type: "folders" })
   | (BaseTab & {
       type: "humans";
@@ -178,8 +174,6 @@ export const getDefaultState = (tab: TabInput): Tab => {
           selectedWebIndex: null,
         },
       };
-    case "automations":
-      return { ...base, type: "automations" };
     case "folders":
       return { ...base, type: "folders" };
     case "humans":
@@ -200,9 +194,6 @@ export const getDefaultState = (tab: TabInput): Tab => {
       const subtab = tab.state?.tab as string | null | undefined;
       if (subtab === "calendar") {
         return { ...base, type: "calendar" };
-      }
-      if (subtab === "automations") {
-        return { ...base, type: "automations" };
       }
       if (subtab === "folders") {
         return { ...base, type: "folders" };
@@ -235,8 +226,6 @@ export const uniqueIdfromTab = (tab: Tab): string => {
       return `contacts`;
     case "templates":
       return `templates`;
-    case "automations":
-      return `automations`;
     case "folders":
       return `folders`;
     case "empty":

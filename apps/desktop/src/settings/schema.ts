@@ -281,41 +281,6 @@ export const SETTING_DEFINITIONS = {
     type: "string",
     path: ["general", "selected_template_id"],
   },
-  automation_draft_template: {
-    type: "string",
-    path: ["automations", "draft_template"],
-    default: "" as string,
-  },
-  automation_workflows: {
-    type: "string",
-    path: ["automations", "workflows"],
-    default: "[]" as string,
-  },
-  automation_markdown_export_enabled: {
-    type: "boolean",
-    path: ["automations", "markdown_export_enabled"],
-    default: false as boolean,
-  },
-  automation_markdown_export_directory: {
-    type: "string",
-    path: ["automations", "markdown_export_directory"],
-    default: "" as string,
-  },
-  automation_markdown_export_last_run: {
-    type: "string",
-    path: ["automations", "markdown_export_last_run"],
-    default: "" as string,
-  },
-  automation_markdown_export_options: {
-    type: "string",
-    path: ["automations", "markdown_export_options"],
-    default: "" as string,
-  },
-  automation_markdown_export_files: {
-    type: "string",
-    path: ["automations", "markdown_export_files"],
-    default: "" as string,
-  },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFINITIONS;

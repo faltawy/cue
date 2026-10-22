@@ -6,14 +6,6 @@
 
 
 export const commands = {
-async dispatchEvent(event: string, meetingId: string) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("plugin:local-api|dispatch_event", { event, meetingId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async exportMeetingMarkdown(meetingId: string, directory: string, options: MarkdownExportOptions | null, previous: MarkdownExportFile | null) : Promise<Result<MarkdownExportFile, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:local-api|export_meeting_markdown", { meetingId, directory, options, previous }) };

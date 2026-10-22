@@ -180,7 +180,6 @@ export function scenes(data = "demo") {
     { name: "11-settings-appearance", steps: settings("Appearance") },
     { name: "12-settings-transcription", steps: settings("Transcription") },
     { name: "13-settings-dictionary", steps: settings("Dictionary") },
-    { name: "13-settings-automations", steps: settings("Automations") },
     { name: "13-settings-claude", steps: settings("Claude") },
     {
       name: "13-settings-claude-connectors",

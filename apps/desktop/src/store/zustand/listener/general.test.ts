@@ -5,7 +5,6 @@ import { toast } from "@anlg/ui/components/ui/toast";
 
 const {
   acknowledgeStoppedCaptureMock,
-  dispatchEventMock,
   getIdentifierMock,
   getCaptureSnapshotMock,
   listenCaptureDataMock,
@@ -21,7 +20,6 @@ const {
   vaultBaseMock,
 } = vi.hoisted(() => ({
   acknowledgeStoppedCaptureMock: vi.fn(),
-  dispatchEventMock: vi.fn(),
   getIdentifierMock: vi.fn(),
   getCaptureSnapshotMock: vi.fn(),
   listenCaptureDataMock: vi.fn(),
@@ -66,12 +64,6 @@ vi.mock("@anlg/plugin-hooks", () => ({
 vi.mock("@anlg/plugin-icon", () => ({
   commands: {
     setRecordingIndicator: setRecordingIndicatorMock,
-  },
-}));
-
-vi.mock("@anlg/plugin-local-api", () => ({
-  commands: {
-    dispatchEvent: dispatchEventMock,
   },
 }));
 
@@ -146,7 +138,6 @@ describe("General Listener Slice", () => {
     startCaptureMock.mockResolvedValue({ status: "ok", data: null });
     stopCaptureMock.mockResolvedValue({ status: "ok", data: null });
     stopTranscriptionMock.mockResolvedValue({ status: "ok", data: null });
-    dispatchEventMock.mockResolvedValue({ status: "ok", data: 1 });
     vaultBaseMock.mockResolvedValue({ status: "ok", data: "/tmp/cue" });
   });
 
@@ -1222,7 +1213,6 @@ describe("General Listener Slice", () => {
       await store.getState().attachLiveSession("session-a");
       store.getState().stop();
       await vi.waitFor(() => expect(stopCaptureMock).toHaveBeenCalledOnce());
-      expect(dispatchEventMock).not.toHaveBeenCalled();
 
       lifecycleHandler?.({
         payload: {
@@ -1235,7 +1225,6 @@ describe("General Listener Slice", () => {
           error: null,
         },
       });
-      expect(dispatchEventMock).not.toHaveBeenCalled();
       expect(acknowledgeStoppedCaptureMock).not.toHaveBeenCalled();
 
       finishPostStopProcessing?.();
@@ -1243,12 +1232,6 @@ describe("General Listener Slice", () => {
         expect(acknowledgeStoppedCaptureMock).toHaveBeenCalledWith(
           "session-a",
           1234,
-        ),
-      );
-      await vi.waitFor(() =>
-        expect(dispatchEventMock).toHaveBeenCalledWith(
-          "meeting.completed",
-          "session-a",
         ),
       );
     });
@@ -1788,12 +1771,6 @@ describe("General Listener Slice", () => {
         error,
       );
       expect(acknowledgeStoppedCaptureMock).not.toHaveBeenCalled();
-      await vi.waitFor(() =>
-        expect(dispatchEventMock).toHaveBeenCalledWith(
-          "meeting.completed",
-          "session-a",
-        ),
-      );
       await vi.waitFor(() =>
         expect(store.getState().canStartLiveSession("session-a")).toBe(true),
       );

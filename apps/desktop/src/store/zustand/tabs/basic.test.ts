@@ -219,13 +219,16 @@ describe("Basic Tab Actions", () => {
     },
   );
 
-  test("openNew redirects legacy automation settings links", () => {
+  test("openNew redirects legacy automation settings links to General", () => {
     useTabs.getState().openNew({
       type: "settings",
       state: { tab: "automations" },
     });
 
-    expect(useTabs.getState()).toHaveCurrentTab({ type: "automations" });
+    expect(useTabs.getState()).toHaveCurrentTab({
+      type: "settings",
+      state: { tab: "app" },
+    });
   });
 
   test("openNew redirects legacy folder settings links", () => {

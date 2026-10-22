@@ -1,6 +1,5 @@
 [default]
 description = "Default permissions for the plugin"
 permissions = [
-  "allow-dispatch-event",
   "allow-export-meeting-markdown",
 ]

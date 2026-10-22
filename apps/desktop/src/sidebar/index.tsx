@@ -2,7 +2,6 @@ import { type ReactNode } from "react";
 
 import { cn } from "@anlg/utils";
 
-import { AutomationsNav } from "./automations";
 import { CalendarNav } from "./calendar";
 import { ContactsNav } from "./contacts";
 import { FolderMaterialsPanel } from "./folder-materials";
@@ -33,14 +32,12 @@ export function LeftSidebar({
   const isCalendarMode = currentTab?.type === "calendar";
   const isContactsMode = currentTab?.type === "contacts";
   const isTemplatesMode = currentTab?.type === "templates";
-  const isAutomationsMode = currentTab?.type === "automations";
   const isFoldersMode = currentTab?.type === "folders";
   const isSpecialMode =
     isSettingsMode ||
     isCalendarMode ||
     isContactsMode ||
     isTemplatesMode ||
-    isAutomationsMode ||
     isFoldersMode;
   const isTimelineSidebarLayout = !isSpecialMode;
   // Navs with their own CustomSidebarHeader fill the chrome row themselves; a
@@ -67,8 +64,6 @@ export function LeftSidebar({
             <ContactsNav />
           ) : isTemplatesMode ? (
             <TemplatesNav />
-          ) : isAutomationsMode ? (
-            <AutomationsNav />
           ) : isFoldersMode ? (
             <FoldersNav />
           ) : (

@@ -11,6 +11,7 @@ Settings navigation is grouped by task. Search still finds a page by name, and e
 | AI            | Provider, separate sign-ins and models, coach project, nudges, spend limit, web access, coach instructions, knowledge, tools and Claude connectors. See [AI setup](setup.md#choose-your-ai-provider) and [The coach](coach.md). |
 | Transcription | Model, API keys and model downloads. See [Choose how to transcribe](setup.md#choose-how-to-transcribe).                                                                                                                         |
 | Permissions   | Microphone, System audio, Accessibility and Calendar, with a button on each to ask again or open System Settings. See [Allow permissions](setup.md#allow-permissions).                                                          |
+| Dictation     | Configure dictation. See [Dictation](dictation.md).                                                                                                                                                                             |
 
 ## Meeting capture
 
@@ -28,13 +29,6 @@ Settings navigation is grouped by task. Search still finds a page by name, and e
 | Contacts   | See [Contacts](people.md).                                       |
 | Templates  | See [Templates](templates.md).                                   |
 | Dictionary | Words to spell right. See [Dictionary](dictation.md#dictionary). |
-
-## Workflow
-
-| Page        | What's on it                       |
-| ----------- | ---------------------------------- |
-| Automations | See [Automations](automations.md). |
-| Dictation   | See [Dictation](dictation.md).     |
 
 ## Appearance & general
 

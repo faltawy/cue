@@ -93,14 +93,4 @@ describe("CustomSidebarHeader", () => {
     expect(mocks.select).toHaveBeenCalledWith(settingsTab);
     expect(mocks.openCurrent).not.toHaveBeenCalled();
   });
-
-  it("opens home directly from Automations", () => {
-    mocks.currentTab = { type: "automations" };
-
-    render(<CustomSidebarHeader />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Go home" }));
-
-    expect(mocks.openCurrent).toHaveBeenCalledWith({ type: "empty" });
-  });
 });

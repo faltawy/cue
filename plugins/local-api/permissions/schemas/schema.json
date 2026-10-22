@@ -295,42 +295,6 @@
       "type": "string",
       "oneOf": [
         {
-          "description": "Enables the create_webhook command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-create-webhook",
-          "markdownDescription": "Enables the create_webhook command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the create_webhook command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-create-webhook",
-          "markdownDescription": "Denies the create_webhook command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the delete_webhook command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-delete-webhook",
-          "markdownDescription": "Enables the delete_webhook command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the delete_webhook command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-delete-webhook",
-          "markdownDescription": "Denies the delete_webhook command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the dispatch_event command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-dispatch-event",
-          "markdownDescription": "Enables the dispatch_event command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the dispatch_event command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-dispatch-event",
-          "markdownDescription": "Denies the dispatch_event command without any pre-configured scope."
-        },
-        {
           "description": "Enables the export_meeting_markdown command without any pre-configured scope.",
           "type": "string",
           "const": "allow-export-meeting-markdown",
@@ -343,46 +307,10 @@
           "markdownDescription": "Denies the export_meeting_markdown command without any pre-configured scope."
         },
         {
-          "description": "Enables the list_webhooks command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-list-webhooks",
-          "markdownDescription": "Enables the list_webhooks command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the list_webhooks command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-list-webhooks",
-          "markdownDescription": "Denies the list_webhooks command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the set_webhook_active command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-set-webhook-active",
-          "markdownDescription": "Enables the set_webhook_active command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the set_webhook_active command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-set-webhook-active",
-          "markdownDescription": "Denies the set_webhook_active command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the test_webhook command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-test-webhook",
-          "markdownDescription": "Enables the test_webhook command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the test_webhook command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-test-webhook",
-          "markdownDescription": "Denies the test_webhook command without any pre-configured scope."
-        },
-        {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-dispatch-event`\n- `allow-export-meeting-markdown`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-export-meeting-markdown`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-dispatch-event`\n- `allow-export-meeting-markdown`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-export-meeting-markdown`"
         }
       ]
     }

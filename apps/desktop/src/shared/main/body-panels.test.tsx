@@ -52,7 +52,6 @@ describe("MainBodyPanels", () => {
   });
 
   it.each([
-    ["automations", "automations", {}, "800px"],
     ["settings", "settings", {}, "min(900px, 100%)"],
     ["sessions", "sessions", {}, "700px"],
     ["empty", "empty", {}, "700px"],

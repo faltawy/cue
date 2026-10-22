@@ -676,51 +676,6 @@ const COACH_SETTINGS = {
   web_access: true,
 };
 
-const WORKFLOWS = [
-  {
-    id: "workflow-long",
-    title:
-      "Export every enhanced note for Northwind Industries Holdings International to the shared Google Drive",
-    enabled: true,
-    trigger: "note_enhanced",
-    steps: [
-      {
-        id: "step-long",
-        type: "markdown_export",
-        directory: LONG_PATH,
-      },
-    ],
-    lastRun: {
-      at: new Date(Date.now() - 12 * DAY).toISOString(),
-      status: "error",
-      detail: `EACCES: permission denied, open '${LONG_PATH}/Weekly sync with Lumen: Q4 pricing, the WhatsApp number migration, outbound Bcc and who signs off the new seat count.md'`,
-    },
-    processedSessionIds: Array.from({ length: 1284 }, (_, i) => `s-${i}`),
-  },
-  {
-    id: "workflow-j",
-    title: "J",
-    enabled: false,
-    trigger: "meeting_completed",
-    steps: [],
-    lastRun: null,
-    processedSessionIds: [],
-  },
-  {
-    id: "workflow-untitled",
-    title: "",
-    enabled: true,
-    trigger: "meeting_completed",
-    steps: [{ id: "step-empty", type: "markdown_export", directory: "" }],
-    lastRun: {
-      at: new Date().toISOString(),
-      status: "success",
-      detail: "Exported 1 note",
-    },
-    processedSessionIds: ["s-1"],
-  },
-];
-
 const DICTIONARY = [
   "Datenschutzgrundverordnungskonformitätsprüfung",
   "Northwind Industries Holdings International GmbH & Co. KG",
@@ -771,7 +726,6 @@ export const worst = (): Dataset => ({
       "hi",
     ]),
     personalization_dictionary_terms: JSON.stringify(DICTIONARY),
-    automation_workflows: JSON.stringify(WORKFLOWS),
     custom_summary_instructions: COACH_SETTINGS.instructions,
     export_directory: LONG_PATH,
     notification_completion_sound_name: "Glass",

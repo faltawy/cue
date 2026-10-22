@@ -37,7 +37,7 @@ Press ⌘K and type. Cue searches:
 
 Arabic matches with or without diacritics. Locked notes are found by title only.
 
-With nothing typed, ⌘K shows recent notes, **New note**, **Record a meeting**, and pages to open: Folders, Calendar, Contacts, Templates, Automations, Settings and **What's new**.
+With nothing typed, ⌘K shows recent notes, **New note**, **Record a meeting**, and pages to open: Folders, Calendar, Contacts, Templates, Settings and **What's new**.
 
 Use ↑ and ↓ to move, Return to open, and Esc to close.
 
@@ -66,7 +66,7 @@ Each speaker turn starts with its speaker and a timestamp. If audio is available
 - Type @ to mention a note, person, organization or folder.
 - Paste or drop images, and drag their edges to resize.
 
-Task List items (`[ ]`) are the note's action items. The coach's wrap-up can add commitments as tasks, and automations can collect them into an export.
+Task List items (`[ ]`) are the note's action items. The coach's wrap-up can add commitments as tasks.
 
 ### Meeting info
 
@@ -184,4 +184,4 @@ To connect a calendar, see [Connect your calendar](setup.md#connect-your-calenda
 - ⌘\\ hides or shows the sidebar.
 - ⌘=, ⌘- and ⌘0 make text bigger, smaller, or normal again.
 - **Open in New Window** and **Always on Top** in the ⋯ menu keep a note next to your meeting.
-- Esc or the back arrow leaves Settings, Calendar, Contacts, Folders, Templates and Automations.
+- Esc or the back arrow leaves Settings, Calendar, Contacts, Folders and Templates.

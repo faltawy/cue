@@ -5,7 +5,6 @@ import type { StoreApi } from "zustand";
 import { commands as detectCommands } from "@anlg/plugin-detect";
 import { commands as hooksCommands } from "@anlg/plugin-hooks";
 import { commands as iconCommands } from "@anlg/plugin-icon";
-import { commands as localApiCommands } from "@anlg/plugin-local-api";
 import { commands as settingsCommands } from "@anlg/plugin-settings";
 import {
   commands as listenerCommands,
@@ -47,7 +46,6 @@ import {
 } from "./transcript";
 
 import { prepareSessionPeaks } from "~/audio-player/waveform";
-import { runMeetingCompletedAutomations } from "~/automations/engine";
 import { getSessionResourcePath } from "~/session/resource-path";
 import { fromResult } from "~/stt/fromResult";
 import { recordDetectedMeetingApps } from "~/stt/meeting-source-apps";
@@ -403,11 +401,6 @@ const createSessionEventHandlers = <T extends LiveStore>(
       void prepareSessionPeaks(targetSessionId);
     }
 
-    const dispatchMeetingCompleted = () => {
-      void localApiCommands.dispatchEvent("meeting.completed", targetSessionId);
-      void runMeetingCompletedAutomations(targetSessionId);
-    };
-
     const acknowledgeStoppedCapture = () => {
       void listenerCommands
         .acknowledgeStoppedCapture(targetSessionId, payload.stopped_at_ms)
@@ -435,7 +428,6 @@ const createSessionEventHandlers = <T extends LiveStore>(
         if (acknowledge) {
           acknowledgeStoppedCapture();
         }
-        dispatchMeetingCompleted();
       };
       try {
         const stopped = onStopped(targetSessionId, {
@@ -462,7 +454,6 @@ const createSessionEventHandlers = <T extends LiveStore>(
       }
     } else {
       acknowledgeStoppedCapture();
-      dispatchMeetingCompleted();
     }
   },
   progress: (payload) => {

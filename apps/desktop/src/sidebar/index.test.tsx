@@ -35,10 +35,6 @@ vi.mock("~/sidebar/calendar", () => ({
   CalendarNav: () => <div data-testid="calendar-nav" />,
 }));
 
-vi.mock("~/sidebar/automations", () => ({
-  AutomationsNav: () => <div data-testid="automations-nav" />,
-}));
-
 vi.mock("~/sidebar/contacts", () => ({
   ContactsNav: () => <div data-testid="contacts-nav" />,
 }));
@@ -89,7 +85,6 @@ describe("LeftSidebar", () => {
     ["calendar", "calendar-nav"],
     ["contacts", "contacts-nav"],
     ["templates", "templates-nav"],
-    ["automations", "automations-nav"],
     ["folders", "folders-nav"],
   ])("shows the %s nav instead of the timeline", (type, testId) => {
     mocks.currentTab = { type };

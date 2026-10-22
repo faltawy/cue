@@ -45,7 +45,6 @@ After an update, macOS may ask for your login password once so the new version c
 | [Notes, folders and tags](docs/notes.md) | Finding notes, writing, folders, tags, locking, deleting, calendar |
 | [Contacts](docs/people.md) | People, organizations and meeting participants |
 | [Templates](docs/templates.md) | How summaries are laid out |
-| [Automations](docs/automations.md) | Save every meeting as a Markdown file |
 | [Dictation and dictionary](docs/dictation.md) | Speak into any app; teach Cue your words |
 | [Keyboard shortcuts](docs/shortcuts.md) | Every shortcut in one place |
 | [Settings reference](docs/settings.md) | Every setting, page by page |

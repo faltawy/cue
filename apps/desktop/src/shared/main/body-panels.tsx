@@ -4,7 +4,6 @@ import { useCallback, useLayoutEffect, useRef } from "react";
 import { commands as windowsCommands } from "@anlg/plugin-windows";
 
 import {
-  AUTOMATIONS_SURFACE_MIN_WIDTH_PX,
   boundedMinWidthPx,
   NOTE_SURFACE_MIN_WIDTH_PX,
   SETTINGS_SURFACE_MIN_WIDTH_PX,
@@ -82,13 +81,6 @@ function getMainBodyMinWidth({
   leftSidebarExpanded: boolean;
   noteSurfaceMinWidth: number;
 }) {
-  if (currentTab?.type === "automations") {
-    return (
-      AUTOMATIONS_SURFACE_MIN_WIDTH_PX +
-      (leftSidebarExpanded ? LEFT_SIDEBAR_MIN_WIDTH_PX : 0)
-    );
-  }
-
   if (currentTab?.type === "settings") {
     return (
       SETTINGS_SURFACE_MIN_WIDTH_PX +

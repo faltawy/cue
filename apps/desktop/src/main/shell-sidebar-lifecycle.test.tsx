@@ -59,7 +59,7 @@ describe("custom sidebar lifecycle", () => {
     { expanded: false, strict: true },
     { expanded: true, strict: true },
   ])(
-    "keeps Automations navigation usable when leaving and returning (expanded=$expanded, strict=$strict)",
+    "keeps workspace navigation usable when leaving and returning (expanded=$expanded, strict=$strict)",
     ({ expanded, strict }) => {
       const Wrapper = strict ? StrictMode : Fragment;
       render(
@@ -77,8 +77,7 @@ describe("custom sidebar lifecycle", () => {
 
       act(() => useTabs.getState().openNew({ type: "settings" }));
       expect(screen.getByRole("button", { name: "Go home" })).toBeTruthy();
-
-      act(() => useTabs.getState().openNew({ type: "automations" }));
+      act(() => useTabs.getState().openNew({ type: "folders" }));
       expect(screen.getByRole("button", { name: "Go home" })).toBeTruthy();
 
       fireEvent.click(screen.getByRole("button", { name: "Hide sidebar" }));

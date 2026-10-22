@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.8.0
+
+### Minor Changes
+
+- Cue no longer includes Automations; manual Markdown exports remain available. The home screen now displays the Cue wordmark.
+
 ## 0.7.0
 
 ### Minor Changes

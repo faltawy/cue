@@ -7,7 +7,6 @@ import {
   FileText,
   FolderSimple,
   Gear,
-  Lightning,
   type Icon,
   Lock,
   Microphone,
@@ -27,7 +26,7 @@ type SettingsNavItem =
       icon: Icon;
     }
   | {
-      id: "automations" | "calendar" | "contacts" | "folders" | "templates";
+      id: "calendar" | "contacts" | "folders" | "templates";
       label: string;
       icon: Icon;
       destination: TabInput;
@@ -45,6 +44,7 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
         { id: "claude", label: t`AI`, icon: Sparkle },
         { id: "transcription", label: t`Transcription`, icon: Waveform },
         { id: "permissions", label: t`Permissions`, icon: Lock },
+        { id: "dictation", label: t`Dictation`, icon: Microphone },
       ],
     },
     {
@@ -82,18 +82,6 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
           destination: { type: "templates" },
         },
         { id: "dictionary", label: t`Dictionary`, icon: BookOpen },
-      ],
-    },
-    {
-      label: t`Workflow`,
-      items: [
-        {
-          id: "automations",
-          label: t`Automations`,
-          icon: Lightning,
-          destination: { type: "automations" },
-        },
-        { id: "dictation", label: t`Dictation`, icon: Microphone },
       ],
     },
     {

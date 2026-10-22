@@ -1,5 +1,4 @@
 import { md2json } from "@anlg/editor/markdown";
-import { commands as localApiCommands } from "@anlg/plugin-local-api";
 import { commands as templateCommands } from "@anlg/plugin-template";
 
 import { createTaskId, type TaskConfig } from ".";
@@ -8,7 +7,6 @@ import {
   persistGeneratedTitle,
 } from "./title-success";
 
-import { runNoteEnhancedAutomations } from "~/automations/engine";
 import { retryDatabaseLock } from "~/db/retry";
 import { showSummaryReadyNotification } from "~/services/enhancer/summary-notification";
 import { persistGeneratedEnhancedNote } from "~/session/content-mutations";
@@ -155,8 +153,6 @@ export const runEnhanceSuccess = async ({
   }
 
   if (!signal.aborted) {
-    void localApiCommands.dispatchEvent("note.enhanced", args.sessionId);
-    void runNoteEnhancedAutomations(args.sessionId);
     void showSummaryReadyNotification(args.sessionId, trimmedTitle);
     void playCompletionSound();
     void requestAppAttention();
