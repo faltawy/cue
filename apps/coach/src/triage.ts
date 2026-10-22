@@ -17,6 +17,7 @@ Say yes only when the user could act on it right now:
 - the user promising a date, feature or discount, or giving ground without getting anything back
 - a decision made without an owner, or a fact, number or claim that sounds wrong
 - a number, date or price the user should check, write down or use
+Compare each flagged question or promise with the later lines in the full window before deciding. Say no when a later line answered the question or resolved the commitment; a flagged cue that was open earlier in the window is not still actionable after it is resolved. Keep a vague promise or decision without an owner or date actionable when the gap is still open and the user can clarify it now.
 Say no to small talk, greetings, back-channel ("yeah", "right", "you know?"), rhetorical and tag questions ("…, right?"), the user saying they will check something during the call, anything already answered, questions the user asked, and anything the user could not act on now. When unsure, say no.
 Reply with only this JSON: {"nudge": true or false, "why": "at most 12 words"}`;
 

@@ -55,4 +55,43 @@ describe("triagePrompt", () => {
     expect(TRIAGE_SYSTEM).toContain("A missing flagged cue does not mean there is no actionable moment");
     expect(prompt).not.toContain(TRIAGE_SYSTEM.slice(0, 40));
   });
+
+  test("keeps later resolution and an unresolved commitment in the triage window", () => {
+    const request = {
+      context: "Planning call",
+      kinds: ["question", "commitment"] as const,
+      lines: [
+        {
+          speaker: "Omar",
+          channel: 1,
+          start_ms: 60_000,
+          end_ms: 63_000,
+          text: " Can you approve this today?",
+        },
+        {
+          speaker: "You",
+          channel: 0,
+          start_ms: 64_000,
+          end_ms: 67_000,
+          text: " Yes, I'll approve it today.",
+        },
+        {
+          speaker: "Leila",
+          channel: 1,
+          start_ms: 70_000,
+          end_ms: 73_000,
+          text: " I'll follow up on the proposal.",
+        },
+      ],
+    };
+
+    const prompt = triagePrompt(request);
+
+    expect(prompt).toContain("Omar: Can you approve this today?");
+    expect(prompt).toContain("You: Yes, I'll approve it today.");
+    expect(prompt).toContain("Leila: I'll follow up on the proposal.");
+    expect(TRIAGE_SYSTEM).toMatch(
+      /later lines.{0,80}(resolve|answer)|(?:resolve|answer).{0,80}later lines/i,
+    );
+  });
 });
