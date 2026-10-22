@@ -61,9 +61,7 @@ function harness(
       spend: options.spend ?? TRIAGE_SPEND,
     }),
   );
-  const nudge = mock(
-    (_request: NudgeRequest): NudgeDispatch => "started",
-  );
+  const nudge = mock((_request: NudgeRequest): NudgeDispatch => "started");
   const metric = mock();
   const changed = mock();
   const proactive = new Proactive(
@@ -126,20 +124,26 @@ describe("Proactive: hit → fast nudge or fallback triage", () => {
   test.each([
     ["question", QUESTION],
     ["objection", line("Omar", "That price is too expensive for us.", 60, 63)],
-    ["commitment", line("You", "I'll send the rollout plan by Friday.", 60, 63)],
-  ] as const)("a clear %s cue starts one fast nudge without triage", async (_, cue) => {
-    const coach = harness();
-    coach.say(cue);
-    coach.tick(3);
+    [
+      "commitment",
+      line("You", "I'll send the rollout plan by Friday.", 60, 63),
+    ],
+  ] as const)(
+    "a clear %s cue starts one fast nudge without triage",
+    async (_, cue) => {
+      const coach = harness();
+      coach.say(cue);
+      coach.tick(3);
 
-    expect(coach.triage).not.toHaveBeenCalled();
-    expect(coach.nudge).toHaveBeenCalledTimes(1);
-    expect(coach.nudge.mock.calls[0]?.[0]).toMatchObject({
-      path: "fast",
-      observedAtMs: expect.any(Number),
-      priorSpend: { usd: 0, tokens: 0, cachedTokens: 0 },
-    });
-  });
+      expect(coach.triage).not.toHaveBeenCalled();
+      expect(coach.nudge).toHaveBeenCalledTimes(1);
+      expect(coach.nudge.mock.calls[0]?.[0]).toMatchObject({
+        path: "fast",
+        observedAtMs: expect.any(Number),
+        priorSpend: { usd: 0, tokens: 0, cachedTokens: 0 },
+      });
+    },
+  );
 
   test("a number-only cue remains on multilingual triage", () => {
     const coach = harness();
@@ -210,6 +214,30 @@ describe("Proactive: hit → fast nudge or fallback triage", () => {
     await settle();
     expect(coach.nudge).toHaveBeenCalledTimes(1);
     expect(coach.nudge.mock.calls[0]?.[0].lines).toEqual([spanish]);
+  });
+
+  test("a fast cue does not hide an unmatched-language line in the same window", async () => {
+    const coach = harness({
+      verdict: { nudge: false, why: "already handled" },
+    });
+    const spanish = line(
+      "Omar",
+      "Podrías confirmar quién aprobará el presupuesto",
+      64,
+      68,
+    );
+    coach.say(QUESTION, spanish);
+    coach.tick(3);
+
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.nudge.mock.calls[0]?.[0].path).toBe("fast");
+    expect(coach.triage).not.toHaveBeenCalled();
+
+    coach.tick(PROACTIVE_DEFAULTS.nudgeGapMs / 1_000);
+    await settle();
+
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.triage.mock.calls[0]?.[0].lines).toContain(spanish);
   });
 
   test("an unclear non-English window is triaged and stays quiet", async () => {
@@ -538,9 +566,7 @@ describe("Proactive: failures", () => {
       await settle();
       expect(coach.nudge).not.toHaveBeenCalled();
       expect(log).toHaveBeenCalledTimes(1);
-      coach.say(
-        line("Omar", "The sync covers 120 users.", 120, 123),
-      );
+      coach.say(line("Omar", "The sync covers 120 users.", 120, 123));
       coach.tick(20);
       await settle();
       expect(coach.triage).toHaveBeenCalledTimes(2);
@@ -572,7 +598,9 @@ describe("Proactive: objections", () => {
   });
 
   test("the user's pushback-shaped speech reaches triage and stays quiet", async () => {
-    const coach = harness({ verdict: { nudge: false, why: "not a useful moment" } });
+    const coach = harness({
+      verdict: { nudge: false, why: "not a useful moment" },
+    });
     coach.say(line("You", PUSHBACK.text, 60, 64));
     coach.tick(10);
     await settle();
@@ -648,9 +676,10 @@ describe("Proactive: long monologues", () => {
     asked.say(line("Omar", "How much?", 50, 51));
     await talk(asked, 51, 91);
     expect(
-      asked.triage.mock.calls.some(([request]) =>
-        request.kinds.includes("question") &&
-        request.lines.some((entry) => entry.text === "How much?"),
+      asked.triage.mock.calls.some(
+        ([request]) =>
+          request.kinds.includes("question") &&
+          request.lines.some((entry) => entry.text === "How much?"),
       ),
     ).toBe(false);
     expect(asked.nudge).toHaveBeenCalledTimes(1);

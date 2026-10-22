@@ -98,7 +98,8 @@ export class Proactive {
   private lastActivityAt: number;
   private held: HeldHit[] = [];
   private lastTriageAt = Number.NEGATIVE_INFINITY;
-  private lastTriagedLineEnd = Number.NEGATIVE_INFINITY;
+  private triagedLineCount = 0;
+  private readonly fastHandledLines = new Set<number>();
   private lastNudgeAt = Number.NEGATIVE_INFINITY;
   private lastMonologueAt = Number.NEGATIVE_INFINITY;
   private monologueNudged: number | null = null;
@@ -235,8 +236,7 @@ export class Proactive {
     if (!this.lines.length) return false;
     if (!first && now - this.lastActivityAt > this.config.hitTtlMs)
       return false;
-    if (!first && (this.lines.at(-1)?.end_ms ?? 0) <= this.lastTriagedLineEnd)
-      return false;
+    if (!first && !this.hasUntriagedLines()) return false;
     if (
       !paused &&
       now - (first?.seenAt ?? this.lastActivityAt) < this.config.maxHoldMs
@@ -253,11 +253,7 @@ export class Proactive {
     const first = hits[0];
     if (!first || this.blocked(now) || !this.lines.length) return false;
     if (now - first.seenAt >= this.config.hitTtlMs) return false;
-    if (
-      !paused &&
-      now - first.seenAt < this.config.maxHoldMs
-    )
-      return false;
+    if (!paused && now - first.seenAt < this.config.maxHoldMs) return false;
     if (now - this.lastNudgeAt < this.config.nudgeGapMs) return false;
 
     const sent = hits.map(({ seenAt: _seenAt, ...hit }) => hit);
@@ -272,9 +268,8 @@ export class Proactive {
     };
     const dispatch = this.deps.nudge(request);
     if (dispatch === "retry") return true;
+    for (const hit of hits) this.fastHandledLines.add(hit.lineIndex);
     this.held = this.held.filter((hit) => !isFastCue(hit));
-    const latestEnd = this.lines.at(-1)?.end_ms ?? 0;
-    this.lastTriagedLineEnd = Math.max(this.lastTriagedLineEnd, latestEnd);
     if (dispatch === "drop") return true;
     this.lastNudgeAt = now;
     this.nudgedAt.push(now);
@@ -306,6 +301,17 @@ export class Proactive {
     this.nudgedAt.push(now);
   }
 
+  private hasUntriagedLines(): boolean {
+    for (
+      let index = this.triagedLineCount;
+      index < this.lines.length;
+      index += 1
+    ) {
+      if (!this.fastHandledLines.has(index)) return true;
+    }
+    return false;
+  }
+
   private triage(now: number) {
     const hits: Hit[] = this.held.map(({ seenAt: _seenAt, ...hit }) => hit);
     const observedAtMs = this.held.length
@@ -314,8 +320,11 @@ export class Proactive {
     this.held = [];
     this.triaging = true;
     this.lastTriageAt = now;
+    this.triagedLineCount = this.lines.length;
+    for (const index of this.fastHandledLines) {
+      if (index < this.triagedLineCount) this.fastHandledLines.delete(index);
+    }
     const latestEnd = this.lines.at(-1)?.end_ms ?? 0;
-    this.lastTriagedLineEnd = Math.max(this.lastTriagedLineEnd, latestEnd);
     const kinds = [...new Set<HitKind>(hits.map((hit) => hit.kind))];
     const context = this.deps.context();
     this.deps
@@ -345,14 +354,14 @@ export class Proactive {
           return;
         }
         const dispatch = this.deps.nudge({
-            context,
-            hits,
-            why: result.verdict.why,
-            lines: this.lines,
-            path: "fallback",
-            observedAtMs,
-            priorSpend: result.spend,
-          });
+          context,
+          hits,
+          why: result.verdict.why,
+          lines: this.lines,
+          path: "fallback",
+          observedAtMs,
+          priorSpend: result.spend,
+        });
         if (dispatch !== "started") {
           this.deps.metric({
             path: "fallback",
