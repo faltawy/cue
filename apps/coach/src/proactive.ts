@@ -1,5 +1,5 @@
 import { detectHits, type Hit, type HitKind } from "./detect";
-import type { Spend } from "./pricing";
+import { NO_SPEND, type Spend } from "./pricing";
 import { monologue } from "./talk-time";
 import { formatTimestamp } from "./timestamp";
 import type { TranscriptLine } from "./transcript";
@@ -34,6 +34,18 @@ export type NudgeRequest = {
   hits: Hit[];
   why: string;
   lines: readonly TranscriptLine[];
+  path: "fast" | "fallback";
+  observedAtMs: number;
+  priorSpend: Spend;
+};
+export type NudgeDispatch = "started" | "retry" | "drop";
+export type ProactiveMetric = {
+  path: "fast" | "fallback";
+  outcome: "nudge" | "silence" | "suppressed" | "error";
+  latencyMs: number;
+  modelCalls: number;
+  tokens: number;
+  cachedTokens: number;
 };
 export type Observed = {
   lines: readonly TranscriptLine[];
@@ -44,14 +56,23 @@ export type Observed = {
 
 export type ProactiveDeps = {
   triage(request: TriageRequest): Promise<TriageResult>;
-  nudge(request: NudgeRequest): boolean;
+  nudge(request: NudgeRequest): NudgeDispatch;
   busy(): boolean;
   context(): string;
   changed(view: ProactiveView): void;
+  metric(metric: ProactiveMetric): void;
   now?: () => number;
 };
 
 type HeldHit = Hit & { seenAt: number };
+
+export function isFastCue(hit: Hit): boolean {
+  return (
+    hit.kind === "question" ||
+    hit.kind === "objection" ||
+    hit.kind === "commitment"
+  );
+}
 
 export function monologueNudge(
   lines: readonly TranscriptLine[],
@@ -116,6 +137,7 @@ export class Proactive {
     this.held = this.held.filter(
       (hit) => now - hit.seenAt < this.config.hitTtlMs,
     );
+    if (this.fastDue(now, paused)) return;
     if (this.due(now, paused)) this.triage(now);
     else this.handOver(now);
   }
@@ -158,6 +180,10 @@ export class Proactive {
       meetingTokens: this.meeting.tokens,
       cachedTokens: this.meeting.cachedTokens,
     };
+  }
+
+  reportMetric(metric: ProactiveMetric) {
+    this.deps.metric(metric);
   }
 
   private capped(): boolean {
@@ -222,6 +248,39 @@ export class Proactive {
     );
   }
 
+  private fastDue(now: number, paused: boolean): boolean {
+    const hits = this.held.filter(isFastCue);
+    const first = hits[0];
+    if (!first || this.blocked(now) || !this.lines.length) return false;
+    if (now - first.seenAt >= this.config.hitTtlMs) return false;
+    if (
+      !paused &&
+      now - first.seenAt < this.config.maxHoldMs
+    )
+      return false;
+    if (now - this.lastNudgeAt < this.config.nudgeGapMs) return false;
+
+    const sent = hits.map(({ seenAt: _seenAt, ...hit }) => hit);
+    const request: NudgeRequest = {
+      context: this.deps.context(),
+      hits: sent,
+      why: `Fast local cue: ${sent.map((hit) => hit.kind).join(", ")}`,
+      lines: this.lines,
+      path: "fast",
+      observedAtMs: Math.min(...hits.map((hit) => hit.seenAt)),
+      priorSpend: NO_SPEND,
+    };
+    const dispatch = this.deps.nudge(request);
+    if (dispatch === "retry") return true;
+    this.held = this.held.filter((hit) => !isFastCue(hit));
+    const latestEnd = this.lines.at(-1)?.end_ms ?? 0;
+    this.lastTriagedLineEnd = Math.max(this.lastTriagedLineEnd, latestEnd);
+    if (dispatch === "drop") return true;
+    this.lastNudgeAt = now;
+    this.nudgedAt.push(now);
+    return true;
+  }
+
   private handOver(now: number) {
     const stretch = monologueNudge(this.lines, this.config.monologueMs);
     if (!stretch || stretch.startMs === this.monologueNudged) return;
@@ -231,13 +290,16 @@ export class Proactive {
     )
       return;
     if (this.blocked(now)) return;
-    const request = {
+    const request: NudgeRequest = {
       context: this.deps.context(),
       hits: [stretch.hit],
       why: stretch.why,
       lines: this.lines,
+      path: "fast",
+      observedAtMs: now,
+      priorSpend: NO_SPEND,
     };
-    if (!this.deps.nudge(request)) return;
+    if (this.deps.nudge(request) !== "started") return;
     this.monologueNudged = stretch.startMs;
     this.lastMonologueAt = now;
     this.lastNudgeAt = now;
@@ -246,6 +308,9 @@ export class Proactive {
 
   private triage(now: number) {
     const hits: Hit[] = this.held.map(({ seenAt: _seenAt, ...hit }) => hit);
+    const observedAtMs = this.held.length
+      ? Math.min(...this.held.map((hit) => hit.seenAt))
+      : this.lastActivityAt;
     this.held = [];
     this.triaging = true;
     this.lastTriageAt = now;
@@ -268,17 +333,37 @@ export class Proactive {
           !this.live ||
           this.capped() ||
           this.deps.busy()
-        )
+        ) {
+          this.deps.metric({
+            path: "fallback",
+            outcome: !result.verdict?.nudge ? "silence" : "suppressed",
+            latencyMs: Math.max(0, this.now() - observedAtMs),
+            modelCalls: 1,
+            tokens: result.spend.tokens,
+            cachedTokens: result.spend.cachedTokens,
+          });
           return;
-        if (
-          !this.deps.nudge({
+        }
+        const dispatch = this.deps.nudge({
             context,
             hits,
             why: result.verdict.why,
             lines: this.lines,
-          })
-        )
+            path: "fallback",
+            observedAtMs,
+            priorSpend: result.spend,
+          });
+        if (dispatch !== "started") {
+          this.deps.metric({
+            path: "fallback",
+            outcome: "suppressed",
+            latencyMs: Math.max(0, this.now() - observedAtMs),
+            modelCalls: 1,
+            tokens: result.spend.tokens,
+            cachedTokens: result.spend.cachedTokens,
+          });
           return;
+        }
         const at = this.now();
         this.lastNudgeAt = at;
         this.nudgedAt.push(at);
@@ -287,6 +372,14 @@ export class Proactive {
         console.error("[coach] triage failed; not nudging", {
           _e: error instanceof Error ? error.message : String(error),
           kinds,
+        });
+        this.deps.metric({
+          path: "fallback",
+          outcome: "error",
+          latencyMs: Math.max(0, this.now() - observedAtMs),
+          modelCalls: 1,
+          tokens: 0,
+          cachedTokens: 0,
         });
       })
       .finally(() => {

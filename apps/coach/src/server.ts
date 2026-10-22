@@ -437,7 +437,7 @@ function startProactive(sessionId: string | undefined) {
         codexHome,
       }),
     nudge: (request) => {
-      if (!coach || busy || proactive !== current) return false;
+      if (!coach || busy || proactive !== current) return "retry";
       const sourceLines = request.hits.length
         ? request.hits.flatMap((hit) => {
             const line = request.lines[hit.lineIndex];
@@ -456,13 +456,14 @@ function startProactive(sessionId: string | undefined) {
           ),
         )
       )
-        return false;
+        return "drop";
       void runLightNudge(current, request);
-      return true;
+      return "started";
     },
     busy: () => busy,
     context: () => (sessionId ? meetingContext(sessionId) : "Untitled"),
     changed: () => broadcast(status()),
+    metric: (metric) => console.info("[coach] proactive metric", metric),
   });
   proactive = current;
 }
@@ -490,6 +491,7 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
           claudePath,
           provider: selected.provider,
           model: selected.model,
+          fast: request.path === "fast",
           codexHome,
         },
       ),
@@ -499,6 +501,21 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
       error: errorText(error),
       spend: NO_SPEND,
     }));
+  const interruptedBeforeReport = abort.signal.aborted;
+  owner.reportMetric({
+    path: request.path,
+    outcome: interruptedBeforeReport
+      ? "suppressed"
+      : result.ok
+        ? result.move
+          ? "nudge"
+          : "silence"
+        : "error",
+    latencyMs: Math.max(0, Date.now() - request.observedAtMs),
+    modelCalls: request.path === "fallback" ? 2 : 1,
+    tokens: request.priorSpend.tokens + result.spend.tokens,
+    cachedTokens: request.priorSpend.cachedTokens + result.spend.cachedTokens,
+  });
   owner.spend("nudges", result.spend);
   if (nudgeAbort !== abort) return;
   nudgeAbort = null;

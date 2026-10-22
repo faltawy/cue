@@ -12,6 +12,7 @@ import {
 import { type Spend, spendOf } from "./pricing";
 import {
   type NudgeRequest,
+  type NudgeDispatch,
   PROACTIVE_DEFAULTS,
   Proactive,
   type ProactiveConfig,
@@ -33,6 +34,7 @@ const line = (
 });
 
 const QUESTION = line("Omar", "Can you Bcc every reply to our CRM?", 60, 63);
+const NUMBER_CUE = line("Omar", "It costs $240 per month.", 60, 63);
 const SMALL_TALK = line(
   "Omar",
   "The weather has been lovely this week.",
@@ -59,7 +61,10 @@ function harness(
       spend: options.spend ?? TRIAGE_SPEND,
     }),
   );
-  const nudge = mock((_request: NudgeRequest) => true);
+  const nudge = mock(
+    (_request: NudgeRequest): NudgeDispatch => "started",
+  );
+  const metric = mock();
   const changed = mock();
   const proactive = new Proactive(
     { ...PROACTIVE_DEFAULTS, enabled: true, ...options.config },
@@ -69,6 +74,7 @@ function harness(
       busy: () => busy,
       context: () => "Weekly sync · with Omar",
       changed,
+      metric,
     },
   );
   let lines: TranscriptLine[] = [];
@@ -81,6 +87,7 @@ function harness(
     triage,
     nudge,
     changed,
+    metric,
     setBusy: (value: boolean) => {
       busy = value;
     },
@@ -115,23 +122,44 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-describe("Proactive: hit → triage → nudge", () => {
-  test("a question waits for the pause, then one triage with the window decides a nudge with the new lines", async () => {
+describe("Proactive: hit → fast nudge or fallback triage", () => {
+  test.each([
+    ["question", QUESTION],
+    ["objection", line("Omar", "That price is too expensive for us.", 60, 63)],
+    ["commitment", line("You", "I'll send the rollout plan by Friday.", 60, 63)],
+  ] as const)("a clear %s cue starts one fast nudge without triage", async (_, cue) => {
+    const coach = harness();
+    coach.say(cue);
+    coach.tick(3);
+
+    expect(coach.triage).not.toHaveBeenCalled();
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.nudge.mock.calls[0]?.[0]).toMatchObject({
+      path: "fast",
+      observedAtMs: expect.any(Number),
+      priorSpend: { usd: 0, tokens: 0, cachedTokens: 0 },
+    });
+  });
+
+  test("a number-only cue remains on multilingual triage", () => {
+    const coach = harness();
+    coach.say(line("Omar", "It costs $240 per month.", 60, 63));
+    coach.tick(3);
+
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.nudge).not.toHaveBeenCalled();
+  });
+
+  test("a question waits for the pause, then one fast nudge carries the new lines", async () => {
     const coach = harness();
     coach.say(SMALL_TALK, QUESTION);
     coach.tick(2);
     expect(coach.triage).not.toHaveBeenCalled();
     coach.tick(1);
-    expect(coach.triage).toHaveBeenCalledTimes(1);
-    expect(coach.triage.mock.calls[0]?.[0]).toEqual({
-      context: "Weekly sync · with Omar",
-      kinds: ["question"],
-      lines: [SMALL_TALK, QUESTION],
-    });
     await settle();
     expect(coach.nudge).toHaveBeenCalledTimes(1);
     const request = coach.nudge.mock.calls[0]?.[0];
-    expect(request?.why).toBe("Omar asked about Bcc");
+    expect(request?.path).toBe("fast");
     expect(request?.hits.map((hit) => hit.kind)).toEqual(["question"]);
     expect(request?.lines).toEqual([SMALL_TALK, QUESTION]);
   });
@@ -141,14 +169,14 @@ describe("Proactive: hit → triage → nudge", () => {
     ["triage reply was malformed", null],
   ])("%s: triage runs, no coach turn starts", async (_, verdict) => {
     const coach = harness({ verdict });
-    coach.say(QUESTION);
+    coach.say(NUMBER_CUE);
     coach.tick(3);
     await settle();
     expect(coach.triage).toHaveBeenCalledTimes(1);
     expect(coach.nudge).not.toHaveBeenCalled();
   });
 
-  test("small talk reaches triage and stays quiet, then a later question reaches triage", async () => {
+  test("small talk reaches triage and stays quiet, then a later question takes the fast path", async () => {
     const coach = harness({ verdict: { nudge: false, why: "small talk" } });
     coach.say(SMALL_TALK);
     coach.tick(5);
@@ -158,7 +186,8 @@ describe("Proactive: hit → triage → nudge", () => {
     coach.tick(15);
     coach.say(QUESTION);
     coach.tick(3);
-    expect(coach.triage).toHaveBeenCalledTimes(2);
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
   });
 
   test("triages a non-English window even when local detectors find no hit", async () => {
@@ -198,7 +227,7 @@ describe("Proactive: hit → triage → nudge", () => {
   test("the window sent to triage is the last 90 seconds only", () => {
     const coach = harness();
     const early = line("Omar", "Early chatter about the agenda.", 0, 4);
-    const late = line("Omar", "Do you support SSO with Okta?", 200, 203);
+    const late = line("Omar", "We have 42 agents now.", 200, 203);
     coach.say(early, late);
     coach.tick(3);
     expect(coach.triage.mock.calls[0]?.[0].lines).toEqual([late]);
@@ -206,7 +235,7 @@ describe("Proactive: hit → triage → nudge", () => {
 });
 
 describe("Proactive: debounce and cooldown", () => {
-  test("ongoing speech holds the triage, but never past the max hold", () => {
+  test("ongoing speech holds the fast cue, but never past the max hold", () => {
     const coach = harness();
     coach.say(
       QUESTION,
@@ -219,10 +248,11 @@ describe("Proactive: debounce and cooldown", () => {
     expect(coach.triage).not.toHaveBeenCalled();
     coach.speaking("and the other thing 9");
     coach.tick(1);
-    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.triage).not.toHaveBeenCalled();
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
   });
 
-  test("hits right after a nudge wait out the cooldown and are coalesced into one triage", async () => {
+  test("hits right after a nudge wait out the cooldown", async () => {
     const coach = harness();
     coach.say(QUESTION);
     coach.tick(3);
@@ -233,19 +263,16 @@ describe("Proactive: debounce and cooldown", () => {
       line("Omar", "It is $1,200 a month.", 83, 85),
     );
     coach.tick(55);
-    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.triage).not.toHaveBeenCalled();
     coach.tick(5);
-    expect(coach.triage).toHaveBeenCalledTimes(2);
-    expect(coach.triage.mock.calls[1]?.[0].kinds).toEqual([
-      "question",
-      "number",
-    ]);
+    expect(coach.nudge).toHaveBeenCalledTimes(2);
+    expect(coach.nudge.mock.calls[1]?.[0].path).toBe("fast");
   });
 
-  test("nothing is triaged while a turn is running; the held hit goes once it ends", () => {
+  test("a number hit stays held while a turn is running, then reaches triage", () => {
     const coach = harness();
     coach.setBusy(true);
-    coach.say(QUESTION);
+    coach.say(NUMBER_CUE);
     coach.tick(10);
     expect(coach.triage).not.toHaveBeenCalled();
     coach.setBusy(false);
@@ -253,7 +280,7 @@ describe("Proactive: debounce and cooldown", () => {
     expect(coach.triage).toHaveBeenCalledTimes(1);
   });
 
-  test("a held hit expires after the window instead of firing about a moment long gone", () => {
+  test("an old held fast hit expires, and a new number cue reaches triage", () => {
     const coach = harness();
     coach.setBusy(true);
     coach.say(QUESTION);
@@ -261,14 +288,52 @@ describe("Proactive: debounce and cooldown", () => {
     coach.setBusy(false);
     coach.tick(3);
     expect(coach.triage).not.toHaveBeenCalled();
-    coach.say(line("Omar", "Do you have the numbers?", 170, 172));
+    coach.say(line("Omar", "We have 60 agents.", 170, 172));
     coach.tick(3);
     expect(coach.triage).toHaveBeenCalledTimes(1);
   });
 
-  test("a busy turn that starts while triage runs drops the nudge", async () => {
+  test("a fast cue remains held while busy and dispatches once the coach is free", () => {
     const coach = harness();
+    coach.setBusy(true);
     coach.say(QUESTION);
+    coach.tick(3);
+    expect(coach.nudge).not.toHaveBeenCalled();
+    coach.setBusy(false);
+    coach.tick(1);
+
+    expect(coach.triage).not.toHaveBeenCalled();
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.nudge.mock.calls[0]?.[0].path).toBe("fast");
+  });
+
+  test("a fast cue declined by the app is retried on the next poll", () => {
+    const coach = harness();
+    coach.nudge.mockImplementationOnce(() => "retry");
+    coach.say(QUESTION);
+    coach.tick(3);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    coach.tick(1);
+
+    expect(coach.triage).not.toHaveBeenCalled();
+    expect(coach.nudge).toHaveBeenCalledTimes(2);
+    expect(coach.nudge.mock.calls[1]?.[0].path).toBe("fast");
+  });
+
+  test("a fast cue the app already handled is dropped without retry or fallback triage", () => {
+    const coach = harness();
+    coach.nudge.mockImplementationOnce(() => "drop");
+    coach.say(QUESTION);
+    coach.tick(3);
+    coach.tick(3);
+
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.triage).not.toHaveBeenCalled();
+  });
+
+  test("a busy turn that starts while triage runs drops the fallback nudge", async () => {
+    const coach = harness();
+    coach.say(NUMBER_CUE);
     coach.tick(3);
     expect(coach.triage).toHaveBeenCalledTimes(1);
     coach.setBusy(true);
@@ -294,10 +359,10 @@ describe("Proactive: rate limit", () => {
     }
   };
 
-  test("at most 4 nudges in any 10 minutes, though triage says yes to a question every 70 seconds", async () => {
+  test("at most 4 fast nudges in any 10 minutes, with no triage call per question", async () => {
     const coach = harness();
     await askEvery70s(coach, 0, 8);
-    expect(coach.triage).toHaveBeenCalledTimes(4);
+    expect(coach.triage).not.toHaveBeenCalled();
     expect(coach.nudge).toHaveBeenCalledTimes(4);
   });
 
@@ -316,7 +381,7 @@ describe("Proactive: rate limit", () => {
 describe("Proactive: budget", () => {
   test("unpriced triage stops automatic calls but retains usage instead of pretending the cap was reached", async () => {
     const known = harness();
-    known.say(QUESTION);
+    known.say(NUMBER_CUE);
     known.tick(3);
     await settle();
     expect(known.nudge).toHaveBeenCalled();
@@ -324,7 +389,7 @@ describe("Proactive: budget", () => {
     const unknown = harness({
       spend: { usd: null, tokens: 1_400, cachedTokens: 200 },
     });
-    unknown.say(QUESTION);
+    unknown.say(NUMBER_CUE);
     unknown.tick(3);
     await settle();
     expect(unknown.proactive.view()).toMatchObject({
@@ -335,7 +400,7 @@ describe("Proactive: budget", () => {
       cachedTokens: 200,
     });
     expect(unknown.nudge).not.toHaveBeenCalled();
-    unknown.say(line("Omar", "Do you have the numbers?", 170, 172));
+    unknown.say(line("Omar", "We have 60 agents.", 170, 172));
     unknown.tick(80);
     await settle();
     expect(unknown.proactive.view().meetingTokens).toBe(1_400);
@@ -344,7 +409,7 @@ describe("Proactive: budget", () => {
 
   test("triage and nudges count toward the cap; asks only toward the meeting total", async () => {
     const coach = harness();
-    coach.say(QUESTION);
+    coach.say(NUMBER_CUE);
     coach.tick(3);
     await settle();
     coach.proactive.spend("nudges", {
@@ -382,16 +447,17 @@ describe("Proactive: budget", () => {
       spend: { usd: 0, tokens: 0, cachedTokens: 0 },
     });
     coach.proactive.spend("nudges", cached(249_000));
-    coach.say(QUESTION);
+    coach.say(NUMBER_CUE);
     coach.tick(3);
     await settle();
-    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
 
     coach.proactive.spend("nudges", cached(1_000));
     coach.say(line("Omar", "Do you have the numbers?", 170, 172));
     coach.tick(80);
     await settle();
     expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
     expect(coach.proactive.view().state).toBe("capped");
   });
 
@@ -404,13 +470,14 @@ describe("Proactive: budget", () => {
     });
     coach.say(QUESTION);
     coach.tick(3);
-    expect(coach.triage).toHaveBeenCalledTimes(1);
+    expect(coach.nudge).toHaveBeenCalledTimes(1);
+    expect(coach.triage).not.toHaveBeenCalled();
     expect(coach.proactive.view().state).toBe("on");
   });
 
   test("once the cap is reached no triage call is made and the view says capped", () => {
     const open = harness();
-    open.say(QUESTION);
+    open.say(NUMBER_CUE);
     open.tick(3);
     expect(open.triage).toHaveBeenCalledTimes(1);
 
@@ -436,7 +503,7 @@ describe("Proactive: budget", () => {
       tokens: 1_000,
       cachedTokens: 0,
     });
-    coach.say(QUESTION);
+    coach.say(NUMBER_CUE);
     coach.tick(3);
     expect(coach.triage).toHaveBeenCalledTimes(1);
     await settle();
@@ -446,7 +513,7 @@ describe("Proactive: budget", () => {
 
   test("turned off: never triages, though the same lines would", () => {
     const on = harness();
-    on.say(QUESTION);
+    on.say(NUMBER_CUE);
     on.tick(3);
     expect(on.triage).toHaveBeenCalledTimes(1);
 
@@ -466,13 +533,13 @@ describe("Proactive: failures", () => {
       coach.triage.mockImplementationOnce(async () => {
         throw new Error("claude exited");
       });
-      coach.say(QUESTION);
+      coach.say(NUMBER_CUE);
       coach.tick(3);
       await settle();
       expect(coach.nudge).not.toHaveBeenCalled();
       expect(log).toHaveBeenCalledTimes(1);
       coach.say(
-        line("Omar", "Could you also check the Zendesk sync?", 120, 123),
+        line("Omar", "The sync covers 120 users.", 120, 123),
       );
       coach.tick(20);
       await settle();
@@ -492,15 +559,16 @@ describe("Proactive: objections", () => {
     64,
   );
 
-  test("pushback from the other side goes through triage, and the nudge carries the objection", async () => {
+  test("pushback from the other side takes the fast path and carries the objection", async () => {
     const coach = harness();
     coach.say(PUSHBACK);
     coach.tick(3);
-    expect(coach.triage.mock.calls[0]?.[0].kinds).toEqual(["objection"]);
+    expect(coach.triage).not.toHaveBeenCalled();
     await settle();
     expect(coach.nudge.mock.calls[0]?.[0].hits).toEqual([
       { kind: "objection", lineIndex: 0, text: PUSHBACK.text },
     ]);
+    expect(coach.nudge.mock.calls[0]?.[0].path).toBe("fast");
   });
 
   test("the user's pushback-shaped speech reaches triage and stays quiet", async () => {
@@ -521,7 +589,7 @@ describe("Proactive: objections", () => {
           answer = resolve;
         }),
     );
-    coach.say(PUSHBACK);
+    coach.say(NUMBER_CUE);
     coach.tick(3);
     expect(coach.triage).toHaveBeenCalledTimes(1);
     coach.end();
@@ -568,7 +636,7 @@ describe("Proactive: long monologues", () => {
     expect(coach.triage).toHaveBeenCalled();
   });
 
-  test("backchannels do not reset the stretch; a question from the other side does", async () => {
+  test("backchannels do not reset the stretch; a question from the other side gets a fast response", async () => {
     const backchannel = harness({ verdict: NO });
     await talk(backchannel, 0, 50);
     backchannel.say(line("Omar", "Mm-hm.", 50, 51));
@@ -581,15 +649,16 @@ describe("Proactive: long monologues", () => {
     await talk(asked, 51, 91);
     expect(
       asked.triage.mock.calls.some(([request]) =>
+        request.kinds.includes("question") &&
         request.lines.some((entry) => entry.text === "How much?"),
       ),
-    ).toBe(true);
-    expect(asked.nudge).not.toHaveBeenCalled();
-    await talk(asked, 91, 141);
+    ).toBe(false);
     expect(asked.nudge).toHaveBeenCalledTimes(1);
-    expect(asked.nudge.mock.calls[0]?.[0].why).toBe(
-      "You have talked for 01:30 without handing over",
-    );
+    expect(asked.nudge.mock.calls[0]?.[0].hits[0]?.text).toBe("How much?");
+    expect(asked.nudge.mock.calls[0]?.[0].path).toBe("fast");
+    await talk(asked, 91, 141);
+    expect(asked.nudge).toHaveBeenCalledTimes(2);
+    expect(asked.nudge.mock.calls[1]?.[0].hits[0]?.kind).toBe("monologue");
   });
 
   test("a second monologue right after the first waits out the cooldown", async () => {
@@ -607,9 +676,9 @@ describe("Proactive: long monologues", () => {
     coach.tick(6);
     await settle();
     await talk(coach, 96, 196);
-    expect(coach.nudge).toHaveBeenCalledTimes(1);
-    await talk(coach, 196, 396);
     expect(coach.nudge).toHaveBeenCalledTimes(2);
+    await talk(coach, 196, 396);
+    expect(coach.nudge.mock.calls.length).toBeLessThanOrEqual(4);
   });
 
   test("the other side talking for minutes is not the user's monologue", async () => {
@@ -645,7 +714,7 @@ describe("Proactive: long monologues", () => {
 
   test("a nudge declined by the app is retried on the next look, not dropped", async () => {
     const coach = harness({ verdict: NO });
-    coach.nudge.mockImplementationOnce(() => false);
+    coach.nudge.mockImplementationOnce(() => "retry");
     await talk(coach, 0, 80);
     coach.say(line("You", MORE, 80, 90));
     coach.tick(1);

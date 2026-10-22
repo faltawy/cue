@@ -6,6 +6,7 @@ import {
   NUDGE_SYSTEM,
   type NudgeReply,
   nudgeLabel,
+  nudgeModel,
   nudgeMessage,
   nudgeMove,
   nudgeNote,
@@ -15,6 +16,7 @@ import {
   withNudgeNotes,
 } from "./nudge";
 import { estimateTokens, ONE_SHOT_OVERHEAD_TOKENS } from "./pricing";
+import { TRIAGE_MODEL } from "./triage";
 import type { TranscriptLine } from "./transcript";
 
 const line = (speaker: string, text: string, startS: number, endS = startS + 4): TranscriptLine => ({
@@ -29,6 +31,12 @@ const QUESTION = "Can you Bcc every reply to our CRM, or only new sessions?";
 const hit = (lineIndex: number, text = QUESTION): Hit => ({ kind: "question", lineIndex, text });
 
 describe("lightweight nudge prompt", () => {
+  test("uses Haiku for Claude's fast path and keeps Codex's selected model", () => {
+    expect(nudgeModel({ fast: true })).toBe(TRIAGE_MODEL);
+    expect(nudgeModel({ fast: false })).toBe("sonnet");
+    expect(nudgeModel({ provider: "codex", model: "gpt-6-luna", fast: true })).toBe("gpt-6-luna");
+  });
+
   test("carries the meeting header, the flagged moment, why, and only the last 3 minutes of lines", () => {
     const lines = [
       line("Omar", "Early agenda chatter about the offsite.", 10),
@@ -123,6 +131,11 @@ describe("the nudge reply", () => {
     expect(parseNudge(" NOTHING.\n")).toEqual({ kind: "nothing" });
     expect(logged).not.toHaveBeenCalled();
     logged.mockRestore();
+  });
+
+  test("the live prompt asks the model to stay quiet after the moment is handled", () => {
+    expect(NUDGE_SYSTEM).toContain("already answered or handled");
+    expect(parseNudge("NOTHING")).toEqual({ kind: "nothing" });
   });
 
   test.each([

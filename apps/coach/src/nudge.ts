@@ -23,26 +23,17 @@ import { type TalkStats, talkStats, talkSummary } from "./talk-time";
 import { formatTimestamp } from "./timestamp";
 import { headWithin, renderRecentLines } from "./transcript-window";
 import type { TranscriptLine } from "./transcript";
+import { TRIAGE_MODEL } from "./triage";
 
 export const NUDGE_MODEL = "sonnet";
 export const NUDGE_WINDOW_MS = 3 * 60_000;
 
-export const NUDGE_SYSTEM = `You are the user's live meeting coach: you make them better in this meeting, not just better informed. They are mid-conversation and glance at your note between sentences. "You" in the transcript is the user; other speakers appear by name, as "Speaker N", or as "Them".
-A moment was just flagged. Find the single most useful move for the next 30 seconds, and its tag:
-- open_question, a question or request aimed at the user: the answer or point to make, as a line they can say
-- pushback (price, a competitor, "we tried this before"): acknowledge it and ask what is behind it before defending or discounting
-- buying_signal: answer briefly, then move to a concrete next step (who decides, by when); risk (a new decision maker, a budget review, stalling): get ahead of it
-- vague_promise, theirs or the user's: pin who, what and by when, or get the next meeting on the calendar
-- over_promise, the user promising a date, feature or discount they can't confirm, or giving_ground, giving something without getting something back: correct it now, gracefully, or trade instead
-- talk_time, the user doing most of the talking (see the talk time), rambling or hedging: answer in one sentence, then hand the floor back with a question
-- decision_owner, a decision without an owner, or agenda, the agenda drifting: name the owner and the date, or park it
-- escalations (risk): acknowledge the impact before any explanation, then give the next update time; feedback (open_question): the specific behaviour and its impact, then ask; interviews (open_question): probe "we" and vague claims for what the person did and how it was measured; executives (open_question): answer first, then one reason
+export const NUDGE_SYSTEM = `You are the user's live meeting coach, a sharp and calm colleague beside them. They glance at your note between sentences. "You" is the user; other speakers appear by name, as "Speaker N", or as "Them".
+Read the latest exchange in context and follow the user's apparent goal. Give one timely move for the next turn: a direct answer to an open question; acknowledge pushback before exploring its cause; make a promise concrete (owner, action, time); or hand the floor back after a long monologue. For a buying signal, suggest one concrete next step. Keep it natural, specific to what was said, and in the meeting's language. Prefer one grounded open question or a short phrase the user can say. Avoid generic advice, recaps, invented details, and multiple options.
+Stay quiet if the moment is stale, already answered or handled, the user just handled it well, or no useful move is clear. When unsure, reply with exactly ${NOTHING}.
 Reply with only one JSON object, under 45 words of text in all:
 {"tag": exactly one of ${MOVE_TAGS.map((tag) => `"${tag}"`).join(", ")}, "headline": "the move, in under 10 words, in English", "verb": "Say" or "Ask", "line": "one or two sentences the user can say word for word, in the meeting's main language, tied to what was just said", "watch_out": "under 12 words, in the meeting's main language, only when essential (what to avoid, or one fact they need); otherwise leave this key out"}
-One move only: no alternatives, no "if you know…" branches, no second question, no Why: label, no markdown, no preamble, no recap of the transcript.
-Never invent facts, prices, dates or causes, and never leave blanks like [date]: say only what the transcript or the user's instructions support. You may propose when the user will follow up ("by Friday"). When the answer is unknown, coach how to handle not knowing; if it needs the user's files, email or the web, watch_out says what to ask the coach.
-The user's own instructions below, if any, override this.
-If the user just answered or confirmed it well, someone else already gave a clear owner and date, or you have nothing better than what the user would do anyway, reply with exactly ${NOTHING} and nothing else.`;
+One move only: no branches, second question, markdown, preamble, transcript recap, or invented facts. If the user needs files, email, or web research, say what to check after the call. User instructions below override this.`;
 
 const MOMENT_MAX_CHARS = 300;
 const MOMENTS_MAX = 3;
@@ -248,6 +239,15 @@ export type NudgeResult =
   | { ok: true; move: Move | null; talk: TalkStats | null; spend: Spend }
   | { ok: false; error: string; spend: Spend };
 
+export function nudgeModel(options: {
+  provider?: CoachProvider;
+  model?: string;
+  fast?: boolean;
+}): string {
+  if (options.provider === "codex") return options.model ?? "";
+  return options.fast ? TRIAGE_MODEL : NUDGE_MODEL;
+}
+
 export async function runNudge(
   input: NudgeInput,
   options: {
@@ -256,6 +256,7 @@ export async function runNudge(
     claudePath: string;
     provider?: CoachProvider;
     model?: string;
+    fast?: boolean;
     codexHome?: string;
   },
 ): Promise<NudgeResult> {
@@ -263,7 +264,7 @@ export async function runNudge(
   let spend = NO_SPEND;
   for await (const event of runLlm(
     {
-      model: options.provider === "codex" ? (options.model ?? "") : NUDGE_MODEL,
+      model: nudgeModel(options),
       system: nudgeSystem(options.instructions),
       messages: [
         {
@@ -285,7 +286,7 @@ export async function runNudge(
     else if (event.type === "done")
       spend = spendOf(
         event.model ??
-          (options.provider === "codex" ? (options.model ?? "") : NUDGE_MODEL),
+          nudgeModel(options),
         event,
       );
     else return { ok: false, error: event.message, spend };

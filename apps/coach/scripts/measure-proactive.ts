@@ -429,6 +429,7 @@ async function replay(
     busy: () => false,
     context: () => "Rollout sync · with Omar, Sara",
     changed: () => {},
+      metric: () => {},
     triage: async (request) => {
       triaged += 1;
       const spend = triageCalls.call(
@@ -459,7 +460,7 @@ async function replay(
         );
         proactive.spend("nudges", { usd, tokens: 0, cachedTokens: 0 });
       }
-      return true;
+      return "started";
     },
   });
   const end = (lines.at(-1)?.end_ms ?? 0) + 120_000;
