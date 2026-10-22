@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.9.0
+
+### Minor Changes
+
+- Live coaching responds sooner to clear moments, stays quiet when you've already handled them, and keeps multilingual coaching for less obvious cues.
+
 ## 0.8.0
 
 ### Minor Changes
