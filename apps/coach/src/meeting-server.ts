@@ -15,6 +15,7 @@ import { failed, text } from "./tool-result";
 import {
   readLiveTranscript,
   readMeetingInfo,
+  readTranscriptEditContext,
   renderTranscript,
 } from "./transcript";
 
@@ -146,6 +147,16 @@ export function meetingTools(
             ? renderTranscript(transcript)
             : "No meeting transcript found.",
         );
+      },
+      { annotations: { readOnlyHint: true } },
+    ),
+    tool(
+      "transcript_edit_context",
+      "Read finalized transcript lines with stable word_ids and speaker coordinates. This is only for a specific speaker assignment or wording correction the user explicitly asked for; live transcripts cannot be edited.",
+      {},
+      async () => {
+        const context = readTranscriptEditContext(db, current());
+        return text(JSON.stringify(context, null, 2));
       },
       { annotations: { readOnlyHint: true } },
     ),

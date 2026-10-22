@@ -10,6 +10,7 @@ import {
   readMeetingInfo,
   readMeetingStatus,
   readSelfName,
+  readTranscriptEditContext,
   renderTranscript,
   toLines,
   type Word,
@@ -219,6 +220,32 @@ describe("a recording left open by a crash", () => {
       startedAtMs: REAL_START,
       endedAtMs: null,
     });
+  });
+});
+
+describe("readTranscriptEditContext", () => {
+  test("returns finalized word ids after folding replacement deltas and refuses a live transcript", () => {
+    const db = schema();
+    db.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', NULL, NULL), ('s2', 'Live', NULL, NULL)`);
+    db.run(
+      `INSERT INTO transcripts (id, session_id, started_at_ms, ended_at_ms, words_json) VALUES
+       ('t1', 's1', 1000, 2000, ?), ('t2', 's2', 1000, NULL, ?)`,
+      [
+        JSON.stringify([word("old", " old", 0), word("keep", " text", 400)]),
+        JSON.stringify([word("live", " live", 0)]),
+      ],
+    );
+    db.run(
+      `INSERT INTO transcript_live_deltas (id, transcript_id, sequence, delta_json) VALUES
+       ('d1', 't1', 1, ?), ('d2', 't2', 1, ?)`,
+      [delta([word("current", " corrected", 0, 1)], ["old"]), delta([word("new", " words", 400)])],
+    );
+
+    expect(readTranscriptEditContext(db, "s1")).toEqual({
+      status: "ready",
+      lines: [{ start_ms: 0, end_ms: 700, text: "corrected text", word_ids: ["current", "keep"], channel: 1, speaker_index: null, speaker: "Them" }],
+    });
+    expect(readTranscriptEditContext(db, "s2")).toEqual({ status: "not_finalized" });
   });
 });
 

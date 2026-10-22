@@ -35,6 +35,7 @@
 - Modify: `apps/coach/src/transcript.ts`
 - Modify: `apps/coach/src/transcript.test.ts`
 - Modify: `apps/coach/src/meeting-server.ts`
+- Test: `apps/coach/src/meeting-server.test.ts`
 
 **Interfaces:**
 

@@ -215,6 +215,78 @@ export function readLiveTranscript(
   })();
 }
 
+export type TranscriptEditLine = {
+  start_ms: number;
+  end_ms: number;
+  text: string;
+  word_ids: string[];
+  channel: number;
+  speaker_index: number | null;
+  speaker: string;
+};
+
+export type TranscriptEditContext =
+  | { status: "ready"; lines: TranscriptEditLine[] }
+  | { status: "not_finalized" }
+  | { status: "not_found" };
+
+export function readTranscriptEditContext(
+  db: Database,
+  sessionId: string,
+): TranscriptEditContext {
+  return db.transaction(() => {
+    const row = transcriptRow(db, { sessionId });
+    if (!row) return { status: "not_found" as const };
+    if (row.ended_at_ms === null) return { status: "not_finalized" as const };
+
+    const base: Word[] = row.words_json ? JSON.parse(row.words_json) : [];
+    const deltas = db
+      .query<{ delta_json: string }, [string]>(
+        `SELECT delta_json FROM transcript_live_deltas WHERE transcript_id = ? ORDER BY sequence`,
+      )
+      .all(row.id)
+      .map((delta): LiveDelta => JSON.parse(delta.delta_json));
+    const hints: SpeakerHint[] = row.speaker_hints_json
+      ? JSON.parse(row.speaker_hints_json)
+      : [];
+    const words = withProviderSpeakers(foldDeltas(base, deltas), hints);
+    const labels = speakerLabels(
+      words,
+      assignmentsFrom(hints, words),
+      readSpeakerContext(db, row.session_id, row.owner_user_id),
+    );
+    const lines: TranscriptEditLine[] = [];
+
+    for (const word of words) {
+      const speaker = labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them");
+      const last = lines.at(-1);
+      if (
+        last &&
+        last.channel === word.channel &&
+        last.speaker_index === (word.speaker_index ?? null) &&
+        last.speaker === speaker &&
+        word.start_ms - last.end_ms < 2_000
+      ) {
+        last.text += word.text;
+        last.end_ms = word.end_ms;
+        last.word_ids.push(word.id);
+      } else {
+        lines.push({
+          start_ms: word.start_ms,
+          end_ms: word.end_ms,
+          text: word.text.trimStart(),
+          word_ids: [word.id],
+          channel: word.channel,
+          speaker_index: word.speaker_index ?? null,
+          speaker,
+        });
+      }
+    }
+
+    return { status: "ready" as const, lines };
+  })();
+}
+
 export function readSelfName(db: Database, sessionId: string): string | null {
   const row = db
     .query<{ name: string | null }, [string]>(
