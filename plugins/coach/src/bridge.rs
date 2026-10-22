@@ -25,10 +25,14 @@ pub const URL_ENV: &str = "CUE_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "CUE_COACH_APP_TOKEN";
 
 pub type RecordingFuture = Pin<Box<dyn Future<Output = Option<Vec<String>>> + Send>>;
+pub type SpeakerAssignmentFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub trait Host: Send + Sync + 'static {
     fn pool(&self) -> Result<SqlitePool>;
     fn recording_sessions(&self) -> RecordingFuture;
+    fn speaker_assigned(&self, _session_id: String) -> SpeakerAssignmentFuture {
+        Box::pin(async {})
+    }
     fn config_dir(&self) -> Result<PathBuf>;
     fn default_project(&self) -> Result<PathBuf>;
     fn pick_folder(&self, title: &str) -> Result<Option<PathBuf>>;
@@ -392,18 +396,18 @@ async fn assign_transcript_speaker(
     Json(body): Json<AssignTranscriptSpeakerBody>,
 ) -> Reply<crate::edits::CoachEdit> {
     let pool = state.host.pool()?;
-    Ok(Json(
-        state
-            .edits
-            .assign_transcript_speaker(
-                &pool,
-                &session_id,
-                body.channel,
-                body.speaker_index,
-                &body.human_id,
-            )
-            .await?,
-    ))
+    let edit = state
+        .edits
+        .assign_transcript_speaker(
+            &pool,
+            &session_id,
+            body.channel,
+            body.speaker_index,
+            &body.human_id,
+        )
+        .await?;
+    state.host.speaker_assigned(session_id).await;
+    Ok(Json(edit))
 }
 
 #[derive(serde::Deserialize)]
@@ -477,12 +481,14 @@ async fn undo(
 ) -> Reply<crate::edits::CoachEdit> {
     let pool = state.host.pool()?;
     let edit_id = body.and_then(|Json(body)| body.edit_id);
-    Ok(Json(
-        state
-            .edits
-            .undo_last(&pool, &session_id, edit_id.as_deref())
-            .await?,
-    ))
+    let edit = state
+        .edits
+        .undo_last(&pool, &session_id, edit_id.as_deref())
+        .await?;
+    if edit.kind == crate::edits::EditKind::AssignSpeaker {
+        state.host.speaker_assigned(session_id).await;
+    }
+    Ok(Json(edit))
 }
 
 type Changed = Reply<LibraryChange>;
@@ -646,6 +652,7 @@ mod tests {
         picks: Mutex<Vec<Option<PathBuf>>>,
         recording: Mutex<Option<Vec<String>>>,
         evidence: Mutex<Vec<CoachEvidence>>,
+        speaker_assignments: Mutex<Vec<String>>,
     }
 
     impl Host for Arc<TestHost> {
@@ -655,6 +662,12 @@ mod tests {
         fn recording_sessions(&self) -> RecordingFuture {
             let recording = self.recording.lock().unwrap().clone();
             Box::pin(async move { recording })
+        }
+        fn speaker_assigned(&self, session_id: String) -> SpeakerAssignmentFuture {
+            let host = self.clone();
+            Box::pin(async move {
+                host.speaker_assignments.lock().unwrap().push(session_id);
+            })
         }
         fn config_dir(&self) -> Result<PathBuf> {
             Ok(self.config.path().to_path_buf())
@@ -710,6 +723,7 @@ mod tests {
             picks: Mutex::new(Vec::new()),
             recording: Mutex::new(Some(Vec::new())),
             evidence: Mutex::new(Vec::new()),
+            speaker_assignments: Mutex::new(Vec::new()),
         })
     }
 
@@ -747,6 +761,7 @@ mod tests {
             picks: Mutex::new(Vec::new()),
             recording: Mutex::new(Some(Vec::new())),
             evidence: Mutex::new(Vec::new()),
+            speaker_assignments: Mutex::new(Vec::new()),
         });
         let listener = tokio::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
             .await
@@ -825,6 +840,26 @@ mod tests {
             .unwrap();
         let assignment: serde_json::Value = serde_json::from_slice(&assignment_bytes).unwrap();
         assert_eq!(assignment["kind"], "assign_speaker");
+        assert_eq!(*host.speaker_assignments.lock().unwrap(), ["thursday"]);
+
+        let undone = app
+            .clone()
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/meeting/thursday/undo")
+                    .header("authorization", format!("Bearer {TOKEN}"))
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(r#"{}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(undone.status(), StatusCode::OK);
+        assert_eq!(
+            *host.speaker_assignments.lock().unwrap(),
+            ["thursday", "thursday"]
+        );
 
         let corrected = app.clone().oneshot(
             axum::http::Request::builder().method("POST")

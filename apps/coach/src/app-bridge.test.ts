@@ -2,7 +2,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import { appBridge, BridgeError } from "./app-bridge";
 
-type Seen = { method: string; path: string; auth: string | null; body: unknown };
+type Seen = {
+  method: string;
+  path: string;
+  auth: string | null;
+  body: unknown;
+};
 
 let server: ReturnType<typeof Bun.serve> | undefined;
 
@@ -24,7 +29,10 @@ function fakeApp(reply: (seen: Seen) => Response) {
       return reply(entry);
     },
   });
-  return { seen, bridge: appBridge(`http://localhost:${server.port}`, "secret") };
+  return {
+    seen,
+    bridge: appBridge(`http://localhost:${server.port}`, "secret"),
+  };
 }
 
 const edit = (kind: string) => ({
@@ -38,30 +46,80 @@ const edit = (kind: string) => ({
 
 describe("library bridge calls", () => {
   test("each change posts its payload to the app under the attached meeting", async () => {
-    const { seen, bridge } = fakeApp(() => Response.json({ edit: edit("create_note"), id: "n1", message: "ok" }));
+    const { seen, bridge } = fakeApp(() =>
+      Response.json({ edit: edit("create_note"), id: "n1", message: "ok" }),
+    );
 
-    await bridge.createNote("m1", { title: "Pricing", folder: "Clients", content_markdown: "- a" });
-    await bridge.updateNote("m1", "n 1", { title: "New", add_tags: ["x"], remove_tags: [] });
+    await bridge.createNote("m1", {
+      title: "Pricing",
+      folder: "Clients",
+      content_markdown: "- a",
+    });
+    await bridge.updateNote("m1", "n 1", {
+      title: "New",
+      add_tags: ["x"],
+      remove_tags: [],
+    });
     await bridge.createFolder("m1", "Clients/Lumen");
-    await bridge.createPerson("m1", { name: "Sara", email: "sara@lumen.test", organization: "Lumen", create_organization: true });
+    await bridge.createPerson("m1", {
+      name: "Sara",
+      email: "sara@lumen.test",
+      organization: "Lumen",
+      create_organization: true,
+    });
     await bridge.updatePerson("m1", "sara", { job_title: "CFO" });
     await bridge.createOrganization("m1", { name: "Lumen" });
     await bridge.updateOrganization("m1", "org", { memo: "key account" });
     await bridge.addParticipant("m1", { person_id: "sara" });
-    await bridge.createTemplate("m1", { title: "Discovery", sections: [{ title: "Pain", description: "What hurts" }] });
+    await bridge.createTemplate("m1", {
+      title: "Discovery",
+      sections: [{ title: "Pain", description: "What hurts" }],
+    });
     await bridge.updateTemplate("m1", "tpl", { description: "First call" });
 
     expect(seen.map(({ method, path, body }) => [method, path, body])).toEqual([
-      ["POST", "/meeting/m1/library/notes", { title: "Pricing", folder: "Clients", content_markdown: "- a" }],
-      ["POST", "/meeting/m1/library/notes/n%201", { title: "New", add_tags: ["x"], remove_tags: [] }],
+      [
+        "POST",
+        "/meeting/m1/library/notes",
+        { title: "Pricing", folder: "Clients", content_markdown: "- a" },
+      ],
+      [
+        "POST",
+        "/meeting/m1/library/notes/n%201",
+        { title: "New", add_tags: ["x"], remove_tags: [] },
+      ],
       ["POST", "/meeting/m1/library/folders", { path: "Clients/Lumen" }],
-      ["POST", "/meeting/m1/library/people", { name: "Sara", email: "sara@lumen.test", organization: "Lumen", create_organization: true }],
+      [
+        "POST",
+        "/meeting/m1/library/people",
+        {
+          name: "Sara",
+          email: "sara@lumen.test",
+          organization: "Lumen",
+          create_organization: true,
+        },
+      ],
       ["POST", "/meeting/m1/library/people/sara", { job_title: "CFO" }],
       ["POST", "/meeting/m1/library/organizations", { name: "Lumen" }],
-      ["POST", "/meeting/m1/library/organizations/org", { memo: "key account" }],
+      [
+        "POST",
+        "/meeting/m1/library/organizations/org",
+        { memo: "key account" },
+      ],
       ["POST", "/meeting/m1/library/participants", { person_id: "sara" }],
-      ["POST", "/meeting/m1/library/templates", { title: "Discovery", sections: [{ title: "Pain", description: "What hurts" }] }],
-      ["POST", "/meeting/m1/library/templates/tpl", { description: "First call" }],
+      [
+        "POST",
+        "/meeting/m1/library/templates",
+        {
+          title: "Discovery",
+          sections: [{ title: "Pain", description: "What hurts" }],
+        },
+      ],
+      [
+        "POST",
+        "/meeting/m1/library/templates/tpl",
+        { description: "First call" },
+      ],
     ]);
     expect(seen.every((entry) => entry.auth === "Bearer secret")).toBe(true);
   });
@@ -69,16 +127,35 @@ describe("library bridge calls", () => {
   test("the app's answer is parsed, including a no-op without an edit", async () => {
     const { bridge } = fakeApp(({ path }) =>
       path.endsWith("folders")
-        ? Response.json({ edit: null, id: "f1", message: "The folder Clients already exists" })
-        : Response.json({ edit: edit("create_note"), id: "n1", message: "Created note “Pricing”" }),
+        ? Response.json({
+            edit: null,
+            id: "f1",
+            message: "The folder Clients already exists",
+          })
+        : Response.json({
+            edit: edit("create_note"),
+            id: "n1",
+            message: "Created note “Pricing”",
+          }),
     );
 
-    expect(await bridge.createFolder("m1", "Clients")).toEqual({ edit: null, id: "f1", message: "The folder Clients already exists" });
-    expect((await bridge.createNote("m1", { title: "Pricing" })).edit?.target_id).toBe("n1");
+    expect(await bridge.createFolder("m1", "Clients")).toEqual({
+      edit: null,
+      id: "f1",
+      message: "The folder Clients already exists",
+    });
+    expect(
+      (await bridge.createNote("m1", { title: "Pricing" })).edit?.target_id,
+    ).toBe("n1");
   });
 
   test("a refusal surfaces the app's message and status", async () => {
-    const { bridge } = fakeApp(() => Response.json({ error: "this note is locked in the app" }, { status: 403 }));
+    const { bridge } = fakeApp(() =>
+      Response.json(
+        { error: "this note is locked in the app" },
+        { status: 403 },
+      ),
+    );
 
     const refused = bridge.updateNote("m1", "secret", { title: "Peek" });
 
@@ -87,11 +164,59 @@ describe("library bridge calls", () => {
   });
 });
 
+describe("transcript edits", () => {
+  test("posts scoped speaker and exact-word corrections with the bridge token", async () => {
+    const { seen, bridge } = fakeApp(({ path }) => {
+      const kind = path.endsWith("/speakers")
+        ? "assign_speaker"
+        : "correct_transcript";
+      return Response.json({
+        ...edit(kind),
+        summary: "Updated the transcript",
+        target_id: null,
+      });
+    });
+
+    await bridge.assignTranscriptSpeaker("m 1", {
+      channel: 1,
+      speaker_index: 2,
+      human_id: "sara",
+    });
+    await bridge.correctTranscript("m 1", {
+      word_ids: ["w1", "w2"],
+      expected_text: "We ship",
+      replacement: "We'll ship",
+    });
+
+    expect(seen.map(({ method, path, body }) => [method, path, body])).toEqual([
+      [
+        "POST",
+        "/meeting/m%201/transcript/speakers",
+        { channel: 1, speaker_index: 2, human_id: "sara" },
+      ],
+      [
+        "POST",
+        "/meeting/m%201/transcript/corrections",
+        {
+          word_ids: ["w1", "w2"],
+          expected_text: "We ship",
+          replacement: "We'll ship",
+        },
+      ],
+    ]);
+    expect(seen.every((entry) => entry.auth === "Bearer secret")).toBe(true);
+  });
+});
+
 describe("recording state", () => {
   test("the app names the meetings it is capturing", async () => {
-    const { seen, bridge } = fakeApp(() => Response.json({ session_ids: ["m1"] }));
+    const { seen, bridge } = fakeApp(() =>
+      Response.json({ session_ids: ["m1"] }),
+    );
 
     expect(await bridge.recordingSessions()).toEqual(new Set(["m1"]));
-    expect(seen.map(({ method, path }) => [method, path])).toEqual([["GET", "/recording"]]);
+    expect(seen.map(({ method, path }) => [method, path])).toEqual([
+      ["GET", "/recording"],
+    ]);
   });
 });

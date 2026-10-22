@@ -14,4 +14,13 @@ describe("coachPrompt", () => {
     expect(prompt).toMatch(/focused lookup/i);
     expect(prompt).toMatch(/do not delay an immediate in-call answer/i);
   });
+
+  test("transcript edits require explicit requests and stable evidence", () => {
+    const prompt = coachPrompt([], true);
+
+    expect(prompt).toContain("only when the user explicitly asks");
+    expect(prompt).toContain("wait until the meeting has ended");
+    expect(prompt).toContain("unique existing meeting participant");
+    expect(prompt).toContain("ask if the span is unclear");
+  });
 });

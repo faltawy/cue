@@ -14,6 +14,7 @@ import {
   ListChecks,
   ListPlus,
   LogIn,
+  MessageSquareQuote,
   NotebookPen,
   RotateCcw,
   SquarePen,
@@ -25,9 +26,15 @@ import { memo, type ReactNode, useEffect, useId, useState } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import type { CoachError } from "../../errors";
-import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
 import type { CoachFeedback, EvidenceTarget } from "../../move";
-import { ActionsBlock, type BlockActions, ImageThumbs, Replies, SourceChips } from "./blocks";
+import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
+import {
+  ActionsBlock,
+  type BlockActions,
+  ImageThumbs,
+  Replies,
+  SourceChips,
+} from "./blocks";
 import { MoveCard, TalkMeter } from "./coaching";
 import { CoachMarkdown } from "./markdown";
 import { Button, cx, IconButton } from "./primitives";
@@ -36,6 +43,7 @@ import { Steps } from "./steps";
 export type TimelineActions = BlockActions & {
   retry(turn: Turn): void;
   newChat(): void;
+  quote(text: string): void;
   copy(text: string): Promise<boolean>;
   signIn(): void;
   openEvidence(target: EvidenceTarget): void;
@@ -70,16 +78,23 @@ export function Timeline({
   actions: TimelineActions;
 }) {
   const lastItem = items.at(-1);
-  const lastTurn = [...items].reverse().find((item): item is Turn => item.kind === "turn");
+  const lastTurn = [...items]
+    .reverse()
+    .find((item): item is Turn => item.kind === "turn");
   const [showEarlier, setShowEarlier] = useState(false);
   const lastTurnIndex = lastTurn ? items.indexOf(lastTurn) : -1;
-  const hidden = glance && !showEarlier && lastTurnIndex > 0 ? lastTurnIndex : 0;
+  const hidden =
+    glance && !showEarlier && lastTurnIndex > 0 ? lastTurnIndex : 0;
   const visible = hidden > 0 ? items.slice(hidden) : items;
   useEffect(() => {
     if (!glance) setShowEarlier(false);
   }, [glance]);
   return (
-    <StickToBottom className="relative min-h-16 flex-1" resize="smooth" initial="instant">
+    <StickToBottom
+      className="relative min-h-16 flex-1"
+      resize="smooth"
+      initial="instant"
+    >
       <StickToBottom.Content
         scrollClassName="coach-scroll coach-fade-y"
         className="mx-auto flex min-h-full w-full max-w-[720px] flex-col gap-4 px-4 pt-4 pb-6"
@@ -93,7 +108,7 @@ export function Timeline({
           <button
             type="button"
             onClick={() => setShowEarlier(true)}
-            className="mx-auto rounded-full border border-border px-3 py-1 text-[12px] text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground"
+            className="border-border text-muted-foreground hover:bg-muted hover:text-foreground mx-auto rounded-full border px-3 py-1 text-[12px] transition-colors duration-100"
           >
             Show earlier messages
           </button>
@@ -103,10 +118,25 @@ export function Timeline({
             key={item.key}
             item={item}
             latest={item.kind === "turn" && item === lastTurn}
-            questionOpen={questionOpen && item.kind === "turn" && item === lastTurn}
+            questionOpen={
+              questionOpen && item.kind === "turn" && item === lastTurn
+            }
             latestUndoable={ready ? latestUndoable : null}
-            canRetry={ready && !busy && (item.kind === "turn" ? item.key === lastAskKey : lastAskKey !== null)}
-            lastAsk={lastAskKey ? items.find((candidate): candidate is Turn => candidate.key === lastAskKey) : undefined}
+            canRetry={
+              ready &&
+              !busy &&
+              (item.kind === "turn"
+                ? item.key === lastAskKey
+                : lastAskKey !== null)
+            }
+            lastAsk={
+              lastAskKey
+                ? items.find(
+                    (candidate): candidate is Turn =>
+                      candidate.key === lastAskKey,
+                  )
+                : undefined
+            }
             canReply={ready && !busy && !questionOpen && item === lastItem}
             canAddToNotes={ready && canAddToNotes}
             actions={actions}
@@ -123,7 +153,8 @@ export function Timeline({
 function FollowOnSend({ sent }: { sent: number }) {
   const { scrollToBottom } = useStickToBottomContext();
   useEffect(() => {
-    if (sent > 0) void scrollToBottom({ animation: "smooth", ignoreEscapes: true });
+    if (sent > 0)
+      void scrollToBottom({ animation: "smooth", ignoreEscapes: true });
   }, [sent, scrollToBottom]);
   return null;
 }
@@ -139,7 +170,9 @@ function JumpToLatest() {
       tabIndex={isAtBottom ? -1 : 0}
       className={cx(
         "absolute bottom-3 left-1/2 grid size-8 -translate-x-1/2 place-items-center rounded-full border border-border bg-surface text-foreground shadow-md transition-[opacity,translate] duration-150",
-        isAtBottom ? "pointer-events-none translate-y-1 opacity-0" : "opacity-100",
+        isAtBottom
+          ? "pointer-events-none translate-y-1 opacity-0"
+          : "opacity-100",
       )}
     >
       <ArrowDown aria-hidden className="size-4" />
@@ -183,32 +216,50 @@ const ItemView = memo(function ItemView({
         />
       );
     case "edit":
-      return <EditRow edit={item.edit} undoable={item.edit.id === latestUndoable} onUndo={actions.undo} />;
+      return (
+        <EditRow
+          edit={item.edit}
+          undoable={item.edit.id === latestUndoable}
+          onUndo={actions.undo}
+        />
+      );
     case "error":
       return (
         <ErrorCard
           error={item.error}
           count={item.count}
           onNewChat={actions.newChat}
-          onRetry={canRetry && lastAsk ? () => actions.retry(lastAsk) : undefined}
+          onRetry={
+            canRetry && lastAsk ? () => actions.retry(lastAsk) : undefined
+          }
           onSignIn={actions.signIn}
         />
       );
     case "notice":
       return (
-        <p className="coach-enter flex items-start justify-center gap-1.5 text-center text-[12.5px] text-muted-foreground" role="status">
+        <p
+          className="coach-enter text-muted-foreground flex items-start justify-center gap-1.5 text-center text-[12.5px]"
+          role="status"
+        >
           <Info aria-hidden className="mt-[3px] size-3.5 shrink-0" />
           <span dir="auto">{item.text}</span>
         </p>
       );
     case "divider":
       return (
-        <div className="flex items-center gap-3 text-[11.5px] text-muted-foreground" role="separator">
-          <span className="h-px min-w-6 flex-1 bg-border" />
-          <span dir="auto" className="line-clamp-2 min-w-0 text-center" title={item.text}>
+        <div
+          className="text-muted-foreground flex items-center gap-3 text-[11.5px]"
+          role="separator"
+        >
+          <span className="bg-border h-px min-w-6 flex-1" />
+          <span
+            dir="auto"
+            className="line-clamp-2 min-w-0 text-center"
+            title={item.text}
+          >
             {item.text}
           </span>
-          <span className="h-px min-w-6 flex-1 bg-border" />
+          <span className="bg-border h-px min-w-6 flex-1" />
         </div>
       );
   }
@@ -232,9 +283,14 @@ const SHOW_TOOL = "mcp__meeting__show";
 
 export function shownSteps(turn: Turn): Step[] {
   return turn.steps.filter((step) => {
-    if (step.name === "AskUserQuestion" && step.status === "running") return false;
+    if (step.name === "AskUserQuestion" && step.status === "running")
+      return false;
     if (step.name === SHOW_TOOL && step.status !== "failed") return false;
-    return !(turn.edits.length > 0 && EDIT_TOOLS.has(step.name) && step.status === "ok");
+    return !(
+      turn.edits.length > 0 &&
+      EDIT_TOOLS.has(step.name) &&
+      step.status === "ok"
+    );
   });
 }
 
@@ -259,7 +315,9 @@ function TurnView({
 }) {
   const running = turn.status === "running" || turn.status === "sending";
   const steps = shownSteps(turn);
-  const activeStep = [...steps].reverse().find((step) => step.status === "running");
+  const activeStep = [...steps]
+    .reverse()
+    .find((step) => step.status === "running");
   const activity =
     !running || questionOpen
       ? null
@@ -279,13 +337,26 @@ function TurnView({
       {turn.edits.length > 0 && (
         <div className="mb-2 flex flex-col gap-1.5">
           {turn.edits.map((edit) => (
-            <EditRow key={edit.id} edit={edit} undoable={edit.id === latestUndoable} onUndo={actions.undo} />
+            <EditRow
+              key={edit.id}
+              edit={edit}
+              undoable={edit.id === latestUndoable}
+              onUndo={actions.undo}
+            />
           ))}
         </div>
       )}
-      {turn.text && <CoachMarkdown text={turn.text} streaming={running} />}
+      {turn.text && (
+        <QuotedAnswer
+          text={turn.text}
+          streaming={running}
+          onQuote={actions.quote}
+        />
+      )}
       {!running && !turn.text && turn.status === "stopped" && (
-        <p className="text-[13px] text-muted-foreground">Stopped before answering.</p>
+        <p className="text-muted-foreground text-[13px]">
+          Stopped before answering.
+        </p>
       )}
       {turn.blocks.map((block) => {
         switch (block.kind) {
@@ -314,38 +385,67 @@ function TurnView({
         }
       })}
       {turn.talk && (
-        <div className={cx("coach-enter", (turn.text || turn.blocks.length > 0) && "mt-3")}>
+        <div
+          className={cx(
+            "coach-enter",
+            (turn.text || turn.blocks.length > 0) && "mt-3",
+          )}
+        >
           <TalkMeter talk={turn.talk} scope="window" />
         </div>
       )}
-      {turn.sources.length > 0 && <SourceChips sources={turn.sources} onOpen={actions.open} />}
+      {turn.sources.length > 0 && (
+        <SourceChips sources={turn.sources} onOpen={actions.open} />
+      )}
       {!running &&
         turn.blocks.map((block) =>
           block.kind === "replies" && canReply ? (
-            <Replies key={block.id} options={block.options} onReply={actions.reply} />
+            <Replies
+              key={block.id}
+              options={block.options}
+              onReply={actions.reply}
+            />
           ) : null,
         )}
     </>
   );
   const footer = !running && turn.ask !== "nudge" && (
-    <TurnFooter turn={turn} latest={latest} canRetry={canRetry && turn.images.length === 0} actions={actions} />
+    <TurnFooter
+      turn={turn}
+      latest={latest}
+      canRetry={canRetry && turn.images.length === 0}
+      actions={actions}
+    />
   );
 
   if (turn.ask !== "ask") {
     return (
-      <article className="coach-enter group/turn" aria-label={turn.ask === "nudge" ? "Nudge" : "Catch up"}>
-        <div className="mb-1.5 text-[11.5px] font-medium text-muted-foreground">{turn.prompt}</div>
-        <div className="border-l-2 border-warm pl-3">{body}</div>
+      <article
+        className="coach-enter group/turn"
+        aria-label={turn.ask === "nudge" ? "Nudge" : "Catch up"}
+      >
+        <div className="text-muted-foreground mb-1.5 text-[11.5px] font-medium">
+          {turn.prompt}
+        </div>
+        <div className="border-warm border-l-2 pl-3">{body}</div>
         {footer}
       </article>
     );
   }
 
   return (
-    <article className="group/turn flex flex-col gap-2.5" aria-label="Question and answer">
-      {turn.images.length > 0 && <ImageThumbs images={turn.images} className="coach-enter ms-auto max-w-[85%] justify-end" />}
+    <article
+      className="group/turn flex flex-col gap-2.5"
+      aria-label="Question and answer"
+    >
+      {turn.images.length > 0 && (
+        <ImageThumbs
+          images={turn.images}
+          className="coach-enter ms-auto max-w-[85%] justify-end"
+        />
+      )}
       {turn.prompt && (
-        <div className="coach-enter ms-auto max-w-[85%] rounded-lg bg-muted px-3 py-2 text-[14px] leading-[1.5] break-words whitespace-pre-wrap">
+        <div className="coach-enter bg-muted ms-auto max-w-[85%] rounded-lg px-3 py-2 text-[14px] leading-[1.5] break-words whitespace-pre-wrap">
           <p dir="auto">{turn.prompt}</p>
         </div>
       )}
@@ -354,6 +454,71 @@ function TurnView({
         {footer}
       </div>
     </article>
+  );
+}
+
+function QuotedAnswer({
+  text,
+  streaming,
+  onQuote,
+}: {
+  text: string;
+  streaming: boolean;
+  onQuote(text: string): void;
+}) {
+  const [quote, setQuote] = useState<{
+    text: string;
+    left: number;
+    top: number;
+  } | null>(null);
+
+  const captureSelection = (root: HTMLDivElement) => {
+    const selection = window.getSelection();
+    const selected = selection?.toString().trim();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (
+      !selected ||
+      !range ||
+      !root.contains(range.startContainer) ||
+      !root.contains(range.endContainer)
+    ) {
+      setQuote(null);
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    const width = 148;
+    const left = Math.max(
+      8,
+      Math.min(rect.left, window.innerWidth - width - 8),
+    );
+    const top = rect.top >= 44 ? rect.top - 38 : rect.bottom + 6;
+    setQuote({ text: selected, left, top });
+  };
+
+  return (
+    <div
+      className="relative min-w-0"
+      data-coach-answer
+      onMouseUp={(event) => captureSelection(event.currentTarget)}
+      onKeyUp={(event) => captureSelection(event.currentTarget)}
+    >
+      <CoachMarkdown text={text} streaming={streaming} />
+      {quote && (
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            onQuote(quote.text);
+            setQuote(null);
+          }}
+          className="border-border bg-surface text-foreground hover:bg-muted fixed z-50 inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-[12px] font-medium shadow-lg transition-colors"
+          style={{ left: quote.left, top: quote.top }}
+        >
+          <MessageSquareQuote aria-hidden className="size-3.5" />
+          Ask about this
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -383,12 +548,19 @@ function TurnFooter({
     return () => clearTimeout(timer);
   }, [copied]);
   if (turn.status === "failed" && !turn.text) return null;
-  const meta = turn.status === "stopped" ? "Stopped" : turn.status === "failed" ? "Didn't finish" : null;
+  const meta =
+    turn.status === "stopped"
+      ? "Stopped"
+      : turn.status === "failed"
+        ? "Didn't finish"
+        : null;
   return (
     <div
       className={cx(
         "mt-1 -mb-1 -ms-1.5 flex h-6 items-center gap-0.5 text-[11.5px] text-muted-foreground transition-opacity duration-150",
-        latest ? "opacity-100" : "opacity-0 group-hover/turn:opacity-100 group-focus-within/turn:opacity-100",
+        latest
+          ? "opacity-100"
+          : "opacity-0 group-hover/turn:opacity-100 group-focus-within/turn:opacity-100",
       )}
     >
       {turn.text && (
@@ -398,11 +570,20 @@ function TurnFooter({
           onClick={() => void actions.copy(turn.text).then(setCopied)}
           className="size-6"
         >
-          {copied ? <Check aria-hidden className="size-3.5" /> : <Copy aria-hidden className="size-3.5" />}
+          {copied ? (
+            <Check aria-hidden className="size-3.5" />
+          ) : (
+            <Copy aria-hidden className="size-3.5" />
+          )}
         </IconButton>
       )}
       {canRetry && turn.ask === "ask" && (
-        <IconButton label="Ask again" tooltipSide="top" onClick={() => actions.retry(turn)} className="size-6">
+        <IconButton
+          label="Ask again"
+          tooltipSide="top"
+          onClick={() => actions.retry(turn)}
+          className="size-6"
+        >
           <RotateCcw aria-hidden className="size-3.5" />
         </IconButton>
       )}
@@ -425,6 +606,8 @@ const EDIT_LABEL: Record<EditView["kind"], string> = {
   add_participant: "Participant added",
   create_template: "Template created",
   update_template: "Template updated",
+  assign_speaker: "Speaker named",
+  correct_transcript: "Transcript corrected",
 };
 
 const UNDONE_LABEL: Record<EditView["kind"], string> = {
@@ -441,6 +624,8 @@ const UNDONE_LABEL: Record<EditView["kind"], string> = {
   add_participant: "Participant removed",
   create_template: "Created template removed",
   update_template: "Template change undone",
+  assign_speaker: "Speaker change undone",
+  correct_transcript: "Transcript correction undone",
 };
 
 const EDIT_ICON: Record<EditView["kind"], typeof NotebookPen> = {
@@ -457,13 +642,27 @@ const EDIT_ICON: Record<EditView["kind"], typeof NotebookPen> = {
   add_participant: UsersRound,
   create_template: LayoutTemplate,
   update_template: LayoutTemplate,
+  assign_speaker: UserPen,
+  correct_transcript: FilePen,
 };
 
-export function EditRow({ edit, undoable, onUndo }: { edit: EditView; undoable: boolean; onUndo(id: string): void }) {
+export function EditRow({
+  edit,
+  undoable,
+  onUndo,
+}: {
+  edit: EditView;
+  undoable: boolean;
+  onUndo(id: string): void;
+}) {
   const Icon = EDIT_ICON[edit.kind];
   if (edit.undone) {
     return (
-      <p className="flex items-center gap-2 px-2.5 text-[12px] text-muted-foreground" data-testid="coach-edit" data-undone>
+      <p
+        className="text-muted-foreground flex items-center gap-2 px-2.5 text-[12px]"
+        data-testid="coach-edit"
+        data-undone
+      >
         <Icon aria-hidden className="size-3.5 shrink-0 opacity-70" />
         {UNDONE_LABEL[edit.kind]}
       </p>
@@ -471,15 +670,27 @@ export function EditRow({ edit, undoable, onUndo }: { edit: EditView; undoable: 
   }
   return (
     <div
-      className="coach-enter flex items-start gap-2 rounded-md border border-border px-2.5 py-1.5 text-[12.5px] leading-[1.45]"
+      className="coach-enter border-border flex items-start gap-2 rounded-md border px-2.5 py-1.5 text-[12.5px] leading-[1.45]"
       data-testid="coach-edit"
     >
-      <Icon aria-label={EDIT_LABEL[edit.kind]} role="img" className="mt-[2px] size-3.5 shrink-0 text-muted-foreground" />
-      <span dir="auto" className="line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]" title={edit.summary}>
+      <Icon
+        aria-label={EDIT_LABEL[edit.kind]}
+        role="img"
+        className="text-muted-foreground mt-[2px] size-3.5 shrink-0"
+      />
+      <span
+        dir="auto"
+        className="line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]"
+        title={edit.summary}
+      >
         {edit.summary}
       </span>
       {undoable && (
-        <Button tone="ghost" className="-my-1 h-6 px-2" onClick={() => onUndo(edit.id)}>
+        <Button
+          tone="ghost"
+          className="-my-1 h-6 px-2"
+          onClick={() => onUndo(edit.id)}
+        >
           Undo
         </Button>
       )}
@@ -509,19 +720,30 @@ export function ErrorCard({
   const regionId = useId();
   return (
     <div
-      className="coach-enter rounded-lg border border-destructive/30 bg-destructive/[0.06] px-3 py-2.5"
+      className="coach-enter border-destructive/30 bg-destructive/[0.06] rounded-lg border px-3 py-2.5"
       role="alert"
       data-testid="error-card"
     >
       <div className="flex items-start gap-2">
-        <AlertCircle aria-hidden className="mt-[2px] size-4 shrink-0 text-destructive" />
+        <AlertCircle
+          aria-hidden
+          className="text-destructive mt-[2px] size-4 shrink-0"
+        />
         <div className="min-w-0 flex-1">
           <p className="text-[13.5px] font-medium">
             {error.title}
-            {count > 1 && <span className="ms-1.5 font-normal text-muted-foreground tabular-nums">{count} times</span>}
+            {count > 1 && (
+              <span className="text-muted-foreground ms-1.5 font-normal tabular-nums">
+                {count} times
+              </span>
+            )}
           </p>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {auth && signingIn ? "Finish signing in, then try again." : <InlineCode text={error.message} />}
+          <p className="text-muted-foreground mt-0.5 text-[13px]">
+            {auth && signingIn ? (
+              "Finish signing in, then try again."
+            ) : (
+              <InlineCode text={error.message} />
+            )}
           </p>
           {(signIn || newChat || retry || error.detail) && (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -550,8 +772,19 @@ export function ErrorCard({
                 </Button>
               )}
               {error.detail && (
-                <Button tone="ghost" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-controls={regionId}>
-                  <ChevronRight aria-hidden className={cx("size-3.5 transition-transform duration-150", open && "rotate-90")} />
+                <Button
+                  tone="ghost"
+                  onClick={() => setOpen((value) => !value)}
+                  aria-expanded={open}
+                  aria-controls={regionId}
+                >
+                  <ChevronRight
+                    aria-hidden
+                    className={cx(
+                      "size-3.5 transition-transform duration-150",
+                      open && "rotate-90",
+                    )}
+                  />
                   Details
                 </Button>
               )}
@@ -560,7 +793,7 @@ export function ErrorCard({
           {error.detail && open && (
             <pre
               id={regionId}
-              className="coach-scroll mt-2 max-h-40 overflow-auto rounded-md border border-border bg-surface px-2 py-1.5 font-mono text-[11.5px] leading-[1.45] break-words whitespace-pre-wrap text-muted-foreground"
+              className="coach-scroll border-border bg-surface text-muted-foreground mt-2 max-h-40 overflow-auto rounded-md border px-2 py-1.5 font-mono text-[11.5px] leading-[1.45] break-words whitespace-pre-wrap"
             >
               {error.detail}
             </pre>
@@ -576,7 +809,10 @@ function InlineCode({ text }: { text: string }) {
     <>
       {text.split(/(`[^`]+`)/g).map((part, index) =>
         part.startsWith("`") && part.endsWith("`") && part.length > 2 ? (
-          <code key={index} className="rounded-sm bg-muted px-1 font-mono text-[0.9em] text-foreground">
+          <code
+            key={index}
+            className="bg-muted text-foreground rounded-sm px-1 font-mono text-[0.9em]"
+          >
             {part.slice(1, -1)}
           </code>
         ) : (
@@ -588,9 +824,15 @@ function InlineCode({ text }: { text: string }) {
 }
 
 const EMPTY_COPY: Record<MeetingPhase, { heading: string; body: string }> = {
-  none: { heading: "Waiting for your meeting", body: "Start recording in Cue (⇧⌘N) and I'll follow along." },
+  none: {
+    heading: "Waiting for your meeting",
+    body: "Start recording in Cue (⇧⌘N) and I'll follow along.",
+  },
   live: { heading: "Listening", body: "I'll speak up if something needs you." },
-  ended: { heading: "Meeting ended", body: "Ask for a summary or a follow-up." },
+  ended: {
+    heading: "Meeting ended",
+    body: "Ask for a summary or a follow-up.",
+  },
 };
 
 export function EmptyState({
@@ -610,31 +852,48 @@ export function EmptyState({
 }) {
   const copy = EMPTY_COPY[phase];
   return (
-    <div className={cx("m-auto flex w-full max-w-[340px] flex-col items-center gap-3 text-center", compact ? "py-2" : "py-8")}>
+    <div
+      className={cx(
+        "m-auto flex w-full max-w-[340px] flex-col items-center gap-3 text-center",
+        compact ? "py-2" : "py-8",
+      )}
+    >
       <div>
         <h2 dir="auto" className="text-[15px] font-semibold">
           {copy.heading}
         </h2>
-        <p dir="auto" className="mt-1 text-[13px] text-balance text-muted-foreground">
+        <p
+          dir="auto"
+          className="text-muted-foreground mt-1 text-[13px] text-balance"
+        >
           {copy.body}
         </p>
       </div>
-      <div className="mt-1 flex w-full flex-wrap justify-center gap-1.5" role="group" aria-label="Suggestions">
+      <div
+        className="mt-1 flex w-full flex-wrap justify-center gap-1.5"
+        role="group"
+        aria-label="Suggestions"
+      >
         {suggestions.map((suggestion) => (
           <button
             key={suggestion}
             type="button"
             disabled={disabled}
             onClick={() => onSuggestion(suggestion)}
-            className="rounded-full border border-border px-3 py-1 text-[12.5px] text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:hover:bg-transparent"
+            className="border-border text-muted-foreground hover:bg-muted hover:text-foreground rounded-full border px-3 py-1 text-[12.5px] transition-colors duration-100 disabled:opacity-50 disabled:hover:bg-transparent"
           >
             {suggestion}
           </button>
         ))}
       </div>
       {onChooseFolder && (
-        <div className="mt-2 flex flex-col items-center gap-2 rounded-lg border border-border px-3 py-2.5" data-testid="choose-folder">
-          <p className="text-[13px] text-balance text-muted-foreground">Choose a project folder to give the coach context.</p>
+        <div
+          className="border-border mt-2 flex flex-col items-center gap-2 rounded-lg border px-3 py-2.5"
+          data-testid="choose-folder"
+        >
+          <p className="text-muted-foreground text-[13px] text-balance">
+            Choose a project folder to give the coach context.
+          </p>
           <Button tone="outline" onClick={onChooseFolder}>
             <Folder aria-hidden className="size-3.5" />
             Choose folder…

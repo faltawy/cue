@@ -60,6 +60,39 @@ pub async fn stop_capture_for_session<R: tauri::Runtime>(
     stopped
 }
 
+/// Promote locally captured candidates for speakers explicitly named in this transcript.
+/// The caller owns the `remember_speakers` setting check.
+pub async fn promote_assigned_voiceprints_for_session<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    session_id: &str,
+) -> std::result::Result<u32, String> {
+    let pool = app
+        .try_state::<tauri_plugin_db::ManagedState>()
+        .map(|state| state.pool().clone())
+        .ok_or_else(|| "database is not ready yet".to_string())?;
+    let Some((transcript_id, workspace_id, hints_json)) =
+        sqlx::query_as::<_, (String, String, String)>(
+            "SELECT id, workspace_id, speaker_hints_json FROM transcripts
+         WHERE session_id = ? AND deleted_at IS NULL ORDER BY started_at_ms DESC LIMIT 1",
+        )
+        .bind(session_id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|error| error.to_string())?
+    else {
+        return Ok(0);
+    };
+
+    voiceprint::promote_manual_speaker_assignments(
+        app,
+        &pool,
+        &workspace_id,
+        &transcript_id,
+        &hints_json,
+    )
+    .await
+}
+
 pub type SharedState = Arc<Mutex<PluginState>>;
 
 pub struct PluginState {

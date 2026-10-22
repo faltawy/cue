@@ -26,7 +26,7 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
-pub use bridge::RecordingFuture;
+pub use bridge::{RecordingFuture, SpeakerAssignmentFuture};
 pub use claude_code::{
     ClaudeAccount, ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup,
     InstalledClaudeCode,
@@ -46,10 +46,13 @@ const START_TIMEOUT: Duration = Duration::from_secs(20);
 const DEFAULT_PICK_TITLE: &str = "Choose the project the coach can read";
 
 pub type RecordingProbe = std::sync::Arc<dyn Fn(AppHandle) -> RecordingFuture + Send + Sync>;
+pub type SpeakerAssignmentProbe =
+    std::sync::Arc<dyn Fn(AppHandle, String) -> SpeakerAssignmentFuture + Send + Sync>;
 
 struct CoachState {
     db: Option<PathBuf>,
     recording: RecordingProbe,
+    speaker_assigned: SpeakerAssignmentProbe,
     coach: Mutex<Option<Sidecar>>,
     llm: Mutex<Option<Sidecar>>,
     opening: Mutex<()>,
@@ -66,7 +69,7 @@ struct SetupSlot {
     last: Option<ClaudeSetup>,
 }
 
-struct AppHost(AppHandle);
+struct AppHost(AppHandle, SpeakerAssignmentProbe);
 
 impl bridge::Host for AppHost {
     fn pool(&self) -> Result<sqlx::SqlitePool> {
@@ -81,6 +84,10 @@ impl bridge::Host for AppHost {
             Some(state) => (state.recording)(self.0.clone()),
             None => Box::pin(async { None }),
         }
+    }
+
+    fn speaker_assigned(&self, session_id: String) -> SpeakerAssignmentFuture {
+        (self.1)(self.0.clone(), session_id)
     }
 
     fn config_dir(&self) -> Result<PathBuf> {
@@ -133,7 +140,7 @@ fn app_bridge(app: &AppHandle, state: &CoachState) -> Result<bridge::Bridge> {
     if let Some(bridge) = slot.as_ref() {
         return Ok(bridge.clone());
     }
-    let started = bridge::start(AppHost(app.clone()))?;
+    let started = bridge::start(AppHost(app.clone(), state.speaker_assigned.clone()))?;
     *slot = Some(started.clone());
     Ok(started)
 }
@@ -802,13 +809,18 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::provider_setup,
             commands::retry_provider_setup,
         ])
-        .events(tauri_specta::collect_events![CoachNudged, CoachFocused, CoachEvidence])
+        .events(tauri_specta::collect_events![
+            CoachNudged,
+            CoachFocused,
+            CoachEvidence
+        ])
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 
 pub fn init(
     db: Option<PathBuf>,
     recording: RecordingProbe,
+    speaker_assigned: SpeakerAssignmentProbe,
 ) -> tauri::plugin::TauriPlugin<tauri::Wry> {
     let specta_builder = make_specta_builder();
 
@@ -819,6 +831,7 @@ pub fn init(
             app.manage(CoachState {
                 db: db.clone(),
                 recording: recording.clone(),
+                speaker_assigned: speaker_assigned.clone(),
                 coach: Mutex::new(None),
                 llm: Mutex::new(None),
                 opening: Mutex::new(()),
@@ -887,6 +900,7 @@ mod test {
         let state = CoachState {
             db: Some("/data/app.db".into()),
             recording: std::sync::Arc::new(|_| Box::pin(async { None })),
+            speaker_assigned: std::sync::Arc::new(|_, _| Box::pin(async {})),
             coach: Mutex::new(None),
             llm: Mutex::new(None),
             opening: Mutex::new(()),

@@ -14122,6 +14122,7 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
+ "transcript",
  "url",
  "uuid",
 ]

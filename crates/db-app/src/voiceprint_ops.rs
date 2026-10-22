@@ -160,6 +160,26 @@ pub async fn list_active_voiceprint_exemplars_for_human(
     .await
 }
 
+pub async fn list_active_manual_voiceprint_source_speakers(
+    pool: &SqlitePool,
+    workspace_id: &str,
+    source_transcript_id: &str,
+) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT DISTINCT source_speaker_label
+         FROM voiceprint_exemplars
+         WHERE workspace_id = ?
+           AND source_transcript_id = ?
+           AND confirmation_source = 'manual_speaker_assignment'
+           AND deleted_at IS NULL
+         ORDER BY source_speaker_label",
+    )
+    .bind(workspace_id)
+    .bind(source_transcript_id)
+    .fetch_all(pool)
+    .await
+}
+
 pub async fn tombstone_voiceprint_exemplar(
     pool: &SqlitePool,
     workspace_id: &str,
@@ -218,7 +238,7 @@ pub async fn tombstone_voiceprint_exemplars_for_source_speaker(
     workspace_id: &str,
     source_transcript_id: &str,
     source_speaker_label: &str,
-    keep_human_id: &str,
+    keep_human_id: Option<&str>,
 ) -> Result<Vec<VoiceprintSecretRef>, sqlx::Error> {
     let mut transaction = pool.begin().await?;
     let secret_refs = sqlx::query_as(
@@ -227,13 +247,16 @@ pub async fn tombstone_voiceprint_exemplars_for_source_speaker(
          WHERE workspace_id = ?
            AND source_transcript_id = ?
            AND source_speaker_label = ?
-           AND human_id <> ?
+           AND (? IS NULL OR human_id <> ?)
+           AND (? IS NOT NULL OR confirmation_source = 'manual_speaker_assignment')
            AND deleted_at IS NULL
          ORDER BY created_at, id",
     )
     .bind(workspace_id)
     .bind(source_transcript_id)
     .bind(source_speaker_label)
+    .bind(keep_human_id)
+    .bind(keep_human_id)
     .bind(keep_human_id)
     .fetch_all(&mut *transaction)
     .await?;
@@ -246,12 +269,15 @@ pub async fn tombstone_voiceprint_exemplars_for_source_speaker(
          WHERE workspace_id = ?
            AND source_transcript_id = ?
            AND source_speaker_label = ?
-           AND human_id <> ?
+           AND (? IS NULL OR human_id <> ?)
+           AND (? IS NOT NULL OR confirmation_source = 'manual_speaker_assignment')
            AND deleted_at IS NULL",
     )
     .bind(workspace_id)
     .bind(source_transcript_id)
     .bind(source_speaker_label)
+    .bind(keep_human_id)
+    .bind(keep_human_id)
     .bind(keep_human_id)
     .execute(&mut *transaction)
     .await?;

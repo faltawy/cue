@@ -107,6 +107,17 @@ pub async fn extract_voiceprint_candidates<R: tauri::Runtime>(
     .await
     .map_err(|error| error.to_string())?;
     if already_extracted {
+        if let Err(error) = promote_manual_speaker_assignments(
+            &app,
+            &pool,
+            &workspace_id,
+            &transcript_id,
+            &hints_json,
+        )
+        .await
+        {
+            tracing::warn!(%error, "manual_voiceprint_promotion_failed");
+        }
         if let Err(error) = maybe_assign_speakers_from_voiceprints(
             &app,
             &pool,
@@ -200,6 +211,13 @@ pub async fn extract_voiceprint_candidates<R: tauri::Runtime>(
         stored,
         "voiceprint_candidates_extracted"
     );
+
+    if let Err(error) =
+        promote_manual_speaker_assignments(&app, &pool, &workspace_id, &transcript_id, &hints_json)
+            .await
+    {
+        tracing::warn!(%error, "manual_voiceprint_promotion_failed");
+    }
 
     if stored > 0 && mic_isolated_for_session(&app, &session_id) == Some(true) {
         let promoted = confirm_isolated_mic_candidates(
@@ -314,7 +332,7 @@ async fn promote_speaker_candidates<R: tauri::Runtime>(
         workspace_id,
         transcript_id,
         &label,
-        human_id,
+        Some(human_id),
     )
     .await
     .map_err(|error| error.to_string())?;
@@ -406,6 +424,77 @@ async fn promote_speaker_candidates<R: tauri::Runtime>(
         "voiceprint_candidates_promoted"
     );
     Ok(promoted)
+}
+
+pub(crate) async fn promote_manual_speaker_assignments<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    pool: &sqlx::SqlitePool,
+    workspace_id: &str,
+    transcript_id: &str,
+    hints_json: &str,
+) -> Result<u32, String> {
+    let assignments = manually_assigned_speakers(hints_json);
+    let assigned_labels: std::collections::HashSet<_> = assignments
+        .iter()
+        .map(|(channel, speaker_index, _)| {
+            speaker_label(&SelectedSpan {
+                channel: *channel,
+                speaker_index: Some(*speaker_index),
+                start_ms: 0,
+                end_ms: 0,
+                quality_score: 0.0,
+            })
+        })
+        .collect();
+    let existing_labels = anlg_db_app::list_active_manual_voiceprint_source_speakers(
+        pool,
+        workspace_id,
+        transcript_id,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+    for label in existing_labels {
+        if assigned_labels.contains(&label) {
+            continue;
+        }
+        let stale = anlg_db_app::tombstone_voiceprint_exemplars_for_source_speaker(
+            pool,
+            workspace_id,
+            transcript_id,
+            &label,
+            None,
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+        for secret in stale {
+            delete_secret(app, secret.keyring_scope, secret.keyring_key.clone()).await;
+            let _ = anlg_db_app::purge_tombstoned_voiceprint_exemplar(
+                pool,
+                workspace_id,
+                &secret.keyring_key,
+            )
+            .await;
+        }
+    }
+
+    let mut total = 0;
+    for (channel, speaker_index, human_id) in assignments {
+        total += promote_speaker_candidates(
+            app,
+            pool,
+            SpeakerPromotion {
+                workspace_id,
+                transcript_id,
+                speaker_channel: channel,
+                speaker_index: Some(speaker_index),
+                human_id: &human_id,
+                confirmation_source: "manual_speaker_assignment",
+                label_confidence: 1.0,
+            },
+        )
+        .await?;
+    }
+    Ok(total)
 }
 
 /// With headphone output the direct-mic channel can only carry the session owner, so its
@@ -657,6 +746,38 @@ fn speaker_index_from_hint_value(value: &serde_json::Value) -> Option<i64> {
 }
 
 type SpanEmbedding = (SelectedSpan, Vec<f32>);
+
+fn manually_assigned_speakers(hints_json: &str) -> Vec<(i64, i64, String)> {
+    let Ok(hints) = serde_json::from_str::<Vec<StoredHint>>(hints_json) else {
+        return Vec::new();
+    };
+    let mut assignments = HashSet::new();
+    for hint in hints {
+        if hint.hint_type != "user_speaker_assignment" {
+            continue;
+        }
+        let Some(value) = hint_value_object(&hint.value) else {
+            continue;
+        };
+        if value.get("scope").and_then(serde_json::Value::as_str) != Some("speaker") {
+            continue;
+        }
+        let Some(VoiceprintSpeakerKey {
+            channel,
+            speaker_index: Some(speaker_index),
+        }) = speaker_key_from_hint_value(&value)
+        else {
+            continue;
+        };
+        let Some(human_id) = human_id_from_hint_value(&value) else {
+            continue;
+        };
+        assignments.insert((channel, speaker_index, human_id));
+    }
+    let mut assignments: Vec<_> = assignments.into_iter().collect();
+    assignments.sort();
+    assignments
+}
 
 fn compute_embeddings(
     path: &std::path::Path,
@@ -1392,6 +1513,27 @@ mod tests {
     use std::num::NonZero;
 
     use super::*;
+
+    #[test]
+    fn only_full_user_speaker_assignments_are_enrollment_confirmations() {
+        let hints = serde_json::json!([
+            {
+                "word_id": "w1",
+                "type": "user_speaker_assignment",
+                "value": "{\"human_id\":\"sara\",\"scope\":\"speaker\",\"channel\":1,\"speaker_index\":2}"
+            },
+            {
+                "word_id": "w2",
+                "type": "user_speaker_assignment",
+                "value": "{\"human_id\":\"omar\",\"scope\":\"word\",\"channel\":1,\"speaker_index\":3}"
+            }
+        ]);
+
+        assert_eq!(
+            manually_assigned_speakers(&hints.to_string()),
+            vec![(1, 2, "sara".to_string())]
+        );
+    }
 
     #[test]
     fn direct_mic_speakers_dedupes_and_ignores_other_channels() {

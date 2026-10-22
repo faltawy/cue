@@ -95,6 +95,43 @@ fn recording_sessions(app: tauri::AppHandle) -> tauri_plugin_coach::RecordingFut
     })
 }
 
+fn coach_speaker_assigned(
+    app: tauri::AppHandle,
+    session_id: String,
+) -> tauri_plugin_coach::SpeakerAssignmentFuture {
+    Box::pin(async move {
+        use tauri_plugin_settings::SettingsPluginExt;
+
+        let settings = match app.settings().load().await {
+            Ok(settings) => settings,
+            Err(error) => {
+                tracing::warn!(%error, "remember_speakers_setting_unavailable");
+                return;
+            }
+        };
+        if settings
+            .get("general")
+            .and_then(|general| general.get("remember_speakers"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(true)
+        {
+            match tauri_plugin_transcription::promote_assigned_voiceprints_for_session(
+                &app,
+                &session_id,
+            )
+            .await
+            {
+                Ok(promoted) => {
+                    tracing::info!(%session_id, promoted, "coach_speaker_voiceprints_promoted")
+                }
+                Err(error) => {
+                    tracing::warn!(%session_id, %error, "coach_speaker_voiceprint_promotion_failed")
+                }
+            }
+        }
+    })
+}
+
 pub fn main() {
     // A process-wide Tokio runtime shared by Tauri plugins and db-sync.
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -234,6 +271,7 @@ pub fn main() {
         .plugin(tauri_plugin_coach::init(
             db::desktop_db_path(&identifier),
             std::sync::Arc::new(recording_sessions),
+            std::sync::Arc::new(coach_speaker_assigned),
         ))
         .plugin(tauri_plugin_tray::init(std::sync::Arc::new(
             quit::request_quit,

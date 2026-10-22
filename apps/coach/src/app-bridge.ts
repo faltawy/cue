@@ -17,6 +17,8 @@ export const EDIT_KINDS = [
   "add_participant",
   "create_template",
   "update_template",
+  "assign_speaker",
+  "correct_transcript",
 ] as const;
 
 const coachEditSchema = z.object({
@@ -38,8 +40,17 @@ const libraryChangeSchema = z.object({
 
 export type LibraryChange = z.infer<typeof libraryChangeSchema>;
 
-export type NewNote = { title: string; folder?: string; content_markdown?: string };
-export type NoteChanges = { title?: string; folder?: string; add_tags?: string[]; remove_tags?: string[] };
+export type NewNote = {
+  title: string;
+  folder?: string;
+  content_markdown?: string;
+};
+export type NoteChanges = {
+  title?: string;
+  folder?: string;
+  add_tags?: string[];
+  remove_tags?: string[];
+};
 export type PersonFields = {
   name?: string;
   email?: string;
@@ -68,6 +79,12 @@ export type MeetingProject = z.infer<typeof meetingProjectSchema>;
 
 const recordingSchema = z.object({ session_ids: z.array(z.string()) });
 
+export type TranscriptCorrection = {
+  word_ids: string[];
+  expected_text: string;
+  replacement: string;
+};
+
 export type NoteStyle = "paragraphs" | "bullets";
 
 export class BridgeError extends Error {
@@ -84,7 +101,12 @@ const errorBodySchema = z.object({ error: z.string() });
 export type AppBridge = ReturnType<typeof appBridge>;
 
 export function appBridge(url: string, token: string) {
-  async function call<T>(method: string, path: string, schema: z.ZodType<T>, body?: unknown): Promise<T | null> {
+  async function call<T>(
+    method: string,
+    path: string,
+    schema: z.ZodType<T>,
+    body?: unknown,
+  ): Promise<T | null> {
     const response = await fetch(`${url}${path}`, {
       method,
       headers: {
@@ -97,7 +119,12 @@ export function appBridge(url: string, token: string) {
     const json: unknown = await response.json();
     if (!response.ok) {
       const parsed = errorBodySchema.safeParse(json);
-      throw new BridgeError(response.status, parsed.success ? parsed.data.error : `the app answered ${response.status}`);
+      throw new BridgeError(
+        response.status,
+        parsed.success
+          ? parsed.data.error
+          : `the app answered ${response.status}`,
+      );
     }
     return schema.parse(json);
   }
@@ -108,8 +135,14 @@ export function appBridge(url: string, token: string) {
     return value;
   }
 
-  const meeting = (sessionId: string) => `/meeting/${encodeURIComponent(sessionId)}`;
-  const library = (sessionId: string, path: string, id?: string, body?: unknown) =>
+  const meeting = (sessionId: string) =>
+    `/meeting/${encodeURIComponent(sessionId)}`;
+  const library = (
+    sessionId: string,
+    path: string,
+    id?: string,
+    body?: unknown,
+  ) =>
     required(
       call(
         "POST",
@@ -121,27 +154,69 @@ export function appBridge(url: string, token: string) {
 
   return {
     recordingSessions: async (): Promise<ReadonlySet<string>> =>
-      new Set((await required(call("GET", "/recording", recordingSchema))).session_ids),
+      new Set(
+        (await required(call("GET", "/recording", recordingSchema)))
+          .session_ids,
+      ),
     chooseDefaultProject: () => call("POST", "/project", z.null()),
     nudged: (sessionId: string, nudge: { tag: string; line: string }) =>
       call("POST", `${meeting(sessionId)}/nudge`, z.null(), nudge),
     evidence: (target: { sessionId: string; timestampMs: number }) =>
+      call("POST", `${meeting(target.sessionId)}/evidence`, z.null(), {
+        timestamp_ms: target.timestampMs,
+      }),
+    meetingProject: (sessionId: string) =>
+      required(
+        call("GET", `${meeting(sessionId)}/project`, meetingProjectSchema),
+      ),
+    chooseSeriesProject: (sessionId: string) =>
       call(
         "POST",
-        `${meeting(target.sessionId)}/evidence`,
-        z.null(),
-        { timestamp_ms: target.timestampMs },
+        `${meeting(sessionId)}/series-project`,
+        meetingProjectSchema,
       ),
-    meetingProject: (sessionId: string) =>
-      required(call("GET", `${meeting(sessionId)}/project`, meetingProjectSchema)),
-    chooseSeriesProject: (sessionId: string) =>
-      call("POST", `${meeting(sessionId)}/series-project`, meetingProjectSchema),
     clearSeriesProject: (sessionId: string) =>
-      required(call("DELETE", `${meeting(sessionId)}/series-project`, meetingProjectSchema)),
+      required(
+        call(
+          "DELETE",
+          `${meeting(sessionId)}/series-project`,
+          meetingProjectSchema,
+        ),
+      ),
     appendNote: (sessionId: string, lines: string[], style: NoteStyle) =>
-      required(call("POST", `${meeting(sessionId)}/notes`, coachEditSchema, { lines, style })),
+      required(
+        call("POST", `${meeting(sessionId)}/notes`, coachEditSchema, {
+          lines,
+          style,
+        }),
+      ),
     addActionItem: (sessionId: string, text: string) =>
-      required(call("POST", `${meeting(sessionId)}/action-items`, coachEditSchema, { text })),
+      required(
+        call("POST", `${meeting(sessionId)}/action-items`, coachEditSchema, {
+          text,
+        }),
+      ),
+    assignTranscriptSpeaker: (
+      sessionId: string,
+      assignment: { channel: number; speaker_index: number; human_id: string },
+    ) =>
+      required(
+        call(
+          "POST",
+          `${meeting(sessionId)}/transcript/speakers`,
+          coachEditSchema,
+          assignment,
+        ),
+      ),
+    correctTranscript: (sessionId: string, correction: TranscriptCorrection) =>
+      required(
+        call(
+          "POST",
+          `${meeting(sessionId)}/transcript/corrections`,
+          coachEditSchema,
+          correction,
+        ),
+      ),
     completeActionItem: (sessionId: string, taskId: string) =>
       required(
         call(
@@ -151,28 +226,48 @@ export function appBridge(url: string, token: string) {
         ),
       ),
     undo: (sessionId: string, editId?: string) =>
-      required(call("POST", `${meeting(sessionId)}/undo`, coachEditSchema, editId ? { edit_id: editId } : {})),
-    createNote: (sessionId: string, note: NewNote) => library(sessionId, "notes", undefined, note),
+      required(
+        call(
+          "POST",
+          `${meeting(sessionId)}/undo`,
+          coachEditSchema,
+          editId ? { edit_id: editId } : {},
+        ),
+      ),
+    createNote: (sessionId: string, note: NewNote) =>
+      library(sessionId, "notes", undefined, note),
     updateNote: (sessionId: string, noteId: string, changes: NoteChanges) =>
       library(sessionId, "notes", noteId, changes),
-    createFolder: (sessionId: string, path: string) => library(sessionId, "folders", undefined, { path }),
-    createPerson: (sessionId: string, person: PersonFields) => library(sessionId, "people", undefined, person),
+    createFolder: (sessionId: string, path: string) =>
+      library(sessionId, "folders", undefined, { path }),
+    createPerson: (sessionId: string, person: PersonFields) =>
+      library(sessionId, "people", undefined, person),
     updatePerson: (sessionId: string, personId: string, person: PersonFields) =>
       library(sessionId, "people", personId, person),
     createOrganization: (sessionId: string, organization: OrganizationFields) =>
       library(sessionId, "organizations", undefined, organization),
-    updateOrganization: (sessionId: string, organizationId: string, organization: OrganizationFields) =>
-      library(sessionId, "organizations", organizationId, organization),
-    addParticipant: (sessionId: string, link: { person_id: string; note_id?: string }) =>
-      library(sessionId, "participants", undefined, link),
+    updateOrganization: (
+      sessionId: string,
+      organizationId: string,
+      organization: OrganizationFields,
+    ) => library(sessionId, "organizations", organizationId, organization),
+    addParticipant: (
+      sessionId: string,
+      link: { person_id: string; note_id?: string },
+    ) => library(sessionId, "participants", undefined, link),
     createTemplate: (sessionId: string, template: TemplateFields) =>
       library(sessionId, "templates", undefined, template),
-    updateTemplate: (sessionId: string, templateId: string, template: TemplateFields) =>
-      library(sessionId, "templates", templateId, template),
+    updateTemplate: (
+      sessionId: string,
+      templateId: string,
+      template: TemplateFields,
+    ) => library(sessionId, "templates", templateId, template),
   };
 }
 
-export function appBridgeFromEnv(env: Record<string, string | undefined>): AppBridge | null {
+export function appBridgeFromEnv(
+  env: Record<string, string | undefined>,
+): AppBridge | null {
   const url = env[APP_URL_ENV];
   const token = env[APP_TOKEN_ENV];
   return url && token ? appBridge(url, token) : null;

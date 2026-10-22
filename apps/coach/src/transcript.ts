@@ -1,6 +1,11 @@
 import { Database } from "bun:sqlite";
 
-import { assignmentsFrom, type SpeakerHint, speakerLabels, withProviderSpeakers } from "./speakers";
+import {
+  assignmentsFrom,
+  type SpeakerHint,
+  speakerLabels,
+  withProviderSpeakers,
+} from "./speakers";
 import { formatTimestamp } from "./timestamp";
 
 export type Word = {
@@ -15,7 +20,12 @@ export type Word = {
 export type LiveDelta = {
   new_words: Word[];
   replaced_ids: string[];
-  partials?: Array<{ text: string; start_ms: number; end_ms: number; channel: number }>;
+  partials?: Array<{
+    text: string;
+    start_ms: number;
+    end_ms: number;
+    channel: number;
+  }>;
 };
 
 export type TranscriptLine = {
@@ -44,19 +54,31 @@ export function foldDeltas(base: Word[], deltas: LiveDelta[]): Word[] {
       ...delta.replaced_ids,
       ...delta.new_words.map((word) => word.id),
     ]);
-    words = [...words.filter((word) => !removed.has(word.id)), ...delta.new_words];
+    words = [
+      ...words.filter((word) => !removed.has(word.id)),
+      ...delta.new_words,
+    ];
     words.sort((a, b) => a.start_ms - b.start_ms);
   }
   return words;
 }
 
-export function toLines(words: Word[], labels: Map<string, string>, sinceMs = 0): TranscriptLine[] {
+export function toLines(
+  words: Word[],
+  labels: Map<string, string>,
+  sinceMs = 0,
+): TranscriptLine[] {
   const lines: TranscriptLine[] = [];
   for (const word of words) {
     if (word.end_ms <= sinceMs) continue;
-    const speaker = labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them");
+    const speaker =
+      labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them");
     const last = lines.at(-1);
-    if (last && last.speaker === speaker && word.start_ms - last.end_ms < 2_000) {
+    if (
+      last &&
+      last.speaker === speaker &&
+      word.start_ms - last.end_ms < 2_000
+    ) {
       last.text += word.text;
       last.end_ms = word.end_ms;
     } else {
@@ -73,13 +95,20 @@ export function toLines(words: Word[], labels: Map<string, string>, sinceMs = 0)
 }
 
 export function renderLines(lines: readonly TranscriptLine[]): string {
-  return lines.map((line) => `[${formatTimestamp(line.start_ms)}] ${line.speaker}: ${line.text.trim()}`).join("\n");
+  return lines
+    .map(
+      (line) =>
+        `[${formatTimestamp(line.start_ms)}] ${line.speaker}: ${line.text.trim()}`,
+    )
+    .join("\n");
 }
 
 export function renderTranscript(transcript: LiveTranscript): string {
   const header = `Meeting: ${transcript.title ?? "Untitled"} (${transcript.live ? "recording" : "ended"})`;
   const body = renderLines(transcript.lines);
-  const pending = transcript.pending ? `\n(still being spoken: ${transcript.pending.trim()})` : "";
+  const pending = transcript.pending
+    ? `\n(still being spoken: ${transcript.pending.trim()})`
+    : "";
   return `${header}\n${body || "(no speech yet)"}${pending}`;
 }
 
@@ -107,9 +136,16 @@ END`;
 const TRANSCRIPT_COLUMNS = `t.id, t.session_id, t.owner_user_id, t.words_json, t.speaker_hints_json, t.started_at_ms, t.ended_at_ms, s.title,
   (${RECORDING}) AS recording`;
 
-type RecordingParams = { $recording: string | null; $activeSinceMs: number; $activeSinceIso: string };
+type RecordingParams = {
+  $recording: string | null;
+  $activeSinceMs: number;
+  $activeSinceIso: string;
+};
 
-function recordingParams(recording: ReadonlySet<string> | undefined, nowMs: number): RecordingParams {
+function recordingParams(
+  recording: ReadonlySet<string> | undefined,
+  nowMs: number,
+): RecordingParams {
   const since = nowMs - RECENT_SPEECH_MS;
   return {
     $recording: recording ? JSON.stringify([...recording]) : null,
@@ -118,10 +154,16 @@ function recordingParams(recording: ReadonlySet<string> | undefined, nowMs: numb
   };
 }
 
-function readSpeakerContext(db: Database, sessionId: string, selfHumanId: string) {
+function readSpeakerContext(
+  db: Database,
+  sessionId: string,
+  selfHumanId: string,
+) {
   const names = new Map(
     db
-      .query<{ id: string; name: string }, []>(`SELECT id, name FROM humans WHERE deleted_at IS NULL`)
+      .query<{ id: string; name: string }, []>(
+        `SELECT id, name FROM humans WHERE deleted_at IS NULL`,
+      )
       .all()
       .map((human) => [human.id, human.name]),
   );
@@ -139,10 +181,20 @@ export function openAppDb(path: string): Database {
   return new Database(path, { readonly: true });
 }
 
-type TranscriptQuery = { sessionId?: string; recording?: ReadonlySet<string>; nowMs?: number };
+type TranscriptQuery = {
+  sessionId?: string;
+  recording?: ReadonlySet<string>;
+  nowMs?: number;
+};
 
-function transcriptRow(db: Database, options: TranscriptQuery): TranscriptRow | null {
-  const params = recordingParams(options.recording, options.nowMs ?? Date.now());
+function transcriptRow(
+  db: Database,
+  options: TranscriptQuery,
+): TranscriptRow | null {
+  const params = recordingParams(
+    options.recording,
+    options.nowMs ?? Date.now(),
+  );
   return options.sessionId
     ? db
         .query<TranscriptRow, [RecordingParams & { $sessionId: string }]>(
@@ -162,9 +214,15 @@ function transcriptRow(db: Database, options: TranscriptQuery): TranscriptRow | 
         .get(params);
 }
 
-export type MeetingStatus = Pick<LiveTranscript, "sessionId" | "title" | "live" | "startedAtMs" | "endedAtMs">;
+export type MeetingStatus = Pick<
+  LiveTranscript,
+  "sessionId" | "title" | "live" | "startedAtMs" | "endedAtMs"
+>;
 
-export function readMeetingStatus(db: Database, options: TranscriptQuery = {}): MeetingStatus | null {
+export function readMeetingStatus(
+  db: Database,
+  options: TranscriptQuery = {},
+): MeetingStatus | null {
   const row = transcriptRow(db, options);
   return row
     ? {
@@ -193,7 +251,9 @@ export function readLiveTranscript(
       .all(row.id)
       .map((delta): LiveDelta => JSON.parse(delta.delta_json));
 
-    const hints: SpeakerHint[] = row.speaker_hints_json ? JSON.parse(row.speaker_hints_json) : [];
+    const hints: SpeakerHint[] = row.speaker_hints_json
+      ? JSON.parse(row.speaker_hints_json)
+      : [];
     const words = withProviderSpeakers(foldDeltas(base, deltas), hints);
     const labels = speakerLabels(
       words,
@@ -269,7 +329,8 @@ export function readTranscriptEditContext(
           speakers.set(key, {
             channel: word.channel,
             speaker_index: word.speaker_index,
-            speaker: labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them"),
+            speaker:
+              labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them"),
           });
         }
       }
@@ -279,7 +340,8 @@ export function readTranscriptEditContext(
     const lines: TranscriptEditLine[] = [];
 
     for (const word of words) {
-      const speaker = labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them");
+      const speaker =
+        labels.get(word.id) ?? (word.channel === 0 ? "You" : "Them");
       const last = lines.at(-1);
       if (
         last &&
@@ -319,6 +381,44 @@ export function readSelfName(db: Database, sessionId: string): string | null {
   return row?.name?.trim() || null;
 }
 
+export type ParticipantResolution =
+  | { status: "resolved"; humanId: string; name: string }
+  | { status: "ambiguous" }
+  | { status: "not_found" };
+
+export function resolveMeetingParticipant(
+  db: Database,
+  sessionId: string,
+  requestedName: string,
+): ParticipantResolution {
+  const requested = requestedName.trim().toLocaleLowerCase();
+  if (!requested) return { status: "not_found" };
+  const participants = db
+    .query<{ human_id: string; name: string; human_name: string }, [string]>(
+      `SELECT p.human_id,
+              COALESCE(NULLIF(trim(p.display_name), ''), h.name) AS name,
+              h.name AS human_name
+       FROM session_participants p JOIN humans h ON h.id = p.human_id
+       WHERE p.session_id = ? AND p.deleted_at IS NULL AND p.source <> 'excluded'
+         AND h.deleted_at IS NULL AND p.human_id <> ''`,
+    )
+    .all(sessionId);
+  const matches = new Map<string, string>();
+  for (const participant of participants) {
+    if (
+      participant.name.trim().toLocaleLowerCase() === requested ||
+      participant.human_name.trim().toLocaleLowerCase() === requested
+    ) {
+      matches.set(participant.human_id, participant.name.trim());
+    }
+  }
+  if (matches.size > 1) return { status: "ambiguous" };
+  const [humanId, name] = matches.entries().next().value ?? [];
+  return humanId && name
+    ? { status: "resolved", humanId, name }
+    : { status: "not_found" };
+}
+
 export type MeetingInfo = {
   sessionId: string;
   title: string | null;
@@ -327,11 +427,20 @@ export type MeetingInfo = {
   participants: Array<{ name: string | null; email: string | null }>;
 };
 
-export function readMeetingInfo(db: Database, sessionId: string): MeetingInfo | null {
+export function readMeetingInfo(
+  db: Database,
+  sessionId: string,
+): MeetingInfo | null {
   const session = db
-    .query<{ id: string; title: string | null; started_at: string | null; ended_at: string | null }, [string]>(
-      `SELECT id, title, started_at, ended_at FROM sessions WHERE id = ?`,
-    )
+    .query<
+      {
+        id: string;
+        title: string | null;
+        started_at: string | null;
+        ended_at: string | null;
+      },
+      [string]
+    >(`SELECT id, title, started_at, ended_at FROM sessions WHERE id = ?`)
     .get(sessionId);
   if (!session) return null;
   const participants = db

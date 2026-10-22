@@ -1,3 +1,7 @@
+use anlg_transcript::{
+    StoredLiveTranscriptDelta, materialize_live_transcript, parse_stored_speaker_hints,
+    parse_stored_transcript_words,
+};
 use serde_json::{Value, json};
 use sqlx::sqlite::SqliteRow;
 use sqlx::{Row, SqliteConnection, SqlitePool};
@@ -673,25 +677,44 @@ impl Edits {
                 "the person is not an active participant in this meeting".into(),
             ));
         }
-        let words: Vec<Value> = serde_json::from_str(&words_json)?;
-        let hints_value: Value = serde_json::from_str(&hints_before)?;
-        let hints = hints_value
-            .as_array()
-            .ok_or_else(|| EditError::Invalid("speaker hints are invalid".into()))?;
-        let provider: std::collections::HashMap<String, (i64, i64)> = hints
+        let base_words = parse_stored_transcript_words(&words_json);
+        let base_hints = parse_stored_speaker_hints(&hints_before);
+        let direct_speakers: std::collections::HashMap<String, (i64, i64)> =
+            serde_json::from_str::<Vec<Value>>(&words_json)?
+                .into_iter()
+                .filter_map(|word| {
+                    Some((
+                        word.get("id")?.as_str()?.to_string(),
+                        (
+                            json_exact_i64(word.get("channel")?)?,
+                            json_exact_i64(word.get("speaker_index")?)?,
+                        ),
+                    ))
+                })
+                .collect();
+        let delta_jsons: Vec<String> = sqlx::query_scalar(
+            "SELECT delta_json FROM transcript_live_deltas
+             WHERE transcript_id = ? ORDER BY sequence",
+        )
+        .bind(&transcript_id)
+        .fetch_all(&mut *tx)
+        .await?;
+        let deltas: Vec<StoredLiveTranscriptDelta> = delta_jsons
             .iter()
-            .filter(|hint| {
-                hint.get("type").and_then(Value::as_str) == Some("provider_speaker_index")
-            })
+            .filter_map(|delta| serde_json::from_str(delta).ok())
+            .collect();
+        let (words, materialized_hints) =
+            materialize_live_transcript(base_words, base_hints, &deltas);
+        let provider_speakers: std::collections::HashMap<String, (i64, i64)> = materialized_hints
+            .iter()
+            .filter(|hint| hint.hint_type == "provider_speaker_index")
             .filter_map(|hint| {
-                let value_text = hint.get("value")?;
-                let value: Value = if let Some(text) = value_text.as_str() {
-                    serde_json::from_str(text).ok()?
-                } else {
-                    value_text.clone()
+                let value = match &hint.value {
+                    Value::String(raw) => serde_json::from_str::<Value>(raw).ok()?,
+                    other => other.clone(),
                 };
                 Some((
-                    hint.get("word_id")?.as_str()?.to_string(),
+                    hint.word_id.clone()?,
                     (
                         value.get("channel")?.as_i64()?,
                         value.get("speaker_index")?.as_i64()?,
@@ -699,29 +722,24 @@ impl Edits {
                 ))
             })
             .collect();
-        let matching: Vec<&Value> = words
+        let hints_value: Value = serde_json::from_str(&hints_before)?;
+        let hints = hints_value
+            .as_array()
+            .ok_or_else(|| EditError::Invalid("speaker hints are invalid".into()))?;
+        let matching: Vec<_> = words
             .iter()
             .filter(|word| {
-                let id = word.get("id").and_then(Value::as_str).unwrap_or_default();
-                let resolved = word
-                    .get("speaker_index")
-                    .and_then(Value::as_i64)
-                    .map(|index| {
-                        (
-                            word.get("channel")
-                                .and_then(Value::as_i64)
-                                .unwrap_or_default(),
-                            index,
-                        )
-                    })
-                    .or_else(|| provider.get(id).copied());
+                let id = word.id.as_str();
+                let resolved = provider_speakers
+                    .get(id)
+                    .copied()
+                    .or_else(|| direct_speakers.get(id).copied());
                 resolved == Some((channel, speaker_index))
             })
             .collect();
         let anchor = matching
             .first()
-            .and_then(|word| word.get("id"))
-            .and_then(Value::as_str)
+            .map(|word| word.id.as_str())
             .ok_or_else(|| EditError::Invalid("the speaker is not in this transcript".into()))?
             .to_string();
         let mut hints_after: Vec<Value> = hints
@@ -905,6 +923,14 @@ impl Edits {
         tx.commit().await?;
         Ok(log.remove(index).edit)
     }
+}
+
+fn json_exact_i64(value: &Value) -> Option<i64> {
+    value.as_i64().or_else(|| {
+        value.as_f64().and_then(|number| {
+            (number.is_finite() && number.fract() == 0.0).then_some(number as i64)
+        })
+    })
 }
 
 async fn undo_transcript(tx: &mut SqliteConnection, entry: &TranscriptUndo) -> EditResult<()> {
@@ -1178,6 +1204,61 @@ mod tests {
                 .await
                 .unwrap();
         assert_eq!(restored, "[]");
+    }
+
+    #[tokio::test]
+    async fn live_speaker_assignment_can_target_a_speaker_in_unflushed_deltas() {
+        let pool = pool().await;
+        seed_transcript(&pool, MEETING, None).await;
+        seed_person(&pool, MEETING, "sara", "Sara").await;
+        sqlx::query("UPDATE transcripts SET words_json = '[]' WHERE session_id = ?")
+            .bind(MEETING)
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO transcript_live_state (transcript_id, next_sequence) VALUES (?, 1)",
+        )
+        .bind(format!("t-{MEETING}"))
+        .execute(&pool)
+        .await
+        .unwrap();
+        let delta = json!({
+            "new_words": [{
+                "id": "live-w1",
+                "text": "Hi",
+                "start_ms": 100,
+                "end_ms": 250,
+                "channel": 1,
+                "state": "final",
+                "speaker_index": 2
+            }],
+            "replaced_ids": []
+        });
+        sqlx::query("INSERT INTO transcript_live_deltas (id, transcript_id, sequence, delta_json) VALUES ('delta-1', ?, 0, ?)")
+            .bind(format!("t-{MEETING}"))
+            .bind(delta.to_string())
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        Edits::default()
+            .assign_transcript_speaker(&pool, MEETING, 1, 2, "sara")
+            .await
+            .unwrap();
+
+        let hints: String =
+            sqlx::query_scalar("SELECT speaker_hints_json FROM transcripts WHERE session_id = ?")
+                .bind(MEETING)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        let hints: Value = serde_json::from_str(&hints).unwrap();
+        assert_eq!(hints[0]["word_id"], "live-w1");
+        assert_eq!(
+            serde_json::from_str::<Value>(hints[0]["value"].as_str().unwrap()).unwrap()["human_id"],
+            "sara"
+        );
     }
 
     #[tokio::test]

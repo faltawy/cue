@@ -260,6 +260,13 @@ describe("TurnTracker", () => {
 describe("tool copy", () => {
   test.each([
     ["mcp__meeting__live_transcript", {}, "Read the transcript"],
+    [
+      "mcp__meeting__transcript_edit_context",
+      {},
+      "Checked transcript edit context",
+    ],
+    ["mcp__meeting__assign_speaker", {}, "Named a speaker"],
+    ["mcp__meeting__correct_transcript", {}, "Corrected the transcript"],
     ["Grep", { pattern: "wrap_up" }, "Searched for “wrap_up”"],
     ["Grep", { pattern: "[Bb]cc|crm" }, "Searched the project"],
     ["Glob", { pattern: "**/*.ts" }, "Searched files"],

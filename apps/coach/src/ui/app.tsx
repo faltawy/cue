@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import type { EvidenceTarget } from "../move";
 import {
   Composer,
   type ComposerHandle,
@@ -24,7 +25,6 @@ import {
   WrapUpCard,
 } from "./components/wrap-up-card";
 import type { PreparedImage } from "./images";
-import type { EvidenceTarget } from "../move";
 import {
   chipsAllowed,
   type CoachState,
@@ -289,6 +289,13 @@ export function CoachView({
     () => ({
       retry,
       newChat: () => void api.newChat(),
+      quote: (text) =>
+        composer.current?.fill(
+          `About your earlier reply:\n${text
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n")}\n\n`,
+        ),
       undo: (id) => void api.undo(id),
       copy: copyText,
       signIn: () => void api.signIn(),

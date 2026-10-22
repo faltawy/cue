@@ -12,6 +12,7 @@ tauri-plugin = { workspace = true, features = ["build"] }
 
 [dependencies]
 anlg-db-app = { workspace = true }
+anlg-transcript = { workspace = true }
 anlg-tiptap = { workspace = true }
 axum = { workspace = true }
 base64 = { workspace = true }

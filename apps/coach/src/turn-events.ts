@@ -57,6 +57,15 @@ export function toolLabels(
   switch (name) {
     case "mcp__meeting__live_transcript":
       return label("Read the transcript", "Reading the transcript");
+    case "mcp__meeting__transcript_edit_context":
+      return label(
+        "Checked transcript edit context",
+        "Checking transcript edit context",
+      );
+    case "mcp__meeting__assign_speaker":
+      return label("Named a speaker", "Naming a speaker");
+    case "mcp__meeting__correct_transcript":
+      return label("Corrected the transcript", "Correcting the transcript");
     case "mcp__meeting__meeting_info":
       return label(
         "Checked who's in the meeting",

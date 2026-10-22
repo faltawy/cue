@@ -96,6 +96,53 @@ async fn confirmed_voiceprints_store_only_local_keyring_coordinates() {
 }
 
 #[tokio::test]
+async fn removing_manual_assignment_exemplars_keeps_isolated_mic_voiceprints() {
+    let db = test_db().await;
+    insert_source(&db).await;
+    let mut manual = exemplar(
+        "voiceprint-manual",
+        "voiceprint-manual",
+        "conference_remote:zoom",
+    );
+    manual.source_speaker_label = "ch1:s2";
+    insert_voiceprint_exemplar(db.pool(), manual).await.unwrap();
+    let mut isolated = exemplar(
+        "voiceprint-isolated",
+        "voiceprint-isolated",
+        "direct_mic:local",
+    );
+    isolated.source_speaker_label = "ch0:s1";
+    isolated.confirmation_source = "isolated_mic_capture";
+    insert_voiceprint_exemplar(db.pool(), isolated)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        list_active_manual_voiceprint_source_speakers(db.pool(), "workspace-1", "transcript-1",)
+            .await
+            .unwrap(),
+        ["ch1:s2"]
+    );
+    let stale = tombstone_voiceprint_exemplars_for_source_speaker(
+        db.pool(),
+        "workspace-1",
+        "transcript-1",
+        "ch1:s2",
+        None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(stale.len(), 1);
+    assert_eq!(stale[0].keyring_key, "voiceprint-manual");
+
+    let active = list_active_voiceprint_exemplars_for_human(db.pool(), "workspace-1", "human-1")
+        .await
+        .unwrap();
+    assert_eq!(active.len(), 1);
+    assert_eq!(active[0].id, "voiceprint-isolated");
+}
+
+#[tokio::test]
 async fn voiceprints_retain_multiple_capture_domains_for_one_human() {
     let db = test_db().await;
     insert_source(&db).await;
