@@ -65,6 +65,26 @@ describe("foldDeltas", () => {
 });
 
 describe("toLines", () => {
+  test("renders multilingual speech with its timestamp and named speaker", () => {
+    const transcript = {
+      sessionId: "s1",
+      transcriptId: "t1",
+      title: "Planning",
+      live: false,
+      startedAtMs: 0,
+      endedAtMs: 70_000,
+      lines: toLines(
+        [word("ar-1", " الاجتماع يبدأ الآن", 65_000)],
+        new Map([["ar-1", "ليلى"]]),
+      ),
+      pending: "",
+    };
+
+    expect(renderTranscript(transcript)).toContain(
+      "[01:05] ليلى: الاجتماع يبدأ الآن",
+    );
+  });
+
   test("groups consecutive words per speaker and splits on speaker change or a 2s pause", () => {
     const lines = toLines([
       word("1", " What's", 0, 1),
