@@ -78,7 +78,7 @@ If the coach panel is hidden or behind other windows, the nudge also shows as a 
 | Pushback (from 0.2.0)       | The other side objects to the price or the timing, mentions a tool they already use, needs a decision maker, or has doubts. |
 | Long monologue (from 0.2.0) | You have talked for about 90 seconds without a break. The coach suggests a question to give the floor back.                 |
 
-The coach can work with any language supported by the AI provider you chose. It checks the recent transcript in that language, even when Cue's local phrase detectors do not recognize the words. It stays quiet if the meaning is unclear or there is no useful action to take.
+The coach can work with any language supported by the AI provider you chose. It checks the recent transcript in that language, even when Cue's local phrase detectors do not recognize the words. Clear questions, pushback and commitments use a fast local cue path after a pause; less obvious moments go through AI triage on the recent transcript. If that transcript changes while triage is running, Cue discards the outdated result and considers the newer conversation when its pacing limits allow. It stays quiet if the meaning is unclear or there is no useful action to take.
 
 Not every moment becomes a nudge. The coach first checks whether you need help. If you already answered well, it stays quiet. It also limits how often it speaks:
 

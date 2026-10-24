@@ -49,17 +49,19 @@ function harness(
     verdict?: TriageVerdict | null;
     config?: Partial<ProactiveConfig>;
     spend?: Spend;
+    triageResult?: (request: TriageRequest) => Promise<TriageResult>;
   } = {},
 ) {
   let busy = false;
   const triage = mock(
-    async (_request: TriageRequest): Promise<TriageResult> => ({
-      verdict:
-        options.verdict === undefined
-          ? { nudge: true, why: "Omar asked about Bcc" }
-          : options.verdict,
-      spend: options.spend ?? TRIAGE_SPEND,
-    }),
+    options.triageResult ??
+      (async (_request: TriageRequest): Promise<TriageResult> => ({
+        verdict:
+          options.verdict === undefined
+            ? { nudge: true, why: "Omar asked about Bcc" }
+            : options.verdict,
+        spend: options.spend ?? TRIAGE_SPEND,
+      })),
   );
   const nudge = mock((_request: NudgeRequest): NudgeDispatch => "started");
   const metric = mock();
@@ -178,6 +180,41 @@ describe("Proactive: hit → fast nudge or fallback triage", () => {
     await settle();
     expect(coach.triage).toHaveBeenCalledTimes(1);
     expect(coach.nudge).not.toHaveBeenCalled();
+  });
+
+  test("discards triage when the recent transcript changes before its verdict arrives", async () => {
+    let resolveFirst!: (result: TriageResult) => void;
+    let calls = 0;
+    const first = new Promise<TriageResult>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const coach = harness({
+      triageResult: () => {
+        calls += 1;
+        return calls === 1
+          ? first
+          : Promise.resolve({
+              verdict: { nudge: false, why: "The moment has passed" },
+              spend: TRIAGE_SPEND,
+            });
+      },
+    });
+    coach.say(NUMBER_CUE);
+    coach.tick(3);
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+
+    coach.say(line("Omar", "Let's move on to the launch plan.", 64, 68));
+    coach.tick();
+    resolveFirst({
+      verdict: { nudge: true, why: "Check the price" },
+      spend: TRIAGE_SPEND,
+    });
+    await settle();
+
+    expect(coach.nudge).not.toHaveBeenCalled();
+    expect(coach.metric).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "fallback", outcome: "suppressed" }),
+    );
   });
 
   test("small talk reaches triage and stays quiet, then a later question takes the fast path", async () => {

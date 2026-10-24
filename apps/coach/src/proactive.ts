@@ -120,8 +120,16 @@ export class Proactive {
     const now = this.now();
     this.lines = input.lines;
     this.live = input.live;
-    const last = input.lines.at(-1);
-    const key = `${input.lines.length}:${last?.end_ms ?? 0}:${last?.text.length ?? 0}:${input.pending}`;
+    const latestEnd = input.lines.at(-1)?.end_ms ?? 0;
+    const recentLines = input.lines
+      .filter((line) => line.end_ms >= latestEnd - this.config.windowMs)
+      .map(({ speaker, start_ms, end_ms, text }) => [
+        speaker,
+        start_ms,
+        end_ms,
+        text,
+      ]);
+    const key = JSON.stringify([recentLines, input.pending]);
     if (key !== this.activityKey) {
       this.activityKey = key;
       this.lastActivityAt = now;
@@ -327,6 +335,7 @@ export class Proactive {
     const latestEnd = this.lines.at(-1)?.end_ms ?? 0;
     const kinds = [...new Set<HitKind>(hits.map((hit) => hit.kind))];
     const context = this.deps.context();
+    const activityKey = this.activityKey;
     this.deps
       .triage({
         context,
@@ -340,6 +349,7 @@ export class Proactive {
         if (
           !result.verdict?.nudge ||
           !this.live ||
+          this.activityKey !== activityKey ||
           this.capped() ||
           this.deps.busy()
         ) {
