@@ -92,6 +92,7 @@ export class Proactive {
   private readonly now: () => number;
   private lines: readonly TranscriptLine[] = [];
   private live = false;
+  private liveEpoch = 0;
   private scanned = 0;
   private readonly reported = new Set<string>();
   private activityKey = "";
@@ -119,6 +120,7 @@ export class Proactive {
   observe(input: Observed) {
     const now = this.now();
     this.lines = input.lines;
+    if (this.live !== input.live) this.liveEpoch += 1;
     this.live = input.live;
     const latestEnd = input.lines.at(-1)?.end_ms ?? 0;
     const recentLines = input.lines
@@ -336,6 +338,7 @@ export class Proactive {
     const kinds = [...new Set<HitKind>(hits.map((hit) => hit.kind))];
     const context = this.deps.context();
     const activityKey = this.activityKey;
+    const liveEpoch = this.liveEpoch;
     this.deps
       .triage({
         context,
@@ -350,6 +353,7 @@ export class Proactive {
           !result.verdict?.nudge ||
           !this.live ||
           this.activityKey !== activityKey ||
+          this.liveEpoch !== liveEpoch ||
           this.capped() ||
           this.deps.busy()
         ) {

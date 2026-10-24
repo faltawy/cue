@@ -94,6 +94,9 @@ function harness(
     end: () => {
       live = false;
     },
+    restart: () => {
+      live = true;
+    },
     say: (...next: TranscriptLine[]) => {
       lines = [...lines, ...next];
       pending = "";
@@ -204,6 +207,32 @@ describe("Proactive: hit → fast nudge or fallback triage", () => {
     expect(coach.triage).toHaveBeenCalledTimes(1);
 
     coach.say(line("Omar", "Let's move on to the launch plan.", 64, 68));
+    coach.tick();
+    resolveFirst({
+      verdict: { nudge: true, why: "Check the price" },
+      spend: TRIAGE_SPEND,
+    });
+    await settle();
+
+    expect(coach.nudge).not.toHaveBeenCalled();
+    expect(coach.metric).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "fallback", outcome: "suppressed" }),
+    );
+  });
+
+  test("discards triage from before a recording stop and restart", async () => {
+    let resolveFirst!: (result: TriageResult) => void;
+    const first = new Promise<TriageResult>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const coach = harness({ triageResult: () => first });
+    coach.say(NUMBER_CUE);
+    coach.tick(3);
+    expect(coach.triage).toHaveBeenCalledTimes(1);
+
+    coach.end();
+    coach.tick();
+    coach.restart();
     coach.tick();
     resolveFirst({
       verdict: { nudge: true, why: "Check the price" },
