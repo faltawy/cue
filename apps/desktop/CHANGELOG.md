@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.10.0
+
+### Minor Changes
+
+- Live coaching drops outdated suggestions when the conversation moves on, keeping prompts tied to the current moment.
+
 ## 0.9.0
 
 ### Minor Changes

@@ -1,5 +1,0 @@
----
-"@anlg/desktop": minor
----
-
-Live coaching drops outdated suggestions when the conversation moves on, keeping prompts tied to the current moment.
