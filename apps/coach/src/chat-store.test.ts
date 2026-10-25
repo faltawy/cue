@@ -287,6 +287,37 @@ describe("after the app restarts", () => {
     ).toBe(false);
   });
 
+  test("New chat dismisses the saved wrap-up across restarts without losing it or replaying it live", () => {
+    const saved = { transcriptId: "t1", view: ready, updatedAt: 1 };
+    const store = restarted(keepWrapUp(emptyStore(), "meeting-a", saved));
+    expect(reopen(store, ended).wrapUp?.view).toEqual(ready);
+    const plan = planChat({
+      reason: ResetReason.Manual,
+      store,
+      meeting: ended,
+      project,
+      current,
+    });
+    expect(plan.wrapUp).toBeUndefined();
+    expect(plan.store.wrapUps["meeting-a"]?.view).toEqual(ready);
+    expect(reopen(restarted(plan.store), ended).wrapUp).toBeUndefined();
+
+    const updated = keepWrapUp(plan.store, "meeting-a", {
+      ...saved,
+      view: { ...ready, logged: true },
+    });
+    expect(updated.wrapUps["meeting-a"]?.view).toMatchObject({ logged: true });
+    expect(reopen(restarted(updated), ended).wrapUp).toBeUndefined();
+    expect(wrappedTranscripts(updated).has("t1")).toBe(true);
+    expect(reopen(store, live).wrapUp).toBeUndefined();
+
+    const nextRecording = keepWrapUp(updated, "meeting-a", {
+      ...saved,
+      transcriptId: "t2",
+    });
+    expect(reopen(nextRecording, ended).wrapUp?.transcriptId).toBe("t2");
+  });
+
   test("a chat with a resumable session resumes it with its history", () => {
     const plan = reopen(restarted(storeWith("meeting-a", project)), live);
     expect(plan.resume).toBe("claude-1");

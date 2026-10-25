@@ -1,13 +1,16 @@
-import { ChevronDown, SquarePen } from "lucide-react";
+import { ChevronDown, Ellipsis, Pause, SquarePen } from "lucide-react";
 import {
   type ReactNode,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
+import { type MeetingCoaching } from "../../coaching-preferences";
 import { StripState } from "../../meeting-state";
 import { approxUsd, formatUsd } from "../../pricing";
 import { ProactiveState, type ProactiveView } from "../../proactive";
@@ -15,6 +18,8 @@ import { type TranscriptLineView } from "../../protocol";
 import { type CoachProvider, providerName } from "../../provider";
 import { formatTokens, type TurnUsage } from "../../usage";
 import { Connection, TranscriptView } from "../state";
+import { type CoachApi } from "../use-coach";
+import { MeetingControls, useMeetingControls } from "./meeting-controls";
 import {
   ariaShortcut,
   Button,
@@ -91,7 +96,7 @@ function ProactiveBudget({ view }: { view: ProactiveView }) {
     <Tooltip label={spendTooltip(view)} align={TooltipAlign.End}>
       <span
         data-testid="proactive-budget"
-        className="text-muted-foreground shrink-0 text-[11.5px] tabular-nums max-[399px]:hidden"
+        className="text-muted-foreground text-[11.5px] tabular-nums"
       >
         {capped
           ? "Nudges paused"
@@ -105,6 +110,8 @@ function ProactiveBudget({ view }: { view: ProactiveView }) {
 
 export function Header({
   provider,
+  coaching,
+  onCoachingChange,
   connection,
   transcript,
   usage,
@@ -114,13 +121,15 @@ export function Header({
   onPalette,
 }: {
   provider?: CoachProvider;
+  coaching?: MeetingCoaching & { sessionId: string };
+  onCoachingChange: CoachApi["setCoaching"];
   connection: Connection;
   transcript: TranscriptView | null;
   usage: TurnUsage | null;
   proactive: ProactiveView | null;
-  onNewChat(): void;
+  onNewChat: () => void;
   newChatDisabled: boolean;
-  onPalette(): void;
+  onPalette: () => void;
 }) {
   const strip = transcript?.strip;
   const settled = connection === Connection.Open;
@@ -133,7 +142,6 @@ export function Header({
   );
   const title =
     strip?.state === StripState.Live ? strip.title : (endedTitle ?? "Coach");
-  const longChat = isLongChat(usage);
   let subtitle: ReactNode = null;
   if (!settled) {
     subtitle = connection === Connection.Lost ? "Reconnecting…" : "Connecting…";
@@ -185,52 +193,206 @@ export function Header({
           </span>
         )}
       </div>
-      {provider && (
-        <span className="text-muted-foreground shrink-0 text-[11.5px]">
-          {providerName(provider)}
+      <HeaderOptions
+        key={coaching?.sessionId ?? "no-meeting"}
+        provider={provider}
+        coaching={coaching}
+        onCoachingChange={onCoachingChange}
+        proactive={live ? proactive : null}
+        longChat={isLongChat(usage)}
+        onNewChat={onNewChat}
+        disabled={newChatDisabled}
+        onPalette={onPalette}
+      />
+    </header>
+  );
+}
+
+function HeaderOptions({
+  provider,
+  coaching,
+  onCoachingChange,
+  proactive,
+  longChat,
+  onNewChat,
+  disabled,
+  onPalette,
+}: {
+  provider?: CoachProvider;
+  coaching?: MeetingCoaching & { sessionId: string };
+  onCoachingChange: CoachApi["setCoaching"];
+  proactive: ProactiveView | null;
+  longChat: boolean;
+  onNewChat: () => void;
+  disabled: boolean;
+  onPalette: () => void;
+}) {
+  const { result, pending, update } = useMeetingControls(
+    coaching?.sessionId,
+    onCoachingChange,
+  );
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+  const panelRef = useCallback(
+    (panel: HTMLDivElement | null) => {
+      if (!panel || !open) return;
+      panel
+        .querySelector<HTMLElement>(
+          "select:not(:disabled), button:not(:disabled)",
+        )
+        ?.focus();
+      const dismiss = (event: PointerEvent) => {
+        if (
+          event.target instanceof Node &&
+          !panel.contains(event.target) &&
+          !trigger.current?.contains(event.target)
+        ) {
+          setOpen(false);
+        }
+      };
+      const keyboard = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(false);
+          trigger.current?.focus();
+        } else if (
+          (event.metaKey || event.ctrlKey) &&
+          event.key.toLowerCase() === "k"
+        ) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener("pointerdown", dismiss);
+      document.addEventListener("keydown", keyboard, true);
+      return () => {
+        document.removeEventListener("pointerdown", dismiss);
+        document.removeEventListener("keydown", keyboard, true);
+      };
+    },
+    [open],
+  );
+
+  const run = (action: () => void) => {
+    setOpen(false);
+    trigger.current?.focus();
+    action();
+  };
+  const paused =
+    proactive?.state === ProactiveState.Capped ||
+    proactive?.state === ProactiveState.Unpriced;
+
+  return (
+    <>
+      {coaching?.quiet && !open ? (
+        <Tooltip label="Resume suggestions" align={TooltipAlign.End}>
+          <Button
+            tone={Tone.Ghost}
+            aria-label="Resume suggestions"
+            disabled={disabled || pending}
+            onClick={() => update({ quiet: false })}
+            className="px-1.5"
+          >
+            <Pause aria-hidden className="size-3" />
+            Quiet
+          </Button>
+        </Tooltip>
+      ) : paused ? (
+        <span className="text-muted-foreground text-[11.5px]">
+          Nudges paused
+        </span>
+      ) : null}
+      <Button
+        ref={trigger}
+        tone={Tone.Ghost}
+        aria-label="Coach options"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+        className="relative -me-1 px-1.5"
+      >
+        <Ellipsis aria-hidden className="size-4" />
+        {longChat && (
+          <span
+            aria-hidden
+            className="bg-foreground/70 absolute end-0.5 top-1 size-1.5 rounded-full"
+          />
+        )}
+      </Button>
+      {!open && result && !result.ok && (
+        <span role="alert" className="text-destructive text-[11.5px]">
+          {result.message}
         </span>
       )}
-      {live && proactive && <ProactiveBudget view={proactive} />}
-      <Tooltip
-        label={
-          longChat ? "Long chat. The coach may forget the start" : "New chat"
-        }
-        shortcut={["mod", "shift", "o"]}
-        align={TooltipAlign.End}
-      >
-        <Button
-          tone={Tone.Ghost}
-          onClick={onNewChat}
-          disabled={newChatDisabled}
-          aria-label={
-            longChat ? "New chat (this chat is getting long)" : "New chat"
-          }
-          aria-keyshortcuts={ariaShortcut(["mod", "shift", "o"])}
-          className="relative max-[399px]:px-1.5"
+      {createPortal(
+        <div
+          ref={panelRef}
+          id={panelId}
+          hidden={!open}
+          role="dialog"
+          aria-label="Coach options"
+          onBlur={(event) => {
+            if (
+              event.relatedTarget instanceof Node &&
+              !event.currentTarget.contains(event.relatedTarget) &&
+              event.relatedTarget !== trigger.current
+            )
+              setOpen(false);
+          }}
+          className="border-border bg-surface text-foreground fixed end-2 top-10 max-h-[calc(100dvh-48px)] w-[min(292px,calc(100vw-16px))] overflow-y-auto rounded-lg border p-1 shadow-lg"
         >
-          <SquarePen aria-hidden className="size-4 min-[400px]:hidden" />
-          <span className="max-[399px]:sr-only">New chat</span>
-          {longChat && (
-            <span
-              aria-hidden
-              data-testid="long-chat-dot"
-              className="bg-foreground/70 absolute top-1 right-0.5 size-1.5 rounded-full rtl:right-auto rtl:left-0.5"
+          {coaching && (
+            <MeetingControls
+              coaching={coaching}
+              disabled={disabled}
+              update={update}
+              pending={pending}
+              result={result}
             />
           )}
-        </Button>
-      </Tooltip>
-      <Tooltip label="Actions" shortcut={["mod", "k"]} align={TooltipAlign.End}>
-        <button
-          type="button"
-          onClick={onPalette}
-          aria-label="Actions"
-          aria-keyshortcuts={ariaShortcut(["mod", "k"])}
-          className="hover:bg-muted -me-1 grid h-7 place-items-center rounded-md px-1.5 transition-colors duration-100"
-        >
-          <Kbd keys={["mod", "k"]} />
-        </button>
-      </Tooltip>
-    </header>
+          <Button
+            tone={Tone.Ghost}
+            onClick={() => run(onNewChat)}
+            disabled={disabled}
+            aria-label={
+              longChat ? "New chat (this chat is getting long)" : "New chat"
+            }
+            aria-keyshortcuts={ariaShortcut(["mod", "shift", "o"])}
+            className="my-0.5 w-full justify-start"
+          >
+            <SquarePen aria-hidden className="size-3.5" />
+            <span className="flex-1 text-start">New chat</span>
+            <Kbd keys={["mod", "shift", "o"]} />
+          </Button>
+          {longChat && (
+            <p
+              data-testid="long-chat-dot"
+              className="text-muted-foreground px-2.5 pb-1 text-[11.5px]"
+            >
+              This chat is getting long.
+            </p>
+          )}
+          <Button
+            tone={Tone.Ghost}
+            onClick={() => run(onPalette)}
+            aria-keyshortcuts={ariaShortcut(["mod", "k"])}
+            className="w-full"
+          >
+            <span className="flex-1 text-start">Actions</span>
+            <Kbd keys={["mod", "k"]} />
+          </Button>
+          {(provider || proactive) && (
+            <div className="border-border text-muted-foreground mt-1 border-t px-2.5 py-2 text-[11.5px]">
+              {provider && <p>{providerName(provider)}</p>}
+              {proactive && <ProactiveBudget view={proactive} />}
+            </div>
+          )}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 

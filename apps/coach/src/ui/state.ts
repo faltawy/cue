@@ -314,6 +314,7 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
         items: [],
         question: null,
         usage: event.reason === ResetReason.Sync ? state.usage : null,
+        wrapUp: event.reason === ResetReason.Sync ? state.wrapUp : null,
       };
     case CoachEventType.User: {
       const pending = lastTurnIndex(

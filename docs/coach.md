@@ -26,7 +26,7 @@ If another app already uses those keys, Cue shows why and keeps your old shortcu
 
 Type in the box at the bottom and press Return. Shift-Return starts a new line. Press ↑ in an empty box to bring back your last question. You can also attach or drop in images.
 
-To dictate, hold the microphone button and speak, then release it. With the button focused, you can hold Space or Return instead. Cue adds the words to your draft for review; it never sends them automatically. Press Esc to cancel. Dictation also cancels if you hide the coach, leave the window, or start a new chat, and each recording stops after one minute.
+To dictate, click the microphone button and speak, then click the stop button to finish. With the button focused, Space or Return also starts or stops recording. Cue adds the words to your draft for review; it never sends them automatically. You can keep recording while editing the draft or switching windows. Press Esc to cancel. Dictation also cancels if you close the coach or start a new chat, and each recording stops after one minute.
 
 Coach dictation works while Cue records a meeting and uses your selected microphone, transcription provider, languages and dictionary. It needs microphone permission, but not Accessibility permission or the global dictation shortcut. Cue deletes the temporary recording afterward. It does not mute your meeting: mute the call first if you are asking the coach a private question.
 
@@ -51,7 +51,9 @@ When a new meeting starts, the coach starts a new chat about that meeting. If yo
 | /         | Go to the question box                        |
 | Esc or ⌘. | Stop the answer, or skip the coach's question |
 
-When the **New chat** button shows a dot, the chat is long and the coach may forget how it started. Start a new chat.
+Open **Coach options** (the three dots) for **New chat**, meeting intention, quiet mode, provider and spending details, or the actions menu. When quiet mode is on, click **Quiet** beside the meeting status to resume suggestions. A dot on Coach options means the chat is getting long and the coach may forget how it started.
+
+**New chat** clears the conversation and dismisses its wrap-up. The old wrap-up stays dismissed after restarting Cue and does not appear during recording.
 
 ## Catch me up
 

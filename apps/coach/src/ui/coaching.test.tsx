@@ -160,6 +160,7 @@ describe("meeting coaching controls", () => {
       ...nudge(PUSHBACK),
     ]);
     const api = setup(state);
+    fireEvent.click(view.getByRole("button", { name: "Coach options" }));
     let request: unknown;
     let complete!: (result: ActionResult) => void;
     api.setCoaching.mockImplementation((input) => {
@@ -230,6 +231,7 @@ describe("meeting coaching controls", () => {
     ]);
     view.rerender(<CoachView state={next} api={api} />);
     expect(view.getByText(PUSHBACK.line)).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Coach options" }));
     expect(
       view.getByRole("button", { name: "Quiet for this meeting" }),
     ).toBeTruthy();

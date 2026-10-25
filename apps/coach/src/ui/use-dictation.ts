@@ -42,7 +42,7 @@ export function useDictation(owner: number, onText: (text: string) => void) {
     let mounted = false;
     let active: {
       id: string;
-      source: string | null;
+      phase: DictationPhase;
       started: Promise<string | null>;
       timer: ReturnType<typeof setTimeout>;
     } | null = null;
@@ -65,15 +65,10 @@ export function useDictation(owner: number, onText: (text: string) => void) {
         () => {},
       );
     };
-    const stop = async (source?: string) => {
+    const stop = async () => {
       const current = active;
-      if (
-        !current ||
-        current.source === null ||
-        (source !== undefined && source !== current.source)
-      )
-        return;
-      current.source = null;
+      if (!current || current.phase !== DictationPhase.Listening) return;
+      current.phase = DictationPhase.Transcribing;
       clearTimeout(current.timer);
       publish(DictationPhase.Transcribing);
       try {
@@ -86,7 +81,7 @@ export function useDictation(owner: number, onText: (text: string) => void) {
           DictationPhase.Idle,
           text
             ? null
-            : "No speech was recognized. Try holding the microphone a little longer.",
+            : "No speech was recognized. Click the microphone and speak, then click again to finish.",
         );
         if (text && mounted) append.current(text);
       } catch (error) {
@@ -100,12 +95,12 @@ export function useDictation(owner: number, onText: (text: string) => void) {
         );
       }
     };
-    const start = (source: string) => {
+    const start = () => {
       if (active || !mounted) return;
       const id = crypto.randomUUID();
       const current = {
         id,
-        source,
+        phase: DictationPhase.Listening,
         started: request(id, DictationAction.Start),
         timer: setTimeout(() => {
           void stop();
@@ -136,27 +131,24 @@ export function useDictation(owner: number, onText: (text: string) => void) {
         if (document.hidden) cancel();
       };
       window.addEventListener("keydown", escape, true);
-      window.addEventListener("blur", cancel);
       window.addEventListener("pagehide", cancel);
       document.addEventListener("visibilitychange", hidden);
       return () => {
         mounted = false;
         cancel();
         window.removeEventListener("keydown", escape, true);
-        window.removeEventListener("blur", cancel);
         window.removeEventListener("pagehide", cancel);
         document.removeEventListener("visibilitychange", hidden);
       };
     };
     return {
-      start,
-      stop,
+      toggle: () => {
+        if (active) void stop();
+        else start();
+      },
       cancel,
       lifecycle,
-      cancelHold: () => {
-        if (active?.source) cancel();
-      },
-      isListening: () => active?.source != null,
+      isListening: () => active?.phase === DictationPhase.Listening,
     };
   }, [owner]);
   return { ...control, ...state };

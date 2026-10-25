@@ -29,7 +29,6 @@ import {
   cx,
   IconButton,
   IconButtonTone,
-  Kbd,
   TooltipAlign,
   TooltipSide,
 } from "./primitives";
@@ -328,7 +327,7 @@ export const Composer = forwardRef<
         {dictation.phase !== DictationPhase.Idle && (
           <p role="status" className="text-muted-foreground mb-1.5 text-[12px]">
             {dictation.phase === DictationPhase.Listening
-              ? "Listening… Release to transcribe."
+              ? "Listening… Click stop to transcribe."
               : "Transcribing…"}{" "}
             Press Escape to cancel.
           </p>
@@ -434,10 +433,19 @@ export const Composer = forwardRef<
               </>
             )}
             <IconButton
-              label="Hold to dictate"
-              title="Hold to dictate. Mute your call first for a private question."
+              label={
+                dictation.phase === DictationPhase.Listening
+                  ? "Stop dictation"
+                  : "Start dictation"
+              }
+              title="Click to start or stop dictation. Mute your call first for a private question."
               tooltipSide={TooltipSide.Top}
-              disabled={!status?.appConnected || !!above}
+              disabled={
+                dictation.phase !== DictationPhase.Listening &&
+                (!status?.appConnected ||
+                  !!above ||
+                  dictation.phase === DictationPhase.Transcribing)
+              }
               aria-keyshortcuts="Space Enter"
               aria-pressed={dictation.phase === DictationPhase.Listening}
               className="size-7 touch-none"
@@ -446,41 +454,19 @@ export const Composer = forwardRef<
                   ? IconButtonTone.Primary
                   : IconButtonTone.Ghost
               }
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                event.preventDefault();
-                event.currentTarget.focus();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                dictation.start(`pointer:${event.pointerId}`);
-              }}
-              onPointerUp={(event) => {
-                event.preventDefault();
-                void dictation.stop(`pointer:${event.pointerId}`);
-              }}
-              onPointerCancel={dictation.cancelHold}
-              onLostPointerCapture={dictation.cancelHold}
-              onBlur={dictation.cancelHold}
               onKeyDown={(event) => {
                 if (event.key !== " " && event.key !== "Enter") return;
-                event.preventDefault();
                 event.stopPropagation();
-                if (!event.repeat) dictation.start(`key:${event.key}`);
+                if (event.repeat) event.preventDefault();
               }}
-              onKeyUp={(event) => {
-                if (event.key !== " " && event.key !== "Enter") return;
-                event.preventDefault();
-                event.stopPropagation();
-                void dictation.stop(`key:${event.key}`);
-              }}
-              onClick={(event) => event.preventDefault()}
+              onClick={dictation.toggle}
             >
-              <Mic aria-hidden className="size-4" />
+              {dictation.phase === DictationPhase.Listening ? (
+                <Square aria-hidden className="size-3 fill-current" />
+              ) : (
+                <Mic aria-hidden className="size-4" />
+              )}
             </IconButton>
-            {focused && !busy && (
-              <span className="text-muted-foreground mr-1 hidden items-center gap-1 text-[11px] min-[400px]:flex">
-                <Kbd keys={["enter"]} /> send
-              </span>
-            )}
             {busy ? (
               <IconButton
                 label="Stop"

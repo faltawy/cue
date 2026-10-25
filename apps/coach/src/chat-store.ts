@@ -50,6 +50,7 @@ const chatSchema = z.preprocess(
 const wrapUpSchema = z.object({
   transcriptId: z.string().min(1),
   updatedAt: z.number(),
+  dismissed: z.boolean().optional(),
   view: z.custom<SettledWrapUp>(
     (value) =>
       typeof value === "object" &&
@@ -314,9 +315,16 @@ export function remember(
 }
 
 export function forget(store: ChatStore, meetingId: string): ChatStore {
-  if (!(meetingId in store.meetings)) return store;
+  const wrapUp = store.wrapUps[meetingId];
+  if (!(meetingId in store.meetings) && !wrapUp) return store;
   const { [meetingId]: _dropped, ...meetings } = store.meetings;
-  return { ...store, meetings };
+  return {
+    ...store,
+    meetings,
+    wrapUps: wrapUp
+      ? { ...store.wrapUps, [meetingId]: { ...wrapUp, dismissed: true } }
+      : store.wrapUps,
+  };
 }
 
 export function dropResume(store: ChatStore, meetingId: string): ChatStore {
@@ -337,9 +345,18 @@ export function keepWrapUp(
   meetingId: string,
   wrapUp: StoredWrapUp,
 ): ChatStore {
+  const previous = store.wrapUps[meetingId];
   return {
     ...store,
-    wrapUps: newest({ ...store.wrapUps, [meetingId]: wrapUp }),
+    wrapUps: newest({
+      ...store.wrapUps,
+      [meetingId]: {
+        ...wrapUp,
+        ...(previous?.transcriptId === wrapUp.transcriptId && previous.dismissed
+          ? { dismissed: true }
+          : {}),
+      },
+    }),
   };
 }
 
@@ -417,7 +434,8 @@ export function planChat(input: {
   const stored =
     reason === ResetReason.Manual ? null : chatFor(store, meeting, project);
   const resume = resumeFor(store, meeting, project)?.runtimeSessionId ?? null;
-  const wrapUp = meeting ? store.wrapUps[meeting.sessionId] : undefined;
+  const wrapUp =
+    meeting && !meeting.live ? store.wrapUps[meeting.sessionId] : undefined;
   return {
     provider: stored?.provider ?? selected.provider,
     model: modelFor(stored?.provider ?? selected.provider, stored?.model),
@@ -425,6 +443,6 @@ export function planChat(input: {
     resume: stored ? resume : null,
     history: stored ? [...stored.history] : [],
     ...(resume && stored ? { seen: stored.seen } : {}),
-    ...(wrapUp ? { wrapUp } : {}),
+    ...(wrapUp && !wrapUp.dismissed ? { wrapUp } : {}),
   };
 }

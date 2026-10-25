@@ -790,6 +790,7 @@ function rememberEdits(events: readonly CoachEvent[]) {
 }
 
 async function openChat(reason: OpenReason) {
+  if (reason === ResetReason.Manual) cancelWrapUp();
   const sessionId = attached?.sessionId;
   const nextProject =
     reason === ResumeReason.Recover ? project : await projectFor(sessionId);
@@ -1101,6 +1102,7 @@ async function poll() {
 
   const next = meetingPointer(transcript);
   const change = meetingChange(attached, next, wrapped);
+  if (next?.live && wrapUp) cancelWrapUp();
   if (next) attached = next;
   if (change.newChat) {
     cancelWrapUp();

@@ -48,6 +48,19 @@ const tool = (id: string, label: string): CoachEvent => ({
 });
 
 describe("chat state from the coach's events", () => {
+  test("New chat clears the displayed wrap-up while reconnecting keeps the current one", () => {
+    const ended = fixtureState("ended");
+    expect(ended.wrapUp?.state).toBe(WrapUpState.Ready);
+    expect(
+      feed([{ type: CoachEventType.Reset, reason: ResetReason.Sync }], ended)
+        .wrapUp,
+    ).toEqual(ended.wrapUp);
+    expect(
+      feed([{ type: CoachEventType.Reset, reason: ResetReason.Manual }], ended)
+        .wrapUp,
+    ).toBeNull();
+  });
+
   test("a question shows at once, and the coach's echo confirms it instead of adding a second one", () => {
     const sent = reduce(initialState, {
       type: ActionType.Send,

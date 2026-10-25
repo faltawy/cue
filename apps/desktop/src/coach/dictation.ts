@@ -1,12 +1,11 @@
 import type { DictationAction } from "@anlg/plugin-coach";
+import type { RecordedAudio } from "@anlg/plugin-dictation";
 
 import { DictationController, DictationPhase } from "~/dictation/controller";
 
 export function createCoachDictation(dependencies: {
   start(owner: string): Promise<void>;
-  stop(
-    owner: string,
-  ): Promise<{ filePath: string; transcript?: string | null }>;
+  stop(owner: string): Promise<RecordedAudio>;
   cancel(owner: string): Promise<void>;
   transcribe(path: string, signal: AbortSignal): Promise<string>;
   discard(path: string): Promise<void>;
@@ -24,7 +23,7 @@ export function createCoachDictation(dependencies: {
       start: () => dependencies.start(owner),
       stop: async () => {
         const recorded = await dependencies.stop(owner);
-        transcript = recorded.transcript ?? null;
+        transcript = recorded.durationMs === 0 ? "" : recorded.transcript;
         return recorded.filePath;
       },
       cancel: () => dependencies.cancel(owner),
@@ -71,7 +70,7 @@ export function createCoachDictation(dependencies: {
       if (!session || session.id !== id) {
         if (action === "cancel") return null;
         throw new Error(
-          "Dictation has ended. Hold the microphone to try again.",
+          "Dictation has ended. Click the microphone to try again.",
         );
       }
       if (action === "cancel") {

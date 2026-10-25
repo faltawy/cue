@@ -15,7 +15,6 @@ import {
   Header,
   TranscriptStrip,
 } from "./components/header";
-import { MeetingControls } from "./components/meeting-controls";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
 import { SetupFailed, setupLabel } from "./components/setup-notice";
@@ -359,6 +358,8 @@ export function CoachView({
     <div className="bg-surface text-foreground flex h-full flex-col">
       <Header
         provider={state.status?.provider}
+        coaching={live ? state.status?.coaching : undefined}
+        onCoachingChange={(input) => api.setCoaching(input)}
         connection={state.connection}
         transcript={state.transcript}
         usage={state.usage}
@@ -379,14 +380,6 @@ export function CoachView({
                 : null
           }
           emphasis={!authErrorShowing}
-        />
-      )}
-      {live && state.status?.coaching && (
-        <MeetingControls
-          key={`controls-${state.status.coaching.sessionId}`}
-          coaching={state.status.coaching}
-          ready={ready}
-          onChange={api.setCoaching}
         />
       )}
       <Timeline

@@ -55,7 +55,11 @@ vi.mock("@anlg/plugin-dictation", () => ({
       state.files.add("/tmp/coach.wav");
       return {
         status: "ok",
-        data: { filePath: "/tmp/coach.wav", transcript: null },
+        data: {
+          filePath: "/tmp/coach.wav",
+          durationMs: 1_000,
+          transcript: null,
+        },
       };
     },
     cancelRecording: async () => {

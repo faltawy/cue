@@ -723,6 +723,25 @@ describe("design review", () => {
     expect(view.getByRole("group", { name: "Suggestions" })).toBeTruthy();
   });
 
+  test("coach options return keyboard focus on Escape and dismiss when moving back to the meeting", async () => {
+    setup("live");
+    const user = userEvent.setup({ document });
+    const trigger = view.getByRole("button", { name: "Coach options" });
+    await user.click(trigger);
+    const options = view.getByRole("dialog", { name: "Coach options" });
+    expect(options.contains(document.activeElement)).toBe(true);
+    await user.keyboard("{Escape}");
+    expect(document.activeElement).toBe(trigger);
+    expect(view.queryByRole("dialog", { name: "Coach options" })).toBeNull();
+    await user.click(trigger);
+    await user.click(view.getByRole("textbox", { name: "Ask the coach" }));
+    expect(view.queryByRole("dialog", { name: "Coach options" })).toBeNull();
+    await user.click(trigger);
+    await user.click(view.getByRole("button", { name: "Actions" }));
+    expect(view.getByRole("dialog", { name: "Actions" })).toBeTruthy();
+    expect(view.queryByRole("dialog", { name: "Coach options" })).toBeNull();
+  });
+
   test("the header shows a muted recording timer while live and how long ago the meeting ended", () => {
     setup("live");
     expect(view.getByTestId("header-subtitle").textContent).toMatch(
@@ -822,10 +841,12 @@ describe("design review", () => {
       },
     });
     setup(stateFrom([status(), usage(150_000)]));
+    fireEvent.click(view.getByRole("button", { name: "Coach options" }));
     expect(view.queryByTestId("long-chat-dot")).toBeNull();
     expect(view.getByRole("button", { name: "New chat" })).toBeTruthy();
     cleanup();
     setup(stateFrom([status(), usage(170_000)]));
+    fireEvent.click(view.getByRole("button", { name: "Coach options" }));
     expect(view.getByTestId("long-chat-dot")).toBeTruthy();
     expect(
       view.getByRole("button", {

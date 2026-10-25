@@ -13,6 +13,42 @@ function deferred<T>() {
 describe("coach dictation", () => {
   afterEach(() => vi.useRealTimers());
 
+  it("discards empty capture before transcription and allows a subsequent spoken recording", async () => {
+    let durationMs = 0;
+    const recordings = new Set<string>();
+    const dictation = createCoachDictation({
+      start: async () => {},
+      stop: async () => {
+        recordings.add("/tmp/prompt.wav");
+        return { filePath: "/tmp/prompt.wav", durationMs, transcript: null };
+      },
+      cancel: async () => {},
+      transcribe: async (path) => {
+        expect(recordings.has(path)).toBe(true);
+        if (durationMs === 0) throw new Error("Invalid audio format");
+        return "What should I ask next?";
+      },
+      discard: async (path) => {
+        expect(recordings.has(path)).toBe(true);
+        recordings.delete(path);
+      },
+    });
+
+    await dictation.request("empty", "start");
+    await expect(dictation.request("empty", "stop")).rejects.toThrow(
+      "No speech detected",
+    );
+    expect(recordings.has("/tmp/prompt.wav")).toBe(false);
+
+    durationMs = 1_000;
+    await dictation.request("spoken", "start");
+    expect(await dictation.request("spoken", "stop")).toBe(
+      "What should I ask next?",
+    );
+    expect(recordings.has("/tmp/prompt.wav")).toBe(false);
+    await dictation.dispose();
+  });
+
   it("finishes an early release after microphone startup and discards the recording", async () => {
     const started = deferred<void>();
     let microphone: string | null = null;
@@ -26,7 +62,11 @@ describe("coach dictation", () => {
         expect(microphone).toBe(owner);
         microphone = null;
         recordings.add("/tmp/prompt.wav");
-        return { filePath: "/tmp/prompt.wav" };
+        return {
+          filePath: "/tmp/prompt.wav",
+          durationMs: 1_000,
+          transcript: null,
+        };
       },
       cancel: async () => {
         microphone = null;
@@ -59,7 +99,11 @@ describe("coach dictation", () => {
       start: async () => {},
       stop: async () => {
         recordings.add("/tmp/cancelled.wav");
-        return { filePath: "/tmp/cancelled.wav" };
+        return {
+          filePath: "/tmp/cancelled.wav",
+          durationMs: 1_000,
+          transcript: null,
+        };
       },
       cancel: async () => {},
       transcribe: async (_, signal) => {
@@ -89,7 +133,11 @@ describe("coach dictation", () => {
       start: async (owner) => {
         microphone = owner;
       },
-      stop: async () => ({ filePath: "/tmp/unused.wav" }),
+      stop: async () => ({
+        filePath: "/tmp/unused.wav",
+        durationMs: 1_000,
+        transcript: null,
+      }),
       cancel: async (owner) => {
         expect(microphone).toBe(owner);
         microphone = null;
