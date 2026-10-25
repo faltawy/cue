@@ -1,5 +1,13 @@
 # @anlg/desktop
 
+## 0.12.0
+
+### Minor Changes
+
+- Choose a meeting intention and pause or resume suggestions for each meeting. The coach waits for a pause, keeps live suggestions brief and respectful, and saves less urgent observations for the debrief.
+
+  Read one stable suggestion at a time, with details and feedback available when you want them. Background coaching leaves your question box available, and timing feedback helps the coach interrupt less.
+
 ## 0.11.1
 
 ### Patch Changes
