@@ -1,9 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { useState } from "react";
 
 import { ChangelogContent } from "@anlg/changelog";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
-import { X } from "@anlg/ui/components/icons";
+import { Package, X } from "@anlg/ui/components/icons";
 import { Button } from "@anlg/ui/components/ui/button";
 import { cn } from "@anlg/utils";
 
@@ -24,21 +23,19 @@ export function TabContentChangelog({
   tab: Extract<Tab, { type: "changelog" }>;
 }) {
   const { current } = tab.state;
-  const [selectedVersion, setSelectedVersion] = useState(current);
   const { leftsidebar } = useShell();
   const close = useTabs((state) => state.close);
   const showSidebarTimelineHeaderGutter = !leftsidebar.expanded;
   const showExpandedSidebarTimelineHeader = leftsidebar.expanded;
 
   const versions = availableChangelogVersions();
-  const content = useChangelogContent(selectedVersion);
+  if (!versions.includes(current)) versions.unshift(current);
 
   return (
     <StandardContentWrapper>
       <div className="flex h-full flex-col">
         <div data-tauri-drag-region className="shrink-0 ps-3 pe-1">
           <ChangelogHeader
-            version={selectedVersion}
             showSidebarTimelineHeaderGutter={showSidebarTimelineHeaderGutter}
             showExpandedSidebarTimelineHeader={
               showExpandedSidebarTimelineHeader
@@ -47,31 +44,61 @@ export function TabContentChangelog({
           />
         </div>
 
-        <div className="relative mt-2 min-h-0 flex-1 overflow-hidden">
-          <div className="scroll-fade-y h-full overflow-y-auto px-3 pb-4">
-            {versions.length > 1 && (
-              <div className="mb-3 flex justify-end">
-                <label className="text-muted-foreground text-label flex items-center gap-2">
-                  <Trans>Version</Trans>
-                  <select
-                    className="border-border bg-background text-foreground rounded-md border px-2 py-1"
-                    value={selectedVersion}
-                    onChange={(event) => setSelectedVersion(event.target.value)}
-                  >
-                    {versions.map((version) => (
-                      <option key={version} value={version}>
-                        {version}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            )}
-            <ChangelogBody content={content} />
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <div className="scroll-fade-y h-full overflow-y-auto px-4 pb-10">
+            <div className="mx-auto w-full max-w-3xl py-6">
+              {versions.map((version) => (
+                <ChangelogRelease
+                  key={version}
+                  version={version}
+                  installed={version === current}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </StandardContentWrapper>
+  );
+}
+
+function ChangelogRelease({
+  version,
+  installed,
+}: {
+  version: string;
+  installed: boolean;
+}) {
+  const content = useChangelogContent(version);
+
+  return (
+    <section
+      aria-labelledby={`release-${version}`}
+      className="group grid grid-cols-[24px_minmax(0,1fr)] gap-x-3 sm:gap-x-5"
+    >
+      <div aria-hidden="true" className="flex flex-col items-center">
+        <div className="text-muted-foreground bg-background flex h-10 shrink-0 items-center">
+          <Package size={18} />
+        </div>
+        <div className="bg-border w-px flex-1 group-last:hidden" />
+      </div>
+      <article className="border-border bg-card mb-6 min-w-0 rounded-lg border p-5 group-last:mb-0 sm:p-6">
+        <div className="border-border mb-5 flex flex-wrap items-center gap-3 border-b pb-4">
+          <h2
+            id={`release-${version}`}
+            className="text-page-title text-foreground tabular-nums"
+          >
+            v{version}
+          </h2>
+          {installed && (
+            <span className="border-border text-muted-foreground text-label inline-flex h-5 items-center rounded-sm border px-1.5 font-medium">
+              <Trans>Installed</Trans>
+            </span>
+          )}
+        </div>
+        <ChangelogBody content={content} />
+      </article>
+    </section>
   );
 }
 
@@ -101,6 +128,7 @@ function ChangelogBody({ content }: { content: string | null }) {
     return (
       <ChangelogContent
         content={content}
+        className="text-body leading-relaxed wrap-anywhere [&_li]:mb-2 [&_p]:leading-relaxed [&_ul]:ps-5"
         components={{
           a: ({
             href,
@@ -129,12 +157,10 @@ function ChangelogBody({ content }: { content: string | null }) {
 function ChangelogHeader({
   showExpandedSidebarTimelineHeader,
   showSidebarTimelineHeaderGutter,
-  version,
   onClose,
 }: {
   showExpandedSidebarTimelineHeader: boolean;
   showSidebarTimelineHeaderGutter: boolean;
-  version: string;
   onClose: () => void;
 }) {
   const { t } = useLingui();
@@ -175,7 +201,7 @@ function ChangelogHeader({
               : "text-center",
           ])}
         >
-          <Trans>What's new in {version}?</Trans>
+          <Trans>What's new</Trans>
         </h1>
       </div>
 

@@ -1583,6 +1583,10 @@ msgstr ""
 msgid "Insert below"
 msgstr ""
 
+#: src/changelog/index.tsx
+msgid "Installed"
+msgstr ""
+
 #: src/contacts/details.tsx
 msgid "Job Title"
 msgstr ""
@@ -3605,10 +3609,6 @@ msgstr ""
 msgid "Verifying the SQLite migration status"
 msgstr ""
 
-#: src/changelog/index.tsx
-msgid "Version"
-msgstr ""
-
 #: src/session/components/outer-header/overflow/index.tsx
 #: src/session/components/version-history-dialog.tsx
 msgid "Version history"
@@ -3646,12 +3646,9 @@ msgstr ""
 msgid "What these notes are usually about"
 msgstr ""
 
+#: src/changelog/index.tsx
 #: src/shared/open-note-dialog.tsx
 msgid "What's new"
-msgstr ""
-
-#: src/changelog/index.tsx
-msgid "What's new in {version}?"
 msgstr ""
 
 #: src/settings/general/index.tsx

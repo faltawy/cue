@@ -1583,6 +1583,10 @@ msgstr "Insert above"
 msgid "Insert below"
 msgstr "Insert below"
 
+#: src/changelog/index.tsx
+msgid "Installed"
+msgstr "Installed"
+
 #: src/contacts/details.tsx
 msgid "Job Title"
 msgstr "Job Title"
@@ -3605,10 +3609,6 @@ msgstr "Vague promise"
 msgid "Verifying the SQLite migration status"
 msgstr "Verifying the SQLite migration status"
 
-#: src/changelog/index.tsx
-msgid "Version"
-msgstr "Version"
-
 #: src/session/components/outer-header/overflow/index.tsx
 #: src/session/components/version-history-dialog.tsx
 msgid "Version history"
@@ -3646,13 +3646,10 @@ msgstr "What the coach should know about you and how to answer. Markdown is fine
 msgid "What these notes are usually about"
 msgstr "What these notes are usually about"
 
+#: src/changelog/index.tsx
 #: src/shared/open-note-dialog.tsx
 msgid "What's new"
 msgstr "What's new"
-
-#: src/changelog/index.tsx
-msgid "What's new in {version}?"
-msgstr "What's new in {version}?"
 
 #: src/settings/general/index.tsx
 msgid "When off, summaries follow the detected meeting language."
