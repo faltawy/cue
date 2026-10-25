@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.10.1
+
+### Patch Changes
+
+- The home screen now shows the current app icon. Installation no longer displays outdated artwork.
+
 ## 0.10.0
 
 ### Minor Changes

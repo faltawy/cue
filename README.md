@@ -1,8 +1,34 @@
 # Cue
 
+<img src="apps/desktop/public/assets/app-icons/stable-light.png" alt="Cue app icon" width="96" />
+
 Cue is a meeting notepad for your Mac with a live coach. It records your meetings without a bot joining the call, writes the transcript and a summary, and gives you a coach on the side of your screen that follows the conversation and tells you what to say next.
 
 Your notes, transcripts and recordings stay on your Mac. There is no Cue account and no Cue server.
+
+## See Cue in action
+
+Keep decisions, next steps, and open questions together. Shown here with a fictional demo meeting.
+
+![Cue's note editor showing a website launch meeting with decisions and next steps](docs/screenshots/meeting-notes.jpg)
+
+<details>
+<summary>Meeting templates</summary>
+
+Start with a built-in template and tailor the sections to your meeting.
+
+![Cue's template library with the Daily Standup template open](docs/screenshots/templates.jpg)
+
+</details>
+
+<details>
+<summary>Appearance</summary>
+
+Choose a light or dark theme, follow your system, and pick your Dock icon.
+
+![Cue's appearance settings showing theme options and the Cue app icons](docs/screenshots/appearance.jpg)
+
+</details>
 
 ## What you need
 

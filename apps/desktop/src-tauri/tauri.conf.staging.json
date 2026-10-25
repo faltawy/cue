@@ -21,9 +21,6 @@
       "files": {
         "Resources/mlx-swift_Cmlx.bundle/default.metallib": "resources/mlx.metallib",
         "Resources/AppIcon.icns": "resources/staging/AppIcon.icns"
-      },
-      "dmg": {
-        "background": "assets/dmg-background-staging.png"
       }
     }
   }

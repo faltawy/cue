@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { version } from "../../package.json";
 import {
   availableChangelogVersions,
   hasChangelogFor,
@@ -14,7 +15,8 @@ describe("release changelogs", () => {
       "Keep speaker names and transcript corrections",
     );
     expect(useChangelogContent("0.5.2")).toContain("current name");
-    expect(availableChangelogVersions()[0]).toBe("0.7.0");
+    expect(hasChangelogFor(version)).toBe(true);
+    expect(availableChangelogVersions()[0]).toBe(version);
     expect(availableChangelogVersions()).toContain("0.5.2");
   });
 });

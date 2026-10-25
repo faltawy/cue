@@ -99,9 +99,9 @@ function EmptyView() {
     >
       <div className="flex w-full max-w-2xl flex-col gap-7 px-6 py-8">
         <img
-          src="/assets/logo.svg"
+          src="/assets/app-icons/stable-light.png"
           alt="Cue"
-          className="mx-auto h-auto w-56 dark:brightness-0 dark:invert"
+          className="mx-auto size-28"
         />
         <h1 className="text-title text-center text-balance">
           <Trans>A clearer place to start</Trans>
