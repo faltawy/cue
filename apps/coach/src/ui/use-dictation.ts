@@ -1,0 +1,167 @@
+import { useMemo, useRef, useState } from "react";
+
+export enum DictationPhase {
+  Idle = "idle",
+  Listening = "listening",
+  Transcribing = "transcribing",
+}
+
+async function request(
+  recordingId: string,
+  action: "start" | "stop" | "cancel",
+) {
+  const response = await fetch("/dictation", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ recording_id: recordingId, action }),
+    keepalive: action === "cancel",
+  });
+  if (!response.ok)
+    throw new Error(
+      (await response.text()).trim() || "Dictation failed. Try again.",
+    );
+  const result: unknown = await response.json();
+  if (
+    !result ||
+    typeof result !== "object" ||
+    !("text" in result) ||
+    (result.text !== null && typeof result.text !== "string")
+  ) {
+    throw new Error("The app returned an invalid dictation response.");
+  }
+  return result.text;
+}
+
+export function useDictation(owner: number, onText: (text: string) => void) {
+  const [state, setState] = useState<{
+    phase: DictationPhase;
+    error: string | null;
+  }>({ phase: DictationPhase.Idle, error: null });
+  const append = useRef(onText);
+  append.current = onText;
+  const control = useMemo(() => {
+    let mounted = false;
+    let active: {
+      id: string;
+      source: string | null;
+      started: Promise<string | null>;
+      timer: ReturnType<typeof setTimeout>;
+    } | null = null;
+    const publish = (
+      phase: DictationPhase,
+      error: string | null = null,
+    ) => {
+      if (mounted) setState({ phase, error });
+    };
+    const discard = (id: string) => {
+      void request(id, "cancel").catch(() => {});
+    };
+    const cancel = () => {
+      const current = active;
+      if (!current) return;
+      active = null;
+      clearTimeout(current.timer);
+      publish(DictationPhase.Idle);
+      discard(current.id);
+      // Cancellation can reach the host before its pending start request.
+      void current.started.then(
+        () => discard(current.id),
+        () => {},
+      );
+    };
+    const stop = async (source?: string) => {
+      const current = active;
+      if (
+        !current ||
+        current.source === null ||
+        (source !== undefined && source !== current.source)
+      )
+        return;
+      current.source = null;
+      clearTimeout(current.timer);
+      publish(DictationPhase.Transcribing);
+      try {
+        await current.started;
+        if (active !== current) return;
+        const text = (await request(current.id, "stop"))?.trim();
+        if (active !== current) return;
+        active = null;
+        publish(
+          DictationPhase.Idle,
+          text
+            ? null
+            : "No speech was recognized. Try holding the microphone a little longer.",
+        );
+        if (text && mounted) append.current(text);
+      } catch (error) {
+        if (active !== current) return;
+        cancel();
+        publish(
+          DictationPhase.Idle,
+          error instanceof Error
+            ? error.message
+            : "Dictation failed. Try again.",
+        );
+      }
+    };
+    const start = (source: string) => {
+      if (active || !mounted) return;
+      const id = crypto.randomUUID();
+      const current = {
+        id,
+        source,
+        started: request(id, "start"),
+        timer: setTimeout(() => {
+          void stop();
+        }, 60_000),
+      };
+      active = current;
+      publish(DictationPhase.Listening);
+      void current.started.catch((error: unknown) => {
+        if (active !== current) return;
+        cancel();
+        publish(
+          DictationPhase.Idle,
+          error instanceof Error ? error.message : "Could not start dictation.",
+        );
+      });
+    };
+    const lifecycle = (element: HTMLDivElement | null) => {
+      if (!element) return;
+      mounted = true;
+      publish(DictationPhase.Idle);
+      const escape = (event: KeyboardEvent) => {
+        if (event.key !== "Escape" || !active) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancel();
+      };
+      const hidden = () => {
+        if (document.hidden) cancel();
+      };
+      window.addEventListener("keydown", escape, true);
+      window.addEventListener("blur", cancel);
+      window.addEventListener("pagehide", cancel);
+      document.addEventListener("visibilitychange", hidden);
+      return () => {
+        mounted = false;
+        cancel();
+        window.removeEventListener("keydown", escape, true);
+        window.removeEventListener("blur", cancel);
+        window.removeEventListener("pagehide", cancel);
+        document.removeEventListener("visibilitychange", hidden);
+      };
+    };
+    return {
+      start,
+      stop,
+      cancel,
+      lifecycle,
+      cancelHold: () => {
+        if (active?.source) cancel();
+      },
+      isListening: () => active?.source != null,
+    };
+  }, [owner]);
+  return { ...control, ...state };
+}

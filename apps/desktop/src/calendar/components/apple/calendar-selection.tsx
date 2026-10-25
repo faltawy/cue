@@ -17,7 +17,7 @@ export function AppleCalendarSelection({
   calendarClassName,
   leftAction,
 }: { calendarClassName?: string; leftAction?: React.ReactNode } = {}) {
-  const { groups, handleRefresh, handleToggle, scheduleSync } =
+  const { groups, handleRefresh, handleToggle, isLoading, scheduleSync } =
     useAppleCalendarSelection();
 
   useMountEffect(() => {
@@ -32,6 +32,7 @@ export function AppleCalendarSelection({
 
       <CalendarSelection
         groups={groups}
+        isLoading={isLoading}
         onToggle={handleToggle}
         onRefresh={handleRefresh}
         className={calendarClassName}

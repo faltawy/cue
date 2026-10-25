@@ -4,6 +4,7 @@ mod bridge;
 mod busy;
 mod claude_code;
 mod commands;
+mod dictation;
 mod edits;
 mod error;
 mod events;
@@ -26,13 +27,14 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
-pub use bridge::{RecordingFuture, SpeakerAssignmentFuture};
+pub use bridge::{DictationFuture, RecordingFuture, SpeakerAssignmentFuture};
 pub use claude_code::{
     ClaudeAccount, ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup,
     InstalledClaudeCode,
 };
+pub use dictation::{DictationAction, DictationResult};
 pub use error::{Error, Result};
-pub use events::{CoachEvidence, CoachFocused, CoachNudged};
+pub use events::{CoachDictationRequested, CoachEvidence, CoachFocused, CoachNudged};
 use mcp::ResolvedServer;
 pub use probe::McpProbe;
 pub use process::Endpoint;
@@ -61,6 +63,7 @@ struct CoachState {
     codex_setup: Mutex<SetupSlot>,
     sign_in: [Mutex<()>; 2],
     unseen_nudge: AtomicBool,
+    dictation: dictation::Broker,
 }
 
 #[derive(Default)]
@@ -88,6 +91,27 @@ impl bridge::Host for AppHost {
 
     fn speaker_assigned(&self, session_id: String) -> SpeakerAssignmentFuture {
         (self.1)(self.0.clone(), session_id)
+    }
+
+    fn dictation(&self, recording_id: String, action: DictationAction) -> DictationFuture {
+        let app = self.0.clone();
+        Box::pin(async move {
+            let state = app.state::<CoachState>();
+            state
+                .dictation
+                .request(recording_id, action, |event| {
+                    let window = app.get_webview_window("main").ok_or_else(|| {
+                        Error::Other("the main desktop window is unavailable".into())
+                    })?;
+                    tauri_specta::Event::emit_to(
+                        &event,
+                        &app,
+                        tauri::EventTarget::webview_window(window.label()),
+                    )?;
+                    Ok(())
+                })
+                .await
+        })
     }
 
     fn config_dir(&self) -> Result<PathBuf> {
@@ -787,6 +811,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .plugin_name(PLUGIN_NAME)
         .commands(tauri_specta::collect_commands![
+            commands::complete_dictation,
             commands::llm_endpoint,
             commands::get_settings,
             commands::set_settings,
@@ -810,6 +835,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::retry_provider_setup,
         ])
         .events(tauri_specta::collect_events![
+            CoachDictationRequested,
             CoachNudged,
             CoachFocused,
             CoachEvidence
@@ -840,6 +866,7 @@ pub fn init(
                 codex_setup: Mutex::new(SetupSlot::default()),
                 sign_in: std::array::from_fn(|_| Mutex::new(())),
                 unseen_nudge: AtomicBool::new(false),
+                dictation: dictation::Broker::default(),
             });
             if let Err(error) = app
                 .coach()
@@ -909,6 +936,7 @@ mod test {
             codex_setup: Mutex::new(SetupSlot::default()),
             sign_in: std::array::from_fn(|_| Mutex::new(())),
             unseen_nudge: AtomicBool::new(false),
+            dictation: dictation::Broker::default(),
         };
         let launch = coach_launch(&state, &CoachSettings::default(), &[], 0, None, None).unwrap();
         assert!(launch.project.is_dir());

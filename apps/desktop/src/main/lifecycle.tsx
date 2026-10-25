@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from "react";
 
 import { useLanguageModel } from "~/ai/hooks";
 import { openWhatsNewAfterUpdate } from "~/changelog/whats-new";
+import { CoachDictationLifecycle } from "~/coach/dictation-lifecycle";
 import { CoachNudgeLifecycle } from "~/coach/nudges";
 import { CoachShortcutLifecycle } from "~/coach/shortcut";
 import { SelfNameBackfill } from "~/contacts/self-name";
@@ -53,6 +54,7 @@ export function ClassicMainServices() {
       <DictationOverlay />
       <CoachShortcutLifecycle />
       <CoachNudgeLifecycle />
+      <CoachDictationLifecycle />
       <SelfNameBackfill />
       <EnhancerInit />
     </>

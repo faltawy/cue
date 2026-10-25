@@ -95,6 +95,17 @@ export function recordFeedback(
   return { ...store, feedback: { categories, handledMoments } };
 }
 
+export function saveFeedback(
+  file: string,
+  store: ChatStore,
+  input: CoachFeedback | null,
+): ChatStore {
+  const next =
+    input === null ? clearFeedback(store) : recordFeedback(store, input);
+  saveChats(file, next);
+  return next;
+}
+
 export function feedbackPreferences(store: ChatStore) {
   return store.feedback;
 }
@@ -116,20 +127,24 @@ export function prioritizeHitsByFeedback(
   store: ChatStore,
   hits: readonly Hit[],
 ): Hit[] {
-  return hits
-    .map((hit, index) => ({
-      hit,
-      index,
-      priority: hitCategories[hit.kind].reduce(
-        (total, category) => total + (store.feedback.categories[category] ?? 0),
-        0,
-      ),
-    }))
-    .sort(
-      (left, right) =>
-        right.priority - left.priority || left.index - right.index,
-    )
-    .map(({ hit }) => hit);
+  const moments = new Map<number, { hits: Hit[]; priority: number }>();
+  for (const hit of hits) {
+    const priority = hitCategories[hit.kind].reduce(
+      (total, category) => total + (store.feedback.categories[category] ?? 0),
+      0,
+    );
+    const moment = moments.get(hit.lineIndex);
+    if (moment) {
+      moment.hits.push(hit);
+      moment.priority = Math.max(moment.priority, priority);
+    } else {
+      moments.set(hit.lineIndex, { hits: [hit], priority });
+    }
+  }
+  // The prompt keeps the tail, so preferred moments must come last.
+  return [...moments.values()]
+    .sort((left, right) => left.priority - right.priority)
+    .flatMap((moment) => moment.hits);
 }
 
 export function clearFeedback(store: ChatStore): ChatStore {

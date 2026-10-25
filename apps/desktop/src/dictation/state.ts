@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { DictationPhase } from "./controller";
+import { DictationPhase } from "./controller";
 
 export const useDictationStatus = create<{
   capturingShortcut: boolean;
@@ -17,7 +17,7 @@ export const useDictationStatus = create<{
   cancel: (() => void) | null;
 }>(() => ({
   capturingShortcut: false,
-  phase: "idle",
+  phase: DictationPhase.Idle,
   error: null,
   lastTranscript: "",
   ready: false,

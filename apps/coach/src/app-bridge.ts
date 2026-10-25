@@ -153,6 +153,13 @@ export function appBridge(url: string, token: string) {
     );
 
   return {
+    dictation: (recordingId: string, action: "start" | "stop" | "cancel") =>
+      required(
+        call("POST", "/dictation", z.object({ text: z.string().nullable() }), {
+          recording_id: recordingId,
+          action,
+        }),
+      ),
     recordingSessions: async (): Promise<ReadonlySet<string>> =>
       new Set(
         (await required(call("GET", "/recording", recordingSchema)))

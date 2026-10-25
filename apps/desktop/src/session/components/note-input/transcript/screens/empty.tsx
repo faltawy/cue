@@ -1,12 +1,9 @@
 import { t } from "@lingui/core/macro";
 
-import {
-  ArrowsClockwise,
-  Square,
-  WarningCircle,
-  Waveform,
-} from "@anlg/ui/components/icons";
-import { Button } from "@anlg/ui/components/ui/button";
+import { ArrowsClockwise, Square } from "@anlg/ui/components/icons";
+import { Chip } from "@anlg/ui/components/ui/chip";
+
+import { EmptyState } from "~/shared/ui/empty-state";
 
 export function TranscriptEmptyState({
   isBatching,
@@ -31,24 +28,16 @@ export function TranscriptEmptyState({
 }) {
   if (error) {
     return (
-      <div
-        role="alert"
-        className="flex h-full min-h-[400px] flex-col items-center justify-center px-6 text-center"
-      >
-        <WarningCircle
-          aria-hidden
-          className="text-muted-foreground mb-3 size-4"
+      <div role="alert" className="flex flex-1 items-center px-4">
+        <EmptyState
+          title={t`Transcription failed`}
+          description={error}
+          action={
+            onRetranscribe
+              ? { label: t`Re-transcribe`, onClick: onRetranscribe }
+              : undefined
+          }
         />
-        <div className="mb-4 flex max-w-[340px] flex-col gap-1">
-          <p className="text-title">{t`Transcription failed`}</p>
-          <p className="text-muted-foreground text-ui text-balance">{error}</p>
-        </div>
-        {onRetranscribe && (
-          <Button size="sm" onClick={onRetranscribe}>
-            <ArrowsClockwise className="size-3.5" />
-            {t`Re-transcribe`}
-          </Button>
-        )}
       </div>
     );
   }
@@ -57,65 +46,63 @@ export function TranscriptEmptyState({
     const hasProgress = typeof percentage === "number" && percentage > 0;
 
     return (
-      <div
-        role="status"
-        className="flex h-full min-h-[400px] flex-col items-center justify-center px-6 text-center"
-      >
-        <div className={onStopTranscription ? "mb-6" : undefined}>
-          <p className="text-title coach-sheen">
-            {phase === "importing"
-              ? t`Importing audio...`
-              : t`Generating transcript...`}
-          </p>
-          {hasProgress && (
-            <p className="text-muted-foreground text-ui mt-1 text-balance tabular-nums">
-              {t`${Math.round((percentage ?? 0) * 100)}% complete`}
-            </p>
+      <div role="status" className="flex flex-1 items-center px-4">
+        <EmptyState
+          title={
+            <span className="coach-sheen">
+              {phase === "importing"
+                ? t`Importing audio...`
+                : t`Generating transcript...`}
+            </span>
+          }
+          description={
+            hasProgress ? (
+              <span className="tabular-nums">{t`${Math.round((percentage ?? 0) * 100)}% complete`}</span>
+            ) : phase === "importing" ? (
+              t`Adding the recording to this note.`
+            ) : (
+              t`Your transcript will appear here when it's ready.`
+            )
+          }
+        >
+          {onStopTranscription && (
+            <Chip onClick={onStopTranscription}>
+              <Square className="size-3" />
+              {t`Stop transcription`}
+            </Chip>
           )}
-        </div>
-        {onStopTranscription && (
-          <Button variant="outline" size="sm" onClick={onStopTranscription}>
-            <Square className="size-3.5" />
-            {t`Stop transcription`}
-          </Button>
-        )}
+        </EmptyState>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full min-h-[400px] flex-col items-center justify-center px-6 text-center">
-      <Waveform aria-hidden className="text-muted-foreground mb-3 size-4" />
-      <div className="mb-4 flex max-w-[340px] flex-col gap-1">
-        <p className="text-title">
-          {hasAudio ? t`Audio available` : t`No transcript available`}
-        </p>
-        <p className="text-muted-foreground text-ui text-balance">
-          {hasAudio
+    <div className="flex flex-1 items-center px-4">
+      <EmptyState
+        title={hasAudio ? t`Audio available` : t`No transcript yet`}
+        description={
+          hasAudio
             ? t`Re-transcribe this audio, or upload a transcript file.`
-            : t`Upload audio or a transcript file to populate this note.`}
-        </p>
-      </div>
-      {(onRetranscribe || onUploadAudio || onUploadTranscript) && (
-        <div className="flex items-center gap-2">
-          {hasAudio && onRetranscribe && (
-            <Button size="sm" onClick={onRetranscribe}>
-              <ArrowsClockwise className="size-3.5" />
-              {t`Re-transcribe`}
-            </Button>
-          )}
-          {!hasAudio && onUploadAudio && (
-            <Button variant="outline" size="sm" onClick={onUploadAudio}>
-              {t`Upload audio`}
-            </Button>
-          )}
-          {onUploadTranscript && (
-            <Button variant="outline" size="sm" onClick={onUploadTranscript}>
-              {t`Upload transcript`}
-            </Button>
-          )}
-        </div>
-      )}
+            : t`Upload a recording, or bring in a transcript you already have.`
+        }
+      >
+        {(onRetranscribe || onUploadAudio || onUploadTranscript) && (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {hasAudio && onRetranscribe && (
+              <Chip onClick={onRetranscribe}>
+                <ArrowsClockwise className="size-3" />
+                {t`Re-transcribe`}
+              </Chip>
+            )}
+            {!hasAudio && onUploadAudio && (
+              <Chip onClick={onUploadAudio}>{t`Upload audio`}</Chip>
+            )}
+            {onUploadTranscript && (
+              <Chip onClick={onUploadTranscript}>{t`Upload transcript`}</Chip>
+            )}
+          </div>
+        )}
+      </EmptyState>
     </div>
   );
 }

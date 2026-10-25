@@ -26,6 +26,10 @@ If another app already uses those keys, Cue shows why and keeps your old shortcu
 
 Type in the box at the bottom and press Return. Shift-Return starts a new line. Press ↑ in an empty box to bring back your last question. You can also attach or drop in images.
 
+To dictate, hold the microphone button and speak, then release it. With the button focused, you can hold Space or Return instead. Cue adds the words to your draft for review; it never sends them automatically. Press Esc to cancel. Dictation also cancels if you hide the coach, leave the window, or start a new chat, and each recording stops after one minute.
+
+Coach dictation works while Cue records a meeting and uses your selected microphone, transcription provider, languages and dictionary. It needs microphone permission, but not Accessibility permission or the global dictation shortcut. Cue deletes the temporary recording afterward. It does not mute your meeting: mute the call first if you are asking the coach a private question.
+
 The coach keeps answers short. It gives the answer or the next step first, in a few lines. Ask for more if you need it.
 
 - Suggestions under the box change with the meeting. While you record you see "What did they just ask?". After the meeting you see "Draft a follow-up".
@@ -89,7 +93,7 @@ Not every moment becomes a nudge. The coach first checks whether you need help. 
 
 To stop nudges, turn off **Nudges** in **Settings → AI**. You can still ask the coach questions.
 
-Use **Useful** or **Not useful** on a nudge to tune future coaching. You can say why it was not useful, including if you had already handled the moment. Cue keeps these category preferences on your Mac; they are not sent to the AI provider. Already-handled feedback also prevents another nudge for that same transcript moment. Reset feedback from the coach actions menu.
+Use **Useful** to vote for a nudge, or **Not useful** followed by a reason (or **No reason**) to vote against it. Cue saves the vote on your Mac and confirms it on the card. These votes prioritize categories when several transcript moments compete for a suggestion; they do not train the AI model or change when Cue interrupts. **Already handled** also prevents another nudge for that same transcript moment. The other reasons currently have the same category-vote effect: **Wrong language** does not set a language preference, and **Poor timing** does not change the pacing limits. Reset feedback from the coach actions menu.
 
 ## The suggestion card
 

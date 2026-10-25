@@ -27,6 +27,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
 import type { CoachError } from "../../errors";
 import type { CoachFeedback, EvidenceTarget } from "../../move";
+import type { ActionResult } from "../use-coach";
 import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
 import {
   ActionsBlock,
@@ -47,7 +48,7 @@ export type TimelineActions = BlockActions & {
   copy(text: string): Promise<boolean>;
   signIn(): void;
   openEvidence(target: EvidenceTarget): void;
-  feedback(input: CoachFeedback): void;
+  feedback(input: CoachFeedback): Promise<ActionResult>;
 };
 
 export function Timeline({

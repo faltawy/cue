@@ -1,7 +1,12 @@
-export type DictationPhase = "idle" | "starting" | "recording" | "transcribing";
+export enum DictationPhase {
+  Idle = "idle",
+  Starting = "starting",
+  Recording = "recording",
+  Transcribing = "transcribing",
+}
 
 export class DictationController {
-  private phase: DictationPhase = "idle";
+  private phase: DictationPhase = DictationPhase.Idle;
   private cancelled = false;
   private released = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -23,36 +28,41 @@ export class DictationController {
   ) {}
 
   press() {
-    if (this.phase === "idle") {
+    if (this.phase === DictationPhase.Idle) {
       this.cancelled = false;
       this.released = false;
-      this.setPhase("starting");
+      this.setPhase(DictationPhase.Starting);
       this.operation = this.start();
-    } else if (this.dependencies.handsFree && this.phase !== "transcribing") {
-      this.release(true);
+    } else if (
+      this.dependencies.handsFree &&
+      this.phase !== DictationPhase.Transcribing
+    ) {
+      void this.release(true);
     }
+    return this.operation;
   }
 
   release(force = false) {
-    if (this.dependencies.handsFree && !force) return;
-    if (this.phase === "starting") this.released = true;
-    if (this.phase === "recording") {
+    if (this.dependencies.handsFree && !force) return this.operation;
+    if (this.phase === DictationPhase.Starting) this.released = true;
+    if (this.phase === DictationPhase.Recording) {
       clearTimeout(this.timer);
-      this.setPhase("transcribing");
+      this.setPhase(DictationPhase.Transcribing);
       this.operation = this.finish();
     }
+    return this.operation;
   }
 
   async cancel() {
     this.cancelled = true;
     clearTimeout(this.timer);
-    if (this.phase === "recording") {
+    if (this.phase === DictationPhase.Recording) {
       // Keep the controller busy until this recording has relinquished the mic.
-      this.setPhase("starting");
+      this.setPhase(DictationPhase.Starting);
       this.operation = this.dependencies
         .cancel()
         .catch(this.dependencies.onError)
-        .finally(() => this.setPhase("idle"));
+        .finally(() => this.setPhase(DictationPhase.Idle));
     }
     await this.operation;
   }
@@ -67,20 +77,20 @@ export class DictationController {
       await this.dependencies.start();
       if (this.cancelled) {
         await this.dependencies.cancel();
-        this.setPhase("idle");
+        this.setPhase(DictationPhase.Idle);
         return;
       }
-      this.setPhase("recording");
+      this.setPhase(DictationPhase.Recording);
       this.timer = setTimeout(() => this.release(true), 300_000);
       if (this.released) {
         clearTimeout(this.timer);
-        this.setPhase("transcribing");
+        this.setPhase(DictationPhase.Transcribing);
         await this.finish();
       }
     } catch (error) {
       // A rejected start never owns the recorder (chat may already be using it).
       if (!this.cancelled) this.dependencies.onError(error);
-      this.setPhase("idle");
+      this.setPhase(DictationPhase.Idle);
     }
   }
 
@@ -100,7 +110,7 @@ export class DictationController {
       if (path) {
         await this.dependencies.discard(path).catch(this.dependencies.onError);
       }
-      this.setPhase("idle");
+      this.setPhase(DictationPhase.Idle);
     }
   }
 }

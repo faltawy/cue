@@ -3,7 +3,6 @@ import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 
 import {
-  BookOpen,
   Check,
   MinusCircle,
   PencilSimple,
@@ -22,6 +21,7 @@ import {
 import { SettingsPageTitle } from "~/settings/page-title";
 import { useSetSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { EmptyState } from "~/shared/ui/empty-state";
 import { normalizeKeywordList, parseDictionaryTermsText } from "~/stt/keywords";
 
 export function SettingsDictionary() {
@@ -128,26 +128,30 @@ export function DictionarySettings({
 
           if (normalizedTerms.length === 0) {
             return (
-              <div className="border-border flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed px-6 text-center">
-                <BookOpen className="text-muted-foreground mb-3 size-4" />
-                <p className="text-title">
-                  <Trans>Your dictionary is empty</Trans>
-                </p>
-                <p className="text-muted-foreground text-ui mt-1 max-w-[340px] text-balance">
+              <EmptyState
+                title={<Trans>Help Cue get the words right</Trans>}
+                description={
                   <Trans>
-                    Tip: Add teammate names, acronyms, company jargon, and
-                    product terms.
+                    Add names, acronyms, and product terms above. Cue uses them
+                    to improve transcription.
                   </Trans>
-                </p>
-              </div>
+                }
+              />
             );
           }
 
           if (visibleTerms.length === 0) {
             return hasSearch ? (
-              <p className="text-muted-foreground text-ui px-2.5">
-                <Trans>No match</Trans>
-              </p>
+              <EmptyState
+                size="list"
+                title={<Trans>This term isn't in your dictionary</Trans>}
+                description={
+                  <Trans>
+                    Choose Add to save it, or change the text to find an
+                    existing term.
+                  </Trans>
+                }
+              />
             ) : null;
           }
 

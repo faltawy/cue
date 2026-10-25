@@ -198,7 +198,6 @@ describe("TabContentEmpty", () => {
   it("falls back to starting a recording when no meeting is coming up", () => {
     renderHome();
 
-    expect(screen.getByText("A clearer place to start")).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: /Join & record|Record this event/ }),
     ).toBeNull();

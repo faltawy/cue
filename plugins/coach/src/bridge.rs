@@ -19,11 +19,12 @@ use crate::library::{
 };
 use crate::series::{self, MeetingProject};
 use crate::settings::{self, SeriesProject};
-use crate::{CoachEvidence, CoachNudged, Error, Result};
+use crate::{CoachEvidence, CoachNudged, DictationAction, Error, Result};
 
 pub const URL_ENV: &str = "CUE_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "CUE_COACH_APP_TOKEN";
 
+pub type DictationFuture = Pin<Box<dyn Future<Output = Result<Option<String>>> + Send>>;
 pub type RecordingFuture = Pin<Box<dyn Future<Output = Option<Vec<String>>> + Send>>;
 pub type SpeakerAssignmentFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
@@ -32,6 +33,9 @@ pub trait Host: Send + Sync + 'static {
     fn recording_sessions(&self) -> RecordingFuture;
     fn speaker_assigned(&self, _session_id: String) -> SpeakerAssignmentFuture {
         Box::pin(async {})
+    }
+    fn dictation(&self, _recording_id: String, _action: DictationAction) -> DictationFuture {
+        Box::pin(async { Err(Error::Other("dictation is unavailable".into())) })
     }
     fn config_dir(&self) -> Result<PathBuf>;
     fn default_project(&self) -> Result<PathBuf>;
@@ -93,6 +97,7 @@ fn router(token: &str, host: impl Host) -> Router {
     });
     Router::new()
         .route("/recording", get(recording))
+        .route("/dictation", post(dictation))
         .route("/project", post(choose_default_project))
         .route("/meeting/{session_id}/project", get(meeting_project))
         .route(
@@ -248,6 +253,33 @@ async fn recording(State(state): State<Arc<BridgeState>>) -> Response {
             StatusCode::SERVICE_UNAVAILABLE,
             "the app could not tell what it is recording",
         ),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct DictationRequest {
+    recording_id: String,
+    action: DictationAction,
+}
+
+async fn dictation(
+    State(state): State<Arc<BridgeState>>,
+    request: std::result::Result<Json<DictationRequest>, axum::extract::rejection::JsonRejection>,
+) -> Response {
+    let Json(request) = match request {
+        Ok(request) => request,
+        Err(error) => return failure(StatusCode::BAD_REQUEST, error.body_text()),
+    };
+    if uuid::Uuid::parse_str(&request.recording_id).is_err() {
+        return failure(StatusCode::BAD_REQUEST, "recording_id must be a UUID");
+    }
+    match state
+        .host
+        .dictation(request.recording_id, request.action)
+        .await
+    {
+        Ok(text) => Json(serde_json::json!({ "text": text })).into_response(),
+        Err(error) => BridgeError::Plugin(error).into_response(),
     }
 }
 
@@ -669,6 +701,12 @@ mod tests {
                 host.speaker_assignments.lock().unwrap().push(session_id);
             })
         }
+        fn dictation(&self, recording_id: String, action: DictationAction) -> DictationFuture {
+            Box::pin(async move {
+                let action = serde_json::to_value(action)?;
+                Ok(Some(format!("{recording_id}:{}", action.as_str().unwrap())))
+            })
+        }
         fn config_dir(&self) -> Result<PathBuf> {
             Ok(self.config.path().to_path_buf())
         }
@@ -774,6 +812,53 @@ mod tests {
 
     fn client() -> reqwest::Client {
         reqwest::Client::new()
+    }
+
+    #[tokio::test]
+    async fn dictation_requires_authorization_and_a_valid_recording_before_delegating() {
+        let app = router(TOKEN, test_host().await);
+        for (token, recording_id, expected) in [
+            (
+                "",
+                "6a5def86-38af-4f6a-a1fd-6851abb5527a",
+                StatusCode::UNAUTHORIZED,
+            ),
+            (TOKEN, "not-a-uuid", StatusCode::BAD_REQUEST),
+            (
+                TOKEN,
+                "6a5def86-38af-4f6a-a1fd-6851abb5527a",
+                StatusCode::OK,
+            ),
+        ] {
+            let response = app
+                .clone()
+                .oneshot(
+                    axum::http::Request::builder()
+                        .method("POST")
+                        .uri("/dictation")
+                        .header("authorization", format!("Bearer {token}"))
+                        .header("content-type", "application/json")
+                        .body(axum::body::Body::from(
+                            serde_json::json!({
+                                "recording_id": recording_id, "action": "stop"
+                            })
+                            .to_string(),
+                        ))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), expected);
+            if expected == StatusCode::OK {
+                let body = axum::body::to_bytes(response.into_body(), 4096)
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    serde_json::from_slice::<serde_json::Value>(&body).unwrap(),
+                    serde_json::json!({ "text": "6a5def86-38af-4f6a-a1fd-6851abb5527a:stop" })
+                );
+            }
+        }
     }
 
     #[tokio::test]

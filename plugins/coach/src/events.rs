@@ -15,3 +15,10 @@ pub struct CoachEvidence {
     pub session_id: String,
     pub timestamp_ms: u64,
 }
+
+#[derive(Debug, Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct CoachDictationRequested {
+    pub request_id: String,
+    pub recording_id: String,
+    pub action: crate::DictationAction,
+}

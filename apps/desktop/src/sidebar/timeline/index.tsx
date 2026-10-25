@@ -42,6 +42,7 @@ import { useConfigValue } from "~/shared/config";
 import { scrollElementByWheel } from "~/shared/dom/scroll-wheel";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
+import { EmptyState } from "~/shared/ui/empty-state";
 import { useSidebarNotes } from "~/sidebar/note-filter";
 import { useTabs } from "~/store/zustand/tabs";
 import { useTimelineSelection } from "~/store/zustand/timeline-selection";
@@ -516,7 +517,23 @@ export const TimelineView = memo(function TimelineView({
           <TimelineBuckets
             bucketHeaderTopClassName={bucketHeaderTopClassName}
             buckets={buckets}
-            emptyTodayLabel={<Trans>No items today</Trans>}
+            emptyTodayLabel={
+              <EmptyState
+                size="list"
+                title={<Trans>No notes or meetings today</Trans>}
+                description={
+                  <Trans>Your notes and scheduled meetings appear here.</Trans>
+                }
+                action={
+                  !folderFilter && !tagFilter && showOpenCalendarButton
+                    ? {
+                        label: <Trans>Open calendar</Trans>,
+                        onClick: handleOpenCalendar,
+                      }
+                    : undefined
+                }
+              />
+            }
             getFlatItemKeys={getFlatItemKeys}
             hasActiveVisibleSession={hasActiveVisibleSession}
             hasToday={hasToday}

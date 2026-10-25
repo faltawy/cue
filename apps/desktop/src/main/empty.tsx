@@ -98,14 +98,26 @@ function EmptyView() {
       className="flex h-full flex-col items-center justify-center"
     >
       <div className="flex w-full max-w-2xl flex-col gap-7 px-6 py-8">
-        <img
-          src="/assets/app-icons/stable-light.png"
-          alt="Cue"
-          className="mx-auto size-28"
-        />
-        <h1 className="text-title text-center text-balance">
-          <Trans>A clearer place to start</Trans>
-        </h1>
+        <div className="text-center">
+          <img
+            src="/assets/app-icons/stable-light.png"
+            alt="Cue"
+            className="mx-auto mb-3 size-12"
+          />
+          <h1 className="text-title text-balance">
+            {next ? (
+              <Trans>Your next conversation</Trans>
+            ) : (
+              <Trans>Ready when you are</Trans>
+            )}
+          </h1>
+          <p className="text-ui text-muted-foreground mt-1 text-balance">
+            <Trans>
+              Record a conversation, start a note, or think it through with your
+              coach.
+            </Trans>
+          </p>
+        </div>
 
         {next ? (
           <div

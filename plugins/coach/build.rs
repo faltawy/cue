@@ -1,4 +1,5 @@
 const COMMANDS: &[&str] = &[
+    "complete_dictation",
     "llm_endpoint",
     "get_settings",
     "set_settings",

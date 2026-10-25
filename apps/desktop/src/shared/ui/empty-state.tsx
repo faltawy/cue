@@ -9,12 +9,14 @@ export function EmptyState({
   title,
   description,
   action,
+  children,
   size = "panel",
   className,
 }: {
   title: ReactNode;
   description?: ReactNode;
   action?: { label: ReactNode; onClick: () => void };
+  children?: ReactNode;
   size?: "panel" | "list";
   className?: string;
 }) {
@@ -29,20 +31,25 @@ export function EmptyState({
     >
       <div>
         <p
+          dir="auto"
           className={cn([
-            "text-foreground text-balance",
+            "text-foreground text-balance [overflow-wrap:anywhere]",
             size === "panel" ? "text-title" : "text-ui font-medium",
           ])}
         >
           {title}
         </p>
         {description ? (
-          <p className="text-ui text-muted-foreground mt-1 text-balance">
+          <p
+            dir="auto"
+            className="text-ui text-muted-foreground mt-1 text-balance [overflow-wrap:anywhere]"
+          >
             {description}
           </p>
         ) : null}
       </div>
       {action ? <Chip onClick={action.onClick}>{action.label}</Chip> : null}
+      {children}
     </div>
   );
 }

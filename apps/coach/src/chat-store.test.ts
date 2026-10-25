@@ -18,6 +18,7 @@ import {
   feedbackPreferences,
   prioritizeHitsByFeedback,
   saveChats,
+  saveFeedback,
   type SettledWrapUp,
   wrappedTranscripts,
 } from "./chat-store";
@@ -299,12 +300,12 @@ describe("local nudge feedback", () => {
     ];
 
     expect(prioritizeHitsByFeedback(seeded, hits)).toEqual([
-      hits[1]!,
       hits[0]!,
+      hits[1]!,
     ]);
   });
 
-  test("ranks a downvoted cue behind an unscored cue", () => {
+  test("places a downvoted cue before an unscored cue so the prompt cap drops it first", () => {
     const seeded = recordFeedback(storeWith("meeting-a", "/work/northwind"), {
       category: "open_question",
       useful: false,
@@ -321,8 +322,8 @@ describe("local nudge feedback", () => {
     };
 
     expect(prioritizeHitsByFeedback(seeded, [question, monologue])).toEqual([
-      monologue,
       question,
+      monologue,
     ]);
   });
 
@@ -542,4 +543,28 @@ test("legacy chats and existing provider chats use that provider's current model
     model: "opus",
     resume: "old-claude",
   });
+});
+
+
+test("a failed feedback save leaves the previous vote intact and a retry counts it only once", () => {
+  const directory = mkdtempSync(
+    path.join(os.tmpdir(), "cue-feedback-failure-"),
+  );
+  const file = path.join(directory, "chats.json");
+  let store = saveFeedback(file, emptyStore(), {
+    category: "pushback",
+    useful: true,
+  });
+  writeFileSync(path.join(directory, "blocked"), "not a directory");
+  expect(() => {
+    store = saveFeedback(path.join(directory, "blocked", "chats.json"), store, {
+      category: "pushback",
+      useful: true,
+    });
+  }).toThrow(/EEXIST|ENOTDIR/);
+  expect(store.feedback.categories.pushback).toBe(1);
+  expect(loadChats(file).feedback.categories.pushback).toBe(1);
+  store = saveFeedback(file, store, { category: "pushback", useful: true });
+  expect(store.feedback.categories.pushback).toBe(2);
+  expect(loadChats(file).feedback.categories.pushback).toBe(2);
 });

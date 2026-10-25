@@ -23,7 +23,7 @@ If you turn on **Hands-free dictation**, press the shortcut once to start and ag
 Some limits:
 
 - Dictation stops after five minutes.
-- Dictation pauses while Cue records a meeting.
+- The global dictation shortcut pauses while Cue records a meeting. The microphone button in the [coach](coach.md#how-do-i-ask-the-coach-something) still works during recording.
 - Cue doesn't type into password fields.
 - If you click into a different field while you speak, Cue doesn't type the text. Copy it from **Last dictation** in **Settings → Dictation**.
 

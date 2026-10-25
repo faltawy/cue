@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => {
 });
 vi.mock("@anlg/plugin-dictation", () => ({ commands: mocks.commands }));
 
+import { DictationPhase } from "./controller";
 import {
   createDictationOverlaySynchronizer,
   getDictationOverlayState,
@@ -82,7 +83,7 @@ describe("dictation overlay", () => {
     expect(
       getDictationOverlayState({
         ...useDictationStatus.getInitialState(),
-        phase: "recording",
+        phase: DictationPhase.Recording,
         owner: "a",
         amplitude: 0.4,
         text: "Hello",
@@ -92,7 +93,7 @@ describe("dictation overlay", () => {
     expect(
       getDictationOverlayState({
         ...useDictationStatus.getInitialState(),
-        phase: "transcribing",
+        phase: DictationPhase.Transcribing,
         owner: "a",
         amplitude: 0.4,
         text: "Hello",

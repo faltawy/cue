@@ -4,6 +4,7 @@ Default permissions for the plugin
 
 #### This default permission set includes the following:
 
+- `allow-complete-dictation`
 - `allow-llm-endpoint`
 - `allow-get-settings`
 - `allow-set-settings`
@@ -161,6 +162,32 @@ Enables the claude_signed_in command without any pre-configured scope.
 <td>
 
 Denies the claude_signed_in command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-complete-dictation`
+
+</td>
+<td>
+
+Enables the complete_dictation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-complete-dictation`
+
+</td>
+<td>
+
+Denies the complete_dictation command without any pre-configured scope.
 
 </td>
 </tr>

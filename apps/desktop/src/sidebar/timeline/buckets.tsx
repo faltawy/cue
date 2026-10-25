@@ -242,9 +242,7 @@ function TodayBucket({
           ) : (
             <CurrentTimeIndicator ref={registerIndicator} timezone={timezone} />
           )}
-          <div className="text-muted-foreground text-body px-3 py-4 text-center">
-            {emptyLabel}
-          </div>
+          {emptyLabel}
         </>
       );
     }

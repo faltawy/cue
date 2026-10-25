@@ -1,4 +1,13 @@
-import { AlertCircle, ArrowUp, ChevronDown, Folder, ImagePlus, Square, X } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowUp,
+  ChevronDown,
+  Folder,
+  ImagePlus,
+  Mic,
+  Square,
+  X,
+} from "lucide-react";
 import {
   forwardRef,
   type KeyboardEvent,
@@ -14,6 +23,7 @@ import {
 import { admitFiles, IMAGE_TYPES, MAX_IMAGES } from "../../image-limits";
 import type { StatusEvent } from "../../protocol";
 import { imageErrorMessage, type PreparedImage, prepareImage } from "../images";
+import { DictationPhase, useDictation } from "../use-dictation";
 import { cx, IconButton, Kbd } from "./primitives";
 
 type Attachment = { id: number; image: PreparedImage | null };
@@ -93,7 +103,11 @@ function AttachmentStrip({ entries, onRemove }: { entries: readonly Attachment[]
   );
 }
 
-export type ComposerHandle = { focus(): void; fill(text: string): void };
+export type ComposerHandle = {
+  focus(): void;
+  fill(text: string): void;
+  cancelDictation(): void;
+};
 
 export function folderName(path: string): string {
   return path.split("/").filter(Boolean).pop() ?? path;
@@ -102,6 +116,7 @@ export function folderName(path: string): string {
 export const Composer = forwardRef<
   ComposerHandle,
   {
+    dictationOwner?: number;
     busy: boolean;
     ready: boolean;
     placeholder: string;
@@ -116,7 +131,21 @@ export const Composer = forwardRef<
     onChooseProject(): void;
   }
 >(function Composer(
-  { busy, ready, placeholder, status, chips, above, onSubmit, onStop, recall, onChooseFolder, onDefaultFolder, onChooseProject },
+  {
+    dictationOwner = 0,
+    busy,
+    ready,
+    placeholder,
+    status,
+    chips,
+    above,
+    onSubmit,
+    onStop,
+    recall,
+    onChooseFolder,
+    onDefaultFolder,
+    onChooseProject,
+  },
   ref,
 ) {
   const [text, setText] = useState("");
@@ -126,10 +155,18 @@ export const Composer = forwardRef<
   const picker = useRef<HTMLInputElement>(null);
   const attachments = useAttachments();
   const canAttach = !above;
+  const dictation = useDictation(dictationOwner, (recognized) => {
+    setText(
+      (draft) =>
+        `${draft}${draft && !/\s$/.test(draft) ? " " : ""}${recognized}`,
+    );
+  });
 
   useImperativeHandle(ref, () => ({
     focus: () => input.current?.focus(),
+    cancelDictation: dictation.cancel,
     fill: (value) => {
+      dictation.cancel();
       setText(value);
       requestAnimationFrame(() => {
         const element = input.current;
@@ -148,11 +185,24 @@ export const Composer = forwardRef<
   }, [text]);
 
   const images = canAttach ? attachments.ready : [];
-  const canSend = ready && !busy && !attachments.loading && (text.trim().length > 0 || images.length > 0);
+  const canSend =
+    ready &&
+    !busy &&
+    dictation.phase !== DictationPhase.Listening &&
+    !attachments.loading &&
+    (text.trim().length > 0 || images.length > 0);
 
   const send = async (value: string) => {
     const trimmed = value.trim();
-    if ((!trimmed && images.length === 0) || !ready || busy || attachments.loading) return;
+    if (
+      (!trimmed && images.length === 0) ||
+      !ready ||
+      busy ||
+      attachments.loading ||
+      dictation.isListening()
+    )
+      return;
+    dictation.cancel();
     const sent = attachments.take();
     setText("");
     const ok = await onSubmit(trimmed, canAttach ? sent.map((entry) => entry.image) : []);
@@ -194,7 +244,10 @@ export const Composer = forwardRef<
   const showChips = chips.length > 0 && text === "" && attachments.entries.length === 0 && !busy && ready && !above;
 
   return (
-    <div className="flex min-h-0 flex-col border-t border-border bg-surface px-3 pt-2.5 pb-3">
+    <div
+      ref={dictation.lifecycle}
+      className="flex min-h-0 flex-col border-t border-border bg-surface px-3 pt-2.5 pb-3"
+    >
       <div className="mx-auto flex min-h-0 w-full max-w-[720px] flex-col">
         {above}
         {showChips && (
@@ -215,6 +268,19 @@ export const Composer = forwardRef<
               </button>
             ))}
           </div>
+        )}
+        {dictation.error && (
+          <p role="alert" className="text-destructive mb-1.5 text-[12px]">
+            {dictation.error}
+          </p>
+        )}
+        {dictation.phase !== DictationPhase.Idle && (
+          <p role="status" className="text-muted-foreground mb-1.5 text-[12px]">
+            {dictation.phase === DictationPhase.Listening
+              ? "Listening… Release to transcribe."
+              : "Transcribing…"}{" "}
+            Press Escape to cancel.
+          </p>
         )}
         {attachments.error && (
           <p role="alert" dir="auto" className="coach-enter mb-1.5 flex items-start gap-1.5 text-[12px] text-destructive">
@@ -302,6 +368,45 @@ export const Composer = forwardRef<
                 </IconButton>
               </>
             )}
+            <IconButton
+              label="Hold to dictate"
+              title="Hold to dictate. Mute your call first for a private question."
+              tooltipSide="top"
+              disabled={!status?.appConnected || !!above}
+              aria-keyshortcuts="Space Enter"
+              aria-pressed={dictation.phase === DictationPhase.Listening}
+              className="size-7 touch-none"
+              tone={dictation.phase === DictationPhase.Listening ? "primary" : "ghost"}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                event.preventDefault();
+                event.currentTarget.focus();
+                event.currentTarget.setPointerCapture(event.pointerId);
+                dictation.start(`pointer:${event.pointerId}`);
+              }}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                void dictation.stop(`pointer:${event.pointerId}`);
+              }}
+              onPointerCancel={dictation.cancelHold}
+              onLostPointerCapture={dictation.cancelHold}
+              onBlur={dictation.cancelHold}
+              onKeyDown={(event) => {
+                if (event.key !== " " && event.key !== "Enter") return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (!event.repeat) dictation.start(`key:${event.key}`);
+              }}
+              onKeyUp={(event) => {
+                if (event.key !== " " && event.key !== "Enter") return;
+                event.preventDefault();
+                event.stopPropagation();
+                void dictation.stop(`key:${event.key}`);
+              }}
+              onClick={(event) => event.preventDefault()}
+            >
+              <Mic aria-hidden className="size-4" />
+            </IconButton>
             {focused && !busy && (
               <span className="mr-1 hidden items-center gap-1 text-[11px] text-muted-foreground min-[400px]:flex">
                 <Kbd keys={["enter"]} /> send

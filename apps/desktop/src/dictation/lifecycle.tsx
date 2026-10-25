@@ -11,9 +11,10 @@ import { commands as transcription } from "@anlg/plugin-transcription";
 import { toast } from "@anlg/ui/components/ui/toast";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-import { DictationController } from "./controller";
+import { DictationController, DictationPhase } from "./controller";
 import { waitForDictationPanel } from "./panel";
 import { useDictationStatus } from "./state";
+import { transcribeDictation } from "./transcribe";
 
 import { useSettingsReady } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
@@ -179,7 +180,7 @@ function ActiveDictation({
               )
                 return;
               if (
-                !["starting", "recording"].includes(
+                ![DictationPhase.Starting, DictationPhase.Recording].includes(
                   useDictationStatus.getState().phase,
                 )
               )
@@ -207,23 +208,11 @@ function ActiveDictation({
       },
       transcribe: async (path) => {
         if (finalTranscript !== null) return finalTranscript;
-        let text = "";
-        await current.current.runBatch(path, {
-          signal: abort.signal,
-          deferAudioFinalization: true,
-          notifyOnCompletion: false,
-          numSpeakers: 1,
-          handlePersist: (words) => {
-            text = words
-              .slice()
-              .sort((a, b) => a.start_ms - b.start_ms)
-              .map((word) => word.text)
-              .join("")
-              .replace(/\s+/gu, " ")
-              .trim();
-          },
-        });
-        return text;
+        return transcribeDictation(
+          current.current.runBatch,
+          path,
+          abort.signal,
+        );
       },
       insert: async (text) => {
         if (!disposed) unwrap(await dictation.insertText(target, text));
@@ -239,7 +228,7 @@ function ActiveDictation({
         if (!disposed)
           useDictationStatus.setState({
             phase,
-            ...(phase === "idle"
+            ...(phase === DictationPhase.Idle
               ? {
                   owner: null,
                   presentedOwner: null,
@@ -248,15 +237,19 @@ function ActiveDictation({
                   amplitude: 0,
                 }
               : {}),
-            ...(phase === "starting" &&
-            useDictationStatus.getState().phase === "idle"
+            ...(phase === DictationPhase.Starting &&
+            useDictationStatus.getState().phase === DictationPhase.Idle
               ? { owner: null }
               : {}),
           });
         presentation = presentation
           .then(async () => {
             try {
-              unwrap(await shortcuts.setActive(phase !== "idle" && !disposed));
+              unwrap(
+                await shortcuts.setActive(
+                  phase !== DictationPhase.Idle && !disposed,
+                ),
+              );
             } catch (error) {
               onError(error);
             }
@@ -280,8 +273,8 @@ function ActiveDictation({
             useDictationStatus.getState().capturingShortcut
           )
             return;
-          if (payload.type === "pressed") controller.press();
-          else if (payload.type === "released") controller.release();
+          if (payload.type === "pressed") void controller.press();
+          else if (payload.type === "released") void controller.release();
           else cancel();
         });
         if (disposed) {
@@ -302,7 +295,7 @@ function ActiveDictation({
       cancel();
       useDictationStatus.setState({
         ready: false,
-        phase: "idle",
+        phase: DictationPhase.Idle,
         lastTranscript: useDictationStatus.getState().lastTranscript,
         cancel: null,
         owner: null,

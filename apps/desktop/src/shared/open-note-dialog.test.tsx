@@ -264,7 +264,14 @@ describe("OpenNoteDialog", () => {
     expect(mocks.openCurrent).not.toHaveBeenCalled();
   });
 
-  it("shows an empty state when nothing matches", () => {
+  it("waits for note search before offering to clear an unmatched query", async () => {
+    let finishSearch!: (hits: NoteSearchHit[]) => void;
+    mocks.searchNotes.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finishSearch = resolve;
+        }),
+    );
     mocks.sessions = [
       {
         id: "sync",
@@ -277,8 +284,15 @@ describe("OpenNoteDialog", () => {
     expect(screen.getAllByRole("option").length).toBeGreaterThan(0);
     search("zzzz");
 
-    expect(screen.getByText("No results for “zzzz”")).toBeTruthy();
-    expect(screen.queryAllByRole("option")).toHaveLength(0);
+    expect(screen.getByRole("status").textContent).toContain("Searching notes");
+    expect(screen.queryByText("No results for “zzzz”")).toBeNull();
+    finishSearch([]);
+    expect(await screen.findByText("No results for “zzzz”")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.getByRole("option", { name: /Sync with Sara/ })).toBeTruthy();
+    expect(document.activeElement).toBe(
+      screen.getByPlaceholderText("Search or jump to…"),
+    );
   });
   it("finds a note by what was said and shows the matching passage", async () => {
     mocks.sessions = [

@@ -6,6 +6,14 @@
 
 
 export const commands = {
+async completeDictation(requestId: string, result: DictationResult) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|complete_dictation", { requestId, result }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async llmEndpoint() : Promise<Result<Endpoint, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:coach|llm_endpoint") };
@@ -180,10 +188,12 @@ async retryProviderSetup(provider: CoachProvider) : Promise<Result<ClaudeSetup, 
 
 
 export const events = __makeEvents__<{
+coachDictationRequested: CoachDictationRequested,
 coachEvidence: CoachEvidence,
 coachFocused: CoachFocused,
 coachNudged: CoachNudged
 }>({
+coachDictationRequested: "plugin:coach:coach-dictation-requested",
 coachEvidence: "plugin:coach:coach-evidence",
 coachFocused: "plugin:coach:coach-focused",
 coachNudged: "plugin:coach:coach-nudged"
@@ -236,6 +246,7 @@ export type ClaudeSetup =
  * Looking for an installed Claude Code, or downloading Cue's copy.
  */
 { state: "preparing"; percent: number | null } | { state: "ready" } | { state: "failed"; message: string }
+export type CoachDictationRequested = { request_id: string; recording_id: string; action: DictationAction }
 export type CoachEvidence = { session_id: string; timestamp_ms: number }
 export type CoachFocused = Record<string, never>
 export type CoachNudged = { session_id: string; tag: string; line: string; 
@@ -245,6 +256,8 @@ export type CoachNudged = { session_id: string; tag: string; line: string;
 seen: boolean }
 export type CoachProvider = "claude" | "codex"
 export type CoachSettings = { project: string | null; model: ClaudeModel; provider: CoachProvider; codex_model: string; nudges: boolean; nudge_limit_cents: number; mcp_servers: McpServer[]; claude_connectors: ClaudeConnector[]; instructions: string; knowledge: string[]; web_access: boolean }
+export type DictationAction = "start" | "stop" | "cancel"
+export type DictationResult = { status: "ok"; text: string | null } | { status: "error"; error: string }
 export type Endpoint = { url: string; token: string }
 export type FoundConnector = { name: string; id: string; url: string }
 /**

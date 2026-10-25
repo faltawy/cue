@@ -1,6 +1,7 @@
 import { commands as dictation, type Phase } from "@anlg/plugin-dictation";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
+import { DictationPhase } from "./controller";
 import { useDictationStatus } from "./state";
 
 type DictationOverlayState = {
@@ -43,11 +44,12 @@ export function waitForDictationPanel(
 export function getDictationOverlayState(
   state: ReturnType<typeof useDictationStatus.getState>,
 ): DictationOverlayState | null {
-  if (state.phase === "idle" || !state.owner) return null;
+  if (state.phase === DictationPhase.Idle || !state.owner) return null;
   return {
     owner: state.owner,
-    phase: state.phase === "transcribing" ? "processing" : "recording",
-    amplitude: state.phase === "recording" ? state.amplitude : 0,
+    phase:
+      state.phase === DictationPhase.Transcribing ? "processing" : "recording",
+    amplitude: state.phase === DictationPhase.Recording ? state.amplitude : 0,
     preview: [state.text, state.partial].filter(Boolean).join(" "),
   };
 }

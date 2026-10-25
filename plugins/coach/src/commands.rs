@@ -172,3 +172,17 @@ pub async fn retry_provider_setup(
 ) -> std::result::Result<ClaudeSetup, String> {
     blocking(app, move |coach| coach.retry_provider_setup(provider)).await
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn complete_dictation(
+    app: tauri::AppHandle,
+    request_id: String,
+    result: crate::DictationResult,
+) -> std::result::Result<(), String> {
+    use tauri::Manager;
+    app.state::<crate::CoachState>()
+        .dictation
+        .complete(&request_id, result)
+        .map_err(|error| error.to_string())
+}

@@ -69,6 +69,7 @@ export type CoachState = {
   usage: TurnUsage | null;
   wrapUp: WrapUpView | null;
   serial: number;
+  dictationOwner: number;
 };
 
 export const initialState: CoachState = {
@@ -80,6 +81,7 @@ export const initialState: CoachState = {
   usage: null,
   wrapUp: null,
   serial: 0,
+  dictationOwner: 0,
 };
 
 export type Action =
@@ -204,7 +206,13 @@ function applyEvent(state: CoachState, event: CoachEvent): CoachState {
     case "wrapup":
       return { ...state, wrapUp: event.wrapUp };
     case "reset":
-      return { ...state, items: [], question: null, usage: event.reason === "sync" ? state.usage : null };
+      return {
+        ...state,
+        dictationOwner: state.dictationOwner + 1,
+        items: [],
+        question: null,
+        usage: event.reason === "sync" ? state.usage : null,
+      };
     case "user": {
       const pending = lastTurnIndex(state.items, (turn) => turn.status === "sending");
       const pendingTurn = pending === -1 ? undefined : state.items[pending];

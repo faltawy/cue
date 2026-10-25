@@ -142,6 +142,11 @@ export function CoachView({
     else if (busy) void api.stop();
   }, [api, busy, state.question]);
 
+  const newChat = useCallback(() => {
+    composer.current?.cancelDictation();
+    void api.newChat();
+  }, [api]);
+
   const canCatchUp = live && !busy && ready;
   const lastItem = state.items.at(-1);
   const authErrorShowing =
@@ -160,7 +165,7 @@ export function CoachView({
       id: "new-chat",
       label: "New chat",
       shortcut: ["mod", "shift", "o"],
-      run: () => void api.newChat(),
+      run: newChat,
     });
     if (busy)
       list.push({
@@ -218,6 +223,7 @@ export function CoachView({
     canCatchUp,
     copyLast,
     latestAsk,
+    newChat,
     retry,
     state.status,
     stopOrDismiss,
@@ -239,7 +245,7 @@ export function CoachView({
         if (canCatchUp) void api.checkIn();
       } else if (mod && event.shiftKey && key === "o") {
         event.preventDefault();
-        void api.newChat();
+        newChat();
       } else if (mod && event.shiftKey && key === "c") {
         event.preventDefault();
         void copyLast();
@@ -261,7 +267,16 @@ export function CoachView({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [api, busy, canCatchUp, copyLast, palette, state.question, stopOrDismiss]);
+  }, [
+    api,
+    busy,
+    canCatchUp,
+    copyLast,
+    newChat,
+    palette,
+    state.question,
+    stopOrDismiss,
+  ]);
 
   const placeholder = !ready
     ? state.connection === "lost"
@@ -288,7 +303,7 @@ export function CoachView({
   const timelineActions = useMemo<TimelineActions>(
     () => ({
       retry,
-      newChat: () => void api.newChat(),
+      newChat,
       quote: (text) =>
         composer.current?.fill(
           `About your earlier reply:\n${text
@@ -300,14 +315,14 @@ export function CoachView({
       copy: copyText,
       signIn: () => void api.signIn(),
       openEvidence: (target: EvidenceTarget) => void api.openEvidence(target),
-      feedback: (input) => void api.feedback(input),
+      feedback: (input) => api.feedback(input),
       checkItem: (blockId, index, checked) =>
         void api.checkItem(blockId, index, checked),
       addItemToNote: api.addItemToNote,
       reply: (text) => void ask(text),
       open: (url) => void api.open(url),
     }),
-    [api, ask, retry],
+    [api, ask, newChat, retry],
   );
   const lastTurn = state.items.at(-1);
   const repliesShowing =
@@ -336,7 +351,7 @@ export function CoachView({
         transcript={state.transcript}
         usage={state.usage}
         proactive={state.status?.proactive ?? null}
-        onNewChat={() => void api.newChat()}
+        onNewChat={newChat}
         newChatDisabled={!ready}
         onPalette={() => setPalette(true)}
       />
@@ -383,6 +398,7 @@ export function CoachView({
         }
       />
       <Composer
+        dictationOwner={state.dictationOwner}
         ref={composer}
         busy={busy && !state.question}
         ready={ready}

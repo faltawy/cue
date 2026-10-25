@@ -155,10 +155,6 @@ msgstr ""
 msgid "3 days"
 msgstr ""
 
-#: src/main/empty.tsx
-msgid "A clearer place to start"
-msgstr ""
-
 #: src/sidebar/folder-name-dialog.tsx
 msgid "A folder with this name already exists."
 msgstr ""
@@ -220,6 +216,10 @@ msgstr ""
 msgid "Add a syllabus or PDF for this folder"
 msgstr ""
 
+#: src/calendar/components/calendar-selection.tsx
+msgid "Add an account in the macOS Calendar app, then refresh this list."
+msgstr ""
+
 #: src/templates/auto-format-examples-dialog.tsx
 msgid "Add at least one example summary."
 msgstr ""
@@ -257,6 +257,10 @@ msgid "Add material"
 msgstr ""
 
 #: src/settings/dictionary/index.tsx
+msgid "Add names, acronyms, and product terms above. Cue uses them to improve transcription."
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
 msgid "Add names, jargon, or product terms to prefer"
 msgstr ""
 
@@ -286,6 +290,10 @@ msgstr ""
 
 #: src/calendar/components/event-chip.tsx
 msgid "Add to folder"
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Adding the recording to this note."
 msgstr ""
 
 #: src/settings/general/spoken-languages.tsx
@@ -590,12 +598,20 @@ msgstr ""
 msgid "Choose a file format and what to include."
 msgstr ""
 
+#: src/session/components/note-input/raw.tsx
+msgid "Choose a template to add headings, or keep writing your own notes."
+msgstr ""
+
 #: src/settings/ai/stt/local-file-model.tsx
 msgid "Choose a transcription model"
 msgstr ""
 
 #: src/settings/ai/stt/select.tsx
 msgid "Choose a transcription model to start listening."
+msgstr ""
+
+#: src/settings/dictionary/index.tsx
+msgid "Choose Add to save it, or change the text to find an existing term."
 msgstr ""
 
 #: src/templates/auto-format-examples-dialog.tsx
@@ -716,6 +732,7 @@ msgstr ""
 #: src/contacts/shared.tsx
 #: src/folders/sidebar.tsx
 #: src/settings/ai/shared/provider-search.tsx
+#: src/shared/open-note-dialog.tsx
 #: src/sidebar/search-field.tsx
 #: src/templates/template-icon-picker.tsx
 #: src/templates/template-sidebar.tsx
@@ -916,6 +933,10 @@ msgstr ""
 #. placeholder {0}: probe.reason
 #: src/settings/claude/tools.tsx
 msgid "Couldn't reach it: {0}"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Couldn't search your notes"
 msgstr ""
 
 #: src/shared/open-note-dialog.tsx
@@ -1474,6 +1495,10 @@ msgstr ""
 msgid "Header, e.g. X-API-Key"
 msgstr ""
 
+#: src/settings/dictionary/index.tsx
+msgid "Help Cue get the words right"
+msgstr ""
+
 #: src/onboarding/permissions.tsx
 msgid "Help Cue listen to others"
 msgstr ""
@@ -1993,14 +2018,6 @@ msgstr ""
 msgid "No icons found"
 msgstr ""
 
-#: src/sidebar/timeline/index.tsx
-msgid "No items today"
-msgstr ""
-
-#: src/settings/dictionary/index.tsx
-msgid "No match"
-msgstr ""
-
 #: src/settings/general/main-language.tsx
 #: src/settings/general/spoken-languages.tsx
 msgid "No matching languages found"
@@ -2008,6 +2025,10 @@ msgstr "Ягон забонҳои мувофиқ ёфт нашуд"
 
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
 msgid "No matching people"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "No notes or meetings today"
 msgstr ""
 
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
@@ -2057,7 +2078,7 @@ msgid "No templates yet"
 msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
-msgid "No transcript available"
+msgid "No transcript yet"
 msgstr ""
 
 #: src/settings/ai/shared/index.tsx
@@ -2403,6 +2424,10 @@ msgstr ""
 msgid "Ready to go"
 msgstr ""
 
+#: src/main/empty.tsx
+msgid "Ready when you are"
+msgstr ""
+
 #: src/session/components/note-input/enhanced/streaming.tsx
 msgid "Reasoning models think through the transcript before writing."
 msgstr ""
@@ -2425,6 +2450,10 @@ msgstr ""
 
 #: src/session/components/outer-header/index.tsx
 msgid "Record"
+msgstr ""
+
+#: src/main/empty.tsx
+msgid "Record a conversation, start a note, or think it through with your coach."
 msgstr ""
 
 #: src/shared/open-note-dialog.tsx
@@ -2726,6 +2755,10 @@ msgstr ""
 
 #: src/settings/claude/connectors.tsx
 msgid "Searches and reads mail. With changes allowed it can write drafts. It never sends, deletes or labels mail."
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Searching notes…"
 msgstr ""
 
 #: src/settings/claude/tools.tsx
@@ -3277,6 +3310,10 @@ msgstr ""
 msgid "This note was edited on another device at the same time. The later edit was kept."
 msgstr ""
 
+#: src/settings/dictionary/index.tsx
+msgid "This term isn't in your dictionary"
+msgstr ""
+
 #. placeholder {0}: status.fileCount
 #. placeholder {1}: formatBytes(status.totalBytes, i18n.locale)
 #: src/settings/general/storage/legacy-cleanup.tsx
@@ -3289,10 +3326,6 @@ msgstr ""
 
 #: src/settings/general/timezone.tsx
 msgid "Timezone"
-msgstr ""
-
-#: src/settings/dictionary/index.tsx
-msgid "Tip: Add teammate names, acronyms, company jargon, and product terms."
 msgstr ""
 
 #: src/session/components/note-input/enhanced/streaming.tsx
@@ -3365,20 +3398,25 @@ msgstr ""
 msgid "Travel & Places"
 msgstr ""
 
+#: src/shared/open-note-dialog.tsx
+msgid "Try a name, a topic, or a few words from a conversation."
+msgstr ""
+
 #: src/onboarding/test-recording.tsx
 msgid "Try a short test recording"
 msgstr ""
 
 #: src/contacts/details.tsx
+#: src/shared/open-note-dialog.tsx
 msgid "Try again"
+msgstr ""
+
+#: src/shared/open-note-dialog.tsx
+msgid "Try again to search inside your notes and transcripts."
 msgstr ""
 
 #: src/settings/dictation.tsx
 msgid "Try dictation"
-msgstr ""
-
-#: src/shared/open-note-dialog.tsx
-msgid "Try words from a note, a person, or a setting."
 msgstr ""
 
 #: src/calendar/components/apple/permission.tsx
@@ -3479,12 +3517,12 @@ msgid "Updating…"
 msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
-#: src/session/components/outer-header/overflow/index.tsx
-msgid "Upload audio"
+msgid "Upload a recording, or bring in a transcript you already have."
 msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
-msgid "Upload audio or a transcript file to populate this note."
+#: src/session/components/outer-header/overflow/index.tsx
+msgid "Upload audio"
 msgstr ""
 
 #: src/session/components/note-input/transcript/screens/empty.tsx
@@ -3656,16 +3694,24 @@ msgstr ""
 msgid "Your audio is still being saved, and the missing part will be filled in from the recording."
 msgstr ""
 
-#: src/settings/dictionary/index.tsx
-msgid "Your dictionary is empty"
-msgstr ""
-
 #: src/contacts/self-name.tsx
 msgid "Your name"
 msgstr ""
 
+#: src/main/empty.tsx
+msgid "Your next conversation"
+msgstr ""
+
+#: src/sidebar/timeline/index.tsx
+msgid "Your notes and scheduled meetings appear here."
+msgstr ""
+
 #: src/services/enhancer/summary-notification.ts
 msgid "Your summary is ready."
+msgstr ""
+
+#: src/session/components/note-input/transcript/screens/empty.tsx
+msgid "Your transcript will appear here when it's ready."
 msgstr ""
 
 #: src/templates/template-sidebar.tsx

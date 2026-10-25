@@ -1,6 +1,6 @@
 import type { ImperativePanelHandle } from "@anlg/ui/components/ui/resizable";
 
-export const LEFT_SIDEBAR_DEFAULT_WIDTH_PX = 200;
+export const LEFT_SIDEBAR_DEFAULT_WIDTH_PX = 240;
 export const LEFT_SIDEBAR_MIN_WIDTH_PX = 200;
 export const LEFT_SIDEBAR_MAX_WIDTH_PX = 360;
 export const LEFT_SIDEBAR_COLLAPSED_SIZE = 0;
@@ -28,14 +28,6 @@ export function createLeftSidebarPanelConstraints(widthPx?: number) {
       minSize,
       percentageFromPixels(LEFT_SIDEBAR_MAX_WIDTH_PX, containerWidthPx),
     ),
-  };
-}
-
-export function createFixedLeftSidebarPanelConstraints(defaultSize: number) {
-  return {
-    defaultSize,
-    minSize: defaultSize,
-    maxSize: defaultSize,
   };
 }
 

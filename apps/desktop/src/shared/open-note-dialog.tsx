@@ -8,6 +8,7 @@ import {
   useContext,
   useDeferredValue,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -42,6 +43,7 @@ import {
 } from "~/shared/command-menu/rank";
 import { useMainContentCenterOffset } from "~/shared/main/content-offset";
 import type { ShortcutKey } from "~/shared/shortcut-keys";
+import { EmptyState } from "~/shared/ui/empty-state";
 import { ShortcutKeys } from "~/shared/ui/shortcut-hint";
 import { useNewNote, useNewNoteAndListen } from "~/shared/useNewNote";
 import { useSettingsNavGroups } from "~/sidebar/settings-nav-groups";
@@ -304,7 +306,12 @@ export function OpenNoteDialog({
 
   const { searchNotes } = useSearchEngine();
   const contentQuery = rankedQuery.trim();
-  const { data: contentHits } = useQuery({
+  const {
+    data: contentHits,
+    isFetching: isSearchingNotes,
+    isError: noteSearchFailed,
+    refetch: retryNoteSearch,
+  } = useQuery({
     queryKey: ["open-note-dialog", "content-search", contentQuery],
     queryFn: () => searchNotes(contentQuery),
     enabled: open && contentQuery.length >= MIN_CONTENT_QUERY_LENGTH,
@@ -402,9 +409,15 @@ export function OpenNoteDialog({
     runCommand(selectedCommand, "new");
   };
 
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const focusInput = useCallback((node: HTMLInputElement | null) => {
+    inputRef.current = node;
     node?.focus();
   }, []);
+  const clearSearch = () => {
+    setQuery("");
+    inputRef.current?.focus();
+  };
 
   if (!open) return null;
 
@@ -464,13 +477,45 @@ export function OpenNoteDialog({
 
           <CommandPrimitive.List className="max-h-[min(420px,60vh)] scroll-py-1 overflow-y-auto p-1">
             {groups.length === 0 ? (
-              <CommandPrimitive.Empty className="flex flex-col items-center gap-1 py-10 text-center">
-                <span className="text-foreground text-ui">
-                  <Trans>No results for “{rankedQuery.trim()}”</Trans>
-                </span>
-                <span className="text-muted-foreground text-label">
-                  <Trans>Try words from a note, a person, or a setting.</Trans>
-                </span>
+              <CommandPrimitive.Empty>
+                {isSearchingNotes || query !== rankedQuery ? (
+                  <p
+                    role="status"
+                    className="coach-sheen text-ui text-muted-foreground py-8 text-center"
+                  >
+                    <Trans>Searching notes…</Trans>
+                  </p>
+                ) : noteSearchFailed ? (
+                  <div role="alert">
+                    <EmptyState
+                      size="list"
+                      title={<Trans>Couldn't search your notes</Trans>}
+                      description={
+                        <Trans>
+                          Try again to search inside your notes and transcripts.
+                        </Trans>
+                      }
+                      action={{
+                        label: <Trans>Try again</Trans>,
+                        onClick: () => void retryNoteSearch(),
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <EmptyState
+                    size="list"
+                    title={<Trans>No results for “{rankedQuery.trim()}”</Trans>}
+                    description={
+                      <Trans>
+                        Try a name, a topic, or a few words from a conversation.
+                      </Trans>
+                    }
+                    action={{
+                      label: <Trans>Clear search</Trans>,
+                      onClick: clearSearch,
+                    }}
+                  />
+                )}
               </CommandPrimitive.Empty>
             ) : (
               groups.map((group) => (

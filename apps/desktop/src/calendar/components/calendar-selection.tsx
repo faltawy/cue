@@ -1,12 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { type MouseEvent, useRef, useState } from "react";
 
-import {
-  ArrowsClockwise,
-  CalendarSlash,
-  Check,
-  DotsThree,
-} from "@anlg/ui/components/icons";
+import { Check, DotsThree } from "@anlg/ui/components/icons";
 import { Skeleton } from "@anlg/ui/components/ui/skeleton";
 import { cn } from "@anlg/utils";
 
@@ -14,6 +9,7 @@ import {
   type MenuItemDef,
   useNativeContextMenu,
 } from "~/shared/hooks/useNativeContextMenu";
+import { EmptyState } from "~/shared/ui/empty-state";
 
 export interface CalendarItem {
   id: string;
@@ -73,24 +69,24 @@ export function CalendarSelection({
             ))}
           </div>
         ) : (
-          <>
-            <CalendarSlash className="text-muted-foreground/70 mb-2 size-6" />
-            <div className="text-muted-foreground text-label flex items-center gap-1">
-              <p>
-                <Trans>No calendars found</Trans>
-              </p>
-              {onRefresh ? (
-                <button
-                  type="button"
-                  onClick={onRefresh}
-                  className="text-muted-foreground hover:bg-accent hover:text-muted-foreground rounded-sm p-1 transition-colors"
-                  aria-label={t`Refresh calendars`}
-                >
-                  <ArrowsClockwise className="size-3" />
-                </button>
-              ) : null}
-            </div>
-          </>
+          <EmptyState
+            size="list"
+            title={<Trans>No calendars found</Trans>}
+            description={
+              <Trans>
+                Add an account in the macOS Calendar app, then refresh this
+                list.
+              </Trans>
+            }
+            action={
+              onRefresh
+                ? {
+                    label: <Trans>Refresh calendars</Trans>,
+                    onClick: onRefresh,
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
     );

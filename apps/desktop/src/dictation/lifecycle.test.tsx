@@ -87,6 +87,7 @@ vi.mock("@anlg/ui/components/ui/toast", () => ({
   toast: { error: vi.fn() },
 }));
 
+import { DictationPhase } from "./controller";
 import {
   DictationLifecycle,
   useDictationStatus,
@@ -169,7 +170,7 @@ describe("dictation access and lifecycle", () => {
     );
     useDictationStatus.setState({
       ready: false,
-      phase: "idle",
+      phase: DictationPhase.Idle,
       lastTranscript: "",
       error: null,
       retry: 0,

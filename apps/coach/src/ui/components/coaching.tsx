@@ -1,9 +1,10 @@
 import { Check, Copy, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { evidenceMomentId, type CoachFeedback, type EvidenceTarget, type Moment, type Move, type MoveTag, type MoveVerb } from "../../move";
 import { percentLabel, type TalkStats, talkShares, windowMinutes } from "../../talk-time";
 import { formatTimestamp } from "../../timestamp";
+import type { ActionResult } from "../use-coach";
 import { cx, IconButton, useFlag } from "./primitives";
 
 export type CopyText = (text: string) => Promise<boolean>;
@@ -30,7 +31,7 @@ export function MoveCard({
   move: Move;
   copy: CopyText;
   onEvidence?: (target: EvidenceTarget) => void;
-  onFeedback?: (feedback: CoachFeedback) => void;
+  onFeedback?: (feedback: CoachFeedback) => Promise<ActionResult>;
 }) {
   return (
     <section className="coach-enter flex flex-col gap-2 [&:not(:first-child)]:mt-3" aria-label="Coaching move" data-testid="move">
@@ -141,36 +142,97 @@ function FeedbackControl({
   onFeedback,
 }: {
   move: Move;
-  onFeedback(feedback: CoachFeedback): void;
+  onFeedback(feedback: CoachFeedback): Promise<ActionResult>;
 }) {
   const [reasonsOpen, setReasonsOpen] = useState(false);
+  const [state, setState] = useState<{
+    phase: "idle" | "pending" | "saved";
+    error: string | null;
+  }>({ phase: "idle", error: null });
+  const submitted = useRef(false);
   const momentId = move.evidence ? evidenceMomentId(move.evidence) : undefined;
-  const send = (input: Omit<CoachFeedback, "category" | "momentId">) =>
-    onFeedback({ category: move.tag, ...(momentId ? { momentId } : {}), ...input });
+  const send = async (input: Omit<CoachFeedback, "category" | "momentId">) => {
+    if (submitted.current) return;
+    submitted.current = true;
+    setState({ phase: "pending", error: null });
+    try {
+      const result = await onFeedback({
+        category: move.tag,
+        ...(momentId ? { momentId } : {}),
+        ...input,
+      });
+      submitted.current = result.ok;
+      setState(
+        result.ok
+          ? { phase: "saved", error: null }
+          : { phase: "idle", error: result.message },
+      );
+    } catch {
+      submitted.current = false;
+      setState({ phase: "idle", error: "Could not save feedback. Try again." });
+    }
+  };
+  const pending = state.phase === "pending";
+  if (state.phase === "saved")
+    return (
+      <p role="status" className="text-muted-foreground text-[11.5px]">
+        Feedback saved
+      </p>
+    );
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground" data-testid="nudge-feedback">
-      <button type="button" onClick={() => send({ useful: true })} className="hover:text-foreground">
+    <div
+      className="text-muted-foreground flex flex-wrap items-center gap-2 text-[11.5px]"
+      data-testid="nudge-feedback"
+    >
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => void send({ useful: true })}
+        className="hover:text-foreground disabled:opacity-50"
+      >
         Useful
       </button>
       <button
         type="button"
+        disabled={pending}
         aria-expanded={reasonsOpen}
         onClick={() => setReasonsOpen((open) => !open)}
-        className="hover:text-foreground"
+        className="hover:text-foreground disabled:opacity-50"
       >
         Not useful
       </button>
       {reasonsOpen && (
-        <div role="group" aria-label="Why was this nudge not useful?" className="flex flex-wrap gap-2">
+        <div
+          role="group"
+          aria-label="Why was this nudge not useful?"
+          className="flex flex-wrap gap-2"
+        >
           {FEEDBACK_REASONS.map(([reason, label]) => (
-            <button key={reason} type="button" onClick={() => send({ useful: false, reason })} className="hover:text-foreground">
+            <button
+              key={reason}
+              type="button"
+              disabled={pending}
+              onClick={() => void send({ useful: false, reason })}
+              className="hover:text-foreground disabled:opacity-50"
+            >
               {label}
             </button>
           ))}
-          <button type="button" onClick={() => send({ useful: false })} className="hover:text-foreground">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => void send({ useful: false })}
+            className="hover:text-foreground disabled:opacity-50"
+          >
             No reason
           </button>
         </div>
+      )}
+      {pending && <span role="status">Saving…</span>}
+      {state.error && (
+        <span role="alert" className="text-destructive">
+          {state.error}
+        </span>
       )}
     </div>
   );

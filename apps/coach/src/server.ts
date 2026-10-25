@@ -19,7 +19,6 @@ import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { actionItemText, blockItemCount } from "./blocks";
 import {
   type ChatStore,
-  clearFeedback,
   dropResume,
   keepWrapUp,
   isHandledMoment,
@@ -28,7 +27,7 @@ import {
   planChat,
   prioritizeHitsByFeedback,
   remember,
-  recordFeedback,
+  saveFeedback,
   saveChats,
   type SettledWrapUp,
   wrappedTranscripts,
@@ -38,6 +37,7 @@ import { claudeAccount } from "./claude-account";
 import { claudeCodeFromArgs } from "./claude-code";
 import { codexAccount, signInCodex } from "./codex-account";
 import { codexCodeFromArgs } from "./codex-code";
+import { dictationHandler } from "./dictation";
 import { coachError, GAVE_UP, StderrTail, withSignIn } from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { type AskImage, parseAskImages } from "./images";
@@ -61,6 +61,7 @@ import {
   evidenceMomentId,
   evidenceTargetSchema,
   FEEDBACK_REASONS,
+  type CoachFeedback,
   type EvidenceTarget,
   type Moment,
   MOVE_TAGS,
@@ -349,6 +350,16 @@ function saveStore() {
       _e: errorText(error),
       stateFile,
     });
+  }
+}
+
+function changeFeedback(input: CoachFeedback | null): Response {
+  try {
+    store = saveFeedback(stateFile, store, input);
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    console.error("[coach] could not save feedback", { _e: errorText(error) });
+    return new Response("Could not save feedback. Try again.", { status: 503 });
   }
 }
 
@@ -1142,6 +1153,7 @@ const server = Bun.serve({
         },
       });
     },
+    "/dictation": { POST: dictationHandler(bridge) },
     "/busy": () => Response.json({ busy: isAnswering(busy, wrapUp) }),
     "/ask": {
       POST: async (request) => {
@@ -1337,17 +1349,11 @@ const server = Bun.serve({
           return new Response("That nudge feedback is invalid.", {
             status: 400,
           });
-        store = recordFeedback(store, feedback.data);
-        saveStore();
-        return new Response(null, { status: 204 });
+        return changeFeedback(feedback.data);
       },
     },
     "/feedback/reset": {
-      POST: () => {
-        store = clearFeedback(store);
-        saveStore();
-        return new Response(null, { status: 204 });
-      },
+      POST: () => changeFeedback(null),
     },
     "/evidence": {
       POST: async (request) => {

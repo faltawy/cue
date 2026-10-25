@@ -143,11 +143,35 @@ describe("a coaching move", () => {
     const card = view.getByTestId("move");
 
     await act(async () => {
-      fireEvent.click(within(card).getByRole("button", { name: "Open transcript at 12:40" }));
+      fireEvent.click(
+        within(card).getByRole("button", { name: "Open transcript at 12:40" }),
+      );
     });
+    let complete!: (result: ActionResult) => void;
+    api.feedback.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+    fireEvent.click(within(card).getByRole("button", { name: "Useful" }));
+    expect(
+      (
+        within(card).getByRole("button", {
+          name: "Useful",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+    await act(async () => {
+      complete({ ok: false, message: "Could not save feedback." });
+    });
+    expect(within(card).getByRole("alert").textContent).toBe(
+      "Could not save feedback.",
+    );
     await act(async () => {
       fireEvent.click(within(card).getByRole("button", { name: "Useful" }));
     });
+    expect(within(card).getByRole("status").textContent).toBe("Feedback saved");
 
     expect(api.openEvidence).toHaveBeenCalledWith({
       sessionId: "session-a",

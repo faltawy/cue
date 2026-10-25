@@ -220,3 +220,24 @@ describe("recording state", () => {
     ]);
   });
 });
+
+test("dictation validates the native response and keeps recording ownership in its authenticated request", async () => {
+  const recordingId = "4dc5a2a6-e74e-40ac-b36b-40741ee77e1c";
+  const { bridge, seen } = fakeApp(({ body }) =>
+    Response.json(
+      (body as { action: string }).action === "stop"
+        ? { text: "My question" }
+        : { text: 42 },
+    ),
+  );
+  expect(await bridge.dictation(recordingId, "stop")).toEqual({
+    text: "My question",
+  });
+  expect(seen[0]).toEqual({
+    method: "POST",
+    path: "/dictation",
+    auth: "Bearer secret",
+    body: { recording_id: recordingId, action: "stop" },
+  });
+  await expect(bridge.dictation(recordingId, "start")).rejects.toThrow();
+});

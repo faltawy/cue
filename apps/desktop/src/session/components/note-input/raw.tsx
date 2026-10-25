@@ -447,29 +447,34 @@ function TemplateEmptyState({
   }, [createTemplate, openTemplatesTab]);
 
   return (
-    <>
-      <TemplateSection
-        label={t`Start with a favorite template`}
-        templates={favoriteTemplates}
-        onApply={onApply}
-      />
-      <TemplateSection
-        label={t`Suggested templates`}
-        templates={suggestedTemplates}
-        onApply={onApply}
-      />
+    <div className="flex flex-col gap-3">
+      <p className="text-ui text-muted-foreground max-w-[340px] text-balance">
+        {t`Choose a template to add headings, or keep writing your own notes.`}
+      </p>
+      <div>
+        <TemplateSection
+          label={t`Start with a favorite template`}
+          templates={favoriteTemplates}
+          onApply={onApply}
+        />
+        <TemplateSection
+          label={t`Suggested templates`}
+          templates={suggestedTemplates}
+          onApply={onApply}
+        />
+      </div>
       <button
         type="button"
         onClick={handleCreateTemplate}
         className={cn([
-          "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-start",
+          "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 flex min-h-7 w-fit max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-start",
           "text-muted-foreground hover:text-foreground focus-visible:text-foreground transition-colors focus-visible:outline-hidden",
         ])}
       >
-        <Plus aria-hidden className="size-4" />
-        <span className="text-body font-medium">{t`New template`}</span>
+        <Plus aria-hidden className="size-3.5" />
+        <span className="text-ui font-medium">{t`New template`}</span>
       </button>
-    </>
+    </div>
   );
 }
 
@@ -489,24 +494,25 @@ function TemplateSection({
 
   return (
     <>
-      <p className="text-muted-foreground text-label flex h-8 items-center">
-        {label}
-      </p>
+      <p className="text-muted-foreground text-label pt-2 pb-1">{label}</p>
       {templates.map((template) => (
         <button
           key={template.id}
           type="button"
           onClick={() => onApply(template)}
           className={cn([
-            "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 flex h-8 w-fit max-w-full items-center gap-2 rounded-md px-2 text-start",
+            "hover:bg-accent focus-visible:bg-accent pointer-events-auto -ms-2 flex min-h-7 w-fit max-w-full items-center gap-1.5 rounded-md px-2 py-1 text-start",
             "text-muted-foreground hover:text-foreground focus-visible:text-foreground transition-colors focus-visible:outline-hidden",
           ])}
         >
           <TemplateIconGlyph
             icon={template.icon}
-            className="text-body size-4"
+            className="size-3.5 shrink-0"
           />
-          <span className="text-body min-w-0 truncate font-medium">
+          <span
+            dir="auto"
+            className="text-ui min-w-0 font-medium [overflow-wrap:anywhere]"
+          >
             {template.title || t`Untitled`}
           </span>
         </button>

@@ -1,5 +1,6 @@
 import { describe, expect, spyOn, test } from "bun:test";
 
+import { emptyStore, recordFeedback, prioritizeHitsByFeedback } from "./chat-store";
 import type { Hit } from "./detect";
 import { moveSchema } from "./move";
 import {
@@ -272,4 +273,42 @@ describe("objection and monologue nudges", () => {
     expect(nudgeLabel([{ kind: "question", lineIndex: 1, text: "" }, { kind: "objection", lineIndex: 1, text: "" }])).toBe("Pushback");
     expect(nudgeLabel([{ kind: "monologue", lineIndex: 1, text: "" }])).toBe("Long monologue");
   });
+});
+
+test("feedback keeps preferred moments inside the capped model prompt without losing default recency", () => {
+  const hits: Hit[] = [
+    { kind: "objection", lineIndex: 0, text: "The price is too high." },
+    { kind: "number", lineIndex: 0, text: "The price is too high." },
+    hit(1, "First question?"),
+    hit(2, "Second question?"),
+    hit(3, "Third question?"),
+    hit(4, "Latest question?"),
+  ];
+  const flagged = (store: ReturnType<typeof emptyStore>) =>
+    nudgeMessage({
+      context: "Meeting",
+      hits: prioritizeHitsByFeedback(store, hits),
+      why: "unresolved cues",
+      lines: [],
+    })
+      .split("Flagged moment:\n")[1]
+      ?.split("\nFlagged because:")[0];
+  expect(flagged(emptyStore())).toBe(
+    [
+      '- a question aimed at the user: "Second question?"',
+      '- a question aimed at the user: "Third question?"',
+      '- a question aimed at the user: "Latest question?"',
+    ].join("\n"),
+  );
+  expect(
+    flagged(
+      recordFeedback(emptyStore(), { category: "pushback", useful: true }),
+    ),
+  ).toBe(
+    [
+      '- a question aimed at the user: "Third question?"',
+      '- a question aimed at the user: "Latest question?"',
+      '- pushback (price, timing, a competitor, a decision maker or doubt), a number, date or price: "The price is too high."',
+    ].join("\n"),
+  );
 });
