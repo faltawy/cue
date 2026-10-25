@@ -1,6 +1,7 @@
-import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import { type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "bun:test";
 
+import { CoachEventType } from "./protocol";
 import { claudeMessages } from "./runtime-message";
 import { OUTPUT_MAX, toolDetail, toolLabels, TurnTracker } from "./turn-events";
 
@@ -71,7 +72,7 @@ describe("TurnTracker", () => {
       ),
     ).toEqual([
       {
-        type: "tool",
+        type: CoachEventType.Tool,
         id: "t1",
         name: "Read",
         label: "Read README.md",
@@ -87,7 +88,7 @@ describe("TurnTracker", () => {
       ),
     ).toEqual([
       {
-        type: "tool_result",
+        type: CoachEventType.ToolResult,
         id: "t1",
         ok: true,
         output: "# Northwind",
@@ -137,9 +138,9 @@ describe("TurnTracker", () => {
       tracker,
       toolResult("t3", "x".repeat(OUTPUT_MAX + 50)),
     );
-    expect(long?.type === "tool_result" ? long.output?.length : 0).toBe(
-      OUTPUT_MAX + 1,
-    );
+    expect(
+      long?.type === CoachEventType.ToolResult ? long.output?.length : 0,
+    ).toBe(OUTPUT_MAX + 1);
   });
 
   test("an MCP tool whose result message is empty shows what the PostToolUse hook saw", () => {
@@ -181,7 +182,7 @@ describe("TurnTracker", () => {
           delta: { type: "text_delta", text: "Sara asked about Bcc." },
         },
       }),
-    ).toEqual([{ type: "text", delta: "Sara asked about Bcc." }]);
+    ).toEqual([{ type: CoachEventType.Text, delta: "Sara asked about Bcc." }]);
   });
 
   test("a failed turn becomes a readable error; an interrupted one does not", () => {

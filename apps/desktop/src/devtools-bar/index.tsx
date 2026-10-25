@@ -40,15 +40,14 @@ import {
   setRenderOutlinesEnabled,
 } from "./render-tracker";
 
+import { BuildChannel, Tone } from "~/devtools-bar/enums";
 import { commands } from "~/types/tauri.gen";
 
-type BuildChannel = "dev" | "staging" | "nightly" | "stable";
-
 function resolveBuildChannel(identifier: string): BuildChannel {
-  if (identifier.endsWith(".nightly")) return "nightly";
-  if (identifier.endsWith(".staging")) return "staging";
-  if (identifier.endsWith(".dev")) return "dev";
-  return "stable";
+  if (identifier.endsWith(".nightly")) return BuildChannel.Nightly;
+  if (identifier.endsWith(".staging")) return BuildChannel.Staging;
+  if (identifier.endsWith(".dev")) return BuildChannel.Dev;
+  return BuildChannel.Stable;
 }
 
 const CHANNEL_DOT: Record<BuildChannel, string> = {
@@ -75,8 +74,6 @@ const BUTTON_CLASS = cn([
 ]);
 const LABEL_CLASS = "text-muted-foreground";
 const VALUE_CLASS = "tabular-nums text-foreground";
-
-type Tone = "ok" | "warn" | "bad";
 
 const TONE_CLASS: Record<Tone, string> = {
   ok: "text-foreground",
@@ -254,7 +251,7 @@ function LiveMetrics() {
         value={fps ?? "–"}
         tone={
           fps === undefined
-            ? "ok"
+            ? Tone.Ok
             : toneBelow(fps, fpsTarget * 0.8, fpsTarget * 0.5)
         }
         chart={<Sparkline values={metrics.fps} floor={60} />}
@@ -408,7 +405,7 @@ function Metric(props: {
     as = "div",
     label,
     value,
-    tone = "ok",
+    tone = Tone.Ok,
     chart,
     trailing,
     onClick,
@@ -520,15 +517,15 @@ function useBuildInfo() {
 }
 
 function toneAbove(value: number, warn: number, bad: number): Tone {
-  if (value > bad) return "bad";
-  if (value > warn) return "warn";
-  return "ok";
+  if (value > bad) return Tone.Bad;
+  if (value > warn) return Tone.Warn;
+  return Tone.Ok;
 }
 
 function toneBelow(value: number, warn: number, bad: number): Tone {
-  if (value < bad) return "bad";
-  if (value < warn) return "warn";
-  return "ok";
+  if (value < bad) return Tone.Bad;
+  if (value < warn) return Tone.Warn;
+  return Tone.Ok;
 }
 
 const CHART_WIDTH = 36;

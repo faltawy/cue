@@ -20,20 +20,22 @@ import {
   classifyStartFailure,
   getMicrophonePermission,
   showStartFailureToast,
-  type StartFailureStage,
 } from "./start-failure";
 
 import { showCoachForRecording } from "~/coach/commands";
 import { useShell } from "~/contexts/shell";
 import { normalizeAudioRetention } from "~/services/audio-retention";
+import { AudioRetentionPolicy } from "~/services/enums";
 import { getBaseLanguageDisplayName } from "~/settings/general/language";
 import { useConfigValue } from "~/shared/config";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { useTabs } from "~/store/zustand/tabs";
 import {
   getLiveTranscriptionConfig,
   getTranscriptionLanguages,
   requiresRetainedBatchAudio,
 } from "~/stt/capabilities";
+import { StartFailureStage } from "~/stt/enums";
 import {
   getSessionParticipantHumanIds,
   useSessionParticipantHumanIds,
@@ -72,7 +74,8 @@ export function useStartListeningState(
   const dictionaryTerms = useConfigValue("personalization_dictionary_terms");
   const microphoneDevice = useConfigValue("microphone_device");
   const retainAudio =
-    normalizeAudioRetention(useConfigValue("audio_retention")) !== "none" ||
+    normalizeAudioRetention(useConfigValue("audio_retention")) !==
+      AudioRetentionPolicy.None ||
     requiresRetainedBatchAudio(conn?.provider, conn?.model);
   const meetingDisclosureAutoSendChat = useConfigValue(
     "consent_auto_send_chat",
@@ -88,7 +91,9 @@ export function useStartListeningState(
   const reportStartFailure = useCallback(
     async (stage: StartFailureStage, error: string | null) => {
       const microphonePermission =
-        stage === "recovery_marker" ? null : await getMicrophonePermission();
+        stage === StartFailureStage.RecoveryMarker
+          ? null
+          : await getMicrophonePermission();
       showStartFailureToast(
         classifyStartFailure({ stage, error, microphonePermission }),
         (tab) => openNew({ type: "settings", state: { tab } }),
@@ -159,7 +164,7 @@ export function useStartListeningState(
           cleanupError,
         );
       }
-      await reportStartFailure("recovery_marker", null);
+      await reportStartFailure(StartFailureStage.RecoveryMarker, null);
       return;
     }
 
@@ -197,7 +202,7 @@ export function useStartListeningState(
         );
       }
       await reportStartFailure(
-        "capture_start",
+        StartFailureStage.CaptureStart,
         error instanceof Error ? error.message : String(error),
       );
       return;
@@ -211,7 +216,7 @@ export function useStartListeningState(
         console.error("[listener] failed to clean up capture state", error);
       }
       await reportStartFailure(
-        "capture_rejected",
+        StartFailureStage.CaptureRejected,
         getLiveStartError(sessionId),
       );
       return;
@@ -285,7 +290,7 @@ export function useStartListeningState(
     if (meetingDisclosureAutoSendChat) {
       startMeetingRecordingDisclosure(
         sessionId,
-        () => getSessionMode(sessionId) === "active",
+        () => getSessionMode(sessionId) === LiveSessionStatus.Active,
       );
     }
   }, [

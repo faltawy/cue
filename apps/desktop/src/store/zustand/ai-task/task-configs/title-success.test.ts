@@ -8,6 +8,7 @@ import {
   titleSuccess,
 } from "./title-success";
 
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { useLiveTitle } from "~/store/zustand/live-title";
 
 const mocks = vi.hoisted(() => ({
@@ -24,7 +25,7 @@ vi.mock("~/session/content-mutations", () => ({
 }));
 
 type TitleSuccessParams = Parameters<
-  NonNullable<TaskConfig<"title">["onSuccess"]>
+  NonNullable<TaskConfig<TaskType.Title>["onSuccess"]>
 >[0];
 
 function createSnapshot(title = "") {

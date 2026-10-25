@@ -17,6 +17,7 @@ import { cn } from "@anlg/utils";
 
 import { streamdownComponents } from "~/session/components/streamdown";
 import { type TaskResource } from "~/store/zustand/tabs";
+import { TaskResourceType } from "~/store/zustand/tabs/enums";
 
 const rehypePlugins = [defaultRehypePlugins.raw, defaultRehypePlugins.sanitize];
 
@@ -69,7 +70,8 @@ export function ResourceView({ resource }: { resource: TaskResource }) {
     enabled: !!issue,
   });
 
-  const isPR = resource.type === "github_pr" || issue?.pull_request != null;
+  const isPR =
+    resource.type === TaskResourceType.GithubPr || issue?.pull_request != null;
   const urlPath = isPR ? "pull" : "issues";
   const url = `https://github.com/${resource.owner}/${resource.repo}/${urlPath}/${resource.number}`;
   const isMerged = issue?.pull_request?.merged_at != null;

@@ -6,8 +6,9 @@ import { ResourceView } from "./resource-view";
 
 import { StandardContentWrapper } from "~/shared/main";
 import { type Tab, type TaskResource } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
-type TaskTab = Extract<Tab, { type: "task" }>;
+type TaskTab = Extract<Tab, { type: TabType.Task }>;
 
 export function TabContentTask({ tab }: { tab: TaskTab }) {
   const scrollRef = useRef<HTMLDivElement>(null);

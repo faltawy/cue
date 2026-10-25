@@ -4,6 +4,7 @@ import { ArrowsClockwise, Square } from "@anlg/ui/components/icons";
 import { Chip } from "@anlg/ui/components/ui/chip";
 
 import { EmptyState } from "~/shared/ui/empty-state";
+import { BatchPhase } from "~/stt/enums";
 
 export function TranscriptEmptyState({
   isBatching,
@@ -19,7 +20,7 @@ export function TranscriptEmptyState({
   isBatching?: boolean;
   hasAudio?: boolean;
   percentage?: number;
-  phase?: "importing" | "transcribing";
+  phase?: BatchPhase;
   error?: string | null;
   onRetranscribe?: () => void;
   onUploadAudio?: () => void;
@@ -50,7 +51,7 @@ export function TranscriptEmptyState({
         <EmptyState
           title={
             <span className="coach-sheen">
-              {phase === "importing"
+              {phase === BatchPhase.Importing
                 ? t`Importing audio...`
                 : t`Generating transcript...`}
             </span>
@@ -58,7 +59,7 @@ export function TranscriptEmptyState({
           description={
             hasProgress ? (
               <span className="tabular-nums">{t`${Math.round((percentage ?? 0) * 100)}% complete`}</span>
-            ) : phase === "importing" ? (
+            ) : phase === BatchPhase.Importing ? (
               t`Adding the recording to this note.`
             ) : (
               t`Your transcript will appear here when it's ready.`

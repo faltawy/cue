@@ -5,13 +5,13 @@ import { type ComponentType, type ReactNode, useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 
 import {
+  AIProviderType,
   ProviderCredentialError,
   providerCredentialIdentity,
   verifyProviderCredentials,
   usesDeferredProviderAuthentication,
 } from "@anlg/provider-validation";
-import type { AIProvider } from "@anlg/store";
-import { aiProviderSchema } from "@anlg/store";
+import { type AIProvider, aiProviderSchema } from "@anlg/store";
 import {
   ArrowSquareOut,
   CircleNotch,
@@ -53,10 +53,11 @@ import {
 } from "~/settings/providers";
 import { setSettingValues } from "~/settings/queries";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
+import { AlertVariant, AlertLifecycle } from "~/sidebar/enums";
 
 export * from "./provider-search";
 
-type ProviderType = "stt";
+type ProviderType = AIProviderType.Stt;
 
 type ProviderConfig = {
   id: string;
@@ -431,8 +432,8 @@ export function ProviderCard({
         description={
           hasUnresolvedKeychainError ? keychainToastDescription : undefined
         }
-        variant="error"
-        lifecycle="condition-bound"
+        variant={AlertVariant.Error}
+        lifecycle={AlertLifecycle.ConditionBound}
         action={
           isKeychainRecoveryInProgress
             ? undefined

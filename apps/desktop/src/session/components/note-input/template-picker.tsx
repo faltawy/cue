@@ -28,6 +28,7 @@ import {
   useUserTemplates,
   type WebTemplate,
 } from "~/templates";
+import { TemplateIconKind } from "~/templates/enums";
 
 export type TemplateSelection = {
   templateId: string | null;
@@ -275,7 +276,7 @@ export function TemplatePickerPopover({
           key: "auto",
           title: "Auto",
           icon: {
-            type: "icon",
+            type: TemplateIconKind.Icon,
             value: "sparkles",
             color: "#9ca3af",
           } satisfies TemplateIcon,

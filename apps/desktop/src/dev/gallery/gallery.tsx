@@ -20,7 +20,7 @@ import {
   Trash,
   Users,
 } from "@anlg/ui/components/icons";
-import { showAppToast } from "@anlg/ui/components/ui/app-toast";
+import { AppToastTone, showAppToast } from "@anlg/ui/components/ui/app-toast";
 import { Badge } from "@anlg/ui/components/ui/badge";
 import { Button } from "@anlg/ui/components/ui/button";
 import { Card } from "@anlg/ui/components/ui/card";
@@ -36,6 +36,7 @@ import {
   CommandShortcut,
 } from "@anlg/ui/components/ui/command";
 import {
+  DialogPlacement,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -100,20 +101,27 @@ import {
 } from "@anlg/ui/components/ui/tooltip";
 import { cn } from "@anlg/utils";
 
+import { Scene } from "~/dev/enums";
+import { ThemePreference } from "~/shared/enums";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
 import { EmptyState } from "~/shared/ui/empty-state";
 
-type Scene = "components" | "floating" | "dialog" | "palette";
-const SCENES: Scene[] = ["components", "floating", "dialog", "palette"];
+const SCENES: Scene[] = [
+  Scene.Components,
+  Scene.Floating,
+  Scene.Dialog,
+  Scene.Palette,
+];
 
 const params = new URLSearchParams(location.search);
 const theme = params.get("theme");
 const dir = params.get("dir") === "rtl" ? "rtl" : "ltr";
 const scene: Scene =
-  SCENES.find((s) => s === params.get("scene")) ?? "components";
+  SCENES.find((s) => s === params.get("scene")) ?? Scene.Components;
 
 export function Gallery() {
-  if (theme !== "light" && theme !== "dark") return <SideBySide />;
+  if (theme !== ThemePreference.Light && theme !== ThemePreference.Dark)
+    return <SideBySide />;
   return <Frame theme={theme} />;
 }
 
@@ -179,10 +187,17 @@ function AutoFrame({ src, title }: { src: string; title: string }) {
   );
 }
 
-function Frame({ theme: frameTheme }: { theme: "light" | "dark" }) {
+function Frame({
+  theme: frameTheme,
+}: {
+  theme: ThemePreference.Light | ThemePreference.Dark;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", frameTheme === "dark");
+    document.documentElement.classList.toggle(
+      "dark",
+      frameTheme === ThemePreference.Dark,
+    );
     document.documentElement.dir = dir;
     const node = rootRef.current;
     if (!node) return;
@@ -204,10 +219,10 @@ function Frame({ theme: frameTheme }: { theme: "light" | "dark" }) {
           data-gallery-root
           className="bg-background text-foreground min-h-screen p-6"
         >
-          {scene === "components" && <ComponentsScene />}
-          {scene === "floating" && <FloatingScene />}
-          {scene === "dialog" && <DialogScene />}
-          {scene === "palette" && <PaletteScene />}
+          {scene === Scene.Components && <ComponentsScene />}
+          {scene === Scene.Floating && <FloatingScene />}
+          {scene === Scene.Dialog && <DialogScene />}
+          {scene === Scene.Palette && <PaletteScene />}
         </div>
       </TooltipProvider>
     </DirectionProvider>
@@ -695,7 +710,7 @@ function FloatingScene() {
       id: "gallery-toast",
       message: "Summary is ready",
       description: "Product review · 3 action items",
-      tone: "success",
+      tone: AppToastTone.Success,
       durationMs: 600_000,
       action: { label: "Open", onClick: () => {} },
     });
@@ -888,7 +903,10 @@ function PaletteScene() {
   return (
     <div className="h-[520px]">
       <Dialog open>
-        <DialogContent placement="top" className="max-w-[560px] gap-0 p-0">
+        <DialogContent
+          placement={DialogPlacement.Top}
+          className="max-w-[560px] gap-0 p-0"
+        >
           <DialogTitle className="sr-only">Search or jump to</DialogTitle>
           <Command className="[&_[cmdk-input-wrapper]]:h-11 [&_[cmdk-input-wrapper]_svg]:size-4">
             <CommandInput placeholder="Search or jump to…" />

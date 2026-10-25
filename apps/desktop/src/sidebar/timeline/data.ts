@@ -8,17 +8,20 @@ import {
   getItemTimestamp,
   type TimelineBucket,
   type TimelineEventsTable,
-  type TimelineGroupBy,
   type TimelineSessionsTable,
-  type TimelineSortOrder,
 } from "./utils";
+
+import {
+  TimelineGroupBy,
+  NoteSortOrder as TimelineSortOrder,
+} from "~/sidebar/enums";
 
 export function getFallbackIndicatorIndex(
   buckets: TimelineBucket[],
   nowMs: number,
-  sortOrder: TimelineSortOrder = "newest",
+  sortOrder: TimelineSortOrder = TimelineSortOrder.Newest,
 ) {
-  if (sortOrder === "oldest") {
+  if (sortOrder === TimelineSortOrder.Oldest) {
     for (let index = 0; index < buckets.length; index++) {
       const bucket = buckets[index];
       if (!bucket) {
@@ -76,10 +79,10 @@ function isFutureBucketLabel(label: string) {
 export function useTimelineData({
   folderFilter = null,
   tagFilter = null,
-  groupBy = "date",
+  groupBy = TimelineGroupBy.Date,
   isEventIgnored,
   showIgnored,
-  sortOrder = "newest",
+  sortOrder = TimelineSortOrder.Newest,
   timelineEventsTable,
   timelineSessionsTable,
   timezone,
@@ -111,7 +114,7 @@ export function useTimelineData({
     [folderFilter, tagFilter, timelineEventsTable, timelineSessionsTable],
   );
   const windowData = useMemo(() => {
-    if (groupBy === "folder") {
+    if (groupBy === TimelineGroupBy.Folder) {
       return {
         timelineEventsTable: {},
         timelineSessionsTable: folderScopedTables.timelineSessionsTable,

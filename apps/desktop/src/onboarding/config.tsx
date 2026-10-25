@@ -1,8 +1,13 @@
-import type { SectionStatus } from "./shared";
+import { OnboardingStep, SectionStatus } from "~/onboarding/enums";
 
-export type OnboardingStep = "permissions" | "calendar" | "claude" | "final";
+export { OnboardingStep };
 
-const STEPS: OnboardingStep[] = ["permissions", "calendar", "claude", "final"];
+const STEPS: OnboardingStep[] = [
+  OnboardingStep.Permissions,
+  OnboardingStep.Calendar,
+  OnboardingStep.Claude,
+  OnboardingStep.Final,
+];
 
 export function getInitialStep(): OnboardingStep {
   return STEPS[0];
@@ -37,7 +42,7 @@ export function getStepStatus(
   const stepIdx = STEPS.indexOf(step);
   if (stepIdx === -1) return null;
   const currentIdx = STEPS.indexOf(currentStep);
-  if (stepIdx < currentIdx) return "completed";
-  if (stepIdx === currentIdx) return "active";
-  return "upcoming";
+  if (stepIdx < currentIdx) return SectionStatus.Completed;
+  if (stepIdx === currentIdx) return SectionStatus.Active;
+  return SectionStatus.Upcoming;
 }

@@ -3,6 +3,10 @@ import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
+import { AIProviderType } from "@anlg/provider-validation";
+
+import { ProviderRequirementKind } from "~/settings/enums";
+
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
   key: 0,
@@ -41,7 +45,7 @@ test("makes an authenticated local provider available despite its origin restric
       : new Response(null, { status: 401 });
   });
 
-  const { result, client, unmount } = setup("stt");
+  const { result, client, unmount } = setup(AIProviderType.Stt);
   await waitFor(() => expect(result.current.openai).toBe(true));
   unmount();
   client.clear();
@@ -55,7 +59,7 @@ test.each([
   "invalid saved endpoint %s settles availability without a request",
   async (baseUrl) => {
     mocks.baseUrl = baseUrl;
-    const { result, client, unmount } = setup("stt");
+    const { result, client, unmount } = setup(AIProviderType.Stt);
     await waitFor(() => expect(result.current.openai).toBe(false));
     expect(mocks.fetch).not.toHaveBeenCalled();
     unmount();
@@ -67,14 +71,14 @@ test("keeps a saved Custom STT endpoint available without model-list verificatio
   mocks.provider = "custom";
   mocks.baseUrl = "http://127.0.0.1:8000/v1";
   mocks.fetch.mockResolvedValue(new Response(null, { status: 404 }));
-  const { result, client, unmount } = setup("stt");
+  const { result, client, unmount } = setup(AIProviderType.Stt);
   await waitFor(() => expect(result.current.custom).toBe(true));
   expect(mocks.fetch).not.toHaveBeenCalled();
   unmount();
   client.clear();
 });
 
-function setup(type: "stt") {
+function setup(type: AIProviderType.Stt) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -86,7 +90,12 @@ function setup(type: "stt") {
           displayName: "OpenAI",
           icon: null,
           baseUrl: "https://api.openai.com/v1",
-          requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+          requirements: [
+            {
+              kind: ProviderRequirementKind.RequiresConfig,
+              fields: ["api_key"],
+            },
+          ],
         },
       ]),
     {
@@ -98,7 +107,7 @@ function setup(type: "stt") {
   return { ...hook, client };
 }
 
-test.each(["stt"] as const)(
+test.each([AIProviderType.Stt] as const)(
   "keeps %s availability unknown after a network failure and recovers on retry",
   async (type) => {
     mocks.fetch.mockRejectedValue(new Error("offline"));
@@ -120,7 +129,7 @@ test.each([401, 403, 429, 500])(
   "distinguishes rejected credentials from inconclusive HTTP %i responses",
   async (status) => {
     mocks.fetch.mockResolvedValue(new Response(null, { status }));
-    const { result, client, unmount } = setup("stt");
+    const { result, client, unmount } = setup(AIProviderType.Stt);
     await waitFor(() => expect(client.isFetching()).toBe(0));
     if (status === 401 || status === 403) {
       await waitFor(() => expect(result.current.openai).toBe(false));

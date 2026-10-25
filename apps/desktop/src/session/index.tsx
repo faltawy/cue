@@ -4,7 +4,10 @@ import React, { useEffect, useRef } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 import { commands as fsSyncCommands } from "@anlg/plugin-fs-sync";
-import { computeCurrentNoteTab } from "@anlg/utils/session";
+import {
+  SessionNoteViewType,
+  computeCurrentNoteTab,
+} from "@anlg/utils/session";
 
 import { FloatingActionButton } from "./components/floating";
 import { NoteConflictBanner } from "./components/note-conflict-banner";
@@ -32,7 +35,9 @@ import { revealLockedNote } from "~/lock/notes";
 import { NoteLockScreen } from "~/lock/screen";
 import { useAppLock } from "~/lock/store";
 import { useSession } from "~/session/queries";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { useListener } from "~/stt/contexts";
 import { ScheduledSessionAutoStart } from "~/stt/scheduled-session-auto-start";
 
@@ -41,7 +46,7 @@ export function TabContentNote({
   tab,
 }: {
   standaloneWindow?: boolean;
-  tab: Extract<Tab, { type: "sessions" }>;
+  tab: Extract<Tab, { type: TabType.Sessions }>;
 }) {
   return <LockedNoteGate tab={tab} standaloneWindow={standaloneWindow} />;
 }
@@ -51,7 +56,7 @@ function LockedNoteGate({
   tab,
 }: {
   standaloneWindow: boolean;
-  tab: Extract<Tab, { type: "sessions" }>;
+  tab: Extract<Tab, { type: TabType.Sessions }>;
 }) {
   const session = useSession(tab.id);
   const locked = isLockedFlag(session?.locked);
@@ -85,14 +90,16 @@ function UnlockedTabContentNote({
   lockOverlay,
 }: {
   standaloneWindow: boolean;
-  tab: Extract<Tab, { type: "sessions" }>;
+  tab: Extract<Tab, { type: TabType.Sessions }>;
   lockOverlay: React.ReactNode;
 }) {
   const sessionMode = useListener((state) => state.getSessionMode(tab.id));
   const audioExists = AudioPlayer.useAudioExists(tab.id);
 
   const audioUrlQuery = useQuery({
-    enabled: sessionMode !== "active" && sessionMode !== "finalizing",
+    enabled:
+      sessionMode !== LiveSessionStatus.Active &&
+      sessionMode !== LiveSessionStatus.Finalizing,
     queryKey: ["audio", tab.id, "url"],
     queryFn: () => fsSyncCommands.audioPath(tab.id),
     select: (result) => {
@@ -136,7 +143,7 @@ function TabContentNoteInner({
   audioExists,
   lockOverlay,
 }: {
-  tab: Extract<Tab, { type: "sessions" }>;
+  tab: Extract<Tab, { type: TabType.Sessions }>;
   standaloneWindow: boolean;
   audioUrlReady: boolean;
   audioExists: boolean;
@@ -165,7 +172,7 @@ function TabContentNoteInner({
   });
   const enhancedNoteIds = useEnhancedNotes(
     sessionId,
-    hasTranscript && sessionMode === "inactive",
+    hasTranscript && sessionMode === LiveSessionStatus.Inactive,
   );
   const session = useSession(sessionId);
   const sessionEvent = session ? getSessionEvent(session) : null;
@@ -173,7 +180,7 @@ function TabContentNoteInner({
 
   const { skipReason } = useAutoEnhance(tab);
   const isTranscribing = shouldShowTranscriptTabSpinner(sessionMode);
-  const isLiveSessionActive = sessionMode === "active";
+  const isLiveSessionActive = sessionMode === LiveSessionStatus.Active;
   const editorTabs = React.useMemo(
     () =>
       createEditorTabs({
@@ -205,7 +212,7 @@ function TabContentNoteInner({
 
   const handleTabChange = React.useCallback(
     (view: typeof currentView) => {
-      if (view.type !== "transcript") {
+      if (view.type !== SessionNoteViewType.Transcript) {
         blurActiveTranscriptEditor();
         setEditingTranscriptSessionId(null);
       }
@@ -231,7 +238,7 @@ function TabContentNoteInner({
       enabled:
         tab.active &&
         !lockOverlay &&
-        currentView.type === "transcript" &&
+        currentView.type === SessionNoteViewType.Transcript &&
         transcriptEditMode,
       enableOnContentEditable: true,
       enableOnFormTags: true,

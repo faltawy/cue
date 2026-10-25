@@ -1,14 +1,23 @@
-import type { Database } from "bun:sqlite";
+import { type Database } from "bun:sqlite";
 import { beforeEach, describe, expect, test } from "bun:test";
 
-import { appDb, seedNote, seedParticipant, seedPerson, seedTag, seedTranscript } from "./fixtures/app-db";
 import {
+  appDb,
+  seedNote,
+  seedParticipant,
+  seedPerson,
+  seedTag,
+  seedTranscript,
+} from "./fixtures/app-db";
+import {
+  ActionItemStatus,
   getMeeting,
   listActionItems,
   listFolders,
   listTags,
   listTemplates,
   LockedNoteError,
+  MeetingInclude,
   searchMeetings,
   searchPeople,
 } from "./library";
@@ -19,7 +28,13 @@ beforeEach(async () => {
   db = await appDb();
   seedPerson(db, { id: "me", name: "Falta" });
   db.run(`INSERT INTO organizations (id, name) VALUES ('org-lumen', 'Lumen')`);
-  seedPerson(db, { id: "sara", name: "Sara Haddad", email: "sara@lumen.test", organization: "org-lumen", title: "CFO" });
+  seedPerson(db, {
+    id: "sara",
+    name: "Sara Haddad",
+    email: "sara@lumen.test",
+    organization: "org-lumen",
+    title: "CFO",
+  });
   seedNote(db, {
     id: "pricing",
     title: "Lumen pricing",
@@ -34,7 +49,13 @@ beforeEach(async () => {
     { text: " Can we do annual?", start_ms: 0, channel: 1 },
     { text: " Yes, at forty seats.", start_ms: 4_000, channel: 0 },
   ]);
-  seedNote(db, { id: "standup", title: "Standup", folder: "Team", startedAt: "2026-09-01T09:00:00.000Z", body: ["Nothing on billing"] });
+  seedNote(db, {
+    id: "standup",
+    title: "Standup",
+    folder: "Team",
+    startedAt: "2026-09-01T09:00:00.000Z",
+    body: ["Nothing on billing"],
+  });
   seedNote(db, {
     id: "secret",
     title: "Board prep",
@@ -64,21 +85,38 @@ describe("searchMeetings", () => {
   test("a locked note is found by its title only and never shows its content", () => {
     const byTitle = searchMeetings(db, { query: "board prep", limit: 10 });
     const byContent = searchMeetings(db, { query: "for the board", limit: 10 });
-    const unlockedControl = searchMeetings(db, { query: "40 seats", limit: 10 });
+    const unlockedControl = searchMeetings(db, {
+      query: "40 seats",
+      limit: 10,
+    });
 
     expect(byTitle).toEqual([
-      { id: "secret", title: "Board prep", date: "2026-10-12T09:00:00.000Z", folder: "", participants: ["Sara Haddad"], snippet: null, locked: true },
+      {
+        id: "secret",
+        title: "Board prep",
+        date: "2026-10-12T09:00:00.000Z",
+        folder: "",
+        participants: ["Sara Haddad"],
+        snippet: null,
+        locked: true,
+      },
     ]);
     expect(byContent).toEqual([]);
     expect(unlockedControl.map((hit) => hit.id)).toEqual(["pricing"]);
   });
 
   test("filters by folder (with subfolders), participant, dates and limit", () => {
-    const ids = (input: Parameters<typeof searchMeetings>[1]) => searchMeetings(db, input).map((hit) => hit.id);
+    const ids = (input: Parameters<typeof searchMeetings>[1]) =>
+      searchMeetings(db, input).map((hit) => hit.id);
 
     expect(ids({ folder: "Clients", limit: 10 })).toEqual(["pricing"]);
-    expect(ids({ participant: "sara@lumen", limit: 10 })).toEqual(["secret", "pricing"]);
-    expect(ids({ from: "2026-09-01", to: "2026-09-30", limit: 10 })).toEqual(["standup"]);
+    expect(ids({ participant: "sara@lumen", limit: 10 })).toEqual([
+      "secret",
+      "pricing",
+    ]);
+    expect(ids({ from: "2026-09-01", to: "2026-09-30", limit: 10 })).toEqual([
+      "standup",
+    ]);
     expect(ids({ limit: 2 })).toEqual(["secret", "pricing"]);
     expect(ids({ limit: 10 })).toEqual(["secret", "pricing", "standup"]);
   });
@@ -86,7 +124,11 @@ describe("searchMeetings", () => {
 
 describe("getMeeting", () => {
   test("returns details, notes as markdown and a speaker-labelled transcript clipped to max_chars", () => {
-    const meeting = getMeeting(db, { id: "pricing", include: "both", max_chars: 50 });
+    const meeting = getMeeting(db, {
+      id: "pricing",
+      include: MeetingInclude.Both,
+      max_chars: 50,
+    });
 
     expect(meeting).toEqual({
       id: "pricing",
@@ -98,16 +140,40 @@ describe("getMeeting", () => {
       notes: "Decided annual billing at 40 seats\nSara wants a di…",
       transcript: "[00:00] Sara Haddad: Can we do annual?\n[00:04] You…",
     });
-    expect(getMeeting(db, { id: "pricing", include: "notes", max_chars: 4_000 })).not.toHaveProperty("transcript");
+    expect(
+      getMeeting(db, {
+        id: "pricing",
+        include: MeetingInclude.Notes,
+        max_chars: 4_000,
+      }),
+    ).not.toHaveProperty("transcript");
   });
 
   test("a locked note's content is refused while an unlocked one is readable", () => {
-    expect(() => getMeeting(db, { id: "secret", include: "notes", max_chars: 4_000 })).toThrow(LockedNoteError);
-    expect(getMeeting(db, { id: "pricing", include: "notes", max_chars: 4_000 }).notes).toContain("annual billing");
+    expect(() =>
+      getMeeting(db, {
+        id: "secret",
+        include: MeetingInclude.Notes,
+        max_chars: 4_000,
+      }),
+    ).toThrow(LockedNoteError);
+    expect(
+      getMeeting(db, {
+        id: "pricing",
+        include: MeetingInclude.Notes,
+        max_chars: 4_000,
+      }).notes,
+    ).toContain("annual billing");
   });
 
   test("an unknown id is an error, not an empty meeting", () => {
-    expect(() => getMeeting(db, { id: "nope", include: "both", max_chars: 4_000 })).toThrow("There is no note with id nope");
+    expect(() =>
+      getMeeting(db, {
+        id: "nope",
+        include: MeetingInclude.Both,
+        max_chars: 4_000,
+      }),
+    ).toThrow("There is no note with id nope");
   });
 });
 
@@ -129,10 +195,21 @@ describe("library lists", () => {
 
   test("people search matches name, email and organization and lists matching organizations", () => {
     expect(searchPeople(db, { query: "lumen", limit: 10 })).toEqual({
-      people: [{ id: "sara", name: "Sara Haddad", email: "sara@lumen.test", organization: "Lumen", title: "CFO" }],
+      people: [
+        {
+          id: "sara",
+          name: "Sara Haddad",
+          email: "sara@lumen.test",
+          organization: "Lumen",
+          title: "CFO",
+        },
+      ],
       organizations: [{ id: "org-lumen", name: "Lumen" }],
     });
-    expect(searchPeople(db, { query: "nobody", limit: 10 })).toEqual({ people: [], organizations: [] });
+    expect(searchPeople(db, { query: "nobody", limit: 10 })).toEqual({
+      people: [],
+      organizations: [],
+    });
   });
 
   test("templates come with their sections", () => {
@@ -141,7 +218,12 @@ describe("library lists", () => {
     );
 
     expect(listTemplates(db)).toEqual([
-      { id: "tpl", title: "Discovery", description: "First call", sections: [{ title: "Pain", description: "What hurts" }] },
+      {
+        id: "tpl",
+        title: "Discovery",
+        description: "First call",
+        sections: [{ title: "Pain", description: "What hurts" }],
+      },
     ]);
   });
 
@@ -151,11 +233,24 @@ describe("library lists", () => {
       ["a2", "secret", "Board deck"],
     ];
     for (const [id, session, text] of items) {
-      db.run(`INSERT INTO action_items (id, session_id, text, status, assignee_human_id) VALUES (?, ?, ?, 'todo', 'sara')`, [id, session, text]);
+      db.run(
+        `INSERT INTO action_items (id, session_id, text, status, assignee_human_id) VALUES (?, ?, ?, 'todo', 'sara')`,
+        [id, session, text],
+      );
     }
 
-    expect(listActionItems(db, { status: "todo", limit: 10 })).toEqual([
-      { task_id: "a1", text: "Send the sheet", status: "todo", note_id: "pricing", note_title: "Lumen pricing", assignee: "Sara Haddad", due: null },
+    expect(
+      listActionItems(db, { status: ActionItemStatus.Todo, limit: 10 }),
+    ).toEqual([
+      {
+        task_id: "a1",
+        text: "Send the sheet",
+        status: "todo",
+        note_id: "pricing",
+        note_title: "Lumen pricing",
+        assignee: "Sara Haddad",
+        due: null,
+      },
     ]);
   });
 });

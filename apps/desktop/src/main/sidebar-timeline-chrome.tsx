@@ -10,6 +10,7 @@ import { cn } from "@anlg/utils";
 
 import type { ShortcutKey } from "~/shared/shortcut-keys";
 import { ShortcutHint } from "~/shared/ui/shortcut-hint";
+import { SidebarBadge } from "~/sidebar/enums";
 import { SidebarNoteFilterMenu } from "~/sidebar/note-filter-menu";
 import { useSidebarUpcomingMeetingStatus } from "~/sidebar/timeline/upcoming-meeting";
 
@@ -64,7 +65,7 @@ function SidebarTimelineChrome({
 }) {
   const collapsedBadge = !sidebarExpanded
     ? hasUpcomingMeeting
-      ? "upcomingMeeting"
+      ? SidebarBadge.UpcomingMeeting
       : null
     : null;
 
@@ -129,7 +130,7 @@ export function LeftSurfaceChromeButton({
 }: {
   ariaLabel: string;
   shortcut?: readonly ShortcutKey[];
-  badge?: "upcomingMeeting" | null;
+  badge?: SidebarBadge | null;
   children: ReactNode;
   disabled?: boolean;
   onClick: () => void;

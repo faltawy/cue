@@ -25,6 +25,7 @@ import { TemplateIconPicker } from "./template-icon-picker";
 
 import { useSetSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { IconPickerSize } from "~/templates/enums";
 
 function parseTargets(value: string) {
   return value
@@ -197,7 +198,7 @@ export function TemplateForm({
           <form.Field name="icon">
             {(field) => (
               <TemplateIconPicker
-                size="sm"
+                size={IconPickerSize.Sm}
                 value={field.state.value}
                 onChange={field.handleChange}
               />

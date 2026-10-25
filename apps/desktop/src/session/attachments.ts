@@ -4,6 +4,7 @@ import { commands } from "@anlg/plugin-session";
 import { enqueueSessionAudioOperation } from "./audio-operations";
 
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import { AttachmentAvailability } from "~/session/enums";
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 
@@ -124,15 +125,15 @@ async function deleteSessionAudioFile(sessionId: string): Promise<boolean> {
   if (result.status === "error") {
     throw new Error(result.error);
   }
-  await markSessionAudioAvailability(sessionId, "absent");
+  await markSessionAudioAvailability(sessionId, AttachmentAvailability.Absent);
   return result.data;
 }
 
 async function markSessionAudioAvailability(
   sessionId: string,
-  availability: "present" | "absent",
+  availability: AttachmentAvailability,
 ): Promise<void> {
-  if (availability === "absent") {
+  if (availability === AttachmentAvailability.Absent) {
     const result = await commands.markSessionAudioAbsent({
       session_id: sessionId,
     });

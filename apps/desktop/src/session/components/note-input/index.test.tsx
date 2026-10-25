@@ -1,25 +1,34 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import { NoteInput } from ".";
 
+import { TabType } from "~/store/zustand/tabs/enums";
 import type { EditorView } from "~/store/zustand/tabs/schema";
 
-const hoisted = vi.hoisted(() => ({
-  editorTabs: [{ type: "raw" }, { type: "transcript" }] as EditorView[],
-  hotkeys: [] as Array<{ keys: string; callback: () => void }>,
-  enhancedHasProseMirror: true,
-  enhancedEditorProps: [] as Record<string, unknown>[],
-  focusAtTrailingEmptyLine: vi.fn(),
-  flushPendingChanges: vi.fn(),
-  onBeforeTabChange: vi.fn(),
-  rawEditorProps: [] as Record<string, unknown>[],
-  registerCanonicalSessionEditor: vi.fn(),
-  searchVisible: false,
-  sessionMode: "inactive",
-  unregisterCanonicalSessionEditor: vi.fn(),
-  updateSessionTabState: vi.fn(),
-}));
+const hoisted = await vi.hoisted(async () => {
+  const { SessionNoteViewType } = await import("@anlg/utils/session");
+  return {
+    editorTabs: [
+      { type: SessionNoteViewType.Raw },
+      { type: SessionNoteViewType.Transcript },
+    ] as EditorView[],
+    hotkeys: [] as Array<{ keys: string; callback: () => void }>,
+    enhancedHasProseMirror: true,
+    enhancedEditorProps: [] as Record<string, unknown>[],
+    focusAtTrailingEmptyLine: vi.fn(),
+    flushPendingChanges: vi.fn(),
+    onBeforeTabChange: vi.fn(),
+    rawEditorProps: [] as Record<string, unknown>[],
+    registerCanonicalSessionEditor: vi.fn(),
+    searchVisible: false,
+    sessionMode: "inactive",
+    unregisterCanonicalSessionEditor: vi.fn(),
+    updateSessionTabState: vi.fn(),
+  };
+});
 
 vi.mock("./enhanced", async () => {
   const React = await vi.importActual<typeof import("react")>("react");
@@ -155,7 +164,9 @@ vi.mock("react-hotkeys-hook", () => ({
 }));
 
 function formatEditorView(view: EditorView) {
-  return view.type === "enhanced" ? `enhanced:${view.id}` : view.type;
+  return view.type === SessionNoteViewType.Enhanced
+    ? `enhanced:${view.id}`
+    : view.type;
 }
 
 function createEditorRef() {
@@ -176,7 +187,7 @@ function createEditorRef() {
 }
 
 function renderNoteInput({
-  currentTab = { type: "raw" },
+  currentTab = { type: SessionNoteViewType.Raw },
   handleTabChange = vi.fn(),
   transcriptEditMode = false,
   eventTitle,
@@ -198,7 +209,7 @@ function renderNoteInput({
           pinned: false,
           slotId: "slot-1",
           state: { autoStart: null, view: currentTab },
-          type: "sessions",
+          type: TabType.Sessions,
         }}
         rawMd="stored memo"
         sessionTitle="Stored title"
@@ -219,7 +230,10 @@ describe("NoteInput tab selection", () => {
   });
 
   beforeEach(() => {
-    hoisted.editorTabs = [{ type: "raw" }, { type: "transcript" }];
+    hoisted.editorTabs = [
+      { type: SessionNoteViewType.Raw },
+      { type: SessionNoteViewType.Transcript },
+    ];
     hoisted.hotkeys = [];
     hoisted.enhancedHasProseMirror = true;
     hoisted.enhancedEditorProps = [];
@@ -248,9 +262,9 @@ describe("NoteInput tab selection", () => {
     ["mod+alt+left", { type: "enhanced", id: "summary-1" }],
   ])("switches note views with %s", (keys, expected) => {
     hoisted.editorTabs = [
-      { type: "enhanced", id: "summary-1" },
-      { type: "raw" },
-      { type: "transcript" },
+      { type: SessionNoteViewType.Enhanced, id: "summary-1" },
+      { type: SessionNoteViewType.Raw },
+      { type: SessionNoteViewType.Transcript },
     ];
     const { handleTabChange } = renderNoteInput();
 
@@ -262,7 +276,9 @@ describe("NoteInput tab selection", () => {
 
   it("reflects the parent-selected tab in the header", () => {
     const { rerender, handleTabChange } = renderNoteInput();
-    const currentTab = { type: "transcript" } satisfies EditorView;
+    const currentTab = {
+      type: SessionNoteViewType.Transcript,
+    } satisfies EditorView;
 
     rerender(
       <NoteInput
@@ -272,7 +288,7 @@ describe("NoteInput tab selection", () => {
           pinned: false,
           slotId: "slot-1",
           state: { autoStart: null, view: currentTab },
-          type: "sessions",
+          type: TabType.Sessions,
         }}
         rawMd="stored memo"
         sessionTitle="Stored title"
@@ -337,11 +353,11 @@ describe("NoteInput tab selection", () => {
 
   it("tracks the mounted summary editor because it can update the session title", () => {
     hoisted.editorTabs = [
-      { type: "enhanced", id: "summary-1" },
-      { type: "raw" },
+      { type: SessionNoteViewType.Enhanced, id: "summary-1" },
+      { type: SessionNoteViewType.Raw },
     ];
     renderNoteInput({
-      currentTab: { type: "enhanced", id: "summary-1" },
+      currentTab: { type: SessionNoteViewType.Enhanced, id: "summary-1" },
     });
     const props = hoisted.enhancedEditorProps[
       hoisted.enhancedEditorProps.length - 1
@@ -378,12 +394,12 @@ describe("NoteInput tab selection", () => {
 
   it("preserves controls when the enhanced view has no editor", () => {
     hoisted.editorTabs = [
-      { type: "enhanced", id: "summary-1" },
-      { type: "raw" },
+      { type: SessionNoteViewType.Enhanced, id: "summary-1" },
+      { type: SessionNoteViewType.Raw },
     ];
     hoisted.enhancedHasProseMirror = false;
     renderNoteInput({
-      currentTab: { type: "enhanced", id: "summary-1" },
+      currentTab: { type: SessionNoteViewType.Enhanced, id: "summary-1" },
     });
 
     const wasNotCancelled = fireEvent.mouseDown(
@@ -400,7 +416,7 @@ describe("NoteInput tab selection", () => {
     (searchVisible) => {
       hoisted.searchVisible = searchVisible;
 
-      renderNoteInput({ currentTab: { type: "transcript" } });
+      renderNoteInput({ currentTab: { type: SessionNoteViewType.Transcript } });
 
       expect(screen.queryByTestId("search-bar") !== null).toBe(searchVisible);
     },

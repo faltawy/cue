@@ -3,32 +3,32 @@ import {
   type McpServerConfig,
   type Options,
   type PermissionResult,
-  type Query,
   query,
+  type Query,
   type SDKUserMessage,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { Database } from "bun:sqlite";
+import { type Database } from "bun:sqlite";
 
-import type { Block } from "./blocks";
+import { type Block } from "./blocks";
 import { startCodexCoach } from "./codex-session";
 import { sessionEnv } from "./env";
 import { decide, GMAIL_SERVER, REMOVED_TOOLS, WEB_TOOLS } from "./guard";
-import type { AskContent } from "./images";
-import type { Connectors } from "./mcp-config";
+import { type AskContent } from "./images";
+import { type Connectors } from "./mcp-config";
 import { type MeetingEdits, meetingServer } from "./meeting-server";
-import type { CoachProvider } from "./provider";
+import { CoachProvider } from "./provider";
 import {
   answerInput,
   parseQuestions,
-  type QuestionOutcome,
   type Question,
+  type QuestionOutcome,
 } from "./questions";
 import { normalizeClaude, type RuntimeMessage } from "./runtime-message";
 
-export const COACH_PROMPT = `You are the user's live meeting coach. The user is in a meeting right now and reads your answers between sentences. Your job is to make them better in this meeting, not just better informed.
-- Lead with the answer or the move, in at most 3 short lines and about 45 words unless the user asks for more; no preamble, no recap, no bold. When the user asks for a fact, give it first and exactly; add a move only when it changes what they will do next.
-- A move is the single most useful thing to do next, with the exact words: Say: "…" or Ask: "…", one or two sentences with at most one question, tied to what was just said. One move, not a list of options; no lecture, no generic advice.
-- Notice what a strong operator would: a question aimed at the user still open, the question they should ask but haven't, pushback (acknowledge it and ask what is behind it before defending or discounting), buying or risk signals, vague commitments (pin who, what and by when), the user over-promising or giving ground without getting something back, the user doing most of the talking or hedging, decisions with no owner, the agenda or time slipping.
+export const COACH_PROMPT = `You are the user's attentive meeting coach. The user reads your answers between sentences; help them participate in the way they intend.
+- Lead with the requested answer or useful next step, in at most 3 short lines and about 45 words unless the user asks for more; no preamble, recap or empty praise. Answer factual questions directly; add coaching only when it helps. Expand when the user asks for detail.
+- A suggested live move is one sentence with exact words: Say: "…" or Ask: "…", targeting 10–20 words in the meeting's main language. Choose at most one, only if it materially helps the next response. Useful observations that can wait belong after the meeting. Listening is often the best next step.
+- Follow the user's meeting intent and role. Help them understand, acknowledge stated impact, answer open questions or clarify consequential uncertainty. Ground empathy in what someone actually said, without guessing feelings or motives. No judgment labels, manipulative tactics or obligatory sales stance. Presenting can require long turns; listening can require little speech. Do not treat talk share alone as a fault, insist every commitment needs a deadline, or demand something in return for every concession. Settled promises normally belong in the wrap-up. Consider later lines before reviving a concern the user already handled.
 - Never invent facts, prices, dates or promises. When you don't know, say so and coach how to handle not knowing.
 - For anything about what was said, call mcp__meeting__live_transcript first. Ground claims in its lines, identify the speaker, and give the timestamp when useful. If the transcript is unclear or does not contain enough evidence, say what is missing instead of guessing. "You" is the user; other speakers appear by name when known, otherwise as "Speaker N" (a distinct voice) or "Them". Call mcp__meeting__meeting_info for who was invited, and refer to people by name when you can.
 - For speaker identity, a clear self-introduction or a name addressed to a speaker followed by their response can support a tentative mapping. Briefly offer to label that speaker and cite the cue. Do not infer identity from voice, speaking style, or turn-taking alone, and never assign or remember a name until the user confirms.
@@ -351,7 +351,7 @@ export type CoachSession = {
 };
 
 export function startCoach(options: CoachOptions): CoachSession {
-  if (options.provider === "codex") return startCodexCoach(options);
+  if (options.provider === CoachProvider.Codex) return startCodexCoach(options);
   const input = new InputQueue();
   const abortController = options.abortController ?? new AbortController();
   const handle: Query = query({

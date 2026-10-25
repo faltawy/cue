@@ -17,10 +17,12 @@ import { StrictMode, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 
 import {
+  StaticWindowLabel,
   getCurrentWebviewWindowLabel,
   init as initWindowsPlugin,
 } from "@anlg/plugin-windows";
-import { Toaster } from "@anlg/ui/components/ui/toast";
+import { AppToastTheme } from "@anlg/ui/components/ui/app-toast";
+import { ToastPosition, Toaster } from "@anlg/ui/components/ui/toast";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { AITaskWindowSyncBridge } from "./ai/task-window-sync";
@@ -50,9 +52,10 @@ import { LongLoadGate } from "./shared/long-load-gate";
 import { startInteractionProfiler } from "./shared/perf/interaction-profiler";
 import { bootstrapThemeFromSettings } from "./shared/theme/apply";
 import { AppThemeProvider } from "./shared/theme/provider";
-import type { ThemePreference } from "./shared/theme/resolve";
 import { createAITaskStore } from "./store/zustand/ai-task";
 import { listenerStore } from "./store/zustand/listener/instance";
+
+import { type ThemePreference } from "~/shared/enums";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,7 +127,16 @@ function ReadyApp() {
             {isMainWindow ? <EventListeners /> : null}
             {isMainWindow ? <TrayScheduleSync /> : null}
             {isMainWindow ? <TrayRecordingSync /> : null}
-            <Toaster position="bottom-right" theme={theme} />
+            <Toaster
+              position={ToastPosition.BottomRight}
+              theme={
+                {
+                  light: AppToastTheme.Light,
+                  dark: AppToastTheme.Dark,
+                  system: AppToastTheme.System,
+                }[theme]
+              }
+            />
           </TaskSchedulerProvider>
         </AppI18nProvider>
       </AppThemeProvider>
@@ -134,7 +146,7 @@ function ReadyApp() {
 
 initWindowsPlugin();
 
-const isMainWindow = getCurrentWebviewWindowLabel() === "main";
+const isMainWindow = getCurrentWebviewWindowLabel() === StaticWindowLabel.Main;
 
 if (isMainWindow) {
   void initializeAppExitFlush().catch((error) => {

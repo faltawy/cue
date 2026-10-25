@@ -5,16 +5,18 @@ import { toast } from "@anlg/ui/components/ui/toast";
 
 import { deleteContact, restoreContact } from "./queries";
 
+import { ContactType } from "~/contacts/enums";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { UNDO_TIMEOUT_MS } from "~/store/zustand/undo-delete";
 
 export function useDeleteContact() {
   const invalidateResource = useTabs((state) => state.invalidateResource);
 
   return useCallback(
-    (type: "human" | "organization", contactId: string, name: string) => {
+    (type: ContactType, contactId: string, name: string) => {
       invalidateResource(
-        type === "human" ? "humans" : "organizations",
+        type === ContactType.Human ? TabType.Humans : TabType.Organizations,
         contactId,
       );
 

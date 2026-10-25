@@ -1,3 +1,5 @@
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import type { EditorView } from "~/store/zustand/tabs/schema";
 
 export function shouldShowSessionTopAudioPlayer({
@@ -12,7 +14,7 @@ export function shouldShowSessionTopAudioPlayer({
   sessionMode: string;
 }) {
   return (
-    currentView.type === "transcript" &&
+    currentView.type === SessionNoteViewType.Transcript &&
     audioExists &&
     audioUrlReady &&
     sessionMode !== "active" &&

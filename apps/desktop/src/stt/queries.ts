@@ -1,16 +1,17 @@
 import { useCallback } from "react";
 
-import type {
-  LiveTranscriptDelta,
-  RenderTranscriptHuman,
+import {
+  type LiveTranscriptDelta,
+  type RenderTranscriptHuman,
+  commands as transcriptionCommands,
 } from "@anlg/plugin-transcription";
-import { commands as transcriptionCommands } from "@anlg/plugin-transcription";
 
 import type { RecoveryInterval } from "./capture-audio-recovery";
 import { selectRecoveredWords } from "./recovered-transcript";
 
 import { executeTransaction, liveQueryClient, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import { AssignmentMode, TranscriptWriteMode } from "~/stt/enums";
 import type { SegmentKey } from "~/stt/live-segment";
 import {
   buildRenderTranscriptRequestFromRows,
@@ -546,7 +547,7 @@ export function appendTranscriptWordsAndHints(
   transcriptId: string,
   words: WordWithId[],
   hints: SpeakerHintWithId[],
-  options?: { mode?: "append" | "replace" },
+  options?: { mode?: TranscriptWriteMode },
 ): Promise<void> {
   return mutateTranscript(transcriptId, (store) => {
     const accumulator = createTranscriptAccumulator(store, transcriptId);
@@ -608,7 +609,7 @@ export function assignTranscriptSpeaker({
   segmentKey: SegmentKey;
   humanId: string;
   anchorWordId: string;
-  mode?: "all" | "segment";
+  mode?: AssignmentMode;
   wordIds?: string[];
   extendToAdjacent?: boolean;
 }): Promise<void> {
@@ -667,7 +668,7 @@ export async function assignSessionTranscriptSpeaker({
               humanId,
               anchorWordId,
               wordIds,
-              mode: "all",
+              mode: AssignmentMode.All,
             })
           : mutateTranscript(transcript.id, (store) => {
               const input = buildRenderTranscriptRequestFromRows([
@@ -692,7 +693,7 @@ export async function assignSessionTranscriptSpeaker({
                 humanId,
                 anchor,
                 {
-                  mode: "segment",
+                  mode: AssignmentMode.Segment,
                   wordIds: matchingWordIds,
                   extendToAdjacent: false,
                 },
@@ -715,7 +716,7 @@ async function assignSpeakerInTranscript({
   segmentKey: SegmentKey;
   humanId: string;
   anchorWordId?: string;
-  mode?: "all" | "segment";
+  mode?: AssignmentMode;
   wordIds?: string[];
   extendToAdjacent?: boolean;
 }): Promise<void> {
@@ -746,7 +747,7 @@ async function assignSpeakerInTranscript({
 
   if (
     !assigned ||
-    (mode ?? "all") !== "all" ||
+    (mode ?? AssignmentMode.All) !== AssignmentMode.All ||
     !Number.isInteger(segmentKey.speaker_index)
   ) {
     return;
@@ -896,7 +897,7 @@ export function splitTranscriptSpeaker({
       humanId,
       followingIds[0],
       {
-        mode: "segment",
+        mode: AssignmentMode.Segment,
         wordIds: followingIds,
         extendToAdjacent: false,
       },

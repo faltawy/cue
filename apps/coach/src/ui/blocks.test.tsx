@@ -10,14 +10,28 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { CoachEditKind } from "../app-bridge";
+import { BlockKind } from "../blocks";
 import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
 import { IMAGE_ERRORS } from "../image-limits";
-import type { CoachEvent } from "../protocol";
+import {
+  type CoachEvent,
+  CoachEventType,
+  ResetReason,
+  TurnKind,
+} from "../protocol";
+import { SourceKind } from "../sources";
 import { CoachView } from "./app";
 import { useDom } from "./dom-setup";
 import { status } from "./fixtures";
-import { type CoachState, initialState, reduce } from "./state";
-import type { ActionResult, CoachApi } from "./use-coach";
+import {
+  ActionType,
+  type CoachState,
+  Connection,
+  initialState,
+  reduce,
+} from "./state";
+import { type ActionResult, type CoachApi } from "./use-coach";
 
 useDom();
 
@@ -26,8 +40,11 @@ let view: RenderResult;
 
 function stateFrom(events: readonly CoachEvent[]): CoachState {
   return events.reduce(
-    (state, event) => reduce(state, { type: "event", event }),
-    reduce(initialState, { type: "connection", connection: "open" }),
+    (state, event) => reduce(state, { type: ActionType.Event, event }),
+    reduce(initialState, {
+      type: ActionType.Connection,
+      connection: Connection.Open,
+    }),
   );
 }
 
@@ -40,6 +57,7 @@ function setup(state: CoachState) {
     openEvidence: mock(ok),
     feedback: mock(ok),
     resetFeedback: mock(ok),
+    setCoaching: mock(ok),
     stop: mock(ok),
     checkIn: mock(ok),
     newChat: mock(ok),
@@ -60,7 +78,7 @@ function setup(state: CoachState) {
 }
 
 const done: CoachEvent = {
-  type: "done",
+  type: CoachEventType.Done,
   seconds: 2,
   ok: true,
   silent: false,
@@ -72,17 +90,17 @@ const answered = (
   extra: CoachEvent[],
   text = "What did we promise?",
 ): CoachEvent[] => [
-  { type: "user", kind: "ask", text },
-  { type: "text", delta: "Two promises so far." },
+  { type: CoachEventType.User, kind: TurnKind.Ask, text },
+  { type: CoachEventType.Text, delta: "Two promises so far." },
   ...extra,
   done,
 ];
 
 const checklist: CoachEvent = {
-  type: "block",
+  type: CoachEventType.Block,
   id: "b1",
   block: {
-    kind: "actions",
+    kind: BlockKind.Actions,
     items: [
       { text: "send the Bcc setup steps", owner: "You", due: "today" },
       { text: "confirm the CRM dropbox address", owner: "Sara" },
@@ -115,13 +133,13 @@ describe("a checklist under an answer", () => {
     const after = stateFrom([
       status(),
       ...answered([checklist]),
-      { type: "block_check", id: "b1", index: 0, checked: true },
+      { type: CoachEventType.BlockCheck, id: "b1", index: 0, checked: true },
       {
-        type: "edit",
+        type: CoachEventType.Edit,
         edit: {
           id: "e9",
           session_id: "m1",
-          kind: "add_action_item",
+          kind: CoachEditKind.AddActionItem,
           summary: "Sara: confirm the CRM dropbox address",
           task_id: "t9",
         },
@@ -166,7 +184,11 @@ describe("a checklist under an answer", () => {
       stateFrom([
         status(),
         ...answered([
-          { type: "block", id: "b2", block: { kind: "actions", items } },
+          {
+            type: CoachEventType.Block,
+            id: "b2",
+            block: { kind: BlockKind.Actions, items },
+          },
         ]),
       ]),
     );
@@ -178,10 +200,10 @@ describe("a checklist under an answer", () => {
 
 describe("follow-up chips", () => {
   const replies: CoachEvent = {
-    type: "block",
+    type: CoachEventType.Block,
     id: "r1",
     block: {
-      kind: "replies",
+      kind: BlockKind.Replies,
       options: ["Draft the reply", "Summarise for Slack"],
     },
   };
@@ -218,16 +240,16 @@ describe("source chips", () => {
         status(),
         ...answered([
           {
-            type: "sources",
+            type: CoachEventType.Sources,
             sources: [
               {
-                kind: "web",
+                kind: SourceKind.Web,
                 url: "https://help.example.com/bcc",
                 label: "help.example.com",
                 title: "Outbound Bcc",
               },
               {
-                kind: "email",
+                kind: SourceKind.Email,
                 url: "https://mail.google.com/mail/u/0/#all/18f2a9c4b7e1d3a0",
                 label: "Re: Bcc before renewal",
                 title: "Re: Bcc before renewal",
@@ -269,15 +291,15 @@ describe("images in the composer", () => {
     const file = join(dir, "coach-chats.json");
     const history: CoachEvent[] = [
       {
-        type: "user",
-        kind: "ask",
+        type: CoachEventType.User,
+        kind: TurnKind.Ask,
         text: "What's this error?",
         images: [
           { thumb: THUMB, width: 192, height: 108 },
           { thumb: THUMB, width: 90, height: 192 },
         ],
       },
-      { type: "text", delta: "A missing env var." },
+      { type: CoachEventType.Text, delta: "A missing env var." },
       done,
     ];
     saveChats(
@@ -291,7 +313,11 @@ describe("images in the composer", () => {
     );
     const restored = loadChats(file).meetings.m1?.history ?? [];
     setup(
-      stateFrom([status(), { type: "reset", reason: "sync" }, ...restored]),
+      stateFrom([
+        status(),
+        { type: CoachEventType.Reset, reason: ResetReason.Sync },
+        ...restored,
+      ]),
     );
     const images = within(view.getByTestId("sent-images")).getAllByRole("img");
     expect(

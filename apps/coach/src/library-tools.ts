@@ -1,17 +1,19 @@
-import type { Database } from "bun:sqlite";
+import { type Database } from "bun:sqlite";
 import { z } from "zod";
 
-import type { LibraryChange } from "./app-bridge";
+import { type LibraryChange } from "./app-bridge";
 import {
+  ActionItemStatus,
   getMeeting,
   listActionItems,
   listFolders,
   listTags,
   listTemplates,
+  MeetingInclude,
   searchMeetings,
   searchPeople,
 } from "./library";
-import type { MeetingEdits } from "./meeting-server";
+import { type MeetingEdits } from "./meeting-server";
 import { tool } from "./runtime-tool";
 import { failed, text } from "./tool-result";
 
@@ -37,12 +39,12 @@ const shapes = {
   },
   get_meeting: {
     id,
-    include: z.enum(["notes", "transcript", "both"]).default("both"),
+    include: z.enum(MeetingInclude).default(MeetingInclude.Both),
     max_chars: z.number().int().min(200).max(20_000).default(6_000),
   },
   search_people: { query: z.string().trim().max(200).default(""), limit },
   list_action_items: {
-    status: z.enum(["todo", "done"]).optional(),
+    status: z.enum(ActionItemStatus).optional(),
     person_id: id.optional(),
     note_id: id.optional(),
     limit,

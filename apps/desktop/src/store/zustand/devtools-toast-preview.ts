@@ -1,9 +1,8 @@
 import { create } from "zustand";
 
-export type DevtoolsToastPreview =
-  | "transcription-model"
-  | "transcription-error"
-  | "download";
+import { DevtoolsToastPreview } from "~/store/zustand/enums";
+
+export { DevtoolsToastPreview };
 
 type ActiveDevtoolsToastPreview = {
   type: DevtoolsToastPreview;

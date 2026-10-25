@@ -10,6 +10,7 @@ import {
 } from "@anlg/plugin-updater2";
 import { Button } from "@anlg/ui/components/ui/button";
 
+import { SettingControlWidth } from "~/settings/enums";
 import { SettingRow } from "~/settings/setting-row";
 
 const UPDATER_STATE_KEY = ["updater-state"];
@@ -56,7 +57,7 @@ export function UpdateSettings() {
       <div className="flex flex-col gap-4">
         {status.kind === "ready" ? (
           <SettingRow
-            controlWidth="content"
+            controlWidth={SettingControlWidth.Content}
             title={<Trans>Update ready — {status.version}</Trans>}
             description={
               restart.error?.message ?? (
@@ -79,7 +80,7 @@ export function UpdateSettings() {
           </SettingRow>
         ) : (
           <SettingRow
-            controlWidth="content"
+            controlWidth={SettingControlWidth.Content}
             title={<Trans>Cue {currentVersion}</Trans>}
             description={<StatusText state={state} />}
           >

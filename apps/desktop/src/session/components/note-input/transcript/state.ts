@@ -1,37 +1,42 @@
 import { useAudioPlayer } from "~/audio-player";
+import { TranscriptScreenKind } from "~/session/enums";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+  LiveCaptureUiMode,
+} from "~/store/zustand/listener/enums";
 import {
   getLiveCaptureUiMode,
   isLiveTranscriptInterrupted,
 } from "~/store/zustand/listener/general-shared";
 import { useListener } from "~/stt/contexts";
+import { ListeningStatus, BatchPhase } from "~/stt/enums";
 import type { Segment } from "~/stt/live-segment";
 import { useSessionTranscriptMetadata } from "~/stt/queries";
 
-type ListeningStatus = "listening" | "finalizing";
-type BatchPhase = "importing" | "transcribing";
 type RequestedLiveTranscription = boolean | null;
 
 export type TranscriptScreen =
   | {
-      kind: "running_batch";
+      kind: TranscriptScreenKind.RunningBatch;
       percentage?: number;
       phase?: BatchPhase;
     }
   | {
-      kind: "batch_fallback";
+      kind: TranscriptScreenKind.BatchFallback;
       requestedLiveTranscription: RequestedLiveTranscription;
     }
   | {
-      kind: "listening";
+      kind: TranscriptScreenKind.Listening;
       status: ListeningStatus;
     }
   | {
-      kind: "empty";
+      kind: TranscriptScreenKind.Empty;
       hasAudio: boolean;
       error: string | null;
     }
   | {
-      kind: "ready";
+      kind: TranscriptScreenKind.Ready;
       transcriptIds: string[];
       liveSegments: Segment[];
       currentActive: boolean;
@@ -67,17 +72,19 @@ export function useTranscriptScreen({
   }));
   const { audioExists } = useAudioPlayer();
   const currentActive =
-    sessionMode === "active" || sessionMode === "finalizing";
+    sessionMode === LiveSessionStatus.Active ||
+    sessionMode === LiveSessionStatus.Finalizing;
   const { transcriptIds, liveSegments, hasTranscriptWords } =
     useTranscriptContent(sessionId, !currentActive);
   const isRecordOnlyMode =
-    sessionMode === "active" && captureMode === "record_only";
+    sessionMode === LiveSessionStatus.Active &&
+    captureMode === LiveCaptureUiMode.RecordOnly;
   const hasVisibleTranscriptState =
     hasTranscriptWords || liveSegments.length > 0 || !!batchError;
 
-  if (sessionMode === "running_batch") {
+  if (sessionMode === BatchSessionMode.RunningBatch) {
     return {
-      kind: "running_batch",
+      kind: TranscriptScreenKind.RunningBatch,
       percentage: batchPercentage,
       phase: batchPhase,
     };
@@ -88,28 +95,31 @@ export function useTranscriptScreen({
     (liveTranscriptInterrupted && currentActive && !hasVisibleTranscriptState)
   ) {
     return {
-      kind: "batch_fallback",
+      kind: TranscriptScreenKind.BatchFallback,
       requestedLiveTranscription,
     };
   }
 
   if (currentActive && !hasVisibleTranscriptState) {
     return {
-      kind: "listening",
-      status: sessionMode === "finalizing" ? "finalizing" : "listening",
+      kind: TranscriptScreenKind.Listening,
+      status:
+        sessionMode === LiveSessionStatus.Finalizing
+          ? ListeningStatus.Finalizing
+          : ListeningStatus.Listening,
     };
   }
 
   if (!hasVisibleTranscriptState) {
     return {
-      kind: "empty",
+      kind: TranscriptScreenKind.Empty,
       hasAudio: audioExists,
       error: batchError,
     };
   }
 
   return {
-    kind: "ready",
+    kind: TranscriptScreenKind.Ready,
     transcriptIds,
     liveSegments,
     currentActive,

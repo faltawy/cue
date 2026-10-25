@@ -8,11 +8,12 @@ import {
 } from "~/session/content-mutations";
 import { loadSessionContentSnapshot } from "~/session/content-queries";
 import { ensureFirstLineTitle } from "~/session/title-content";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { hasLiveSessionTitleDraft } from "~/store/zustand/live-title";
 
 const GENERATED_TITLE_MAX_LENGTH = 160;
 
-const onSuccess: NonNullable<TaskConfig<"title">["onSuccess"]> = async ({
+const onSuccess: NonNullable<TaskConfig<TaskType.Title>["onSuccess"]> = async ({
   text,
   args,
 }) => {
@@ -124,6 +125,6 @@ export function getPersistableGeneratedTitle(text: string): string {
   return title;
 }
 
-export const titleSuccess: Pick<TaskConfig<"title">, "onSuccess"> = {
+export const titleSuccess: Pick<TaskConfig<TaskType.Title>, "onSuccess"> = {
   onSuccess,
 };

@@ -1,13 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { TaskStatus } from "@anlg/store";
+
 import { TaskCheckbox } from "./task-checkbox";
 
 describe("TaskCheckbox", () => {
   it("calls onToggle when interactive", () => {
     const onToggle = vi.fn();
 
-    render(<TaskCheckbox status="todo" isInteractive onToggle={onToggle} />);
+    render(
+      <TaskCheckbox
+        status={TaskStatus.Todo}
+        isInteractive
+        onToggle={onToggle}
+      />,
+    );
 
     fireEvent.click(screen.getByRole("checkbox"));
 
@@ -15,14 +23,14 @@ describe("TaskCheckbox", () => {
   });
 
   it("renders as checked only for done tasks", () => {
-    const done = render(<TaskCheckbox status="done" />);
+    const done = render(<TaskCheckbox status={TaskStatus.Done} />);
 
     expect(
       (done.container.querySelector("input") as HTMLInputElement).checked,
     ).toBe(true);
     done.unmount();
 
-    const inProgress = render(<TaskCheckbox status="in_progress" />);
+    const inProgress = render(<TaskCheckbox status={TaskStatus.InProgress} />);
 
     expect(
       (inProgress.container.querySelector("input") as HTMLInputElement).checked,
@@ -30,7 +38,7 @@ describe("TaskCheckbox", () => {
   });
 
   it("does not call onToggle when read-only", () => {
-    const view = render(<TaskCheckbox status="done" />);
+    const view = render(<TaskCheckbox status={TaskStatus.Done} />);
 
     const checkbox = view.container.querySelector(
       'input[type="checkbox"]',

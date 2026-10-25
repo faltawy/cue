@@ -13,6 +13,7 @@ import {
 import { useShell } from "~/contexts/shell";
 import { readZoomFactor } from "~/shared/zoom";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 const LEFT_SIDEBAR_MIN_WIDTH_PX = 200;
 
@@ -39,7 +40,7 @@ export function MainBodyPanels({
     noteSurfaceMinWidth,
   });
   const bodyMinWidth =
-    currentTab?.type === "settings" && bodyMinWidthPx != null
+    currentTab?.type === TabType.Settings && bodyMinWidthPx != null
       ? boundedMinWidthPx(bodyMinWidthPx)
       : bodyMinWidthPx;
 
@@ -81,7 +82,7 @@ function getMainBodyMinWidth({
   leftSidebarExpanded: boolean;
   noteSurfaceMinWidth: number;
 }) {
-  if (currentTab?.type === "settings") {
+  if (currentTab?.type === TabType.Settings) {
     return (
       SETTINGS_SURFACE_MIN_WIDTH_PX +
       (leftSidebarExpanded ? LEFT_SIDEBAR_MIN_WIDTH_PX : 0)

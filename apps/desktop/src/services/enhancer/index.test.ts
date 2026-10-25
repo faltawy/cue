@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EnhancerService } from ".";
 
+import { AutoEnhanceMode } from "~/services/enums";
+
 const mocks = vi.hoisted(() => ({
   loadSessionContentSnapshot: vi.fn(),
   loadPendingAutoEnhanceJobs: vi.fn(),
@@ -666,7 +668,10 @@ describe("EnhancerService", () => {
     const ai = createMockAITaskStore();
     const service = new EnhancerService(createDeps({ aiTaskStore: ai.store }));
 
-    const request = service.requestAutoEnhance("session-1", "regenerate");
+    const request = service.requestAutoEnhance(
+      "session-1",
+      AutoEnhanceMode.Regenerate,
+    );
     await vi.advanceTimersByTimeAsync(100);
     await request;
     await vi.waitFor(() => expect(ai.generate).toHaveBeenCalledOnce());
@@ -706,7 +711,7 @@ describe("EnhancerService", () => {
     const ai = createMockAITaskStore();
     const service = new EnhancerService(createDeps({ aiTaskStore: ai.store }));
 
-    await service.requestAutoEnhance("session-1", "refresh");
+    await service.requestAutoEnhance("session-1", AutoEnhanceMode.Refresh);
     await vi.waitFor(() => expect(ai.generate).toHaveBeenCalledOnce());
 
     expect(ai.reset).toHaveBeenCalledWith("one-enhance");
@@ -727,7 +732,7 @@ describe("EnhancerService", () => {
     });
     const service = new EnhancerService(createDeps({ aiTaskStore: ai.store }));
 
-    await service.requestAutoEnhance("session-1", "refresh");
+    await service.requestAutoEnhance("session-1", AutoEnhanceMode.Refresh);
     await vi.waitFor(() => expect(ai.generate).toHaveBeenCalledOnce());
 
     expect(ai.reset).toHaveBeenCalledWith("one-enhance");
@@ -740,7 +745,7 @@ describe("EnhancerService", () => {
     const ai = createMockAITaskStore();
     const service = new EnhancerService(createDeps({ aiTaskStore: ai.store }));
 
-    await service.requestAutoEnhance("session-1", "refresh");
+    await service.requestAutoEnhance("session-1", AutoEnhanceMode.Refresh);
     await vi.waitFor(() => expect(ai.generate).toHaveBeenCalledOnce());
 
     expect(ai.reset).not.toHaveBeenCalled();

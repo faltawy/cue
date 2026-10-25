@@ -1,37 +1,39 @@
-import { resolveIsDarkMode, type ThemePreference } from "./resolve";
+import { resolveIsDarkMode } from "./resolve";
 
-export type AppIconPreference = "default" | "stable" | "dev" | "staging";
+import { AppIconPreference, type ThemePreference } from "~/shared/enums";
+
+export { AppIconPreference };
 
 export function normalizeAppIconPreference(
   value: string | null | undefined,
 ): AppIconPreference {
   switch (value) {
-    case "stable":
-    case "dev":
-    case "staging":
+    case AppIconPreference.Stable:
+    case AppIconPreference.Dev:
+    case AppIconPreference.Staging:
       return value;
     default:
-      return "default";
+      return AppIconPreference.Default;
   }
 }
 
 export function resolveAppIconName(
   icon: AppIconPreference,
   appIdentifier: string,
-): Exclude<AppIconPreference, "default"> {
-  if (icon !== "default") {
+): Exclude<AppIconPreference, AppIconPreference.Default> {
+  if (icon !== AppIconPreference.Default) {
     return icon;
   }
   if (appIdentifier.endsWith(".dev")) {
-    return "dev";
+    return AppIconPreference.Dev;
   }
   if (
     appIdentifier.endsWith(".staging") ||
     appIdentifier.endsWith(".nightly")
   ) {
-    return "staging";
+    return AppIconPreference.Staging;
   }
-  return "stable";
+  return AppIconPreference.Stable;
 }
 
 /** `systemIsDark` is the Dock's appearance, used when the theme follows the system. */

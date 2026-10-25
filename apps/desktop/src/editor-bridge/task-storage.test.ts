@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TaskRecord, TaskSource } from "@anlg/editor/tasks";
+import { TaskStatus } from "@anlg/store";
 
 import {
   createSqliteTaskStorage,
@@ -16,7 +17,7 @@ const task: TaskRecord = {
   sourceId: "session-1",
   sourceType: "session",
   sourceOrder: 0,
-  status: "todo",
+  status: TaskStatus.Todo,
   textPreview: "Follow up",
   body: [
     {

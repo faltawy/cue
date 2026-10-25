@@ -5,10 +5,12 @@ import { getGitHubDisplayParts, type GitHubAttrs } from "./github";
 import { getGoogleDisplayParts, type GoogleAttrs } from "./google";
 import { getLinearDisplayParts, type LinearAttrs } from "./linear";
 import { getNotionDisplayParts, type NotionAttrs } from "./notion";
+import { AppLinkProvider } from "./provider";
 import { getSlackDisplayParts, type SlackAttrs } from "./slack";
 import { getWorkDisplayParts, type WorkAttrs } from "./work";
 
-export type { GitHubAttrs, GitHubLinkKind as AppLinkKind } from "./github";
+export type { GitHubAttrs } from "./github";
+export { GitHubLinkKind, GitHubLinkKind as AppLinkKind } from "./github";
 export type { SlackAttrs } from "./slack";
 export type { DiscordAttrs } from "./discord";
 export type { LinearAttrs } from "./linear";
@@ -34,30 +36,30 @@ export function getAppLinkDisplayParts(attrs: AppLinkAttrs): {
   subline: string;
 } {
   switch (attrs.provider) {
-    case "github":
+    case AppLinkProvider.Github:
       return getGitHubDisplayParts(attrs);
-    case "slack":
+    case AppLinkProvider.Slack:
       return getSlackDisplayParts(attrs);
-    case "discord":
+    case AppLinkProvider.Discord:
       return getDiscordDisplayParts(attrs);
-    case "linear":
+    case AppLinkProvider.Linear:
       return getLinearDisplayParts(attrs);
-    case "notion":
+    case AppLinkProvider.Notion:
       return getNotionDisplayParts(attrs);
-    case "google":
+    case AppLinkProvider.Google:
       return getGoogleDisplayParts(attrs);
-    case "figma":
+    case AppLinkProvider.Figma:
       return getFigmaDisplayParts(attrs);
-    case "atlassian":
+    case AppLinkProvider.Atlassian:
       return getAtlassianDisplayParts(attrs);
-    case "airtable":
-    case "asana":
-    case "calendly":
-    case "dropbox":
-    case "loom":
-    case "miro":
-    case "trello":
-    case "zoom":
+    case AppLinkProvider.Airtable:
+    case AppLinkProvider.Asana:
+    case AppLinkProvider.Calendly:
+    case AppLinkProvider.Dropbox:
+    case AppLinkProvider.Loom:
+    case AppLinkProvider.Miro:
+    case AppLinkProvider.Trello:
+    case AppLinkProvider.Zoom:
       return getWorkDisplayParts(attrs);
   }
 }
@@ -66,3 +68,21 @@ export function getAppLinkLabel(attrs: AppLinkAttrs): string {
   const { header, subline } = getAppLinkDisplayParts(attrs);
   return `${header} ${subline}`;
 }
+
+export { SlackLinkKind } from "./slack";
+
+export { DiscordLinkKind } from "./discord";
+
+export { LinearLinkKind } from "./linear";
+
+export { NotionLinkKind } from "./notion";
+
+export { GoogleLinkKind } from "./google";
+
+export { FigmaLinkKind } from "./figma";
+
+export { AtlassianLinkKind } from "./atlassian";
+
+export { WorkLinkKind, type WorkProvider } from "./work";
+
+export { AppLinkProvider } from "./provider";

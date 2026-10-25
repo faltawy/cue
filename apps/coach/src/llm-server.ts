@@ -4,6 +4,7 @@ import { createAccess, randomToken, secure, TOKEN_ENV } from "./access";
 import { CLAUDE_ARGS, claudeCodeFromArgs } from "./claude-code";
 import { codexCodeFromArgs } from "./codex-code";
 import { llmResponse } from "./llm";
+import { CoachProvider } from "./provider";
 
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((arg) => arg !== "--llm-only"),
@@ -42,7 +43,7 @@ const server = Bun.serve({
         llmResponse(
           request,
           (provider) =>
-            provider === "codex" ? codexExecutable() : executable(),
+            provider === CoachProvider.Codex ? codexExecutable() : executable(),
           { codexHome },
         ),
     },

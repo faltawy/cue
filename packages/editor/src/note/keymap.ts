@@ -48,6 +48,11 @@ import { findWrapping } from "prosemirror-transform";
 import { createTaskItemAttrs } from "../tasks";
 import { schema } from "./schema";
 
+enum ListMoveDirection {
+  Up = "up",
+  Down = "down",
+}
+
 function isInListItem(state: EditorState): string | null {
   const { $from } = state.selection;
   for (let depth = $from.depth; depth > 0; depth--) {
@@ -57,7 +62,7 @@ function isInListItem(state: EditorState): string | null {
   return null;
 }
 
-function moveListItem(direction: "up" | "down"): Command {
+function moveListItem(direction: ListMoveDirection): Command {
   return (state, dispatch) => {
     const { $from } = state.selection;
 
@@ -74,11 +79,14 @@ function moveListItem(direction: "up" | "down"): Command {
     const parent = $from.node(depth - 1);
     const index = $from.index(depth - 1);
     const atBoundary =
-      direction === "up" ? index === 0 : index >= parent.childCount - 1;
+      direction === ListMoveDirection.Up
+        ? index === 0
+        : index >= parent.childCount - 1;
 
     if (!atBoundary) {
       // Swap with adjacent sibling
-      const siblingIndex = direction === "up" ? index - 1 : index + 1;
+      const siblingIndex =
+        direction === ListMoveDirection.Up ? index - 1 : index + 1;
       const currentItem = parent.child(index);
       const siblingItem = parent.child(siblingIndex);
 
@@ -87,7 +95,7 @@ function moveListItem(direction: "up" | "down"): Command {
         const currentStart = $from.before(depth);
         const currentEnd = $from.after(depth);
 
-        if (direction === "up") {
+        if (direction === ListMoveDirection.Up) {
           const prevStart = currentStart - siblingItem.nodeSize;
           tr.replaceWith(
             prevStart,
@@ -160,7 +168,9 @@ function moveListItem(direction: "up" | "down"): Command {
 
       // Insert into the outer list: before the outer item (up) or after (down)
       const targetPos =
-        direction === "up" ? $from.before(outerDepth) : $from.after(outerDepth);
+        direction === ListMoveDirection.Up
+          ? $from.before(outerDepth)
+          : $from.after(outerDepth);
       const insertPos = tr.mapping.map(targetPos);
       tr.insert(insertPos, currentItem);
 
@@ -908,8 +918,8 @@ export function buildKeymap(onNavigateToTitle?: (pixelWidth?: number) => void) {
     return liftListItem(nodeType)(state, dispatch);
   };
 
-  keys["Alt-ArrowUp"] = moveListItem("up");
-  keys["Alt-ArrowDown"] = moveListItem("down");
+  keys["Alt-ArrowUp"] = moveListItem(ListMoveDirection.Up);
+  keys["Alt-ArrowDown"] = moveListItem(ListMoveDirection.Down);
 
   if (onNavigateToTitle) {
     keys["ArrowLeft"] = (state) => {

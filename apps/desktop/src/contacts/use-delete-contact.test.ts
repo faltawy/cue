@@ -1,6 +1,8 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ContactType } from "~/contacts/enums";
+
 const mocks = vi.hoisted(() => ({
   softDeleteContact: vi.fn(),
   restoreContact: vi.fn(),
@@ -21,9 +23,8 @@ vi.mock("@anlg/ui/components/ui/toast", () => ({
 }));
 
 vi.mock("~/store/zustand/tabs", () => ({
-  useTabs: (
-    selector: (state: { invalidateResource: () => void }) => unknown,
-  ) => selector({ invalidateResource: mocks.invalidateResource }),
+  useTabs: (selector: (state: { invalidateResource: () => void }) => unknown) =>
+    selector({ invalidateResource: mocks.invalidateResource }),
 }));
 
 import { useDeleteContact } from "./use-delete-contact";
@@ -41,7 +42,7 @@ describe("useDeleteContact", () => {
   it("offers a 10 second undo that restores exactly the deleted contact", async () => {
     const { result } = renderHook(() => useDeleteContact());
 
-    result.current("human", "human-1", "Ada Lovelace");
+    result.current(ContactType.Human, "human-1", "Ada Lovelace");
 
     await waitFor(() => expect(mocks.message).toHaveBeenCalledOnce());
     const [label, options] = mocks.message.mock.calls[0];
@@ -60,5 +61,4 @@ describe("useDeleteContact", () => {
     );
     expect(mocks.error).not.toHaveBeenCalled();
   });
-
 });

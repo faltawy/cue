@@ -6,6 +6,7 @@ import { Button } from "@anlg/ui/components/ui/button";
 import { useAITask } from "~/ai/contexts";
 import { useLanguageModel } from "~/ai/hooks";
 import { useEnhancedNote } from "~/session/queries";
+import { AIErrorSourceKind, TaskType } from "~/store/zustand/ai-task/enums";
 import { getAIErrorSource } from "~/store/zustand/ai-task/shared/error-source";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 
@@ -25,10 +26,10 @@ export function EnhanceError({
   const handleRetry = () => {
     if (!model) return;
 
-    const taskId = createTaskId(enhancedNoteId, "enhance");
+    const taskId = createTaskId(enhancedNoteId, TaskType.Enhance);
     void generate(taskId, {
       model,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId, enhancedNoteId, templateId },
     });
   };
@@ -74,17 +75,17 @@ function ErrorSourceNote({ error }: { error: Error | undefined }) {
 
   let label: string;
   switch (source.kind) {
-    case "provider": {
+    case AIErrorSourceKind.Provider: {
       const provider = source.provider;
       label = provider
         ? t`Source: ${provider} (AI model provider)`
         : t`Source: AI model provider`;
       break;
     }
-    case "openrouter":
+    case AIErrorSourceKind.Openrouter:
       label = t`Source: OpenRouter (AI routing service)`;
       break;
-    case "upstream":
+    case AIErrorSourceKind.Upstream:
       label = t`Source: OpenRouter or the AI model provider`;
       break;
   }

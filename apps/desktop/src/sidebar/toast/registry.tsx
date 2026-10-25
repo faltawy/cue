@@ -1,10 +1,15 @@
 import { plural, t } from "@lingui/core/macro";
 
-import type { ServerStatus } from "@anlg/plugin-local-stt";
+import { type ServerStatus } from "@anlg/plugin-local-stt";
 
-import type { DownloadProgress, ToastCondition, ToastType } from "./types";
+import {
+  type DownloadProgress,
+  type ToastCondition,
+  type ToastType,
+} from "./types";
 
-import type { DevtoolsToastPreview } from "~/store/zustand/devtools-toast-preview";
+import { AlertLifecycle, ToastDismissal, AlertVariant } from "~/sidebar/enums";
+import { DevtoolsToastPreview } from "~/store/zustand/enums";
 
 type ToastRegistryEntry = {
   toast: ToastType;
@@ -63,7 +68,10 @@ export function createToastRegistry({
               : `${download.displayName}: ${status}`;
           })
           .join(", "),
-        lifecycle: { type: "persistent", dismissal: "session" },
+        lifecycle: {
+          type: AlertLifecycle.Persistent,
+          dismissal: ToastDismissal.Session,
+        },
         loading: true,
       },
       condition: () => hasActiveDownload,
@@ -72,7 +80,7 @@ export function createToastRegistry({
       toast: {
         id: "local-stt-loading",
         description: t`Starting transcription...`,
-        lifecycle: { type: "condition-bound" },
+        lifecycle: { type: AlertLifecycle.ConditionBound },
         loading: true,
       },
       condition: () =>
@@ -89,8 +97,8 @@ export function createToastRegistry({
           label: t`Settings`,
           onClick: onOpenSTTSettings,
         },
-        lifecycle: { type: "condition-bound" },
-        variant: "error",
+        lifecycle: { type: AlertLifecycle.ConditionBound },
+        variant: AlertVariant.Error,
       },
       condition: () =>
         isLocalSttModel &&
@@ -106,7 +114,7 @@ export function createToastRegistry({
           label: t`Add`,
           onClick: onOpenSTTSettings,
         },
-        lifecycle: { type: "condition-bound" },
+        lifecycle: { type: AlertLifecycle.ConditionBound },
       },
       condition: () => !hasSttConfigured && !isAiTranscriptionTabActive,
     },
@@ -120,7 +128,7 @@ export function getToastToShow(
   for (const entry of registry) {
     if (
       entry.condition() &&
-      (entry.toast.lifecycle.type === "condition-bound" ||
+      (entry.toast.lifecycle.type === AlertLifecycle.ConditionBound ||
         !isDismissed(entry.toast))
     ) {
       return entry.toast;
@@ -134,7 +142,7 @@ export function createDevtoolsToastPreview({
   onOpenSTTSettings,
 }: DevtoolsToastPreviewParams): ToastType {
   switch (preview) {
-    case "transcription-model":
+    case DevtoolsToastPreview.TranscriptionModel:
       return {
         id: "devtools-missing-stt",
         description: t`Transcription provider needed`,
@@ -142,9 +150,9 @@ export function createDevtoolsToastPreview({
           label: t`Add`,
           onClick: onOpenSTTSettings,
         },
-        lifecycle: { type: "condition-bound" },
+        lifecycle: { type: AlertLifecycle.ConditionBound },
       };
-    case "transcription-error":
+    case DevtoolsToastPreview.TranscriptionError:
       return {
         id: "devtools-local-stt-unreachable",
         description: t`Transcription unavailable`,
@@ -152,14 +160,17 @@ export function createDevtoolsToastPreview({
           label: t`Settings`,
           onClick: onOpenSTTSettings,
         },
-        lifecycle: { type: "condition-bound" },
-        variant: "error",
+        lifecycle: { type: AlertLifecycle.ConditionBound },
+        variant: AlertVariant.Error,
       };
-    case "download":
+    case DevtoolsToastPreview.Download:
       return {
         id: "devtools-downloading-model",
         description: t`Downloading model`,
-        lifecycle: { type: "persistent", dismissal: "session" },
+        lifecycle: {
+          type: AlertLifecycle.Persistent,
+          dismissal: ToastDismissal.Session,
+        },
         loading: true,
       };
   }

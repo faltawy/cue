@@ -1,15 +1,14 @@
-import { describe, expect, test } from "bun:test";
-
 import { act, render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, test } from "bun:test";
 import { type Dispatch, useReducer } from "react";
 
-import type { CoachEvent } from "../protocol";
+import { type CoachEvent, CoachEventType, TurnKind } from "../protocol";
 import { CoachView } from "./app";
 import { useDom } from "./dom-setup";
 import { fixtureState, longAnswerDeltas } from "./fixtures";
-import { type Action, reduce } from "./state";
-import type { CoachApi } from "./use-coach";
+import { type Action, ActionType, reduce } from "./state";
+import { type CoachApi } from "./use-coach";
 
 useDom();
 
@@ -22,6 +21,7 @@ const api: CoachApi = {
   openEvidence: ok,
   feedback: ok,
   resetFeedback: ok,
+  setCoaching: ok,
   stop: ok,
   checkIn: ok,
   newChat: ok,
@@ -46,7 +46,11 @@ function Harness({ expose }: { expose(dispatch: Dispatch<Action>): void }) {
 
 function percentile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))] ?? 0;
+  return (
+    sorted[
+      Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))
+    ] ?? 0
+  );
 }
 
 const round = (value: number) => Math.round(value * 100) / 100;
@@ -66,16 +70,27 @@ describe("streaming a long answer", () => {
     const idleKeys: number[] = [];
     for (let index = 0; index < 10; index += 1) idleKeys.push(await typeOne());
 
-    act(() => dispatch({ type: "event", event: { type: "user", kind: "ask", text: "Where is Bcc set?" } }));
+    act(() =>
+      dispatch({
+        type: ActionType.Event,
+        event: {
+          type: CoachEventType.User,
+          kind: TurnKind.Ask,
+          text: "Where is Bcc set?",
+        },
+      }),
+    );
 
     const deltas = longAnswerDeltas(4_000);
     const perFrame = 4;
     const frames: number[] = [];
     const streamingKeys: number[] = [];
     for (let offset = 0; offset < deltas.length; offset += perFrame) {
-      const events: CoachEvent[] = deltas.slice(offset, offset + perFrame).map((delta) => ({ type: "text", delta }));
+      const events: CoachEvent[] = deltas
+        .slice(offset, offset + perFrame)
+        .map((delta) => ({ type: CoachEventType.Text, delta }));
       const start = performance.now();
-      act(() => dispatch({ type: "events", events }));
+      act(() => dispatch({ type: ActionType.Events, events }));
       frames.push(performance.now() - start);
       if ((offset / perFrame) % 100 === 50) streamingKeys.push(await typeOne());
     }

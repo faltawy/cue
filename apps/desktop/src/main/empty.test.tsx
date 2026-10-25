@@ -10,6 +10,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@anlg/ui/components/ui/tooltip";
 
+import { TabType } from "~/store/zustand/tabs/enums";
+
 const mocks = vi.hoisted(() => ({
   events: {} as Record<string, Record<string, unknown>>,
   recentNotes: [] as { id: string; title: string; created_at: string }[],
@@ -88,7 +90,7 @@ function renderHome() {
           active: true,
           pinned: false,
           slotId: "slot-home",
-          type: "empty",
+          type: TabType.Empty,
         }}
       />
     </TooltipProvider>,

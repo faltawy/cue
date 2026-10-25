@@ -1,9 +1,12 @@
 import { createContext, useContext } from "react";
 
-export type LinkedItemOpenBehavior = "current" | "new";
+export enum LinkedItemOpenBehavior {
+  Current = "current",
+  New = "new",
+}
 
 export const LinkedItemOpenBehaviorContext =
-  createContext<LinkedItemOpenBehavior>("current");
+  createContext<LinkedItemOpenBehavior>(LinkedItemOpenBehavior.Current);
 
 export function useLinkedItemOpenBehavior() {
   return useContext(LinkedItemOpenBehaviorContext);

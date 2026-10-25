@@ -1,10 +1,13 @@
-export type AtlassianLinkKind =
-  | "confluence_page"
-  | "confluence_space"
-  | "jira_issue";
+import { AppLinkProvider } from "./provider";
+
+export enum AtlassianLinkKind {
+  ConfluencePage = "confluence_page",
+  ConfluenceSpace = "confluence_space",
+  JiraIssue = "jira_issue",
+}
 
 export interface AtlassianAttrs {
-  provider: "atlassian";
+  provider: AppLinkProvider.Atlassian;
   kind: AtlassianLinkKind;
   url: string;
   workspace?: string;
@@ -17,19 +20,19 @@ export function getAtlassianDisplayParts(attrs: AtlassianAttrs): {
   subline: string;
 } {
   switch (attrs.kind) {
-    case "jira_issue":
+    case AtlassianLinkKind.JiraIssue:
       return {
         header: attrs.workspace ?? "Jira",
         subline: attrs.resourceId ? `Jira ${attrs.resourceId}` : "Jira issue",
       };
-    case "confluence_page":
+    case AtlassianLinkKind.ConfluencePage:
       return {
         header: attrs.workspace ?? "Confluence",
         subline: attrs.resourceTitle
           ? `Confluence: ${attrs.resourceTitle}`
           : "Confluence page",
       };
-    case "confluence_space":
+    case AtlassianLinkKind.ConfluenceSpace:
       return {
         header: attrs.workspace ?? "Confluence",
         subline: attrs.resourceId

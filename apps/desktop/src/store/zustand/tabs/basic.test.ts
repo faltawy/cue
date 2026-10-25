@@ -2,8 +2,9 @@ import "./test-matchers";
 
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import { type Tab, useTabs } from ".";
-import type { SettingsTab } from "./schema";
 import {
   createContactsTab,
   createSettingsTab,
@@ -11,8 +12,12 @@ import {
   resetTabsStore,
 } from "./test-utils";
 
-const isSessionsTab = (tab: Tab): tab is Extract<Tab, { type: "sessions" }> =>
-  tab.type === "sessions";
+import { TabType, SettingsTab } from "~/store/zustand/tabs/enums";
+
+const isSessionsTab = (
+  tab: Tab,
+): tab is Extract<Tab, { type: TabType.Sessions }> =>
+  tab.type === TabType.Sessions;
 
 describe("Basic Tab Actions", () => {
   beforeEach(() => {
@@ -23,7 +28,7 @@ describe("Basic Tab Actions", () => {
     const session1 = createSessionTab({ active: false });
     const session2 = createSessionTab({
       active: false,
-      state: { view: { type: "enhanced", id: "note-1" } },
+      state: { view: { type: SessionNoteViewType.Enhanced, id: "note-1" } },
     });
     const contacts = createContactsTab({ active: false });
 
@@ -31,11 +36,11 @@ describe("Basic Tab Actions", () => {
     useTabs.getState().openNew(session2);
     useTabs.getState().openNew(contacts);
 
-    expect(useTabs.getState()).toHaveCurrentTab({ type: "contacts" });
+    expect(useTabs.getState()).toHaveCurrentTab({ type: TabType.Contacts });
     expect(useTabs.getState()).toMatchTabsInOrder([
-      { id: session1.id, active: false, type: "sessions" },
-      { id: session2.id, active: false, type: "sessions" },
-      { type: "contacts", active: true },
+      { id: session1.id, active: false, type: TabType.Sessions },
+      { id: session2.id, active: false, type: TabType.Sessions },
+      { type: TabType.Contacts, active: true },
     ]);
     expect(useTabs.getState()).toHaveHistoryLength(1);
     expect(useTabs.getState()).toHaveNavigationState({
@@ -120,7 +125,7 @@ describe("Basic Tab Actions", () => {
     expect(useTabs.getState()).toHaveCurrentTab({
       id: "tab1",
       state: {
-        view: { type: "enhanced", id: "summary-1" },
+        view: { type: SessionNoteViewType.Enhanced, id: "summary-1" },
         autoStart: true,
         scheduledAutoStart: null,
       },
@@ -147,14 +152,14 @@ describe("Basic Tab Actions", () => {
     const state = useTabs.getState();
     expect(state).toMatchTabsInOrder([
       {
-        type: "contacts",
+        type: TabType.Contacts,
         active: true,
         state: { selected: { type: "organization", id: "acme" } },
       },
-      { id: "tab1", active: false, type: "sessions" },
+      { id: "tab1", active: false, type: TabType.Sessions },
     ]);
     expect(state).toHaveCurrentTab({
-      type: "contacts",
+      type: TabType.Contacts,
       state: { selected: { type: "organization", id: "acme" } },
     });
   });
@@ -162,7 +167,7 @@ describe("Basic Tab Actions", () => {
   test("openNew reuses settings tab and updates requested subsection", () => {
     const settings = createSettingsTab({
       active: false,
-      state: { tab: "app" },
+      state: { tab: SettingsTab.App },
     });
     const session = createSessionTab({ id: "tab1", active: false });
 
@@ -171,22 +176,26 @@ describe("Basic Tab Actions", () => {
     useTabs.getState().openNew(
       createSettingsTab({
         active: false,
-        state: { tab: "notifications" },
+        state: { tab: SettingsTab.Notifications },
       }),
     );
 
     const state = useTabs.getState();
     expect(state).toMatchTabsInOrder([
-      { type: "settings", active: true, state: { tab: "notifications" } },
-      { id: "tab1", active: false, type: "sessions" },
+      {
+        type: TabType.Settings,
+        active: true,
+        state: { tab: SettingsTab.Notifications },
+      },
+      { id: "tab1", active: false, type: TabType.Sessions },
     ]);
     expect(state).toHaveCurrentTab({
-      type: "settings",
-      state: { tab: "notifications" },
+      type: TabType.Settings,
+      state: { tab: SettingsTab.Notifications },
     });
     expect(state).toHaveLastHistoryEntry({
-      type: "settings",
-      state: { tab: "notifications" },
+      type: TabType.Settings,
+      state: { tab: SettingsTab.Notifications },
     });
   });
 
@@ -198,13 +207,13 @@ describe("Basic Tab Actions", () => {
     useTabs.getState().openNew({ type: "settings" });
 
     expect(useTabs.getState()).toHaveCurrentTab({
-      type: "settings",
+      type: TabType.Settings,
       returnToSlotId: openedSession.slotId,
       returnToTabId: `sessions-${session.id}`,
     });
   });
 
-  test.each(["calendar", "contacts", "templates"] as const)(
+  test.each([TabType.Calendar, TabType.Contacts, TabType.Templates] as const)(
     "openNew tracks where %s was opened from",
     (type) => {
       useTabs.getState().openNew({ type: "settings" });
@@ -226,8 +235,8 @@ describe("Basic Tab Actions", () => {
     });
 
     expect(useTabs.getState()).toHaveCurrentTab({
-      type: "settings",
-      state: { tab: "app" },
+      type: TabType.Settings,
+      state: { tab: SettingsTab.App },
     });
   });
 
@@ -237,7 +246,7 @@ describe("Basic Tab Actions", () => {
       state: { tab: "folders" },
     });
 
-    expect(useTabs.getState()).toHaveCurrentTab({ type: "folders" });
+    expect(useTabs.getState()).toHaveCurrentTab({ type: TabType.Folders });
   });
 
   test("openNew refreshes settings return target when reusing its tab", () => {
@@ -254,8 +263,8 @@ describe("Basic Tab Actions", () => {
     });
 
     expect(useTabs.getState()).toHaveCurrentTab({
-      type: "settings",
-      state: { tab: "notifications" },
+      type: TabType.Settings,
+      state: { tab: SettingsTab.Notifications },
       returnToSlotId: openedSession2.slotId,
     });
   });
@@ -272,8 +281,8 @@ describe("Basic Tab Actions", () => {
     });
 
     expect(useTabs.getState()).toHaveCurrentTab({
-      type: "settings",
-      state: { tab: "notifications" },
+      type: TabType.Settings,
+      state: { tab: SettingsTab.Notifications },
       returnToSlotId: openedSession.slotId,
     });
   });
@@ -290,8 +299,8 @@ describe("Basic Tab Actions", () => {
     });
 
     expect(useTabs.getState()).toHaveCurrentTab({
-      type: "settings",
-      state: { tab: "notifications" },
+      type: TabType.Settings,
+      state: { tab: SettingsTab.Notifications },
     });
     expect(useTabs.getState().currentTab?.returnToSlotId).toBeUndefined();
   });
@@ -308,7 +317,7 @@ describe("Basic Tab Actions", () => {
 
     const settingsTab = useTabs
       .getState()
-      .tabs.find((tab) => tab.type === "settings");
+      .tabs.find((tab) => tab.type === TabType.Settings);
 
     expect(settingsTab?.returnToSlotId).toBeUndefined();
   });
@@ -321,26 +330,26 @@ describe("Basic Tab Actions", () => {
     useTabs.getState().openNew({ type: "settings" });
     useTabs.getState().close(openedSession);
 
-    expect(useTabs.getState()).toHaveCurrentTab({ type: "settings" });
+    expect(useTabs.getState()).toHaveCurrentTab({ type: TabType.Settings });
     expect(useTabs.getState().currentTab?.returnToSlotId).toBeUndefined();
   });
 
   test.each([
-    [undefined, "app"],
-    ["lab", "app"],
-    ["data", "app"],
-    ["imports", "app"],
-    ["privacy", "app"],
-    ["stats", "app"],
-    ["developers", "app"],
-    ["insights", "app"],
-    ["intelligence", "claude"],
-    ["personalization", "dictionary"],
-    ["audio", "meetings"],
-    ["billing", "app"],
-    ["referrals", "app"],
-    ["crm", "app"],
-    ["account", "app"],
+    [undefined, SettingsTab.App],
+    ["lab", SettingsTab.App],
+    ["data", SettingsTab.App],
+    ["imports", SettingsTab.App],
+    ["privacy", SettingsTab.App],
+    ["stats", SettingsTab.App],
+    ["developers", SettingsTab.App],
+    ["insights", SettingsTab.App],
+    ["intelligence", SettingsTab.Claude],
+    ["personalization", SettingsTab.Dictionary],
+    ["audio", SettingsTab.Meetings],
+    ["billing", SettingsTab.App],
+    ["referrals", SettingsTab.App],
+    ["crm", SettingsTab.App],
+    ["account", SettingsTab.App],
   ] as const)(
     "openNew normalizes settings tab %s to %s",
     (requested, expected) => {
@@ -353,11 +362,11 @@ describe("Basic Tab Actions", () => {
         );
 
       expect(useTabs.getState()).toHaveCurrentTab({
-        type: "settings",
+        type: TabType.Settings,
         state: { tab: expected },
       });
       expect(useTabs.getState()).toMatchTabsInOrder([
-        { type: "settings", active: true, state: { tab: expected } },
+        { type: TabType.Settings, active: true, state: { tab: expected } },
       ]);
     },
   );

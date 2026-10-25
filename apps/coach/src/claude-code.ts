@@ -1,15 +1,22 @@
+import sdkPackage from "@anthropic-ai/claude-agent-sdk/package.json";
 import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-
 import { z } from "zod";
 
-import sdkPackage from "@anthropic-ai/claude-agent-sdk/package.json" with { type: "json" };
-
 import { CLAUDE_CODE_PIN } from "./claude-code-pin";
-import { compareVersions, type InstalledClaudeCode, InstalledClaudeCodeFinder } from "./installed-claude-code";
+import {
+  compareVersions,
+  type InstalledClaudeCode,
+  InstalledClaudeCodeFinder,
+} from "./installed-claude-code";
+
+export enum ClaudeCodeSource {
+  Installed = "installed",
+  Cue = "cue",
+}
 
 /**
  * The Claude Code release the bundled Agent SDK ships with, read from the
@@ -37,14 +44,17 @@ export type ClaudeCodeArtifact = {
 
 /** Which Claude Code the coach runs: the person's own, or Cue's pinned copy. */
 export type ClaudeCodeStatus = {
-  using: "installed" | "cue";
+  using: ClaudeCodeSource;
   /** The newest native Claude Code found on this Mac, if any. */
   installed: InstalledClaudeCode | null;
   /** The oldest installed version the coach runs; also Cue's copy's version. */
   minVersion: string;
 };
 
-export type ResolvedClaudeCode = { executablePath: string; source: "installed" | "cue" };
+export type ResolvedClaudeCode = {
+  executablePath: string;
+  source: ClaudeCodeSource;
+};
 
 /** One tick of the first-use download, for "Setting up the coach… 45%". */
 export type ClaudeCodeProgress = { receivedBytes: number; totalBytes: number };
@@ -59,8 +69,12 @@ export function platformTarget(): string {
 }
 
 /** Cue's pinned copy for one platform, or null where none is pinned. */
-export function pinnedArtifact(target = platformTarget()): ClaudeCodeArtifact | null {
-  const integrity = Object.entries(CLAUDE_CODE_PIN.integrity).find(([key]) => key === target)?.[1];
+export function pinnedArtifact(
+  target = platformTarget(),
+): ClaudeCodeArtifact | null {
+  const integrity = Object.entries(CLAUDE_CODE_PIN.integrity).find(
+    ([key]) => key === target,
+  )?.[1];
   if (!integrity) return null;
   const { sdkVersion } = CLAUDE_CODE_PIN;
   return {
@@ -91,12 +105,15 @@ export class ClaudeCode {
   private readonly minVersion: string;
   private readonly fetchImpl: typeof fetch;
   private pending: Promise<ResolvedClaudeCode> | null = null;
-  private readonly progressListeners = new Set<(progress: ClaudeCodeProgress) => void>();
+  private readonly progressListeners = new Set<
+    (progress: ClaudeCodeProgress) => void
+  >();
 
   constructor(options: ClaudeCodeOptions) {
     this.rootDir = options.rootDir;
     this.finder = options.finder;
-    this.artifact = options.artifact === undefined ? pinnedArtifact() : options.artifact;
+    this.artifact =
+      options.artifact === undefined ? pinnedArtifact() : options.artifact;
     this.minVersion = options.minVersion ?? CLAUDE_CODE_MIN_VERSION;
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
@@ -104,17 +121,26 @@ export class ClaudeCode {
   async status(): Promise<ClaudeCodeStatus> {
     const installed = await this.finder.find();
     return {
-      using: installed && compareVersions(installed.version, this.minVersion) >= 0 ? "installed" : "cue",
+      using:
+        installed && compareVersions(installed.version, this.minVersion) >= 0
+          ? ClaudeCodeSource.Installed
+          : ClaudeCodeSource.Cue,
       installed,
       minVersion: this.minVersion,
     };
   }
 
   /** Update the person's own Claude Code with its own updater, when they ask. */
-  async updateInstalled(): Promise<{ output: string; status: ClaudeCodeStatus }> {
+  async updateInstalled(): Promise<{
+    output: string;
+    status: ClaudeCodeStatus;
+  }> {
     const before = await this.status();
-    if (!before.installed) throw new Error("Claude Code isn't installed on this Mac.");
-    const output = await this.finder.update(before.installed).catch((error: unknown) => errorText(error));
+    if (!before.installed)
+      throw new Error("Claude Code isn't installed on this Mac.");
+    const output = await this.finder
+      .update(before.installed)
+      .catch((error: unknown) => errorText(error));
     return { output, status: await this.status() };
   }
 
@@ -126,8 +152,11 @@ export class ClaudeCode {
 
   async resolve(): Promise<ResolvedClaudeCode> {
     const status = await this.status();
-    if (status.using === "installed" && status.installed) {
-      return { executablePath: status.installed.executablePath, source: "installed" };
+    if (status.using === ClaudeCodeSource.Installed && status.installed) {
+      return {
+        executablePath: status.installed.executablePath,
+        source: ClaudeCodeSource.Installed,
+      };
     }
     const artifact = this.artifact;
     if (!artifact) {
@@ -148,17 +177,26 @@ export class ClaudeCode {
   }
 
   private executableIn(dir: string): ResolvedClaudeCode {
-    return { executablePath: path.join(dir, "claude"), source: "cue" };
+    return {
+      executablePath: path.join(dir, "claude"),
+      source: ClaudeCodeSource.Cue,
+    };
   }
 
-  private async downloaded(artifact: ClaudeCodeArtifact): Promise<ResolvedClaudeCode | null> {
+  private async downloaded(
+    artifact: ClaudeCodeArtifact,
+  ): Promise<ResolvedClaudeCode | null> {
     const dir = this.componentDir(artifact);
     const resolved = this.executableIn(dir);
     const [marker, stat] = await Promise.all([
-      fs.readFile(path.join(dir, INTEGRITY_MARKER), "utf8").catch(() => undefined),
+      fs
+        .readFile(path.join(dir, INTEGRITY_MARKER), "utf8")
+        .catch(() => undefined),
       fs.stat(resolved.executablePath).catch(() => undefined),
     ]);
-    return marker?.trim() === artifact.integrity && stat?.isFile() ? resolved : null;
+    return marker?.trim() === artifact.integrity && stat?.isFile()
+      ? resolved
+      : null;
   }
 
   private emit(progress: ClaudeCodeProgress) {
@@ -169,21 +207,32 @@ export class ClaudeCode {
    * One coach process downloads at a time: the others (sign-in checks,
    * summaries) wait for its copy instead of fetching their own.
    */
-  private async install(artifact: ClaudeCodeArtifact): Promise<ResolvedClaudeCode> {
+  private async install(
+    artifact: ClaudeCodeArtifact,
+  ): Promise<ResolvedClaudeCode> {
     await fs.mkdir(this.rootDir, { recursive: true });
     const lock = path.join(this.rootDir, INSTALL_LOCK);
     for (;;) {
-      const handle = await fs.open(lock, "wx", 0o600).catch((error: unknown) => {
-        if (errorCode(error) === "EEXIST") return null;
-        throw new ClaudeCodeSetupError(`The coach couldn't prepare Claude Code: ${errorText(error)}`, { cause: error });
-      });
+      const handle = await fs
+        .open(lock, "wx", 0o600)
+        .catch((error: unknown) => {
+          if (errorCode(error) === "EEXIST") return null;
+          throw new ClaudeCodeSetupError(
+            `The coach couldn't prepare Claude Code: ${errorText(error)}`,
+            { cause: error },
+          );
+        });
       if (handle) {
         try {
           await handle.writeFile(String(process.pid));
           await handle.close();
-          return (await this.downloaded(artifact)) ?? (await this.download(artifact));
+          return (
+            (await this.downloaded(artifact)) ?? (await this.download(artifact))
+          );
         } finally {
-          await fs.rm(path.join(this.rootDir, INSTALL_PROGRESS), { force: true });
+          await fs.rm(path.join(this.rootDir, INSTALL_PROGRESS), {
+            force: true,
+          });
           await fs.rm(lock, { force: true });
         }
       }
@@ -194,31 +243,48 @@ export class ClaudeCode {
       await Bun.sleep(LOCK_POLL_MS);
       const installed = await this.downloaded(artifact);
       if (installed) return installed;
-      const shared = await readProgress(path.join(this.rootDir, INSTALL_PROGRESS));
+      const shared = await readProgress(
+        path.join(this.rootDir, INSTALL_PROGRESS),
+      );
       if (shared) this.emit(shared);
     }
   }
 
-  private async download(artifact: ClaudeCodeArtifact): Promise<ResolvedClaudeCode> {
+  private async download(
+    artifact: ClaudeCodeArtifact,
+  ): Promise<ResolvedClaudeCode> {
     const staging = await fs.mkdtemp(path.join(this.rootDir, ".install-"));
     const archive = path.join(staging, "claude.tgz");
     const payload = path.join(staging, "payload");
     const finalDir = this.componentDir(artifact);
     try {
       assertTrustedArtifact(artifact);
-      const response = await this.fetchImpl(artifact.tarballUrl, { redirect: "error" });
-      if (!response.ok || !response.body) throw new Error(`the download returned HTTP ${response.status}`);
-      const progressFile = path.join(this.rootDir, INSTALL_PROGRESS);
-      await writeVerifiedArchive(response, archive, artifact.integrity, (progress) => {
-        writeFileSync(progressFile, JSON.stringify(progress));
-        this.emit(progress);
+      const response = await this.fetchImpl(artifact.tarballUrl, {
+        redirect: "error",
       });
+      if (!response.ok || !response.body)
+        throw new Error(`the download returned HTTP ${response.status}`);
+      const progressFile = path.join(this.rootDir, INSTALL_PROGRESS);
+      await writeVerifiedArchive(
+        response,
+        archive,
+        artifact.integrity,
+        (progress) => {
+          writeFileSync(progressFile, JSON.stringify(progress));
+          this.emit(progress);
+        },
+      );
       await fs.mkdir(payload);
       await extractExecutable(archive, payload);
       const executable = this.executableIn(payload).executablePath;
-      if (!(await fs.stat(executable)).isFile()) throw new Error("the archive contains no executable");
+      if (!(await fs.stat(executable)).isFile())
+        throw new Error("the archive contains no executable");
       await fs.chmod(executable, 0o755);
-      await fs.writeFile(path.join(payload, INTEGRITY_MARKER), `${artifact.integrity}\n`, { mode: 0o600 });
+      await fs.writeFile(
+        path.join(payload, INTEGRITY_MARKER),
+        `${artifact.integrity}\n`,
+        { mode: 0o600 },
+      );
       const raced = await this.downloaded(artifact);
       if (raced) return raced;
       await fs.rm(finalDir, { recursive: true, force: true });
@@ -226,7 +292,9 @@ export class ClaudeCode {
         if (!(await this.downloaded(artifact))) throw error;
       });
       await this.removeOtherVersions(artifact);
-      console.error(`[coach] installed Claude Code from ${artifact.tarballUrl}`);
+      console.error(
+        `[coach] installed Claude Code from ${artifact.tarballUrl}`,
+      );
       return this.executableIn(finalDir);
     } catch (cause) {
       throw new ClaudeCodeSetupError(
@@ -239,7 +307,9 @@ export class ClaudeCode {
   }
 
   /** Earlier pins' copies, and downloads a crashed run left behind. */
-  private async removeOtherVersions(artifact: ClaudeCodeArtifact): Promise<void> {
+  private async removeOtherVersions(
+    artifact: ClaudeCodeArtifact,
+  ): Promise<void> {
     const entries = await fs.readdir(this.rootDir, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name === artifact.version) continue;
@@ -270,7 +340,8 @@ async function writeVerifiedArchive(
   onProgress: (progress: ClaudeCodeProgress) => void,
 ): Promise<void> {
   const totalBytes = Number(response.headers.get("content-length") ?? 0);
-  if (totalBytes > MAX_ARCHIVE_BYTES) throw new Error("the download is too large");
+  if (totalBytes > MAX_ARCHIVE_BYTES)
+    throw new Error("the download is too large");
   const reader = response.body?.getReader();
   if (!reader) throw new Error("the download has no body");
   const handle = await fs.open(destination, "wx", 0o600);
@@ -283,11 +354,16 @@ async function writeVerifiedArchive(
       const { done, value } = await reader.read();
       if (done) break;
       receivedBytes += value.byteLength;
-      if (receivedBytes > MAX_ARCHIVE_BYTES) throw new Error("the download is too large");
+      if (receivedBytes > MAX_ARCHIVE_BYTES)
+        throw new Error("the download is too large");
       hash.update(value);
       let offset = 0;
       while (offset < value.byteLength) {
-        const { bytesWritten } = await handle.write(value, offset, value.byteLength - offset);
+        const { bytesWritten } = await handle.write(
+          value,
+          offset,
+          value.byteLength - offset,
+        );
         offset += bytesWritten;
       }
       if (Date.now() - lastTick >= 200) {
@@ -299,17 +375,39 @@ async function writeVerifiedArchive(
   } finally {
     await handle.close();
   }
-  if (`sha512-${hash.digest("base64")}` !== expected) throw new Error("the download's integrity verification failed");
+  if (`sha512-${hash.digest("base64")}` !== expected)
+    throw new Error("the download's integrity verification failed");
 }
 
-async function extractExecutable(archive: string, destination: string): Promise<void> {
-  const tar = Bun.spawn(["tar", "-xzf", archive, "-C", destination, "--strip-components", "1", "package/claude"], {
-    stdin: "ignore",
-    stdout: "ignore",
-    stderr: "pipe",
-  });
-  const [stderr, exitCode] = await Promise.all([new Response(tar.stderr).text(), tar.exited]);
-  if (exitCode !== 0) throw new Error(`couldn't unpack the download: ${stderr.trim() || `tar exited ${exitCode}`}`);
+async function extractExecutable(
+  archive: string,
+  destination: string,
+): Promise<void> {
+  const tar = Bun.spawn(
+    [
+      "tar",
+      "-xzf",
+      archive,
+      "-C",
+      destination,
+      "--strip-components",
+      "1",
+      "package/claude",
+    ],
+    {
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "pipe",
+    },
+  );
+  const [stderr, exitCode] = await Promise.all([
+    new Response(tar.stderr).text(),
+    tar.exited,
+  ]);
+  if (exitCode !== 0)
+    throw new Error(
+      `couldn't unpack the download: ${stderr.trim() || `tar exited ${exitCode}`}`,
+    );
 }
 
 /** Whether the process that wrote the lock is still running. */
@@ -320,7 +418,8 @@ async function lockHeld(lock: string): Promise<boolean> {
   ]);
   if (text === undefined || !stat) return false;
   const pid = Number(text.trim());
-  if (!Number.isInteger(pid) || pid <= 0) return Date.now() - stat.mtimeMs < UNCLAIMED_LOCK_MS;
+  if (!Number.isInteger(pid) || pid <= 0)
+    return Date.now() - stat.mtimeMs < UNCLAIMED_LOCK_MS;
   try {
     process.kill(pid, 0);
     return true;
@@ -330,7 +429,11 @@ async function lockHeld(lock: string): Promise<boolean> {
 }
 
 function errorCode(error: unknown): string | undefined {
-  return error instanceof Error && "code" in error && typeof error.code === "string" ? error.code : undefined;
+  return error instanceof Error &&
+    "code" in error &&
+    typeof error.code === "string"
+    ? error.code
+    : undefined;
 }
 
 function errorText(error: unknown): string {
@@ -342,25 +445,34 @@ function capitalize(text: string): string {
 }
 
 /** The app passes its cache directory; the CLI falls back to the dev app's. */
-export const DEFAULT_CLAUDE_DIR = path.join(os.homedir(), "Library/Caches/com.hyprnote.dev/claude-code");
+export const DEFAULT_CLAUDE_DIR = path.join(
+  os.homedir(),
+  "Library/Caches/com.hyprnote.dev/claude-code",
+);
 
 /**
  * The Claude Code for a coach process: an explicit `--claude` path as is,
  * else the person's own install or Cue's copy under `--claude-dir`.
  */
-export function claudeCodeFromArgs(values: { claude?: string; "claude-dir"?: string }): {
+export function claudeCodeFromArgs(values: {
+  claude?: string;
+  "claude-dir"?: string;
+}): {
   claudeCode: ClaudeCode;
   executable: () => Promise<string>;
 } {
   const rootDir = path.resolve(values["claude-dir"] ?? DEFAULT_CLAUDE_DIR);
   const claudeCode = new ClaudeCode({
     rootDir,
-    finder: new InstalledClaudeCodeFinder({ cacheFile: path.join(rootDir, "installed-versions.json") }),
+    finder: new InstalledClaudeCodeFinder({
+      cacheFile: path.join(rootDir, "installed-versions.json"),
+    }),
   });
   const explicit = values.claude ? path.resolve(values.claude) : undefined;
   return {
     claudeCode,
-    executable: async () => explicit ?? (await claudeCode.resolve()).executablePath,
+    executable: async () =>
+      explicit ?? (await claudeCode.resolve()).executablePath,
   };
 }
 
@@ -369,7 +481,10 @@ export const CLAUDE_ARGS = {
   "claude-dir": { type: "string" },
 } as const;
 
-const progressSchema = z.object({ receivedBytes: z.number(), totalBytes: z.number() });
+const progressSchema = z.object({
+  receivedBytes: z.number(),
+  totalBytes: z.number(),
+});
 
 /** The download progress another coach process shares while it holds the lock. */
 async function readProgress(file: string): Promise<ClaudeCodeProgress | null> {

@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import type { CoachEdit } from "./app-bridge";
-import { actionItemText, type Block } from "./blocks";
+import { type CoachEdit, CoachEditKind } from "./app-bridge";
+import { actionItemText, type Block, BlockKind } from "./blocks";
 import { showTool } from "./meeting-server";
+import { MoveTag, MoveVerb } from "./move";
 import {
   addedBlockItem,
   appendHistory,
   type CoachEvent,
+  CoachEventType,
   findBlock,
 } from "./protocol";
 
@@ -31,7 +33,7 @@ describe("the show tool", () => {
     expect(ack.isError).toBeUndefined();
     expect(actions.shown).toEqual([
       {
-        kind: "actions",
+        kind: BlockKind.Actions,
         items: [
           { text: "send the Bcc steps", owner: "You", due: "today" },
           { text: "confirm the CRM address", owner: "Sara" },
@@ -47,16 +49,19 @@ describe("the show tool", () => {
     });
     expect((await replies.run()).isError).toBeUndefined();
     expect(replies.shown).toEqual([
-      { kind: "replies", options: ["Draft the reply", "Summarise for Slack"] },
+      {
+        kind: BlockKind.Replies,
+        options: ["Draft the reply", "Summarise for Slack"],
+      },
     ]);
   });
 
   test("a move reaches the UI with its tag, headline, line, watch-out and moment, and the coach is told not to repeat it", async () => {
-    const block: Extract<Block, { kind: "move" }> = {
-      kind: "move",
-      tag: "pushback",
+    const block: Extract<Block, { kind: BlockKind.Move }> = {
+      kind: BlockKind.Move,
+      tag: MoveTag.Pushback,
       headline: "Ask what's behind the price concern",
-      verb: "Ask",
+      verb: MoveVerb.Ask,
       line: "Is it the total, or the timing?",
       watch_out: "Don't discount yet",
       moment: {
@@ -173,29 +178,33 @@ describe("checklist items", () => {
     const edit = (id: string): CoachEdit => ({
       id,
       session_id: "m1",
-      kind: "add_action_item",
+      kind: CoachEditKind.AddActionItem,
       summary: id,
       task_id: id,
     });
     const block: CoachEvent = {
-      type: "block",
+      type: CoachEventType.Block,
       id: "b1",
-      block: { kind: "actions", items: [{ text: "a" }, { text: "b" }] },
+      block: { kind: BlockKind.Actions, items: [{ text: "a" }, { text: "b" }] },
     };
     const events: CoachEvent[] = [
       block,
-      { type: "edit", edit: edit("e1"), block: { id: "b1", index: 1 } },
-      { type: "edit", edit: edit("e2") },
+      {
+        type: CoachEventType.Edit,
+        edit: edit("e1"),
+        block: { id: "b1", index: 1 },
+      },
+      { type: CoachEventType.Edit, edit: edit("e2") },
     ];
     const history = events.reduce<CoachEvent[]>(appendHistory, []);
     expect(findBlock(history, "b1")).toEqual({
-      kind: "actions",
+      kind: BlockKind.Actions,
       items: [{ text: "a" }, { text: "b" }],
     });
     expect(addedBlockItem(history, { id: "b1", index: 1 })).toBe("e1");
     expect(addedBlockItem(history, { id: "b1", index: 0 })).toBeNull();
     const undone = appendHistory(history, {
-      type: "undone",
+      type: CoachEventType.Undone,
       id: "e1",
       summary: "b",
     });

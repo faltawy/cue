@@ -22,10 +22,12 @@ import {
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
 import { Radio } from "@anlg/ui/components/ui/radio";
+import { SessionNoteViewType } from "@anlg/utils/session";
 
 import { formatDate, formatDuration } from "./export-utils";
 
 import { useTranscriptExportSegments } from "~/session/components/note-input/transcript/export-data";
+import { FileFormat } from "~/session/enums";
 import {
   useEnhancedNote,
   useSession,
@@ -35,8 +37,6 @@ import { getSessionEvent } from "~/session/utils";
 import { getStoredSettingValues } from "~/settings/queries";
 import type { EditorView } from "~/store/zustand/tabs/schema";
 import { useSessionTranscriptMetadata } from "~/stt/queries";
-
-type FileFormat = "pdf" | "txt" | "md" | "org";
 
 function markdownToText(content: string): string {
   return content
@@ -77,7 +77,7 @@ export function ExportModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const { t } = useLingui();
-  const [format, setFormat] = useState<FileFormat>("pdf");
+  const [format, setFormat] = useState<FileFormat>(FileFormat.Pdf);
   const [includeMemo, setIncludeMemo] = useState(false);
   const [includeSummary, setIncludeSummary] = useState(true);
   const [includeTranscript, setIncludeTranscript] = useState(false);
@@ -89,7 +89,8 @@ export function ExportModal({
   const eventTitle = event?.title;
   const rawMd = session?.raw_md;
 
-  const enhancedNoteId = currentView.type === "enhanced" ? currentView.id : "";
+  const enhancedNoteId =
+    currentView.type === SessionNoteViewType.Enhanced ? currentView.id : "";
   const summaryContent = useEnhancedNote(enhancedNoteId)?.content;
   const participants = useSessionParticipants(sessionId);
 
@@ -359,7 +360,7 @@ export function ExportModal({
       const filename = `${sanitizedTitle}_${timestamp}.${format}`;
       const path = await join(directory, filename);
 
-      if (format === "pdf") {
+      if (format === FileFormat.Pdf) {
         const exportContent = buildPdfContent();
         const result = await exportCommands.export(path, exportContent);
         if (result.status === "error") {
@@ -367,9 +368,9 @@ export function ExportModal({
         }
       } else {
         const textContent =
-          format === "md"
+          format === FileFormat.Md
             ? buildMdContent()
-            : format === "org"
+            : format === FileFormat.Org
               ? buildOrgContent()
               : buildTxtContent();
         const result = await fs2Commands.writeTextFile(path, textContent);
@@ -411,7 +412,7 @@ export function ExportModal({
             <Trans>File format</Trans>
           </legend>
           <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {(["pdf", "txt", "md", "org"] as const).map((f) => (
+            {Object.values(FileFormat).map((f) => (
               <label
                 key={f}
                 className="text-ui flex cursor-pointer items-center gap-1.5"
@@ -421,9 +422,9 @@ export function ExportModal({
                   checked={format === f}
                   onChange={() => setFormat(f)}
                 />
-                {f === "md"
+                {f === FileFormat.Md
                   ? "Markdown"
-                  : f === "org"
+                  : f === FileFormat.Org
                     ? "Org"
                     : f.toUpperCase()}
               </label>

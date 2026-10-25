@@ -78,7 +78,8 @@ vi.mock("@anlg/plugin-opener2", () => ({
   commands: { openUrl: openUrlMock },
 }));
 
-vi.mock("@anlg/plugin-windows", () => ({
+vi.mock("@anlg/plugin-windows", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anlg/plugin-windows")>()),
   getCurrentWebviewWindowLabel: getCurrentWebviewWindowLabelMock,
 }));
 

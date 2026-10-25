@@ -55,6 +55,21 @@ import {
 } from "./attachment-limits";
 import { chatSchema } from "./schema";
 
+export enum SelectionPosition {
+  Start = "start",
+  End = "end",
+}
+
+export enum SubmitShortcut {
+  ModEnter = "mod-enter",
+  Enter = "enter",
+}
+
+export enum HistoryDirection {
+  Prev = "prev",
+  Next = "next",
+}
+
 export { chatSchema };
 export type { MentionConfig };
 
@@ -71,7 +86,7 @@ export interface ChatEditorHandle {
   getJSON(): JSONContent | undefined;
   clearContent(): void;
   insertText(text: string): void;
-  replaceContent(content: JSONContent, selection?: "start" | "end"): void;
+  replaceContent(content: JSONContent, selection?: SelectionPosition): void;
 }
 
 interface ChatEditorProps {
@@ -79,10 +94,10 @@ interface ChatEditorProps {
   initialContent?: JSONContent;
   mentionConfig?: MentionConfig;
   placeholder?: PlaceholderFunction;
-  submitShortcut?: "mod-enter" | "enter";
+  submitShortcut?: SubmitShortcut;
   onUpdate?: (json: JSONContent) => void;
   onSubmit?: () => void;
-  onHistoryNavigate?: (direction: "prev" | "next") => boolean;
+  onHistoryNavigate?: (direction: HistoryDirection) => boolean;
   onAttachmentError?: (message: string) => void;
 }
 
@@ -228,7 +243,7 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
       initialContent,
       mentionConfig,
       placeholder,
-      submitShortcut = "mod-enter",
+      submitShortcut = SubmitShortcut.ModEnter,
       onUpdate,
       onSubmit,
       onHistoryNavigate,
@@ -293,7 +308,7 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
           view.dispatch(view.state.tr.insertText(insertion, from, to));
           view.focus();
         },
-        replaceContent(content, selection = "end") {
+        replaceContent(content, selection = SelectionPosition.End) {
           const view = viewRef.current;
           if (!view || content.type !== "doc") return;
 
@@ -310,7 +325,7 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
             doc.content,
           );
           tr.setSelection(
-            selection === "start"
+            selection === SelectionPosition.Start
               ? Selection.atStart(tr.doc)
               : Selection.atEnd(tr.doc),
           );
@@ -330,15 +345,15 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
         return true;
       };
       const enterCommand =
-        submitShortcut === "enter"
+        submitShortcut === SubmitShortcut.Enter
           ? submitCommand
           : chainCommands(createParagraphNear, liftEmptyBlock, splitBlock);
       const shiftEnterCommand =
-        submitShortcut === "enter"
+        submitShortcut === SubmitShortcut.Enter
           ? chainCommands(createParagraphNear, liftEmptyBlock, splitBlock)
           : undefined;
       const historyNavCommand =
-        (direction: "prev" | "next") => (state: EditorState) => {
+        (direction: HistoryDirection) => (state: EditorState) => {
           if (!state.selection.empty) {
             return false;
           }
@@ -347,7 +362,7 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
           }
 
           const edge =
-            direction === "prev"
+            direction === HistoryDirection.Prev
               ? Selection.atStart(state.doc).from
               : Selection.atEnd(state.doc).to;
           if (state.selection.from !== edge) {
@@ -365,7 +380,7 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
         keymap({
           "Mod-z": undo,
           "Mod-Shift-z": redo,
-          ...(submitShortcut === "mod-enter"
+          ...(submitShortcut === SubmitShortcut.ModEnter
             ? { "Mod-Enter": submitCommand }
             : {}),
           ...(shiftEnterCommand ? { "Shift-Enter": shiftEnterCommand } : {}),
@@ -381,8 +396,8 @@ export const ChatEditor = forwardRef<ChatEditorHandle, ChatEditorProps>(
             selectNodeForward,
           ),
           "Mod-a": selectAll,
-          ArrowUp: historyNavCommand("prev"),
-          ArrowDown: historyNavCommand("next"),
+          ArrowUp: historyNavCommand(HistoryDirection.Prev),
+          ArrowDown: historyNavCommand(HistoryDirection.Next),
         }),
         history(),
         placeholderPlugin(placeholder),

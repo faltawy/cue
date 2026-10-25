@@ -6,19 +6,18 @@ import { cn } from "@anlg/utils";
 
 import { useSetSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { AppIconPreference, ThemePreference } from "~/shared/enums";
 import {
-  type AppIconPreference,
   normalizeAppIconPreference,
   resolveAppIconName,
 } from "~/shared/theme/icon";
 import { applyAppIconPreference } from "~/shared/theme/provider";
-import type { ThemePreference } from "~/shared/theme/resolve";
 
 const APP_ICON_OPTIONS = [
-  "default",
-  "stable",
-  "dev",
-  "staging",
+  AppIconPreference.Default,
+  AppIconPreference.Stable,
+  AppIconPreference.Dev,
+  AppIconPreference.Staging,
 ] as const satisfies readonly AppIconPreference[];
 
 export function AppIconSelector() {
@@ -26,7 +25,10 @@ export function AppIconSelector() {
   const value = normalizeAppIconPreference(useConfigValue("app_icon"));
   const storedTheme = useConfigValue("theme") as ThemePreference;
   const theme: ThemePreference =
-    storedTheme === "light" || storedTheme === "dark" ? storedTheme : "system";
+    storedTheme === ThemePreference.Light ||
+    storedTheme === ThemePreference.Dark
+      ? storedTheme
+      : ThemePreference.System;
   const setAppIcon = useSetSettingValue("app_icon");
   const { data: appIdentifier = "com.hyprnote.stable" } = useQuery({
     queryKey: ["tauri", "app-identifier"],
@@ -39,10 +41,14 @@ export function AppIconSelector() {
     dev: t`Amber`,
     staging: t`Silver`,
   };
-  const defaultIconName = resolveAppIconName("default", appIdentifier);
+  const defaultIconName = resolveAppIconName(
+    AppIconPreference.Default,
+    appIdentifier,
+  );
   const selectedIconName = resolveAppIconName(value, appIdentifier);
   const options = APP_ICON_OPTIONS.filter(
-    (option) => option === "default" || option !== defaultIconName,
+    (option) =>
+      option === AppIconPreference.Default || option !== defaultIconName,
   );
 
   return (

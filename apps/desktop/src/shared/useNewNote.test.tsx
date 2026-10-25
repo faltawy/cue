@@ -1,6 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
+
 const mocks = vi.hoisted(() => ({
   createSession: vi.fn(),
   addSessionTag: vi.fn(),
@@ -87,7 +89,7 @@ it("reads the current live session when the handler runs", () => {
   listenerStore.setState((state) => ({
     live: {
       ...state.live,
-      status: "active",
+      status: LiveSessionStatus.Active,
       sessionId: "live-session",
     },
   }));
@@ -109,7 +111,7 @@ it("does not rearm auto-start when opening the active live session", () => {
   listenerStore.setState((state) => ({
     live: {
       ...state.live,
-      status: "active",
+      status: LiveSessionStatus.Active,
       sessionId: "live-session",
     },
   }));
@@ -127,7 +129,7 @@ it("opens the requested session without auto-start while another is live", () =>
   listenerStore.setState((state) => ({
     live: {
       ...state.live,
-      status: "active",
+      status: LiveSessionStatus.Active,
       sessionId: "live-session",
     },
   }));

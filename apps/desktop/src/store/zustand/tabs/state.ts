@@ -1,30 +1,31 @@
 import type { StoreApi } from "zustand";
 
 import type { BasicState } from "./basic";
-import type { NavigationState } from "./navigation";
-import { updateHistoryCurrent } from "./navigation";
+import { type NavigationState, updateHistoryCurrent } from "./navigation";
 import { isSameTab, type Tab } from "./schema";
+
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export type StateBasicActions = {
   updateContactsTabState: (
     tab: Tab,
-    state: Extract<Tab, { type: "contacts" }>["state"],
+    state: Extract<Tab, { type: TabType.Contacts }>["state"],
   ) => void;
   updateSessionTabState: (
     tab: Tab,
-    state: Extract<Tab, { type: "sessions" }>["state"],
+    state: Extract<Tab, { type: TabType.Sessions }>["state"],
   ) => void;
   updateTemplatesTabState: (
     tab: Tab,
-    state: Extract<Tab, { type: "templates" }>["state"],
+    state: Extract<Tab, { type: TabType.Templates }>["state"],
   ) => void;
   updateSettingsTabState: (
     tab: Tab,
-    state: Extract<Tab, { type: "settings" }>["state"],
+    state: Extract<Tab, { type: TabType.Settings }>["state"],
   ) => void;
   updateDailySummaryTabState: (
     tab: Tab,
-    state: Extract<Tab, { type: "daily_summary" }>["state"],
+    state: Extract<Tab, { type: TabType.DailySummary }>["state"],
   ) => void;
 };
 
@@ -33,15 +34,15 @@ export const createStateUpdaterSlice = <T extends BasicState & NavigationState>(
   get: StoreApi<T>["getState"],
 ): StateBasicActions => ({
   updateSessionTabState: (tab, state) =>
-    updateTabState(tab, "sessions", state, get, set),
+    updateTabState(tab, TabType.Sessions, state, get, set),
   updateContactsTabState: (tab, state) =>
-    updateTabState(tab, "contacts", state, get, set),
+    updateTabState(tab, TabType.Contacts, state, get, set),
   updateTemplatesTabState: (tab, state) =>
-    updateTabState(tab, "templates", state, get, set),
+    updateTabState(tab, TabType.Templates, state, get, set),
   updateSettingsTabState: (tab, state) =>
-    updateTabState(tab, "settings", state, get, set),
+    updateTabState(tab, TabType.Settings, state, get, set),
   updateDailySummaryTabState: (tab, state) =>
-    updateTabState(tab, "daily_summary", state, get, set),
+    updateTabState(tab, TabType.DailySummary, state, get, set),
 });
 
 const updateTabState = <T extends BasicState & NavigationState>(

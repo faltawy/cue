@@ -21,6 +21,7 @@ import {
 import { SettingsPageTitle } from "~/settings/page-title";
 import { useSetSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { EmptyStateSize } from "~/shared/enums";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { normalizeKeywordList, parseDictionaryTermsText } from "~/stt/keywords";
 
@@ -143,7 +144,7 @@ export function DictionarySettings({
           if (visibleTerms.length === 0) {
             return hasSearch ? (
               <EmptyState
-                size="list"
+                size={EmptyStateSize.List}
                 title={<Trans>This term isn't in your dictionary</Trans>}
                 description={
                   <Trans>

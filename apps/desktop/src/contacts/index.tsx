@@ -7,14 +7,16 @@ import { OrganizationDetailsColumn } from "./organization-details";
 import { useHumans, useOrganizations } from "./queries";
 import { useDeleteContact } from "./use-delete-contact";
 
+import { ContactType } from "~/contacts/enums";
 import { StandardContentWrapper } from "~/shared/main";
 import { useOwnerUserId } from "~/shared/owner-user";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function TabContentContact({
   tab,
 }: {
-  tab: Extract<Tab, { type: "contacts" }>;
+  tab: Extract<Tab, { type: TabType.Contacts }>;
 }) {
   return (
     <StandardContentWrapper>
@@ -23,7 +25,11 @@ export function TabContentContact({
   );
 }
 
-function ContactView({ tab }: { tab: Extract<Tab, { type: "contacts" }> }) {
+function ContactView({
+  tab,
+}: {
+  tab: Extract<Tab, { type: TabType.Contacts }>;
+}) {
   const updateContactsTabState = useTabs(
     (state) => state.updateContactsTabState,
   );
@@ -53,7 +59,7 @@ function ContactView({ tab }: { tab: Extract<Tab, { type: "contacts" }> }) {
   const handleDeletePerson = useCallback(
     (id: string) => {
       deleteContact(
-        "human",
+        ContactType.Human,
         id,
         humans.find((human) => human.id === id)?.name ?? "",
       );
@@ -65,7 +71,7 @@ function ContactView({ tab }: { tab: Extract<Tab, { type: "contacts" }> }) {
   const handleDeleteOrganization = useCallback(
     (id: string) => {
       deleteContact(
-        "organization",
+        ContactType.Organization,
         id,
         organizations.find((organization) => organization.id === id)?.name ??
           "",

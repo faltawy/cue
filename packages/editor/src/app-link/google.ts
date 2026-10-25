@@ -1,13 +1,16 @@
-export type GoogleLinkKind =
-  | "document"
-  | "file"
-  | "folder"
-  | "form"
-  | "presentation"
-  | "spreadsheet";
+import { AppLinkProvider } from "./provider";
+
+export enum GoogleLinkKind {
+  Document = "document",
+  File = "file",
+  Folder = "folder",
+  Form = "form",
+  Presentation = "presentation",
+  Spreadsheet = "spreadsheet",
+}
 
 export interface GoogleAttrs {
-  provider: "google";
+  provider: AppLinkProvider.Google;
   kind: GoogleLinkKind;
   url: string;
   resourceId?: string;
@@ -18,17 +21,17 @@ export function getGoogleDisplayParts(attrs: GoogleAttrs): {
   subline: string;
 } {
   switch (attrs.kind) {
-    case "document":
+    case GoogleLinkKind.Document:
       return { header: "Google Docs", subline: "Document" };
-    case "spreadsheet":
+    case GoogleLinkKind.Spreadsheet:
       return { header: "Google Sheets", subline: "Spreadsheet" };
-    case "presentation":
+    case GoogleLinkKind.Presentation:
       return { header: "Google Slides", subline: "Presentation" };
-    case "form":
+    case GoogleLinkKind.Form:
       return { header: "Google Forms", subline: "Form" };
-    case "folder":
+    case GoogleLinkKind.Folder:
       return { header: "Google Drive", subline: "Folder" };
-    case "file":
+    case GoogleLinkKind.File:
       return { header: "Google Drive", subline: "File" };
   }
 }

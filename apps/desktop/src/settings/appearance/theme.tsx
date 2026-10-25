@@ -1,18 +1,18 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 
-import { Check } from "@anlg/ui/components/icons";
+import { IconWeight, Check } from "@anlg/ui/components/icons";
 import { cn } from "@anlg/utils";
 
 import { useSetSettingValue } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { ThemePreference } from "~/shared/enums";
 import { normalizeAppIconPreference } from "~/shared/theme/icon";
 import { applyThemePreference } from "~/shared/theme/provider";
-import type { ThemePreference } from "~/shared/theme/resolve";
 
 const THEME_OPTIONS = [
-  "light",
-  "dark",
-  "system",
+  ThemePreference.Light,
+  ThemePreference.Dark,
+  ThemePreference.System,
 ] as const satisfies readonly ThemePreference[];
 
 export function ThemeSelector() {
@@ -22,9 +22,21 @@ export function ThemeSelector() {
   const appIcon = normalizeAppIconPreference(useConfigValue("app_icon"));
   const setTheme = useSetSettingValue("theme");
   const options = [
-    { value: "light", label: t`Light`, description: t`Bright canvas` },
-    { value: "dark", label: t`Dark`, description: t`Low-light canvas` },
-    { value: "system", label: t`System`, description: t`Match your device` },
+    {
+      value: ThemePreference.Light,
+      label: t`Light`,
+      description: t`Bright canvas`,
+    },
+    {
+      value: ThemePreference.Dark,
+      label: t`Dark`,
+      description: t`Low-light canvas`,
+    },
+    {
+      value: ThemePreference.System,
+      label: t`System`,
+      description: t`Match your device`,
+    },
   ] as const satisfies readonly {
     value: ThemePreference;
     label: string;
@@ -81,7 +93,7 @@ export function ThemeSelector() {
                     selected ? "opacity-100" : "opacity-0",
                   ])}
                 >
-                  <Check className="size-2.5" weight="bold" />
+                  <Check className="size-2.5" weight={IconWeight.Bold} />
                 </span>
               </div>
             </button>
@@ -95,8 +107,8 @@ export function ThemeSelector() {
 function ThemePreview({ theme }: { theme: ThemePreference }) {
   return (
     <div aria-hidden="true" className="relative h-28 overflow-hidden">
-      <PreviewCanvas dark={theme === "dark"} />
-      {theme === "system" ? (
+      <PreviewCanvas dark={theme === ThemePreference.Dark} />
+      {theme === ThemePreference.System ? (
         <div className="absolute inset-0 [clip-path:polygon(100%_0,100%_100%,0_100%)]">
           <PreviewCanvas dark />
         </div>

@@ -8,6 +8,9 @@ import {
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
+import { TabType } from "~/store/zustand/tabs/enums";
 import type { EditorView } from "~/store/zustand/tabs/schema";
 
 const mocks = vi.hoisted(() => ({
@@ -153,7 +156,7 @@ function renderHeader(
     standaloneWindow?: boolean;
   } = {},
 ) {
-  const view = props.view ?? ({ type: "raw" } as EditorView);
+  const view = props.view ?? ({ type: SessionNoteViewType.Raw } as EditorView);
   return render(
     <OuterHeader
       sessionId="session-1"
@@ -168,7 +171,7 @@ function renderHeader(
               pinned: false,
               slotId: "slot-1",
               state: { autoStart: null, view },
-              type: "sessions",
+              type: TabType.Sessions,
             }
           : undefined
       }
@@ -375,7 +378,7 @@ describe("OuterHeader", () => {
     [
       "summary tab before recording",
       {},
-      { view: { type: "enhanced", id: "n" } as EditorView },
+      { view: { type: SessionNoteViewType.Enhanced, id: "n" } as EditorView },
       true,
     ],
     ["memo tab before recording", {}, {}, true],

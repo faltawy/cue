@@ -1,30 +1,31 @@
 import { useEffect, useRef } from "react";
 
 import type { Tab } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 const CUSTOM_SIDEBAR_TYPES: Tab["type"][] = [
-  "calendar",
-  "settings",
-  "contacts",
-  "templates",
-  "folders",
+  TabType.Calendar,
+  TabType.Settings,
+  TabType.Contacts,
+  TabType.Templates,
+  TabType.Folders,
 ];
 
 const LEFT_SURFACE_CUSTOM_SIDEBAR_TYPES: Tab["type"][] = [
-  "calendar",
-  "settings",
-  "contacts",
-  "templates",
-  "folders",
+  TabType.Calendar,
+  TabType.Settings,
+  TabType.Contacts,
+  TabType.Templates,
+  TabType.Folders,
 ];
 
 // Tabs whose sidebar nav renders CustomSidebarHeader in the window chrome row.
 const OWN_SIDEBAR_HEADER_TYPES: Tab["type"][] = [
-  "calendar",
-  "settings",
-  "contacts",
-  "templates",
-  "folders",
+  TabType.Calendar,
+  TabType.Settings,
+  TabType.Contacts,
+  TabType.Templates,
+  TabType.Folders,
 ];
 
 export function hasCustomSidebarTab(tab: Tab | null): boolean {

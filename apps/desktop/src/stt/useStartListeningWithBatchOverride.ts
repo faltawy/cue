@@ -3,6 +3,8 @@ import { useCallback } from "react";
 import { useListener } from "./contexts";
 import { useStartListening } from "./useStartListening";
 
+import { BatchSessionMode } from "~/store/zustand/listener/enums";
+
 export function useStartListeningWithBatchOverride(sessionId: string) {
   const startListening = useStartListening(sessionId);
   const { getSessionMode, stopTranscription } = useListener((state) => ({
@@ -11,7 +13,7 @@ export function useStartListeningWithBatchOverride(sessionId: string) {
   }));
 
   return useCallback(async () => {
-    if (getSessionMode(sessionId) === "running_batch") {
+    if (getSessionMode(sessionId) === BatchSessionMode.RunningBatch) {
       await stopTranscription(sessionId);
     }
 

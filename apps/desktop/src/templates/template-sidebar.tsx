@@ -19,23 +19,26 @@ import { TemplateIconGlyph } from "./template-icon";
 import { AUTO_TEMPLATE_ID, useTemplateTab } from "./utils";
 
 import { useConfigValue } from "~/shared/config";
+import { EmptyStateSize } from "~/shared/enums";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 import { SidebarSearchField } from "~/sidebar/search-field";
 import { type Tab } from "~/store/zustand/tabs";
-
-type SortOption = "alphabetical" | "reverse-alphabetical";
+import { TabType } from "~/store/zustand/tabs/enums";
+import { SortOption } from "~/templates/enums";
 
 export function TemplatesSidebarContent({
   tab,
 }: {
-  tab: Extract<Tab, { type: "templates" }>;
+  tab: Extract<Tab, { type: TabType.Templates }>;
 }) {
   const { t } = useLingui();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
-  const [sortOption, setSortOption] = useState<SortOption>("alphabetical");
+  const [sortOption, setSortOption] = useState<SortOption>(
+    SortOption.Alphabetical,
+  );
   const autoPrompt = useConfigValue("auto_summary_prompt");
 
   const {
@@ -106,10 +109,10 @@ export function TemplatesSidebarContent({
 
     const others = userTemplates.filter((template) => !template.pinned);
     switch (sortOption) {
-      case "alphabetical":
+      case SortOption.Alphabetical:
         others.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
         break;
-      case "reverse-alphabetical":
+      case SortOption.ReverseAlphabetical:
       default:
         others.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
         break;
@@ -150,7 +153,7 @@ export function TemplatesSidebarContent({
       const titleA = a.template.title || "";
       const titleB = b.template.title || "";
 
-      return sortOption === "reverse-alphabetical"
+      return sortOption === SortOption.ReverseAlphabetical
         ? titleB.localeCompare(titleA)
         : titleA.localeCompare(titleB);
     });
@@ -350,11 +353,13 @@ export function TemplatesSidebarContent({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSortOption("alphabetical")}>
+                <DropdownMenuItem
+                  onClick={() => setSortOption(SortOption.Alphabetical)}
+                >
                   <Trans>A to Z</Trans>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setSortOption("reverse-alphabetical")}
+                  onClick={() => setSortOption(SortOption.ReverseAlphabetical)}
                 >
                   <Trans>Z to A</Trans>
                 </DropdownMenuItem>
@@ -386,7 +391,7 @@ export function TemplatesSidebarContent({
         {isEmpty ? (
           search ? (
             <EmptyState
-              size="list"
+              size={EmptyStateSize.List}
               title={<Trans>No templates match “{search.trim()}”</Trans>}
               action={{
                 label: <Trans>Clear search</Trans>,
@@ -395,7 +400,7 @@ export function TemplatesSidebarContent({
             />
           ) : (
             <EmptyState
-              size="list"
+              size={EmptyStateSize.List}
               title={<Trans>No templates yet</Trans>}
               description={
                 <Trans>

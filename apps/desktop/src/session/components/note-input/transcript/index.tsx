@@ -1,5 +1,4 @@
-import type { RefObject } from "react";
-import { useCallback } from "react";
+import { type RefObject, useCallback } from "react";
 
 import { useRegenerateTranscript } from "./actions";
 import { TranscriptViewer } from "./renderer";
@@ -9,8 +8,10 @@ import { LiveTranscriptInterruptedNotice } from "./screens/interrupted";
 import { TranscriptListeningState } from "./screens/listening";
 import { useTranscriptScreen } from "./state";
 
+import { TranscriptScreenKind } from "~/session/enums";
 import { useIncompleteCapture } from "~/stt/capture-result";
 import { useListener } from "~/stt/contexts";
+import { BatchPhase } from "~/stt/enums";
 import { useUploadFile } from "~/stt/useUploadFile";
 
 export function Transcript({
@@ -76,25 +77,27 @@ function TranscriptContent({
                 : "Some audio could not be transcribed. Available recordings were kept according to your retention setting."}
         </div>
       )}
-      {screen.kind === "running_batch" && (
+      {screen.kind === TranscriptScreenKind.RunningBatch && (
         <TranscriptEmptyState
           isBatching
           percentage={screen.percentage}
           phase={screen.phase}
           onStopTranscription={
-            screen.phase === "importing" ? undefined : handleStopTranscription
+            screen.phase === BatchPhase.Importing
+              ? undefined
+              : handleStopTranscription
           }
         />
       )}
-      {screen.kind === "batch_fallback" && (
+      {screen.kind === TranscriptScreenKind.BatchFallback && (
         <BatchState
           requestedLiveTranscription={screen.requestedLiveTranscription}
         />
       )}
-      {screen.kind === "listening" && (
+      {screen.kind === TranscriptScreenKind.Listening && (
         <TranscriptListeningState status={screen.status} />
       )}
-      {screen.kind === "empty" && (
+      {screen.kind === TranscriptScreenKind.Empty && (
         <TranscriptEmptyState
           isBatching={false}
           hasAudio={screen.hasAudio}
@@ -104,7 +107,7 @@ function TranscriptContent({
           onUploadTranscript={uploadTranscript}
         />
       )}
-      {screen.kind === "ready" && (
+      {screen.kind === TranscriptScreenKind.Ready && (
         <TranscriptViewer
           transcriptIds={screen.transcriptIds}
           liveSegments={screen.liveSegments}

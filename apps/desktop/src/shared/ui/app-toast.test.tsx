@@ -1,5 +1,3 @@
-/** @vitest-environment jsdom */
-
 import {
   act,
   cleanup,
@@ -7,11 +5,13 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+/** @vitest-environment jsdom */
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  AppToastTheme,
   type AppToastHandle,
   AppToaster,
   dismissAppToasts,
@@ -47,7 +47,7 @@ describe("app toast", () => {
   it("renders independent custom toasts with the shared app visuals", async () => {
     vi.useFakeTimers();
     const onAction = vi.fn();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     act(() => {
       showAppToast({
@@ -72,7 +72,7 @@ describe("app toast", () => {
 
   it("morphs a live toast in place through its handle", () => {
     const onCancel = vi.fn();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     let handle: AppToastHandle | undefined;
     act(() => {
@@ -106,7 +106,7 @@ describe("app toast", () => {
   it("keeps the toast up when its action opts out of dismissing", () => {
     const onDownload = vi.fn();
     const onCancel = vi.fn();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     let handle: AppToastHandle | undefined;
     act(() => {
@@ -147,7 +147,7 @@ describe("app toast", () => {
     const onDismiss = vi.fn();
     const onTimedOut = vi.fn();
     const onCleared = vi.fn();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     let handle: AppToastHandle | undefined;
     act(() => {
@@ -186,7 +186,7 @@ describe("app toast", () => {
 
   it("keeps the toast visible when its body is clicked", async () => {
     vi.useFakeTimers();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     act(() => {
       showSuccessToast("Changes saved");
@@ -205,7 +205,7 @@ describe("app toast", () => {
   });
 
   it("toggles details from the body without hiding or triggering actions", () => {
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
     let opened = false;
     let resumed = false;
     act(() => {
@@ -260,7 +260,7 @@ describe("app toast", () => {
 
   it("holds auto-dismiss while hovered and shows no countdown", async () => {
     vi.useFakeTimers();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     act(() => {
       showAppToast({ message: "Sync complete", durationMs: 1_000 });
@@ -283,7 +283,7 @@ describe("app toast", () => {
 
   it("holds auto-dismiss while focus is inside the toast", async () => {
     vi.useFakeTimers();
-    render(<AppToaster theme="light" />);
+    render(<AppToaster theme={AppToastTheme.Light} />);
 
     act(() => {
       showAppToast({
@@ -309,7 +309,7 @@ describe("app toast", () => {
     "auto-dismisses after the $name duration",
     async ({ durationMs, before, after }) => {
       vi.useFakeTimers();
-      render(<AppToaster theme="light" />);
+      render(<AppToaster theme={AppToastTheme.Light} />);
 
       act(() => {
         showAppToast({ message: "Temporary notice", durationMs });

@@ -1,6 +1,6 @@
 import { APICallError, type LanguageModel } from "ai";
 import { create as mutate } from "mutative";
-import type { StoreApi } from "zustand";
+import { type StoreApi } from "zustand";
 
 import {
   type AIErrorSource,
@@ -10,14 +10,14 @@ import {
   withAIErrorSource,
 } from "./shared/error-source";
 import { applyTransforms } from "./shared/transform_infra";
-import {
-  TASK_CONFIGS,
-  type TaskArgsMap,
-  type TaskId,
-  type TaskType,
-} from "./task-configs";
+import { TASK_CONFIGS, type TaskArgsMap, type TaskId } from "./task-configs";
 
 import { getStoredSettingValues } from "~/settings/queries";
+import {
+  TaskStepType,
+  TaskStatus,
+  type TaskType,
+} from "~/store/zustand/ai-task/enums";
 
 export type TasksState = {
   tasks: Record<string, TaskState>;
@@ -44,15 +44,15 @@ export type TasksActions = {
 };
 
 export type TaskStepInfo<T extends TaskType = TaskType> =
-  | { type: "generating" }
-  | { type: "reasoning" }
+  | { type: TaskStepType.Generating }
+  | { type: TaskStepType.Reasoning }
   | (T extends "enhance"
       ?
           | { type: "analyzing" }
           | { type: "retrying"; attempt: number; reason: string }
       : never);
 
-export type TaskStatus = "idle" | "generating" | "success" | "error";
+export { TaskStatus };
 
 export type TaskState<T extends TaskType = TaskType> = {
   taskType: T;
@@ -211,7 +211,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
 
         draft.tasks[taskId] = {
           taskType: task.taskType,
-          status: "idle",
+          status: TaskStatus.Idle,
           streamedText: task.streamedText,
           error: undefined,
           abortController: null,
@@ -228,7 +228,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
           draft.tasks[taskId]?.abortController?.abort();
           draft.tasks[taskId] = {
             taskType: state.taskType,
-            status: "idle",
+            status: TaskStatus.Idle,
             streamedText: "",
             error: undefined,
             abortController: null,
@@ -271,7 +271,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
     },
   ) => {
     const existingTask = get().tasks[taskId];
-    if (existingTask?.status === "generating") {
+    if (existingTask?.status === TaskStatus.Generating) {
       return;
     }
 
@@ -283,7 +283,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
         mutate(state, (draft) => {
           draft.tasks = setBoundedTaskState(draft.tasks, taskId, {
             taskType: config.taskType,
-            status: "generating",
+            status: TaskStatus.Generating,
             streamedText: "",
             error: undefined,
             abortController,
@@ -376,11 +376,11 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
             !fullText
           ) {
             reasoningActive = true;
-            onProgress({ type: "reasoning" });
+            onProgress({ type: TaskStepType.Reasoning });
           } else if (chunk.type === "text-delta") {
             if (reasoningActive) {
               reasoningActive = false;
-              onProgress({ type: "generating" });
+              onProgress({ type: TaskStepType.Generating });
             }
             if (
               fullText.length + chunk.text.length >
@@ -436,7 +436,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
         mutate(state, (draft) => {
           draft.tasks[taskId] = {
             taskType: config.taskType,
-            status: "success",
+            status: TaskStatus.Success,
             streamedText: fullText,
             error: undefined,
             abortController: null,
@@ -465,7 +465,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
           mutate(state, (draft) => {
             draft.tasks[taskId] = {
               taskType: config.taskType,
-              status: "idle",
+              status: TaskStatus.Idle,
               streamedText: "",
               error: undefined,
               abortController: null,
@@ -482,7 +482,7 @@ export const createTasksSlice = <T extends TasksState & TasksActions>(
           mutate(state, (draft) => {
             draft.tasks[taskId] = {
               taskType: config.taskType,
-              status: "error",
+              status: TaskStatus.Error,
               streamedText: "",
               error,
               abortController: null,
@@ -505,7 +505,7 @@ function setBoundedTaskState(
 
   while (entries.length > MAX_RETAINED_AI_TASKS) {
     let removeIndex = entries.findIndex(
-      ([id, task]) => id !== taskId && task.status !== "generating",
+      ([id, task]) => id !== taskId && task.status !== TaskStatus.Generating,
     );
     if (removeIndex === -1) {
       removeIndex = entries.findIndex(([id]) => id !== taskId);

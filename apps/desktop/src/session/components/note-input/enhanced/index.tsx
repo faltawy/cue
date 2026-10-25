@@ -12,16 +12,17 @@ import { EnhancedEditor } from "./editor";
 import { EnhanceError } from "./enhance-error";
 import { StreamingView } from "./streaming";
 
-import { useAITaskTask } from "~/ai/hooks";
-import { useLLMConnectionStatus } from "~/ai/hooks";
+import { useAITaskTask, useLLMConnectionStatus } from "~/ai/hooks";
 import {
   isMainAITaskHostWindow,
   requestMainEnhance,
 } from "~/ai/task-window-sync";
 import { getEnhancerService } from "~/services/enhancer";
+import { EnhanceResultType } from "~/services/enums";
 import { hasStoredNoteContent } from "~/session/components/shared";
 import { shouldShowEmptySummaryConfigError } from "~/session/enhance-config";
 import { useEnhancedNote } from "~/session/queries";
+import { TaskStatus, TaskType } from "~/store/zustand/ai-task/enums";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 
 export const Enhanced = forwardRef<
@@ -46,19 +47,25 @@ export const Enhanced = forwardRef<
     },
     ref,
   ) => {
-    const taskId = createTaskId(enhancedNoteId, "enhance");
+    const taskId = createTaskId(enhancedNoteId, TaskType.Enhance);
     const llmStatus = useLLMConnectionStatus();
-    const { status, error, streamedText } = useAITaskTask(taskId, "enhance");
+    const { status, error, streamedText } = useAITaskTask(
+      taskId,
+      TaskType.Enhance,
+    );
     const enhancedNote = useEnhancedNote(enhancedNoteId);
     const content = enhancedNote?.content;
 
     const hasContent = hasStoredNoteContent(content);
     const isAwaitingPersistedContent =
-      status === "success" && streamedText.trim().length > 0 && !hasContent;
-    const showStreaming = status === "generating" || isAwaitingPersistedContent;
+      status === TaskStatus.Success &&
+      streamedText.trim().length > 0 &&
+      !hasContent;
+    const showStreaming =
+      status === TaskStatus.Generating || isAwaitingPersistedContent;
     const isConfigError = shouldShowEmptySummaryConfigError(llmStatus);
 
-    if (status === "error") {
+    if (status === TaskStatus.Error) {
       return (
         <EnhanceError
           sessionId={sessionId}
@@ -84,7 +91,7 @@ export const Enhanced = forwardRef<
       ) : null;
     }
 
-    if (status === "idle" && isConfigError && !hasContent) {
+    if (status === TaskStatus.Idle && isConfigError && !hasContent) {
       return <ConfigError />;
     }
 
@@ -123,9 +130,9 @@ function EmptySummary({ sessionId }: { sessionId: string }) {
       const service = getEnhancerService();
       if (!service) throw new Error("Summary generation is not ready yet.");
       const result = await service.enhance(sessionId);
-      if (result.type === "no_model")
+      if (result.type === EnhanceResultType.NoModel)
         throw new Error("Set up AI summaries first.");
-      if (result.type === "too_short")
+      if (result.type === EnhanceResultType.TooShort)
         throw new Error("Not enough transcript recorded to summarize.");
     },
   });

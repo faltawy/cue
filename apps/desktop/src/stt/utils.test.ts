@@ -10,6 +10,7 @@ import {
   upsertSpeakerAssignment,
 } from "./utils";
 
+import { AssignmentMode } from "~/stt/enums";
 import type { SegmentKey } from "~/stt/live-segment";
 
 type TranscriptRow = {
@@ -272,7 +273,7 @@ describe("TranscriptAccumulator", () => {
         { channel: "MixedCapture", speaker_index: null },
         "alice",
         "selected",
-        { mode: "segment", wordIds: ["selected"] },
+        { mode: AssignmentMode.Segment, wordIds: ["selected"] },
       );
       const accumulator = createTranscriptAccumulator(store, "transcript-1");
       accumulator.applyLiveDelta(
@@ -337,7 +338,7 @@ describe("TranscriptAccumulator", () => {
       "alice",
       "first",
       {
-        mode: "segment",
+        mode: AssignmentMode.Segment,
         wordIds: ["first", "last"],
         extendToAdjacent: false,
       },
@@ -869,7 +870,7 @@ describe("upsertSpeakerAssignment", () => {
         { channel, speaker_index: null, speaker_human_id: null },
         "alice",
         "word-1",
-        { mode: "all", wordIds: ["word-1", "word-2"] },
+        { mode: AssignmentMode.All, wordIds: ["word-1", "word-2"] },
       );
 
       const hints = JSON.parse(store.readCell("speaker_hints"));
@@ -883,7 +884,7 @@ describe("upsertSpeakerAssignment", () => {
     },
   );
 
-  it.each(["segment", "all"] as const)(
+  it.each([AssignmentMode.Segment, AssignmentMode.All])(
     "preserves untouched word overrides when assigning %s scope",
     (mode) => {
       const store = createStore({
@@ -1281,7 +1282,7 @@ describe("upsertSpeakerAssignment", () => {
       "john",
       "word-1",
       {
-        mode: "segment",
+        mode: AssignmentMode.Segment,
         wordIds: ["word-1", "word-2"],
       },
     );
@@ -1495,7 +1496,7 @@ describe("upsertSpeakerAssignment", () => {
       "bob",
       "word-1",
       {
-        mode: "segment",
+        mode: AssignmentMode.Segment,
         wordIds: ["word-1"],
       },
     );

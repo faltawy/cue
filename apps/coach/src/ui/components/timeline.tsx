@@ -25,10 +25,25 @@ import {
 import { memo, type ReactNode, useEffect, useId, useState } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
-import type { CoachError } from "../../errors";
-import type { CoachFeedback, EvidenceTarget } from "../../move";
-import type { ActionResult } from "../use-coach";
-import type { EditView, Item, MeetingPhase, Step, Turn } from "../state";
+import { BlockKind } from "../../blocks";
+import {
+  type CoachError,
+  CoachErrorAction,
+  CoachErrorKind,
+} from "../../errors";
+import { type CoachFeedback, type EvidenceTarget } from "../../move";
+import { TurnKind } from "../../protocol";
+import {
+  type EditView,
+  type Item,
+  ItemKind,
+  type MeetingPhase,
+  type Step,
+  StepStatus,
+  type Turn,
+  TurnStatus,
+} from "../state";
+import { type ActionResult } from "../use-coach";
 import {
   ActionsBlock,
   type BlockActions,
@@ -36,9 +51,9 @@ import {
   Replies,
   SourceChips,
 } from "./blocks";
-import { MoveCard, TalkMeter } from "./coaching";
+import { MoveCard, TalkMeter, TalkScope } from "./coaching";
 import { CoachMarkdown } from "./markdown";
-import { Button, cx, IconButton } from "./primitives";
+import { Button, cx, IconButton, Tone, TooltipSide } from "./primitives";
 import { Steps } from "./steps";
 
 export type TimelineActions = BlockActions & {
@@ -52,7 +67,8 @@ export type TimelineActions = BlockActions & {
 };
 
 export function Timeline({
-  items,
+  items: allItems,
+  live = false,
   footer,
   empty,
   latestUndoable,
@@ -66,6 +82,7 @@ export function Timeline({
   canAddToNotes = false,
 }: {
   items: readonly Item[];
+  live?: boolean;
   sent: number;
   glance?: boolean;
   footer?: ReactNode;
@@ -78,10 +95,24 @@ export function Timeline({
   canAddToNotes?: boolean;
   actions: TimelineActions;
 }) {
+  const nudges = live
+    ? allItems.filter(
+        (item): item is Turn =>
+          item.kind === ItemKind.Turn &&
+          item.ask === TurnKind.Nudge &&
+          item.status === TurnStatus.Done &&
+          item.blocks.some((block) => block.kind === BlockKind.Move),
+      )
+    : [];
+  const items = live
+    ? allItems.filter(
+        (item) => item.kind !== ItemKind.Turn || !nudges.includes(item),
+      )
+    : allItems;
   const lastItem = items.at(-1);
   const lastTurn = [...items]
     .reverse()
-    .find((item): item is Turn => item.kind === "turn");
+    .find((item): item is Turn => item.kind === ItemKind.Turn);
   const [showEarlier, setShowEarlier] = useState(false);
   const lastTurnIndex = lastTurn ? items.indexOf(lastTurn) : -1;
   const hidden =
@@ -104,7 +135,8 @@ export function Timeline({
         aria-relevant="additions"
         aria-label="Coach conversation"
       >
-        {items.length === 0 && !footer ? empty : null}
+        {live && <LiveSuggestions nudges={nudges} actions={actions} />}
+        {allItems.length === 0 && !footer ? empty : null}
         {hidden > 0 && (
           <button
             type="button"
@@ -118,15 +150,15 @@ export function Timeline({
           <ItemView
             key={item.key}
             item={item}
-            latest={item.kind === "turn" && item === lastTurn}
+            latest={item.kind === ItemKind.Turn && item === lastTurn}
             questionOpen={
-              questionOpen && item.kind === "turn" && item === lastTurn
+              questionOpen && item.kind === ItemKind.Turn && item === lastTurn
             }
             latestUndoable={ready ? latestUndoable : null}
             canRetry={
               ready &&
               !busy &&
-              (item.kind === "turn"
+              (item.kind === ItemKind.Turn
                 ? item.key === lastAskKey
                 : lastAskKey !== null)
             }
@@ -148,6 +180,80 @@ export function Timeline({
       <JumpToLatest />
       <FollowOnSend sent={sent} />
     </StickToBottom>
+  );
+}
+
+function LiveSuggestions({
+  nudges,
+  actions,
+}: {
+  nudges: readonly Turn[];
+  actions: TimelineActions;
+}) {
+  const [index, setIndex] = useState(() => Math.max(0, nudges.length - 1));
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const current = nudges[index];
+  const move = current?.blocks.find((block) => block.kind === BlockKind.Move);
+  const earlier = nudges.slice(0, index);
+  return (
+    <>
+      {current && move && (
+        <div role="region" aria-label="Current suggestion">
+          <MoveCard
+            key={current.key}
+            move={move}
+            copy={actions.copy}
+            onEvidence={actions.openEvidence}
+            onFeedback={actions.feedback}
+            compact
+          />
+          <div className="text-muted-foreground mt-2 flex gap-3 text-[12px]">
+            <button
+              type="button"
+              onClick={() => setIndex(nudges.length)}
+              className="hover:text-foreground"
+            >
+              Dismiss suggestion
+            </button>
+            {nudges.length > index + 1 && (
+              <button
+                type="button"
+                onClick={() => setIndex(index + 1)}
+                className="hover:text-foreground"
+              >
+                Next suggestion
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {earlier.length > 0 && (
+        <div>
+          <button
+            type="button"
+            aria-expanded={historyOpen}
+            onClick={() => setHistoryOpen((open) => !open)}
+            className="text-muted-foreground hover:text-foreground text-[12px]"
+          >
+            Earlier suggestions
+          </button>
+          {historyOpen &&
+            earlier.map((turn) => (
+              <TurnView
+                key={turn.key}
+                turn={turn}
+                latest={false}
+                questionOpen={false}
+                canRetry={false}
+                canReply={false}
+                canAddToNotes={false}
+                latestUndoable={null}
+                actions={actions}
+              />
+            ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -203,7 +309,7 @@ const ItemView = memo(function ItemView({
   actions: TimelineActions;
 }) {
   switch (item.kind) {
-    case "turn":
+    case ItemKind.Turn:
       return (
         <TurnView
           turn={item}
@@ -216,7 +322,7 @@ const ItemView = memo(function ItemView({
           actions={actions}
         />
       );
-    case "edit":
+    case ItemKind.Edit:
       return (
         <EditRow
           edit={item.edit}
@@ -224,7 +330,7 @@ const ItemView = memo(function ItemView({
           onUndo={actions.undo}
         />
       );
-    case "error":
+    case ItemKind.Error:
       return (
         <ErrorCard
           error={item.error}
@@ -236,7 +342,7 @@ const ItemView = memo(function ItemView({
           onSignIn={actions.signIn}
         />
       );
-    case "notice":
+    case ItemKind.Notice:
       return (
         <p
           className="coach-enter text-muted-foreground flex items-start justify-center gap-1.5 text-center text-[12.5px]"
@@ -246,7 +352,7 @@ const ItemView = memo(function ItemView({
           <span dir="auto">{item.text}</span>
         </p>
       );
-    case "divider":
+    case ItemKind.Divider:
       return (
         <div
           className="text-muted-foreground flex items-center gap-3 text-[11.5px]"
@@ -284,13 +390,14 @@ const SHOW_TOOL = "mcp__meeting__show";
 
 export function shownSteps(turn: Turn): Step[] {
   return turn.steps.filter((step) => {
-    if (step.name === "AskUserQuestion" && step.status === "running")
+    if (step.name === "AskUserQuestion" && step.status === StepStatus.Running)
       return false;
-    if (step.name === SHOW_TOOL && step.status !== "failed") return false;
+    if (step.name === SHOW_TOOL && step.status !== StepStatus.Failed)
+      return false;
     return !(
       turn.edits.length > 0 &&
       EDIT_TOOLS.has(step.name) &&
-      step.status === "ok"
+      step.status === StepStatus.Ok
     );
   });
 }
@@ -314,11 +421,12 @@ function TurnView({
   latestUndoable: string | null;
   actions: TimelineActions;
 }) {
-  const running = turn.status === "running" || turn.status === "sending";
+  const running =
+    turn.status === TurnStatus.Running || turn.status === TurnStatus.Sending;
   const steps = shownSteps(turn);
   const activeStep = [...steps]
     .reverse()
-    .find((step) => step.status === "running");
+    .find((step) => step.status === StepStatus.Running);
   const activity =
     !running || questionOpen
       ? null
@@ -328,7 +436,7 @@ function TurnView({
           : null
         : turn.text || turn.blocks.length > 0
           ? null
-          : turn.ask !== "ask"
+          : turn.ask !== TurnKind.Ask
             ? "Catching up on the conversation"
             : "Thinking";
   const body = (
@@ -354,14 +462,14 @@ function TurnView({
           onQuote={actions.quote}
         />
       )}
-      {!running && !turn.text && turn.status === "stopped" && (
+      {!running && !turn.text && turn.status === TurnStatus.Stopped && (
         <p className="text-muted-foreground text-[13px]">
           Stopped before answering.
         </p>
       )}
       {turn.blocks.map((block) => {
         switch (block.kind) {
-          case "actions":
+          case BlockKind.Actions:
             return (
               <ActionsBlock
                 key={block.id}
@@ -371,17 +479,19 @@ function TurnView({
                 actions={actions}
               />
             );
-          case "move":
+          case BlockKind.Move:
             return (
               <MoveCard
                 key={block.id}
                 move={block}
                 copy={actions.copy}
                 onEvidence={actions.openEvidence}
-                onFeedback={turn.ask === "nudge" ? actions.feedback : undefined}
+                onFeedback={
+                  turn.ask === TurnKind.Nudge ? actions.feedback : undefined
+                }
               />
             );
-          case "replies":
+          case BlockKind.Replies:
             return null;
         }
       })}
@@ -392,7 +502,7 @@ function TurnView({
             (turn.text || turn.blocks.length > 0) && "mt-3",
           )}
         >
-          <TalkMeter talk={turn.talk} scope="window" />
+          <TalkMeter talk={turn.talk} scope={TalkScope.Window} />
         </div>
       )}
       {turn.sources.length > 0 && (
@@ -400,7 +510,7 @@ function TurnView({
       )}
       {!running &&
         turn.blocks.map((block) =>
-          block.kind === "replies" && canReply ? (
+          block.kind === BlockKind.Replies && canReply ? (
             <Replies
               key={block.id}
               options={block.options}
@@ -410,7 +520,7 @@ function TurnView({
         )}
     </>
   );
-  const footer = !running && turn.ask !== "nudge" && (
+  const footer = !running && turn.ask !== TurnKind.Nudge && (
     <TurnFooter
       turn={turn}
       latest={latest}
@@ -419,11 +529,11 @@ function TurnView({
     />
   );
 
-  if (turn.ask !== "ask") {
+  if (turn.ask !== TurnKind.Ask) {
     return (
       <article
         className="coach-enter group/turn"
-        aria-label={turn.ask === "nudge" ? "Nudge" : "Catch up"}
+        aria-label={turn.ask === TurnKind.Nudge ? "Nudge" : "Catch up"}
       >
         <div className="text-muted-foreground mb-1.5 text-[11.5px] font-medium">
           {turn.prompt}
@@ -548,11 +658,11 @@ function TurnFooter({
     const timer = setTimeout(() => setCopied(false), 1_500);
     return () => clearTimeout(timer);
   }, [copied]);
-  if (turn.status === "failed" && !turn.text) return null;
+  if (turn.status === TurnStatus.Failed && !turn.text) return null;
   const meta =
-    turn.status === "stopped"
+    turn.status === TurnStatus.Stopped
       ? "Stopped"
-      : turn.status === "failed"
+      : turn.status === TurnStatus.Failed
         ? "Didn't finish"
         : null;
   return (
@@ -567,7 +677,7 @@ function TurnFooter({
       {turn.text && (
         <IconButton
           label={copied ? "Copied" : "Copy answer"}
-          tooltipSide="top"
+          tooltipSide={TooltipSide.Top}
           onClick={() => void actions.copy(turn.text).then(setCopied)}
           className="size-6"
         >
@@ -578,10 +688,10 @@ function TurnFooter({
           )}
         </IconButton>
       )}
-      {canRetry && turn.ask === "ask" && (
+      {canRetry && turn.ask === TurnKind.Ask && (
         <IconButton
           label="Ask again"
-          tooltipSide="top"
+          tooltipSide={TooltipSide.Top}
           onClick={() => actions.retry(turn)}
           className="size-6"
         >
@@ -688,7 +798,7 @@ export function EditRow({
       </span>
       {undoable && (
         <Button
-          tone="ghost"
+          tone={Tone.Ghost}
           className="-my-1 h-6 px-2"
           onClick={() => onUndo(edit.id)}
         >
@@ -712,10 +822,11 @@ export function ErrorCard({
   onSignIn?: () => void;
   onNewChat?: () => void;
 }) {
-  const auth = error.kind === "auth";
+  const auth = error.kind === CoachErrorKind.Auth;
   const [signingIn, setSigningIn] = useState(false);
   const signIn = auth && !signingIn ? onSignIn : undefined;
-  const newChat = error.action === "new_chat" ? onNewChat : undefined;
+  const newChat =
+    error.action === CoachErrorAction.NewChat ? onNewChat : undefined;
   const retry = (auth && !signingIn) || newChat ? undefined : onRetry;
   const [open, setOpen] = useState(false);
   const regionId = useId();
@@ -750,7 +861,7 @@ export function ErrorCard({
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {signIn && (
                 <Button
-                  tone="primary"
+                  tone={Tone.Primary}
                   onClick={() => {
                     setSigningIn(true);
                     signIn();
@@ -761,20 +872,23 @@ export function ErrorCard({
                 </Button>
               )}
               {newChat && (
-                <Button tone="primary" onClick={newChat}>
+                <Button tone={Tone.Primary} onClick={newChat}>
                   <SquarePen aria-hidden className="size-3.5" />
                   New chat
                 </Button>
               )}
               {retry && (
-                <Button tone={auth ? "primary" : "outline"} onClick={retry}>
+                <Button
+                  tone={auth ? Tone.Primary : Tone.Outline}
+                  onClick={retry}
+                >
                   <RotateCcw aria-hidden className="size-3.5" />
                   Try again
                 </Button>
               )}
               {error.detail && (
                 <Button
-                  tone="ghost"
+                  tone={Tone.Ghost}
                   onClick={() => setOpen((value) => !value)}
                   aria-expanded={open}
                   aria-controls={regionId}
@@ -895,7 +1009,7 @@ export function EmptyState({
           <p className="text-muted-foreground text-[13px] text-balance">
             Choose a project folder to give the coach context.
           </p>
-          <Button tone="outline" onClick={onChooseFolder}>
+          <Button tone={Tone.Outline} onClick={onChooseFolder}>
             <Folder aria-hidden className="size-3.5" />
             Choose folder…
           </Button>

@@ -62,7 +62,8 @@ vi.mock("~/store/zustand/tabs", () => ({
     }),
 }));
 
-vi.mock("@anlg/editor/note", () => ({
+vi.mock("@anlg/editor/note", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anlg/editor/note")>()),
   useLinkedItemOpenBehavior: () => "current",
 }));
 

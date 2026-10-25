@@ -53,6 +53,7 @@ Sessions are the core entity: all notes are backed by sessions. ProseMirror powe
 
 ## Code Style
 
+- Prefer string enums for application-owned finite states and categories instead of string-literal unions or repeated discriminator literals. Reuse the enum in schemas and callers, and preserve serialized values. Keep property-key sets and external library/DOM contracts in their required form; never hand-edit generated bindings.
 - Avoid creating types/interfaces unless shared. Inline function props.
 - Do not write comments unless code is non-obvious. Comments should explain "why", not "what".
 - Use `cn` from `@anlg/utils` for conditional classNames. Always pass an array, split by logical grouping.

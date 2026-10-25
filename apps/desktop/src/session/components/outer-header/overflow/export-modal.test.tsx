@@ -8,6 +8,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 const mocks = vi.hoisted(() => ({
   settings: vi.fn(),
   downloadDir: vi.fn(),
@@ -48,7 +50,7 @@ import { ExportModal } from "./export-modal";
 
 function renderModal(
   currentView: React.ComponentProps<typeof ExportModal>["currentView"] = {
-    type: "raw",
+    type: SessionNoteViewType.Raw,
   },
 ) {
   const client = new QueryClient({

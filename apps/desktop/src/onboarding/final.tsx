@@ -13,6 +13,7 @@ import {
   setPendingWelcomeSession,
 } from "./welcome-note";
 
+import { OnboardingCompletionStatus } from "~/onboarding/enums";
 import { createSession } from "~/session/queries";
 import { flushAutomaticRelaunch } from "~/shared/relaunch";
 import { commands } from "~/types/tauri.gen";
@@ -43,21 +44,23 @@ export function FinalSection({
 }) {
   const { i18n } = useLingui();
   const translate = i18n._.bind(i18n);
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = useState<OnboardingCompletionStatus>(
+    OnboardingCompletionStatus.Idle,
+  );
   const finishPromiseRef = useRef<Promise<void> | null>(null);
   const welcomeSessionRef = useRef<string | null>(null);
 
   const handleContinue = async () => {
     if (finishPromiseRef.current) return;
 
-    setStatus("loading");
+    setStatus(OnboardingCompletionStatus.Loading);
     const finishPromise = finishOnboarding(onContinue, welcomeSessionRef);
     finishPromiseRef.current = finishPromise;
     try {
       await finishPromise;
     } catch (error) {
       console.error("Failed to finish onboarding", error);
-      setStatus("error");
+      setStatus(OnboardingCompletionStatus.Error);
     } finally {
       finishPromiseRef.current = null;
     }
@@ -68,10 +71,10 @@ export function FinalSection({
       <TestRecordingSection />
       <OnboardingButton
         className="text-body px-6 py-2 disabled:cursor-wait disabled:opacity-70"
-        disabled={status === "loading"}
+        disabled={status === OnboardingCompletionStatus.Loading}
         onClick={() => void handleContinue()}
       >
-        {status === "loading" ? (
+        {status === OnboardingCompletionStatus.Loading ? (
           <span className="flex items-center gap-2">
             <CircleNotch className="size-4 animate-spin" />
             <Trans>Open Cue</Trans>
@@ -80,7 +83,7 @@ export function FinalSection({
           <Trans>Open Cue</Trans>
         )}
       </OnboardingButton>
-      {status === "error" && (
+      {status === OnboardingCompletionStatus.Error && (
         <p className="text-body text-destructive" role="alert">
           {translate({
             id: "onboarding.finish-error",

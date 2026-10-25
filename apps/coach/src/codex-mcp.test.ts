@@ -6,6 +6,7 @@ import path from "node:path";
 import { loadCodexMcpTools } from "./codex-mcp";
 import { startCodexSession } from "./codex-session";
 import { decide } from "./guard";
+import { RuntimeMessageType } from "./runtime-message";
 
 const directories: string[] = [];
 afterEach(async () => {
@@ -48,8 +49,8 @@ test("Codex MCP reads reach the server while writes require the existing per-ser
       session.ask("Update the record, then read it");
       let answer = "";
       for await (const message of session.messages) {
-        if (message.type === "text") answer += message.delta;
-        if (message.type === "result") {
+        if (message.type === RuntimeMessageType.Text) answer += message.delta;
+        if (message.type === RuntimeMessageType.Result) {
           expect(message.is_error).toBe(false);
           break;
         }

@@ -2,8 +2,9 @@ import { Reorder } from "motion/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
-import type { ContactsSelection } from "@anlg/plugin-windows";
+import { type ContactsSelection } from "@anlg/plugin-windows";
 
+import { ContactType, SortOption } from "~/contacts/enums";
 import { NewPersonForm } from "~/contacts/new-person-form";
 import { OrganizationItem } from "~/contacts/organization-item";
 import { PersonItem } from "~/contacts/person-item";
@@ -14,15 +15,17 @@ import {
   useHumans,
   useOrganizations,
 } from "~/contacts/queries";
-import { ColumnHeader, type SortOption } from "~/contacts/shared";
+import { ColumnHeader } from "~/contacts/shared";
 import { useDeleteContact } from "~/contacts/use-delete-contact";
 import { useOwnerUserId } from "~/shared/owner-user";
+import { ContactItemKind } from "~/sidebar/enums";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 type ContactItem =
-  | { kind: "person"; id: string; person: HumanRecord }
+  | { kind: ContactItemKind.Person; id: string; person: HumanRecord }
   | {
-      kind: "organization";
+      kind: ContactItemKind.Organization;
       id: string;
       organization: OrganizationRecord;
     };
@@ -34,11 +37,11 @@ export function ContactsNav() {
   );
 
   const selected =
-    currentTab?.type === "contacts" ? currentTab.state.selected : null;
+    currentTab?.type === TabType.Contacts ? currentTab.state.selected : null;
 
   const setSelected = useCallback(
     (value: ContactsSelection | null) => {
-      if (currentTab?.type === "contacts") {
+      if (currentTab?.type === TabType.Contacts) {
         updateContactsTabState(currentTab, { selected: value });
       }
     },
@@ -57,7 +60,9 @@ function ContactsList({
 }) {
   const [showNewPerson, setShowNewPerson] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [sortOption, setSortOption] = useState<SortOption>("alphabetical");
+  const [sortOption, setSortOption] = useState<SortOption>(
+    SortOption.Alphabetical,
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useHotkeys(
@@ -79,7 +84,7 @@ function ContactsList({
   const onDeletePerson = useCallback(
     (id: string) => {
       deleteContact(
-        "human",
+        ContactType.Human,
         id,
         humans.find((human) => human.id === id)?.name ?? "",
       );
@@ -91,7 +96,7 @@ function ContactsList({
   const onDeleteOrganization = useCallback(
     (id: string) => {
       deleteContact(
-        "organization",
+        ContactType.Organization,
         id,
         organizations.find((organization) => organization.id === id)?.name ??
           "",
@@ -110,12 +115,13 @@ function ContactsList({
         createdAt: string;
       },
     ) => {
-      if (sortOption === "alphabetical") return a.name.localeCompare(b.name);
-      if (sortOption === "reverse-alphabetical") {
+      if (sortOption === SortOption.Alphabetical)
+        return a.name.localeCompare(b.name);
+      if (sortOption === SortOption.ReverseAlphabetical) {
         return b.name.localeCompare(a.name);
       }
       const byCreatedAt = a.createdAt.localeCompare(b.createdAt);
-      return sortOption === "newest" ? -byCreatedAt : byCreatedAt;
+      return sortOption === SortOption.Newest ? -byCreatedAt : byCreatedAt;
     };
     const filteredHumans = humans
       .filter((human) => {
@@ -135,34 +141,42 @@ function ContactsList({
       ...filteredHumans
         .filter((human) => human.pinned)
         .map((person) => ({
-          kind: "person" as const,
+          kind: ContactItemKind.Person as const,
           id: person.id,
           person,
         })),
       ...filteredOrganizations
         .filter((organization) => organization.pinned)
         .map((organization) => ({
-          kind: "organization" as const,
+          kind: ContactItemKind.Organization as const,
           id: organization.id,
           organization,
         })),
     ].sort((a, b) => {
       const aOrder =
-        a.kind === "person" ? a.person.pinOrder : a.organization.pinOrder;
+        a.kind === ContactItemKind.Person
+          ? a.person.pinOrder
+          : a.organization.pinOrder;
       const bOrder =
-        b.kind === "person" ? b.person.pinOrder : b.organization.pinOrder;
+        b.kind === ContactItemKind.Person
+          ? b.person.pinOrder
+          : b.organization.pinOrder;
       return (aOrder ?? Infinity) - (bOrder ?? Infinity);
     });
     const unpinnedOrgs: ContactItem[] = filteredOrganizations
       .filter((organization) => !organization.pinned)
       .map((organization) => ({
-        kind: "organization" as const,
+        kind: ContactItemKind.Organization as const,
         id: organization.id,
         organization,
       }));
     const unpinnedPeople: ContactItem[] = filteredHumans
       .filter((human) => !human.pinned)
-      .map((person) => ({ kind: "person" as const, id: person.id, person }));
+      .map((person) => ({
+        kind: ContactItemKind.Person as const,
+        id: person.id,
+        person,
+      }));
 
     return {
       pinnedItems: allPinned,
@@ -178,9 +192,9 @@ function ContactsList({
           ? [
               {
                 type:
-                  item.kind === "person"
-                    ? ("human" as const)
-                    : ("organization" as const),
+                  item.kind === ContactItemKind.Person
+                    ? ContactType.Human
+                    : ContactType.Organization,
                 id,
               },
             ]
@@ -239,7 +253,7 @@ function ContactsList({
           >
             {pinnedItems.map((item) => (
               <Reorder.Item key={item.id} value={item.id}>
-                {item.kind === "person" ? (
+                {item.kind === ContactItemKind.Person ? (
                   <PersonItem
                     active={isActive(item)}
                     person={item.person}
@@ -263,7 +277,7 @@ function ContactsList({
         {pinnedItems.length > 0 && searchValue.trim() && (
           <div className="flex flex-col">
             {pinnedItems.map((item) =>
-              item.kind === "person" ? (
+              item.kind === ContactItemKind.Person ? (
                 <PersonItem
                   key={`pinned-person-${item.id}`}
                   active={isActive(item)}
@@ -289,7 +303,7 @@ function ContactsList({
           <div className="bg-accent mx-3 my-1 h-px" />
         )}
         {nonPinnedItems.map((item) =>
-          item.kind === "person" ? (
+          item.kind === ContactItemKind.Person ? (
             <PersonItem
               key={`person-${item.id}`}
               active={isActive(item)}

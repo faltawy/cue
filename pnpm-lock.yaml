@@ -670,6 +670,9 @@ importers:
 
   packages/store:
     dependencies:
+      '@anlg/provider-validation':
+        specifier: workspace:*
+        version: link:../provider-validation
       zod:
         specifier: ^4.5.4
         version: 4.5.4

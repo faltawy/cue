@@ -16,11 +16,12 @@ import { SettingsDictionary } from "~/settings/dictionary";
 import { SettingsHydrationBoundary } from "~/settings/hydration-boundary";
 import { StandardContentWrapper } from "~/shared/main";
 import { type Tab } from "~/store/zustand/tabs";
+import { TabType, SettingsTab } from "~/store/zustand/tabs/enums";
 
 export function TabContentSettings({
   tab,
 }: {
-  tab: Extract<Tab, { type: "settings" }>;
+  tab: Extract<Tab, { type: TabType.Settings }>;
 }) {
   return (
     <StandardContentWrapper>
@@ -31,36 +32,40 @@ export function TabContentSettings({
   );
 }
 
-function SettingsView({ tab }: { tab: Extract<Tab, { type: "settings" }> }) {
+function SettingsView({
+  tab,
+}: {
+  tab: Extract<Tab, { type: TabType.Settings }>;
+}) {
   const requestedTab = tab.state.tab as string | undefined;
   const activeTab =
     requestedTab === "personalization"
       ? "dictionary"
       : requestedTab === "audio"
         ? "meetings"
-        : (tab.state.tab ?? "app");
+        : (tab.state.tab ?? SettingsTab.App);
 
   const renderContent = () => {
     switch (activeTab) {
-      case "app":
+      case SettingsTab.App:
         return <SettingsApp />;
-      case "meetings":
+      case SettingsTab.Meetings:
         return <SettingsMeetings />;
-      case "appearance":
+      case SettingsTab.Appearance:
         return <SettingsAppearance />;
-      case "notifications":
+      case SettingsTab.Notifications:
         return <SettingsNotifications />;
-      case "permissions":
+      case SettingsTab.Permissions:
         return <SettingsPermissions />;
-      case "dictionary":
+      case SettingsTab.Dictionary:
         return <SettingsDictionary />;
-      case "dictation":
+      case SettingsTab.Dictation:
         return <SettingsDictation />;
-      case "transcription":
+      case SettingsTab.Transcription:
         return <STT />;
-      case "claude":
+      case SettingsTab.Claude:
         return <SettingsClaude />;
-      case "todo":
+      case SettingsTab.Todo:
         return <SettingsTodo />;
       default:
         return <SettingsApp />;

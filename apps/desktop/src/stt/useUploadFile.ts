@@ -9,18 +9,22 @@ import {
   events as fsSyncEvents,
 } from "@anlg/plugin-fs-sync";
 import { commands as listener2Commands } from "@anlg/plugin-transcription";
+import { SessionNoteViewType } from "@anlg/utils/session";
 
 import { estimateUploadedAudioSessionCreatedAt } from "./audio-note-date";
 import { useListener } from "./contexts";
 import { fromResult } from "./fromResult";
-import { ChannelProfile } from "./segment";
 import { isStoppedTranscriptionError, useRunBatch } from "./useRunBatch";
 
 import { getEnhancerService } from "~/services/enhancer";
+import { EnhanceResultType } from "~/services/enums";
 import { catalogLocalSessionAudio } from "~/session/attachments";
 import { enqueueSessionAudioOperation } from "~/session/audio-operations";
 import { useSession, useUpdateSession } from "~/session/queries";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
+import { BatchPhase, UploadKind } from "~/stt/enums";
+import { ChannelProfile } from "~/stt/live-segment";
 import { createTranscript } from "~/stt/queries";
 
 export const AUDIO_EXTENSIONS = [
@@ -70,18 +74,24 @@ export function useUploadFile(sessionId: string) {
 
     try {
       const result = await service.enhance(sessionId);
-      if (result.type !== "started" && result.type !== "already_active") {
+      if (
+        result.type !== EnhanceResultType.Started &&
+        result.type !== EnhanceResultType.AlreadyActive
+      ) {
         return;
       }
       const tabsState = useTabs.getState();
       const sessionTab = tabsState.tabs.find(
-        (tab): tab is Extract<Tab, { type: "sessions" }> =>
-          tab.type === "sessions" && tab.id === sessionId,
+        (tab): tab is Extract<Tab, { type: TabType.Sessions }> =>
+          tab.type === TabType.Sessions && tab.id === sessionId,
       );
-      if (sessionTab && sessionTab.state.view?.type !== "transcript") {
+      if (
+        sessionTab &&
+        sessionTab.state.view?.type !== SessionNoteViewType.Transcript
+      ) {
         tabsState.updateSessionTabState(sessionTab, {
           ...sessionTab.state,
-          view: { type: "enhanced", id: result.noteId },
+          view: { type: SessionNoteViewType.Enhanced, id: result.noteId },
         });
       }
     } catch (error) {
@@ -192,7 +202,7 @@ export function useUploadFile(sessionId: string) {
         Effect.promise(inspectAudioDate),
         Effect.tap(() =>
           Effect.sync(() => {
-            handleBatchStarted(sessionId, "importing");
+            handleBatchStarted(sessionId, BatchPhase.Importing);
           }),
         ),
         Effect.flatMap(() =>
@@ -251,10 +261,10 @@ export function useUploadFile(sessionId: string) {
   );
 
   const processFile = useCallback(
-    (filePath: string, kind: "audio" | "transcript") => {
+    (filePath: string, kind: UploadKind) => {
       const normalizedPath = filePath.toLowerCase();
 
-      if (kind === "transcript") {
+      if (kind === UploadKind.Transcript) {
         if (
           !normalizedPath.endsWith(".vtt") &&
           !normalizedPath.endsWith(".srt")
@@ -369,9 +379,9 @@ export function useUploadFile(sessionId: string) {
   );
 
   const selectAndUpload = useCallback(
-    (kind: "audio" | "transcript") => {
+    (kind: UploadKind) => {
       const filters =
-        kind === "audio"
+        kind === UploadKind.Audio
           ? [{ name: "Audio", extensions: AUDIO_EXTENSIONS }]
           : [{ name: "Transcript", extensions: TRANSCRIPT_EXTENSIONS }];
 
@@ -380,7 +390,10 @@ export function useUploadFile(sessionId: string) {
         Effect.flatMap((defaultPath) =>
           Effect.promise(() =>
             selectFile({
-              title: kind === "audio" ? "Upload Audio" : "Upload Transcript",
+              title:
+                kind === UploadKind.Audio
+                  ? "Upload Audio"
+                  : "Upload Transcript",
               multiple: false,
               directory: false,
               defaultPath,
@@ -405,11 +418,11 @@ export function useUploadFile(sessionId: string) {
   );
 
   const uploadAudio = useCallback(
-    () => selectAndUpload("audio"),
+    () => selectAndUpload(UploadKind.Audio),
     [selectAndUpload],
   );
   const uploadTranscript = useCallback(
-    () => selectAndUpload("transcript"),
+    () => selectAndUpload(UploadKind.Transcript),
     [selectAndUpload],
   );
 

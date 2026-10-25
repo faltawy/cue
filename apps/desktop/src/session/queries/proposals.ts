@@ -5,18 +5,23 @@ import { commands } from "@anlg/plugin-session";
 
 import { liveQueryClient } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import {
+  ProposalKind,
+  ProposalStatus,
+  ProposalResolution,
+} from "~/session/enums";
 import { updateEnhancedNoteContent } from "~/session/queries/enhanced-notes";
 import { updateSession } from "~/session/queries/sessions";
 
 export type SessionProposalRecord = {
   id: string;
   sessionId: string;
-  kind: "summary_replace" | "memo_replace" | string;
+  kind: ProposalKind | string;
   targetId: string;
   baseUpdatedAt: string;
   currentMarkdown: string;
   proposedMarkdown: string;
-  status: "pending" | "applied" | "declined" | string;
+  status: ProposalStatus | string;
   source: string;
   createdAt: string;
   updatedAt: string;
@@ -96,7 +101,7 @@ export function usePendingSessionProposals(
 export async function persistChatSessionProposal(input: {
   id: string;
   sessionId: string;
-  kind: "summary_replace" | "memo_replace";
+  kind: ProposalKind;
   targetId: string;
   currentMarkdown: string;
   proposedMarkdown: string;
@@ -150,7 +155,11 @@ export async function applySessionProposal(proposalId: string): Promise<void> {
       json,
     );
   }
-  await setProposalStatus(proposal.id, proposal.sessionId, "applied");
+  await setProposalStatus(
+    proposal.id,
+    proposal.sessionId,
+    ProposalResolution.Applied,
+  );
 }
 
 export async function declineSessionProposal(
@@ -160,13 +169,17 @@ export async function declineSessionProposal(
   if (!proposal || proposal.status !== "pending") {
     return;
   }
-  await setProposalStatus(proposal.id, proposal.sessionId, "declined");
+  await setProposalStatus(
+    proposal.id,
+    proposal.sessionId,
+    ProposalResolution.Declined,
+  );
 }
 
 async function setProposalStatus(
   proposalId: string,
   sessionId: string,
-  status: "applied" | "declined",
+  status: ProposalResolution,
 ): Promise<void> {
   await enqueueDatabaseWrite(`session:${sessionId}`, async () => {
     const result = await commands.setSessionProposalStatus({

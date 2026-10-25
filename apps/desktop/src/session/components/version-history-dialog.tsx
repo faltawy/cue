@@ -11,6 +11,7 @@ import {
 } from "@anlg/ui/components/ui/dialog";
 import { cn, formatDistanceToNow, safeParseDate } from "@anlg/utils";
 
+import { SessionConflictField } from "~/session/enums";
 import {
   previewFromBody,
   restoreSessionDocumentBody,
@@ -39,7 +40,7 @@ export function VersionHistoryDialog({
 
   const entries = [
     ...conflicts
-      .filter((conflict) => conflict.field === "body")
+      .filter((conflict) => conflict.field === SessionConflictField.Body)
       .map((conflict) => ({
         id: conflict.id,
         label: t`Other device's version`,

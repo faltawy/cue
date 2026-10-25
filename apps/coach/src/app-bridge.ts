@@ -1,30 +1,43 @@
 import { z } from "zod";
 
+export enum CoachEditKind {
+  Note = "note",
+  AddActionItem = "add_action_item",
+  CompleteActionItem = "complete_action_item",
+  CreateNote = "create_note",
+  UpdateNote = "update_note",
+  CreateFolder = "create_folder",
+  CreatePerson = "create_person",
+  UpdatePerson = "update_person",
+  CreateOrganization = "create_organization",
+  UpdateOrganization = "update_organization",
+  AddParticipant = "add_participant",
+  CreateTemplate = "create_template",
+  UpdateTemplate = "update_template",
+  AssignSpeaker = "assign_speaker",
+  CorrectTranscript = "correct_transcript",
+}
+
+export enum ProjectSource {
+  Series = "series",
+  Default = "default",
+}
+
+export enum DictationAction {
+  Start = "start",
+  Stop = "stop",
+  Cancel = "cancel",
+}
+
 export const APP_URL_ENV = "CUE_COACH_APP_URL";
 export const APP_TOKEN_ENV = "CUE_COACH_APP_TOKEN";
 
-export const EDIT_KINDS = [
-  "note",
-  "add_action_item",
-  "complete_action_item",
-  "create_note",
-  "update_note",
-  "create_folder",
-  "create_person",
-  "update_person",
-  "create_organization",
-  "update_organization",
-  "add_participant",
-  "create_template",
-  "update_template",
-  "assign_speaker",
-  "correct_transcript",
-] as const;
+export const EDIT_KINDS = Object.values(CoachEditKind);
 
 const coachEditSchema = z.object({
   id: z.string(),
   session_id: z.string(),
-  kind: z.enum(EDIT_KINDS),
+  kind: z.enum(CoachEditKind),
   summary: z.string(),
   task_id: z.string().nullable(),
   target_id: z.string().nullable().optional(),
@@ -71,7 +84,7 @@ const meetingProjectSchema = z.object({
   session_id: z.string(),
   series: z.object({ key: z.string(), label: z.string() }).nullable(),
   project: z.string(),
-  source: z.enum(["series", "default"]),
+  source: z.enum(ProjectSource),
   default_project: z.string(),
 });
 
@@ -85,7 +98,10 @@ export type TranscriptCorrection = {
   replacement: string;
 };
 
-export type NoteStyle = "paragraphs" | "bullets";
+export enum NoteStyle {
+  Paragraphs = "paragraphs",
+  Bullets = "bullets",
+}
 
 export class BridgeError extends Error {
   constructor(
@@ -153,7 +169,7 @@ export function appBridge(url: string, token: string) {
     );
 
   return {
-    dictation: (recordingId: string, action: "start" | "stop" | "cancel") =>
+    dictation: (recordingId: string, action: DictationAction) =>
       required(
         call("POST", "/dictation", z.object({ text: z.string().nullable() }), {
           recording_id: recordingId,

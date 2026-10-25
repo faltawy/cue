@@ -17,7 +17,9 @@ import {
   Waveform,
 } from "@anlg/ui/components/icons";
 
-import { type SettingsTab, type TabInput } from "~/store/zustand/tabs";
+import { SettingsNavigationGroup } from "~/sidebar/enums";
+import { type TabInput } from "~/store/zustand/tabs";
+import { SettingsTab } from "~/store/zustand/tabs/enums";
 
 type SettingsNavItem =
   | {
@@ -26,7 +28,7 @@ type SettingsNavItem =
       icon: Icon;
     }
   | {
-      id: "calendar" | "contacts" | "folders" | "templates";
+      id: SettingsNavigationGroup;
       label: string;
       icon: Icon;
       destination: TabInput;
@@ -41,54 +43,58 @@ export function useSettingsNavGroups(): SettingsNavGroup[] {
     {
       label: t`Setup`,
       items: [
-        { id: "claude", label: t`AI`, icon: Sparkle },
-        { id: "transcription", label: t`Transcription`, icon: Waveform },
-        { id: "permissions", label: t`Permissions`, icon: Lock },
-        { id: "dictation", label: t`Dictation`, icon: Microphone },
+        { id: SettingsTab.Claude, label: t`AI`, icon: Sparkle },
+        {
+          id: SettingsTab.Transcription,
+          label: t`Transcription`,
+          icon: Waveform,
+        },
+        { id: SettingsTab.Permissions, label: t`Permissions`, icon: Lock },
+        { id: SettingsTab.Dictation, label: t`Dictation`, icon: Microphone },
       ],
     },
     {
       label: t`Meeting capture`,
       items: [
-        { id: "meetings", label: t`Meetings`, icon: VideoCamera },
+        { id: SettingsTab.Meetings, label: t`Meetings`, icon: VideoCamera },
         {
-          id: "calendar",
+          id: SettingsNavigationGroup.Calendar,
           label: t`Calendar`,
           icon: CalendarDots,
           destination: { type: "calendar" },
         },
-        { id: "notifications", label: t`Notifications`, icon: Bell },
+        { id: SettingsTab.Notifications, label: t`Notifications`, icon: Bell },
       ],
     },
     {
       label: t`Library`,
       items: [
         {
-          id: "folders",
+          id: SettingsNavigationGroup.Folders,
           label: t`Folders`,
           icon: FolderSimple,
           destination: { type: "folders" },
         },
         {
-          id: "contacts",
+          id: SettingsNavigationGroup.Contacts,
           label: t`Contacts`,
           icon: Users,
           destination: { type: "contacts" },
         },
         {
-          id: "templates",
+          id: SettingsNavigationGroup.Templates,
           label: t`Templates`,
           icon: FileText,
           destination: { type: "templates" },
         },
-        { id: "dictionary", label: t`Dictionary`, icon: BookOpen },
+        { id: SettingsTab.Dictionary, label: t`Dictionary`, icon: BookOpen },
       ],
     },
     {
       label: t`Appearance & general`,
       items: [
-        { id: "appearance", label: t`Appearance`, icon: Sun },
-        { id: "app", label: t`General`, icon: Gear },
+        { id: SettingsTab.Appearance, label: t`Appearance`, icon: Sun },
+        { id: SettingsTab.App, label: t`General`, icon: Gear },
       ],
     },
   ];

@@ -27,6 +27,7 @@ import type { AppliedTemplateSnapshot } from "~/session/queries/types";
 import { formatSessionSourceAppsContext } from "~/session/source-apps";
 import { extractSectionHeadings } from "~/session/title-content";
 import type { SettingValues } from "~/settings/schema";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { parseDictionaryTermsJson } from "~/stt/keywords";
 import {
   formatMeetingChatContext,
@@ -49,7 +50,10 @@ type SegmentPayload = {
   words: Array<{ text: string; start_ms: number; end_ms: number }>;
 };
 
-export const enhanceTransform: Pick<TaskConfig<"enhance">, "transformArgs"> = {
+export const enhanceTransform: Pick<
+  TaskConfig<TaskType.Enhance>,
+  "transformArgs"
+> = {
   transformArgs,
 };
 

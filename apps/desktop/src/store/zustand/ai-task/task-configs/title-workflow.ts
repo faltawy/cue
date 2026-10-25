@@ -5,11 +5,13 @@ import { commands as templateCommands } from "@anlg/plugin-template";
 import type { TaskArgsMapTransformed, TaskConfig } from ".";
 import { appendPreferredNamesGuidance } from "./preferred-names";
 
+import { TaskType } from "~/store/zustand/ai-task/enums";
+
 const AI_GENERATION_MAX_RETRIES = 4;
 const TITLE_MAX_OUTPUT_TOKENS = 128;
 
 export const titleWorkflow: Pick<
-  TaskConfig<"title">,
+  TaskConfig<TaskType.Title>,
   "executeWorkflow" | "transforms"
 > = {
   executeWorkflow,

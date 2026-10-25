@@ -49,7 +49,8 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
   getAllWebviewWindows: mocks.getAllWebviewWindows,
 }));
 
-vi.mock("@anlg/plugin-windows", () => ({
+vi.mock("@anlg/plugin-windows", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anlg/plugin-windows")>()),
   getCurrentWebviewWindowLabel: mocks.getCurrentWebviewWindowLabel,
 }));
 

@@ -39,6 +39,7 @@ import {
   isOnDeviceSttModel,
   isSupportedLanguagesBatch,
 } from "~/stt/capabilities";
+import { TranscriptWriteMode } from "~/stt/enums";
 import type { TranscriptRecord } from "~/stt/queries";
 import type { SpeakerHintWithId, WordWithId } from "~/stt/types";
 
@@ -457,7 +458,7 @@ export const useRunBatch = (sessionId: string) => {
           });
 
           transcriptId ??= id();
-          if (persistOptions?.mode === "replace") {
+          if (persistOptions?.mode === TranscriptWriteMode.Replace) {
             stagedWords = [];
             stagedHints = [];
           }

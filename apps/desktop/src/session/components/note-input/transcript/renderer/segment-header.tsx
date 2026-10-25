@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 
-import { Check } from "@anlg/ui/components/icons";
+import { IconWeight, Check } from "@anlg/ui/components/icons";
 import { cn } from "@anlg/utils";
 
 import { useTranscriptSelectionState } from "./selection-context";
@@ -47,7 +47,9 @@ export function SegmentHeader({
               : "border-muted-foreground/40",
           ])}
         >
-          {selected ? <Check className="size-2.5" weight="bold" /> : null}
+          {selected ? (
+            <Check className="size-2.5" weight={IconWeight.Bold} />
+          ) : null}
         </span>
       ) : null}
       <SpeakerAssignPopover

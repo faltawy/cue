@@ -13,7 +13,7 @@
       ],
       "why": "Dana asks the price for 60 agents",
       "silent": false,
-      "good": "Don't drop a cold number before knowing the pain or the volume. Give a short honest frame (it depends on volume, a range only if the user knows it) and pivot to a discovery question, e.g. Say: \"Happy to get you a number — it depends mostly on volume. How many conversations a month, and what's the main thing you want fixed?\""
+      "good": "Answer the price question honestly using only known figures; if pricing is unknown, say what must be checked without forcing discovery questions."
     },
     {
       "id": "price-objection-hedging",
@@ -24,12 +24,15 @@
       "startMin": 22,
       "lines": [
         ["Marco", "Honestly, $48,000 a year is more than we budgeted. Another vendor quoted us around 30."],
-        ["You", "Yeah, I hear you, I mean, we could probably look at something, maybe some kind of discount, I'd have to check."]
+        [
+          "You",
+          "Yeah, I hear you, I mean, we could probably look at something, maybe some kind of discount, I'd have to check."
+        ]
       ],
       "flag": 2,
       "why": "price objection and the user hedging toward a discount",
       "silent": false,
-      "good": "Stop conceding: the user is offering a discount before isolating the objection. Acknowledge and isolate, then trade within the user's limit. Ask: \"Price aside, is this the solution you want?\" then only a discount tied to a two-year term (max 10%). Point out the hedge."
+      "good": "Respect the stated discount limit and acknowledge the budget gap; ask one useful question without judging the user or assuming a concession is required."
     },
     {
       "id": "vague-them-commitment",
@@ -43,7 +46,7 @@
       ],
       "why": "vague next step from Priya",
       "silent": false,
-      "good": "Pin the vague next step before the call ends: who else decides, and a dated follow-up. Ask: \"Who else needs to weigh in? Could we book 20 minutes Thursday to hear what they think?\""
+      "good": "Offer one low-pressure clarification about what Priya needs for the internal review; do not manufacture a meeting date or require access to a decision maker."
     },
     {
       "id": "user-overpromise-date",
@@ -58,7 +61,7 @@
       ],
       "why": "the user promised a delivery date",
       "silent": false,
-      "good": "The user just broke their own rule (never promise dates). Walk it back now, gracefully, and replace it with a dated commitment they control. Say: \"Let me correct myself — I'll confirm the date with engineering and send it to you by Friday.\""
+      "good": "Correct the unsupported delivery promise in one sentence: I need engineering to confirm the delivery date before I can commit to it."
     },
     {
       "id": "over-talking-then-question",
@@ -67,15 +70,27 @@
       "context": "Discovery call · with Tom Okafor",
       "startMin": 8,
       "lines": [
-        ["You", "So let me walk you through how the platform works end to end, starting with the inbox, then routing, then the reporting layer, and how all of that ties together for teams like yours.", 70],
-        ["You", "And on top of that there's the automation piece, which honestly is where most customers see the biggest wins, and then the integrations, which we can go into as well.", 65],
+        [
+          "You",
+          "So let me walk you through how the platform works end to end, starting with the inbox, then routing, then the reporting layer, and how all of that ties together for teams like yours.",
+          70
+        ],
+        [
+          "You",
+          "And on top of that there's the automation piece, which honestly is where most customers see the biggest wins, and then the integrations, which we can go into as well.",
+          65
+        ],
         ["Tom", "Okay.", 1],
-        ["You", "And the other thing worth mentioning is the analytics, because a lot of leaders love having that visibility across every channel and every team.", 60],
+        [
+          "You",
+          "And the other thing worth mentioning is the analytics, because a lot of leaders love having that visibility across every channel and every team.",
+          60
+        ],
         ["Tom", "Sure. So does it work with Zendesk?", 3]
       ],
       "why": "Tom asks if it works with Zendesk",
       "silent": false,
-      "good": "The user has done nearly all the talking with no questions. Answer in one sentence (only what the user knows; don't invent), then hand the floor back. Ask: \"What does your Zendesk setup look like today, and what's not working about it?\""
+      "good": "Help answer the Zendesk question directly if the facts are available; do not infer a conversational failure from talk share or evade it with discovery."
     },
     {
       "id": "buying-signal",
@@ -89,7 +104,7 @@
       ],
       "why": "Grace asks how fast they could go live",
       "silent": false,
-      "good": "Buying signal: answer briefly (no invented timeline) and advance to a mutual plan. Ask: \"What needs to happen on your side to decide in time for the peak, and who signs off?\""
+      "good": "Acknowledge the desired holiday timing and clarify the constraint without inventing deployment dates or forcing a sales next step."
     },
     {
       "id": "escalation-angry",
@@ -98,14 +113,18 @@
       "context": "Incident review · with Rob Mendes",
       "startMin": 3,
       "lines": [
-        ["Rob", "This is the third outage this month. Our agents couldn't reply to anyone for four hours yesterday. Why should we keep paying for this?"]
+        [
+          "Rob",
+          "This is the third outage this month. Our agents couldn't reply to anyone for four hours yesterday. Why should we keep paying for this?"
+        ]
       ],
       "why": "angry customer asks why they should keep paying",
       "silent": false,
-      "good": "Acknowledge the impact first, no excuses or SLA arguments, own it, and commit to a dated update. Say: \"You're right — four hours without replying to customers is unacceptable. I'll send you the root cause and what we're changing by Thursday 5pm.\""
+      "good": "Acknowledge the stated four-hour impact in one sentence without guessed feelings or an invented root-cause deadline."
     },
     {
       "id": "silent-user-answered-well",
+      "delivery": "later",
       "lang": "en",
       "type": "support escalation",
       "context": "Incident follow-up · with Rob Mendes",
@@ -117,7 +136,7 @@
       "flag": 2,
       "why": "fix date question and the user's commitment",
       "silent": true,
-      "good": "The user answered directly with a clear owner, action and time. Nothing to add: stay silent."
+      "good": "Save the concrete confirmation promise for the wrap-up; do not interrupt with praise or repeat an answered question."
     },
     {
       "id": "decision-not-confirmed",
@@ -132,7 +151,7 @@
       ],
       "why": "moving on before option B has an owner",
       "silent": false,
-      "good": "A decision is about to slip by with no owner or date. Lock it before moving on. Say: \"Before we move on — we're going with option B. Who owns it, and when do we see a first cut?\""
+      "good": "One short question about who will own option B may help before the topic closes; no invented deadline."
     },
     {
       "id": "agenda-drift",
@@ -147,7 +166,7 @@
       ],
       "why": "asked to weigh in on button colour",
       "silent": false,
-      "good": "24 minutes into a 30-minute sync, still off-agenda. Don't weigh in on colour; park it with an owner and move to the launch date. Say: \"Let's park the colour — Sara, can you decide by Friday? Six minutes left; launch date first.\""
+      "good": "Respect the remaining meeting time and suggest returning to the launch date; do not assign Sara an unagreed task or deadline."
     },
     {
       "id": "one-on-one-vague",
@@ -162,7 +181,7 @@
       ],
       "why": "Alex gives a vague status and a soft date",
       "silent": false,
-      "good": "Don't accept \"fine\" and a \"probably\". Ask one open question about the load or the risk to the date. Ask: \"What's taking most of your energy right now?\" or \"What would make the migration slip past next month?\""
+      "good": "Make space for Alex to describe what support would help, without diagnosing stress or demanding an optimistic date."
     },
     {
       "id": "feedback-hedging",
@@ -172,12 +191,16 @@
       "instructions": "I'm Alex's manager.",
       "startMin": 14,
       "lines": [
-        ["You", "So, um, this is maybe a small thing, and it's totally fine, but, like, the weekly report was kind of late, maybe a couple of times?", 12],
+        [
+          "You",
+          "So, um, this is maybe a small thing, and it's totally fine, but, like, the weekly report was kind of late, maybe a couple of times?",
+          12
+        ],
         ["Alex", "Was it? I thought I sent them on time. Which ones?"]
       ],
       "why": "Alex asks which reports were late",
       "silent": false,
-      "good": "The user hedged the feedback into mush. Be specific about behaviour and impact, then ask. Say: \"The last two Monday reports came in on Wednesday, so I presented stale numbers to leadership. What got in the way?\" (dates only if the user knows them)."
+      "good": "Help make the feedback specific to the described behavior and impact without judging the user or inventing examples."
     },
     {
       "id": "interview-probe-we",
@@ -213,12 +236,16 @@
       "context": "Launch review · with Diane (CEO)",
       "startMin": 9,
       "lines": [
-        ["You", "So there's a lot of moving parts, the payment provider certification slipped about two weeks, QA is mostly on track, and design is finishing the last screens, so it's kind of complicated.", 25],
+        [
+          "You",
+          "So there's a lot of moving parts, the payment provider certification slipped about two weeks, QA is mostly on track, and design is finishing the last screens, so it's kind of complicated.",
+          25
+        ],
         ["Diane", "Bottom line, are we going to hit the March 1 launch or not?"]
       ],
       "why": "CEO asks a yes/no on the March 1 date",
       "silent": false,
-      "good": "Answer first, one reason, then what's needed. Say: \"No — March 1 is at risk; realistically mid-March. The one driver is the payment certification slipping two weeks.\" Don't invent a firm date beyond the transcript; stop rambling."
+      "good": "Give a concise answer grounded in the stated certification delay; do not invent a firm launch date or label the user rambling."
     },
     {
       "id": "competitor-cheaper",
@@ -245,7 +272,7 @@
       ],
       "why": "asks for 25% off",
       "silent": false,
-      "good": "Within the user's limit, trade rather than concede. Say: \"25% isn't something I can do. If you commit to two years, I can do 10% — shall we write it that way?\""
+      "good": "Use the user's explicit limits to offer a mutual option, in one sentence, without pressuring acceptance."
     },
     {
       "id": "risk-new-vp",
@@ -258,7 +285,7 @@
       ],
       "why": "new VP reviewing vendors next quarter",
       "silent": false,
-      "good": "Risk signal: get ahead of it and multi-thread. Ask: \"What will the VP be looking for? Could we get 20 minutes with them before the review?\""
+      "good": "Ask what the new reviewer needs to understand; do not turn a budget review into a threat or demand access."
     },
     {
       "id": "quantify-pain",
@@ -272,7 +299,7 @@
       ],
       "why": "Tom shares a 14-hour delay",
       "silent": false,
-      "good": "Good question; go one level deeper and quantify the impact. Ask: \"What does a 14-hour wait cost you — churn, refunds, bad reviews?\""
+      "good": "Ask about the stated operational impact without supplying assumed churn, refunds or other losses."
     },
     {
       "id": "silent-small-talk",
@@ -289,6 +316,7 @@
     },
     {
       "id": "silent-owner-clear",
+      "delivery": "later",
       "lang": "en",
       "type": "internal planning",
       "context": "Release planning · with Omar, Sara",
@@ -300,10 +328,11 @@
       "flag": 2,
       "why": "QA plan owner and date",
       "silent": true,
-      "good": "Owner and date are clear and it isn't the user's action. Stay silent."
+      "good": "Save Sara's concrete QA-plan commitment for the wrap-up; the owner and deadline are settled so no interruption is useful."
     },
     {
       "id": "silent-user-confirmed",
+      "delivery": "later",
       "lang": "en",
       "type": "customer call",
       "context": "Onboarding sync · with Lena Fischer",
@@ -315,7 +344,7 @@
       "flag": 2,
       "why": "commitments recapped",
       "silent": true,
-      "good": "The user already summarised owners and dates. Stay silent."
+      "good": "Save the agreed export and mapping commitments for the wrap-up without repeating them live."
     },
     {
       "id": "ar-price-objection",
@@ -328,7 +357,7 @@
       ],
       "why": "price objection with a stated budget",
       "silent": false,
-      "good": "Don't drop the price. Acknowledge and explore value and budget flexibility, with the line in Arabic. Ask: \"مفهوم. قبل ما نتكلم في الرقم، إيه أكتر مشكلة لو اتحلت هتفرق معاكم؟\""
+      "good": "Acknowledge the stated budget constraint in Arabic and ask one useful question without forcing a discount or a sales pitch."
     },
     {
       "id": "ar-vague-commitment",
@@ -341,7 +370,7 @@
       ],
       "why": "vague promise to get back after management review",
       "silent": false,
-      "good": "Pin who decides and when, with the line in Arabic. Ask: \"تمام، مين من الإدارة هياخد القرار؟ ينفع نحدد مكالمة قصيرة يوم الخميس؟\""
+      "good": "One respectful Arabic question may clarify what the internal review needs; no invented Thursday call or forced access."
     },
     {
       "id": "ar-escalation",
@@ -354,7 +383,7 @@
       ],
       "why": "repeat issue, lost customers",
       "silent": false,
-      "good": "Acknowledge the impact first, own it, commit to a dated root cause, in Arabic. Say: \"عندك حق، ومش مقبول إنكم تخسروا عملاء بسببنا. هبعتلك السبب الحقيقي واللي هنغيره قبل يوم الخميس.\""
+      "good": "Acknowledge the impact explicitly described, in Arabic; do not invent a root cause, promised fix or update deadline."
     },
     {
       "id": "ar-user-overpromise",
@@ -369,7 +398,7 @@
       ],
       "why": "the user promised next week",
       "silent": false,
-      "good": "The user broke their rule. Walk it back gracefully, in Arabic. Say: \"خليني أصحح: هأكد الميعاد مع فريق التطوير وأبعتلك يوم الخميس.\""
+      "good": "Correct the unsupported delivery promise in Arabic and say engineering must confirm the date; do not invent a new deadline."
     },
     {
       "id": "ar-silent-small-talk",
@@ -412,7 +441,7 @@
       ],
       "ask": "she's stalling, what do I say?",
       "silent": false,
-      "good": "Lead with the line: pin who decides and a dated next step. Ask: \"Totally fair — who else will weigh in? Can we put 20 minutes on Thursday to hear their take?\""
+      "good": "Offer one concise, respectful question about what the internal review needs without inventing a follow-up date."
     },
     {
       "id": "ask-fact-budget",
@@ -428,7 +457,7 @@
       ],
       "ask": "what did he say their budget was?",
       "silent": false,
-      "good": "Fact first: about $35k this year (vs your $48k; a competitor quoted about $30k). Then one move: don't split the difference; ask what's driving the gap or trade term/scope for price."
+      "good": "Give the stated budget first; add at most one useful clarification if it serves the user's intent, without obligatory bargaining."
     },
     {
       "id": "ask-arabic-objection",
@@ -442,7 +471,7 @@
       ],
       "ask": "how do I respond to this?",
       "silent": false,
-      "good": "Explore before defending, line in Arabic. Ask: \"إيه اللي ما اشتغلش المرة اللي فاتت بالظبط؟\" then address that specifically."
+      "good": "Offer one Arabic question that helps understand what failed before, without labeling their reaction or defending prematurely."
     },
     {
       "id": "ask-pure-fact",
@@ -467,11 +496,14 @@
       "startMin": 14,
       "lines": [
         ["You", "So that is roughly how the routing would look for your team."],
-        ["Nadia", "Look, we already use Freshdesk and the team is used to it. Honestly, it is not the right time to switch."]
+        [
+          "Nadia",
+          "Look, we already use Freshdesk and the team is used to it. Honestly, it is not the right time to switch."
+        ]
       ],
       "why": "timing and incumbent-tool pushback",
       "silent": false,
-      "good": "Acknowledge without arguing or bashing the incumbent, then explore what is behind the timing: what would have to be true to revisit it, or what the current setup costs them. One question, e.g. Ask: \"Fair enough. What would need to change for this to be worth looking at, and when?\""
+      "good": "Respect the stated timing constraint; one question about what would make revisiting useful can help without dismissing the incumbent."
     },
     {
       "id": "ar-objection-price-authority-gulf",
@@ -485,7 +517,7 @@
       ],
       "why": "price and decision-maker pushback",
       "silent": false,
-      "good": "Do not discount. Acknowledge, then find out what the manager will weigh and get access to them; line in Gulf Arabic, e.g. Ask: \"أكيد، وش أهم شي بيهتم فيه المدير؟ وتشوف نسوي اجتماع قصير معه هالأسبوع؟\""
+      "good": "Acknowledge the stated constraint in Gulf Arabic; one question about the manager's needs may help without requiring access or a new meeting."
     },
     {
       "id": "ar-objection-incumbent-doubt",
@@ -509,13 +541,25 @@
       "context": "Discovery call · with Dana Whitfield",
       "startMin": 8,
       "lines": [
-        ["You", "So the way the inbox works is that every channel, email, chat, WhatsApp, lands in one place, and each conversation keeps its full history, so whoever picks it up sees everything that happened before.", 28],
+        [
+          "You",
+          "So the way the inbox works is that every channel, email, chat, WhatsApp, lands in one place, and each conversation keeps its full history, so whoever picks it up sees everything that happened before.",
+          28
+        ],
         ["Dana", "Mm-hm.", 1],
-        ["You", "And then on top of that there is routing, which looks at the language, the topic and the customer plan, and sends it to the right team, and if nobody picks it up quickly it escalates automatically.", 30],
-        ["You", "And the reporting side pulls all of that together, so your leads can see response times per team, which topics are growing, and where the AI resolves things on its own versus handing off to an agent.", 32]
+        [
+          "You",
+          "And then on top of that there is routing, which looks at the language, the topic and the customer plan, and sends it to the right team, and if nobody picks it up quickly it escalates automatically.",
+          30
+        ],
+        [
+          "You",
+          "And the reporting side pulls all of that together, so your leads can see response times per team, which topics are growing, and where the AI resolves things on its own versus handing off to an agent.",
+          32
+        ]
       ],
-      "silent": false,
-      "good": "Stop and hand the floor back with one concrete question tied to what was just shown, not a recap or a generic \"any questions?\", e.g. Ask: \"How do your leads track response times per team today?\""
+      "silent": true,
+      "good": "Stay quiet: a product walkthrough and talk share alone do not show a problem or justify interrupting the presenter."
     },
     {
       "id": "ar-monologue-walkthrough",
@@ -525,13 +569,241 @@
       "context": "مكالمة تعريفية · with Hassan Ali",
       "startMin": 15,
       "lines": [
-        ["You", "بص يا سيدي، الفكرة إن كل القنوات بتاعتكم، الإيميل والواتساب والشات، بتيجي في مكان واحد، وكل محادثة بيبقى معاها التاريخ كله.", 30],
+        [
+          "You",
+          "بص يا سيدي، الفكرة إن كل القنوات بتاعتكم، الإيميل والواتساب والشات، بتيجي في مكان واحد، وكل محادثة بيبقى معاها التاريخ كله.",
+          30
+        ],
         ["Hassan", "اه تمام", 1],
-        ["You", "وبعد كده عندنا التوزيع الأوتوماتيك، بيشوف اللغة والموضوع ويبعت للفريق المناسب، ولو محدش رد في وقت معين بيصعّد لوحده.", 30],
-        ["You", "وكمان التقارير بتوريكم وقت الرد لكل فريق، وإيه المواضيع اللي بتزيد، وإمتى الذكاء الاصطناعي بيحل لوحده وإمتى بيحول لموظف.", 31]
+        [
+          "You",
+          "وبعد كده عندنا التوزيع الأوتوماتيك، بيشوف اللغة والموضوع ويبعت للفريق المناسب، ولو محدش رد في وقت معين بيصعّد لوحده.",
+          30
+        ],
+        [
+          "You",
+          "وكمان التقارير بتوريكم وقت الرد لكل فريق، وإيه المواضيع اللي بتزيد، وإمتى الذكاء الاصطناعي بيحل لوحده وإمتى بيحول لموظف.",
+          31
+        ]
       ],
+      "silent": true,
+      "good": "Stay quiet: extended explanation alone does not justify a correction; do not judge talk share or invent disengagement."
+    },
+    {
+      "id": "support-stated-impact",
+      "intent": "supporting",
+      "delivery": "now",
+      "lang": "en",
+      "type": "1:1",
+      "context": "Workload check-in",
+      "startMin": 4,
+      "lines": [
+        [
+          "Alex",
+          "The extra review meant I worked all weekend. Can we change the handoff?"
+        ],
+        [
+          "You",
+          "The new process has several benefits."
+        ]
+      ],
+      "flag": 2,
+      "why": "Impact has not been acknowledged",
       "silent": false,
-      "good": "Stop and hand the floor back with one concrete question in Egyptian Arabic tied to what was just said, e.g. Ask: \"إنتو بتتابعوا وقت الرد لكل فريق إزاي دلوقتي؟\"; no recap."
+      "good": "Acknowledge the stated weekend work with one sentence before explaining process benefits; no guessed emotion or invented promise."
+    },
+    {
+      "id": "support-already-acknowledged",
+      "intent": "supporting",
+      "delivery": "silent",
+      "lang": "en",
+      "type": "1:1",
+      "context": "Workload check-in",
+      "startMin": 4,
+      "lines": [
+        [
+          "Alex",
+          "The review took my weekend. Can we change the handoff?"
+        ],
+        [
+          "You",
+          "That cost you your weekend; what would make the handoff easier?"
+        ]
+      ],
+      "flag": 2,
+      "why": "Impact raised",
+      "silent": true,
+      "good": "The user acknowledged the impact and invited input; stay quiet, with no praise or duplicate question."
+    },
+    {
+      "id": "presenting-expected-long-turn",
+      "intent": "presenting",
+      "delivery": "silent",
+      "trigger": "monologue",
+      "lang": "en",
+      "type": "presentation",
+      "context": "Architecture briefing",
+      "startMin": 7,
+      "lines": [
+        [
+          "You",
+          "I will walk through the migration stages, then leave time for questions.",
+          45
+        ],
+        [
+          "You",
+          "First the snapshot is copied; then changes are replayed while the old service handles requests.",
+          45
+        ]
+      ],
+      "silent": true,
+      "good": "Sustained speaking is expected during the requested briefing; do not issue a talk-time correction."
+    },
+    {
+      "id": "listening-give-space",
+      "intent": "listening",
+      "delivery": "silent",
+      "lang": "en",
+      "type": "listening session",
+      "context": "Team retrospective",
+      "startMin": 6,
+      "lines": [
+        [
+          "Alex",
+          "Can I finish explaining what happened before we suggest fixes?"
+        ],
+        [
+          "You",
+          "Of course, go ahead."
+        ]
+      ],
+      "flag": 2,
+      "why": "Request for space",
+      "silent": true,
+      "good": "The user has made space for the speaker; no suggestion, summary or praise should interrupt listening."
+    },
+    {
+      "id": "settled-promise-for-later",
+      "intent": "general",
+      "delivery": "later",
+      "lang": "en",
+      "type": "planning",
+      "context": "Release check-in",
+      "startMin": 12,
+      "lines": [
+        [
+          "Sam",
+          "I will send the QA checklist by Friday."
+        ],
+        [
+          "You",
+          "Friday works, thank you."
+        ]
+      ],
+      "flag": 2,
+      "why": "Concrete promise",
+      "silent": true,
+      "good": "Defer the factual promise with its owner and stated Friday deadline; no reminder or clarification during the call."
+    },
+    {
+      "id": "concern-resolved-before-delivery",
+      "intent": "general",
+      "delivery": "silent",
+      "lang": "en",
+      "type": "planning",
+      "context": "Release check-in",
+      "startMin": 12,
+      "lines": [
+        [
+          "Sam",
+          "Can you clarify which rollout we mean?"
+        ],
+        [
+          "You",
+          "The internal pilot, not the public release."
+        ],
+        [
+          "Sam",
+          "Got it, that answers it."
+        ]
+      ],
+      "flag": 3,
+      "why": "Earlier open question",
+      "silent": true,
+      "good": "Later lines resolved the question; do not revive it or save an obsolete concern."
+    },
+    {
+      "id": "negotiation-respect-boundary",
+      "intent": "negotiating",
+      "delivery": "now",
+      "lang": "en",
+      "type": "negotiation",
+      "context": "Scope review",
+      "startMin": 8,
+      "lines": [
+        [
+          "Morgan",
+          "Can you include weekend coverage?"
+        ],
+        [
+          "You",
+          "We cannot staff weekends, but I want to find an arrangement that works."
+        ],
+        [
+          "Morgan",
+          "Then what coverage could you offer?"
+        ]
+      ],
+      "flag": 3,
+      "why": "Unresolved coverage question",
+      "silent": false,
+      "good": "Help clarify needs within the stated no-weekends boundary without inventing availability, demanding a trade or treating Morgan as an opponent."
+    },
+    {
+      "id": "ar-support-impact",
+      "intent": "supporting",
+      "delivery": "now",
+      "lang": "ar",
+      "type": "support",
+      "context": "مراجعة التسليم",
+      "startMin": 5,
+      "lines": [
+        [
+          "عمر",
+          "التأخير خلانا نعيد الشغل مرتين، ممكن نغيّر طريقة التسليم؟"
+        ],
+        [
+          "You",
+          "الطريقة الجديدة فيها مميزات كتير."
+        ]
+      ],
+      "flag": 2,
+      "why": "Stated rework not acknowledged",
+      "silent": false,
+      "good": "One natural Arabic sentence acknowledging the rework before explaining; no guessed emotions, blame or invented deadline."
+    },
+    {
+      "id": "no-guessed-emotion",
+      "intent": "supporting",
+      "delivery": "silent",
+      "lang": "en",
+      "type": "1:1",
+      "context": "Review discussion",
+      "startMin": 3,
+      "lines": [
+        [
+          "Sam",
+          "Could I have a minute to think about that?"
+        ],
+        [
+          "You",
+          "Take your time."
+        ]
+      ],
+      "flag": 2,
+      "why": "Pause to think",
+      "silent": true,
+      "good": "Do not infer anxiety, resistance or defensiveness from a pause; the user has responded appropriately, so stay quiet."
     }
   ]
 }

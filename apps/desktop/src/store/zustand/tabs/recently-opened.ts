@@ -1,6 +1,9 @@
 import type { StateCreator, StoreApi, StoreMutatorIdentifier } from "zustand";
 
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 
 import { commands } from "~/types/tauri.gen";
 
@@ -87,7 +90,10 @@ const recentlyOpenedMiddlewareImpl: RecentlyOpenedMiddlewareImpl =
           prevIds.length !== nextIds.length ||
           prevIds.some((id, i) => id !== nextIds[i]);
 
-        if (idsChanged && getCurrentWebviewWindowLabel() === "main") {
+        if (
+          idsChanged &&
+          getCurrentWebviewWindowLabel() === StaticWindowLabel.Main
+        ) {
           saveRecentlyOpenedSessions(nextIds).catch((e) => {
             console.error("Failed to save recently opened sessions:", e);
           });

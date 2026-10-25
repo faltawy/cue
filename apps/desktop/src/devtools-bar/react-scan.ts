@@ -8,9 +8,14 @@ import {
   type ScanNotification,
 } from "react-scan";
 
-import type { ReactScanSettings } from "./react-tools";
-import { registerReactTools, updateReactTools } from "./react-tools";
+import {
+  type ReactScanSettings,
+  registerReactTools,
+  updateReactTools,
+} from "./react-tools";
 import { publishScanData, registerScanData, type ScanEvent } from "./scan-data";
+
+import { ScanEventKind, ScanSeverity } from "~/devtools-bar/enums";
 
 const OPTIONS_KEY = "react-scan-options";
 
@@ -139,7 +144,10 @@ function summarizeEvent(event: ScanNotification): ScanEvent {
   const timing = event.timing;
   return {
     id: event.id,
-    kind: event.kind,
+    kind:
+      event.kind === "interaction"
+        ? ScanEventKind.Interaction
+        : ScanEventKind.DroppedFrames,
     label:
       event.kind === "interaction"
         ? `${event.type === "keyboard" ? "Typed in" : "Clicked"} ${ReactScanDevtools.getComponentName(event.componentPath)}`
@@ -147,7 +155,11 @@ function summarizeEvent(event: ScanNotification): ScanEvent {
     timestamp: event.timestamp,
     duration: ReactScanDevtools.getTotalTime(timing),
     fps: event.kind === "dropped-frames" ? event.fps : null,
-    severity: ReactScanDevtools.getEventSeverity(event),
+    severity: {
+      low: ScanSeverity.Low,
+      high: ScanSeverity.High,
+      "needs-improvement": ScanSeverity.NeedsImprovement,
+    }[ReactScanDevtools.getEventSeverity(event)],
     path: event.kind === "interaction" ? event.componentPath : [],
     timings:
       timing.kind === "interaction"

@@ -1,3 +1,5 @@
+import type { DictationAction } from "@anlg/plugin-coach";
+
 import { DictationController, DictationPhase } from "~/dictation/controller";
 
 export function createCoachDictation(dependencies: {
@@ -55,7 +57,7 @@ export function createCoachDictation(dependencies: {
   }
 
   return {
-    async request(id: string, action: "start" | "stop" | "cancel") {
+    async request(id: string, action: DictationAction) {
       if (action === "start") {
         if (active) throw new Error("Dictation is already in progress.");
         const session = createSession(id);

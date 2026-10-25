@@ -3,14 +3,19 @@ import { createRoot } from "react-dom/client";
 
 import { CoachView } from "../../src/ui/app";
 import { fixtureState, isScenario } from "../../src/ui/fixtures";
-import type { CoachApi } from "../../src/ui/use-coach";
-import { type DataSet, dataSetState, isDataSet } from "./worst-case";
+import { Connection } from "../../src/ui/state";
+import { type CoachApi } from "../../src/ui/use-coach";
+import { DataSet, dataSetState, isDataSet, Phase } from "./worst-case";
+
+enum PreviewTab {
+  Demo = "demo",
+}
 
 const params = new URLSearchParams(location.search);
 const name = params.get("state") ?? "idle";
 const connection = params.get("connection");
 const data = params.get("data");
-const phase = params.get("phase") === "ended" ? "ended" : "live";
+const phase = params.get("phase") === Phase.Ended ? Phase.Ended : Phase.Live;
 
 if (params.get("dir") === "rtl") document.documentElement.dir = "rtl";
 const zoom = Number(params.get("zoom"));
@@ -20,7 +25,11 @@ const state = isDataSet(data)
   ? dataSetState(data, phase)
   : fixtureState(
       isScenario(name) ? name : "idle",
-      connection === "lost" || connection === "connecting" ? connection : "open",
+      connection === Connection.Lost
+        ? Connection.Lost
+        : connection === Connection.Connecting
+          ? Connection.Connecting
+          : Connection.Open,
     );
 
 const ok = async () => ({ ok: true as const });
@@ -32,6 +41,7 @@ const api: CoachApi = {
   openEvidence: ok,
   feedback: ok,
   resetFeedback: ok,
+  setCoaching: ok,
   stop: ok,
   checkIn: ok,
   newChat: ok,
@@ -48,19 +58,19 @@ const api: CoachApi = {
   notify: (message) => console.info("notice", message),
 };
 
-const SEGMENTS: Array<{ id: DataSet | "demo"; label: string }> = [
-  { id: "demo", label: "Demo data" },
-  { id: "worst", label: "Worst case" },
-  { id: "empty", label: "Empty" },
-  { id: "one", label: "One" },
-  { id: "huge", label: "Huge" },
-  { id: "rich", label: "Rich blocks" },
-  { id: "coaching", label: "Coaching" },
+const SEGMENTS: Array<{ id: DataSet | PreviewTab; label: string }> = [
+  { id: PreviewTab.Demo, label: "Demo data" },
+  { id: DataSet.Worst, label: "Worst case" },
+  { id: DataSet.Empty, label: "Empty" },
+  { id: DataSet.One, label: "One" },
+  { id: DataSet.Huge, label: "Huge" },
+  { id: DataSet.Rich, label: "Rich blocks" },
+  { id: DataSet.Coaching, label: "Coaching" },
 ];
 
-function select(id: DataSet | "demo") {
+function select(id: DataSet | PreviewTab) {
   const next = new URLSearchParams(location.search);
-  if (id === "demo") next.delete("data");
+  if (id === PreviewTab.Demo) next.delete("data");
   else next.set("data", id);
   location.search = next.toString();
 }

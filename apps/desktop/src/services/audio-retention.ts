@@ -4,8 +4,8 @@ import {
   type SessionAudioRetentionEvent,
 } from "@anlg/plugin-transcription";
 
-import type { AudioRetentionPolicy } from "./audio-retention-policy";
-
+import { AudioRetentionPolicy } from "~/services/enums";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 
 export {
@@ -27,7 +27,7 @@ export function subscribeToSessionAudioRetention(
 export function isSessionAudioIdle(sessionId: string) {
   const state = listenerStore.getState();
   return (
-    state.getSessionMode(sessionId) === "inactive" &&
+    state.getSessionMode(sessionId) === LiveSessionStatus.Inactive &&
     !(state.live.sessionId === sessionId && state.live.loading)
   );
 }
@@ -36,7 +36,7 @@ export async function deleteProcessedAudioForRetention(
   policy: AudioRetentionPolicy,
   sessionId: string,
 ) {
-  if (policy !== "none" || !isSessionAudioIdle(sessionId)) {
+  if (policy !== AudioRetentionPolicy.None || !isSessionAudioIdle(sessionId)) {
     return false;
   }
 

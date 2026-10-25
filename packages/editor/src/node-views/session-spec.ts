@@ -1,5 +1,7 @@
 import type { NodeSpec } from "prosemirror-model";
 
+import { TaskStatus } from "@anlg/store";
+
 import { getOptionalTaskStatus } from "../tasks";
 
 export const sessionNodeSpec: NodeSpec = {
@@ -31,7 +33,7 @@ export const sessionNodeSpec: NodeSpec = {
         return {
           sessionId: el.getAttribute("data-session-id"),
           status,
-          checked: status === null ? null : status === "done",
+          checked: status === null ? null : status === TaskStatus.Done,
         };
       },
     },
@@ -44,7 +46,7 @@ export const sessionNodeSpec: NodeSpec = {
         "data-type": "session",
         "data-session-id": node.attrs.sessionId,
         "data-status": status ?? undefined,
-        "data-checked": status ? String(status === "done") : undefined,
+        "data-checked": status ? String(status === TaskStatus.Done) : undefined,
       },
       0,
     ];

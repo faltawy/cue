@@ -36,6 +36,7 @@ import { cn } from "@anlg/utils";
 import { useSync } from "./context";
 import { DayCell } from "./day-cell";
 
+import { SyncStatus } from "~/calendar/enums";
 import {
   useCalendarData,
   useEnabledCalendars,
@@ -416,9 +417,10 @@ function CalendarSyncHeaderControls() {
     scheduleSync();
   }, [cancelDebouncedSync, queryClient, scheduleSync]);
 
-  const showSyncIndicator = showManualRefreshFeedback || status !== "idle";
+  const showSyncIndicator =
+    showManualRefreshFeedback || status !== SyncStatus.Idle;
   const statusText =
-    status === "scheduled"
+    status === SyncStatus.Scheduled
       ? "Sync scheduled"
       : showSyncIndicator
         ? "Syncing"

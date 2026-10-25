@@ -8,6 +8,7 @@ import {
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
+import { SyncStatus } from "~/calendar/enums";
 import {
   type CalendarSyncRange,
   CALENDAR_SYNC_TASK_ID,
@@ -21,8 +22,6 @@ import {
 } from "~/services/task-scheduler";
 
 const TOGGLE_SYNC_DEBOUNCE_MS = 5000;
-
-type SyncStatus = "idle" | "scheduled" | "syncing";
 
 interface SyncContextValue {
   status: SyncStatus;
@@ -54,10 +53,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   const status: SyncStatus =
     isSyncing || isRangeSyncing
-      ? "syncing"
+      ? SyncStatus.Syncing
       : isDebouncing || isScheduled
-        ? "scheduled"
-        : "idle";
+        ? SyncStatus.Scheduled
+        : SyncStatus.Idle;
 
   const scheduleSync = useCallback(() => {
     if (manager) {

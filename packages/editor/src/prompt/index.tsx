@@ -26,7 +26,11 @@ import { cn } from "@anlg/utils";
 import { EditorErrorBoundary } from "../editor-error-boundary";
 import { docChangeListenerPlugin, placeholderPlugin } from "../plugins";
 
-export type PromptTokenName = "template" | "current_date" | "language";
+export enum PromptTokenName {
+  Template = "template",
+  CurrentDate = "current_date",
+  Language = "language",
+}
 
 export type PromptTokenDefinition = {
   name: PromptTokenName;
@@ -34,7 +38,7 @@ export type PromptTokenDefinition = {
 };
 
 const DEFAULT_PROMPT_TOKENS: readonly PromptTokenDefinition[] = [
-  { name: "template", label: "Template" },
+  { name: PromptTokenName.Template, label: "Template" },
 ];
 const TOKEN_PATTERN = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 

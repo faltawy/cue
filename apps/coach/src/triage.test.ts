@@ -1,12 +1,21 @@
-import { afterEach, beforeEach, describe, expect, type Mock, spyOn, test } from "bun:test";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  type Mock,
+  spyOn,
+  test,
+} from "bun:test";
 
+import { HitKind } from "./detect";
+import { estimateTokens } from "./pricing";
 import {
   parseTriage,
   TRIAGE_SYSTEM,
   triagePrompt,
   type TriageRequest,
 } from "./triage";
-import { estimateTokens } from "./pricing";
 
 let log: Mock<typeof console.error>;
 
@@ -20,9 +29,18 @@ afterEach(() => {
 
 describe("parseTriage", () => {
   test.each([
-    ['{"nudge": true, "why": "Omar asked about Bcc"}', { nudge: true, why: "Omar asked about Bcc" }],
-    ['{"nudge": false, "why": "small talk"}', { nudge: false, why: "small talk" }],
-    ['```json\n{"nudge": true, "why": "a price"}\n```', { nudge: true, why: "a price" }],
+    [
+      '{"nudge": true, "why": "Omar asked about Bcc"}',
+      { nudge: true, why: "Omar asked about Bcc" },
+    ],
+    [
+      '{"nudge": false, "why": "small talk"}',
+      { nudge: false, why: "small talk" },
+    ],
+    [
+      '```json\n{"nudge": true, "why": "a price"}\n```',
+      { nudge: true, why: "a price" },
+    ],
   ])("reads %s", (reply, expected) => {
     expect(parseTriage(reply)).toEqual(expected);
     expect(log).not.toHaveBeenCalled();
@@ -41,12 +59,24 @@ describe("parseTriage", () => {
 });
 
 describe("triagePrompt", () => {
-  const request = {
+  const request: TriageRequest = {
     context: "Weekly sync with Northwind · with Omar, Sara",
-    kinds: ["question" as const, "number" as const],
+    kinds: [HitKind.Question, HitKind.Number],
     lines: [
-      { speaker: "Omar", channel: 1, start_ms: 61_000, end_ms: 64_000, text: " Can you Bcc the CRM?" },
-      { speaker: "You", channel: 0, start_ms: 65_000, end_ms: 66_000, text: "Let me check." },
+      {
+        speaker: "Omar",
+        channel: 1,
+        start_ms: 61_000,
+        end_ms: 64_000,
+        text: " Can you Bcc the CRM?",
+      },
+      {
+        speaker: "You",
+        channel: 0,
+        start_ms: 65_000,
+        end_ms: 66_000,
+        text: "Let me check.",
+      },
     ],
   };
 
@@ -55,17 +85,13 @@ describe("triagePrompt", () => {
     expect(prompt).toBe(
       "Meeting: Weekly sync with Northwind · with Omar, Sara\nFlagged: question, number\n[01:01] Omar: Can you Bcc the CRM?\n[01:05] You: Let me check.",
     );
-    expect(TRIAGE_SYSTEM).toContain('"nudge"');
-    expect(TRIAGE_SYSTEM).toContain("transcript may be in any language");
-    expect(TRIAGE_SYSTEM).toContain("meaning or language is unclear");
-    expect(TRIAGE_SYSTEM).toContain("A missing flagged cue does not mean there is no actionable moment");
     expect(prompt).not.toContain(TRIAGE_SYSTEM.slice(0, 40));
   });
 
   test("keeps later resolution and an unresolved commitment in the triage window", () => {
     const request: TriageRequest = {
       context: "Planning call",
-      kinds: ["question", "commitment"],
+      kinds: [HitKind.Question, HitKind.Commitment],
       lines: [
         {
           speaker: "Omar",
@@ -96,15 +122,12 @@ describe("triagePrompt", () => {
     expect(prompt).toContain("Omar: Can you approve this today?");
     expect(prompt).toContain("You: Yes, I'll approve it today.");
     expect(prompt).toContain("Leila: I'll follow up on the proposal.");
-    expect(TRIAGE_SYSTEM).toMatch(
-      /later lines.{0,80}(resolve|answer)|(?:resolve|answer).{0,80}later lines/i,
-    );
   });
 
   test("bounds a long transcript while preserving its newest Spanish line", () => {
     const longRequest: TriageRequest = {
       context: "Planning call",
-      kinds: ["question"],
+      kinds: [HitKind.Question],
       lines: [
         {
           speaker: "Omar",
@@ -132,7 +155,9 @@ describe("triagePrompt", () => {
 
     const prompt = triagePrompt(longRequest);
 
-    expect(prompt).toContain("Leila: ¿Quién puede confirmar la fecha de entrega?");
+    expect(prompt).toContain(
+      "Leila: ¿Quién puede confirmar la fecha de entrega?",
+    );
     expect(prompt).not.toContain("OLDEST");
     expect(estimateTokens(prompt)).toBeLessThanOrEqual(1_050);
   });

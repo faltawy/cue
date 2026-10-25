@@ -6,9 +6,11 @@ import {
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
+import { Edge } from "~/devtools-bar/enums";
+
 const STORAGE_KEY = "cue:devtools-scan-layout";
 export type PanelRect = { x: number; y: number; width: number; height: number };
-type Edge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
 const viewport = () => ({
   width: window.innerWidth,
   height: window.innerHeight,
@@ -184,12 +186,12 @@ export function useScanPanelLayout() {
 }
 
 export const RESIZE_HANDLES = [
-  ["n", "inset-x-2 top-0 h-1 cursor-ns-resize"],
-  ["s", "inset-x-2 bottom-0 h-1 cursor-ns-resize"],
-  ["e", "inset-y-2 right-0 w-1 cursor-ew-resize"],
-  ["w", "inset-y-2 left-0 w-1 cursor-ew-resize"],
-  ["nw", "top-0 left-0 size-6 cursor-nwse-resize"],
-  ["ne", "top-0 right-0 size-6 cursor-nesw-resize"],
-  ["sw", "bottom-0 left-0 size-6 cursor-nesw-resize"],
-  ["se", "bottom-0 right-0 size-6 cursor-nwse-resize"],
+  [Edge.N, "inset-x-2 top-0 h-1 cursor-ns-resize"],
+  [Edge.S, "inset-x-2 bottom-0 h-1 cursor-ns-resize"],
+  [Edge.E, "inset-y-2 right-0 w-1 cursor-ew-resize"],
+  [Edge.W, "inset-y-2 left-0 w-1 cursor-ew-resize"],
+  [Edge.Nw, "top-0 left-0 size-6 cursor-nwse-resize"],
+  [Edge.Ne, "top-0 right-0 size-6 cursor-nesw-resize"],
+  [Edge.Sw, "bottom-0 left-0 size-6 cursor-nesw-resize"],
+  [Edge.Se, "bottom-0 right-0 size-6 cursor-nwse-resize"],
 ] as const;

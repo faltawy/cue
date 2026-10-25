@@ -1,4 +1,4 @@
-import type { TaskStatus } from "../tasks";
+import { TaskStatus } from "../tasks";
 
 type TaskCheckboxProps = {
   status: TaskStatus;
@@ -13,7 +13,7 @@ export function TaskCheckbox({
   isSelected = false,
   onToggle,
 }: TaskCheckboxProps) {
-  const checked = status === "done";
+  const checked = status === TaskStatus.Done;
 
   return (
     <label

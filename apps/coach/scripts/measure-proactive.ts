@@ -1,18 +1,20 @@
 import { parseArgs } from "node:util";
 
 import { NOTHING } from "../src/checkin";
-import type { Hit } from "../src/detect";
+import { type Hit } from "../src/detect";
 import { NUDGE_MODEL, nudgeMessage, nudgeSystem } from "../src/nudge";
 import {
   costUsd,
-  estimateTokens as tokens,
   ONE_SHOT_OVERHEAD_TOKENS,
+  estimateTokens as tokens,
   type TokenUsage,
 } from "../src/pricing";
 import {
-  PROACTIVE_DEFAULTS,
+  NudgeDispatch,
   Proactive,
+  PROACTIVE_DEFAULTS,
   type ProactiveConfig,
+  SpendSource,
 } from "../src/proactive";
 import {
   openAppDb,
@@ -21,6 +23,11 @@ import {
   type TranscriptLine,
 } from "../src/transcript";
 import { TRIAGE_MODEL, TRIAGE_SYSTEM, triagePrompt } from "../src/triage";
+
+export enum MeasurementPath {
+  Current = "current",
+  Light = "light",
+}
 
 // Replays a 45-minute meeting through three ways of speaking up, without calling a model, and prices
 // each request with src/pricing.ts:
@@ -396,21 +403,17 @@ function timer(lines: Scripted[], everyMinutes: number) {
   return { triaged: 0, nudges: 0, bill };
 }
 
-async function replay(
-  lines: Scripted[],
-  yes: number,
-  path: "current" | "light",
-) {
+async function replay(lines: Scripted[], yes: number, path: MeasurementPath) {
   const bill = new Bill();
   const chat = new MainChat(bill);
   const triageCalls = new OneShot(
     bill,
     TRIAGE_MODEL,
-    path === "light" ? "5m" : "1h",
+    path === MeasurementPath.Light ? "5m" : "1h",
   );
   const nudgeCalls = new OneShot(bill, NUDGE_MODEL, "5m");
   const config: ProactiveConfig =
-    path === "light"
+    path === MeasurementPath.Light
       ? { ...PROACTIVE_DEFAULTS, enabled: true }
       : {
           ...PROACTIVE_DEFAULTS,
@@ -429,7 +432,7 @@ async function replay(
     busy: () => false,
     context: () => "Rollout sync · with Omar, Sara",
     changed: () => {},
-      metric: () => {},
+    metric: () => {},
     triage: async (request) => {
       triaged += 1;
       const spend = triageCalls.call(
@@ -443,9 +446,9 @@ async function replay(
     },
     nudge: (request) => {
       nudges += 1;
-      if (path === "light") {
+      if (path === MeasurementPath.Light) {
         proactive.spend(
-          "nudges",
+          SpendSource.Nudges,
           nudgeCalls.call(
             now,
             nudgePrefix,
@@ -458,9 +461,13 @@ async function replay(
           tokens(currentNudgePrompt(request.hits, request.why, request.lines)),
           ANSWER_OUTPUT,
         );
-        proactive.spend("nudges", { usd, tokens: 0, cachedTokens: 0 });
+        proactive.spend(SpendSource.Nudges, {
+          usd,
+          tokens: 0,
+          cachedTokens: 0,
+        });
       }
-      return "started";
+      return NudgeDispatch.Started;
     },
   });
   const end = (lines.at(-1)?.end_ms ?? 0) + 120_000;
@@ -523,8 +530,8 @@ const old = timer(lines, every);
 for (const yes of rates) {
   const results: Array<[string, Awaited<ReturnType<typeof replay>>]> = [
     [`timer (${every} min)`, old],
-    ["current (in chat)", await replay(lines, yes, "current")],
-    ["light (one-shot)", await replay(lines, yes, "light")],
+    ["current (in chat)", await replay(lines, yes, MeasurementPath.Current)],
+    ["light (one-shot)", await replay(lines, yes, MeasurementPath.Light)],
   ];
   for (const [name, result] of results) {
     const { bill } = result;

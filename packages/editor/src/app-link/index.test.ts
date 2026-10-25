@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { type AppLinkAttrs, getAppLinkDisplayParts, getAppLinkLabel } from ".";
+import { AtlassianLinkKind } from "./atlassian";
+import { FigmaLinkKind } from "./figma";
+import { GoogleLinkKind } from "./google";
+import { LinearLinkKind } from "./linear";
+import { NotionLinkKind } from "./notion";
+import { AppLinkProvider } from "./provider";
+import { WorkLinkKind } from "./work";
 
 type AppLinkTestCase = {
   name: string;
@@ -20,7 +27,7 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Linear document URLs",
     url: "https://linear.app/fastrepl-inc/document/real-world-use-cases-8dcac4144e38",
     attrs: {
-      provider: "linear",
+      provider: AppLinkProvider.Linear,
       kind: "document",
       workspace: "fastrepl-inc",
       resourceId: "real-world-use-cases-8dcac4144e38",
@@ -36,7 +43,7 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Linear issue URLs",
     url: "https://linear.app/fastrepl-inc/issue/ANLG-53/storage-model",
     attrs: {
-      provider: "linear",
+      provider: AppLinkProvider.Linear,
       kind: "issue",
       workspace: "fastrepl-inc",
       resourceId: "ANLG-53",
@@ -48,8 +55,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "unknown Linear routes without labeling them as workspaces",
     url: "https://linear.app/fastrepl-inc/inbox/assigned-to-me",
     attrs: {
-      provider: "linear",
-      kind: "route",
+      provider: AppLinkProvider.Linear,
+      kind: LinearLinkKind.Route,
       workspace: "fastrepl-inc",
       resourceId: "inbox/assigned-to-me",
       resourceTitle: "Inbox / Assigned to me",
@@ -67,8 +74,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Notion page URLs",
     url: "https://www.notion.so/Product-Plan-0123456789abcdef0123456789abcdef",
     attrs: {
-      provider: "notion",
-      kind: "page",
+      provider: AppLinkProvider.Notion,
+      kind: NotionLinkKind.Page,
       resourceId: "0123456789abcdef0123456789abcdef",
       resourceTitle: "Product Plan",
     },
@@ -82,8 +89,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Google workspace URLs",
     url: "https://docs.google.com/spreadsheets/d/1a2b3c4d5e6f/edit",
     attrs: {
-      provider: "google",
-      kind: "spreadsheet",
+      provider: AppLinkProvider.Google,
+      kind: GoogleLinkKind.Spreadsheet,
       resourceId: "1a2b3c4d5e6f",
     },
     expected: {
@@ -96,8 +103,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Google Forms public URLs",
     url: "https://docs.google.com/forms/d/e/1FAIpQLSc12345/viewform",
     attrs: {
-      provider: "google",
-      kind: "form",
+      provider: AppLinkProvider.Google,
+      kind: GoogleLinkKind.Form,
       resourceId: "1FAIpQLSc12345",
     },
     expected: {
@@ -110,8 +117,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Figma design URLs",
     url: "https://www.figma.com/design/abc123/Product-Roadmap?node-id=1-2",
     attrs: {
-      provider: "figma",
-      kind: "design",
+      provider: AppLinkProvider.Figma,
+      kind: FigmaLinkKind.Design,
       resourceId: "abc123",
       resourceTitle: "Product Roadmap",
     },
@@ -125,8 +132,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Jira issue URLs",
     url: "https://fastrepl.atlassian.net/browse/ANLG-5540",
     attrs: {
-      provider: "atlassian",
-      kind: "jira_issue",
+      provider: AppLinkProvider.Atlassian,
+      kind: AtlassianLinkKind.JiraIssue,
       workspace: "fastrepl",
       resourceId: "ANLG-5540",
     },
@@ -136,8 +143,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Confluence page URLs",
     url: "https://fastrepl.atlassian.net/wiki/spaces/ENG/pages/123456/Product+Plan",
     attrs: {
-      provider: "atlassian",
-      kind: "confluence_page",
+      provider: AppLinkProvider.Atlassian,
+      kind: AtlassianLinkKind.ConfluencePage,
       workspace: "fastrepl",
       resourceId: "123456",
       resourceTitle: "Product Plan",
@@ -152,8 +159,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Asana task URLs",
     url: "https://app.asana.com/0/1200000000000000/1200000000000001/f",
     attrs: {
-      provider: "asana",
-      kind: "task",
+      provider: AppLinkProvider.Asana,
+      kind: WorkLinkKind.Task,
       resourceId: "1200000000000001",
     },
     expected: { kind: "label", value: "Asana Task 1200000000000001" },
@@ -162,8 +169,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Trello card URLs",
     url: "https://trello.com/c/a1b2c3d4/product-roadmap",
     attrs: {
-      provider: "trello",
-      kind: "card",
+      provider: AppLinkProvider.Trello,
+      kind: WorkLinkKind.Card,
       resourceId: "a1b2c3d4",
       resourceTitle: "product roadmap",
     },
@@ -173,7 +180,7 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Airtable view URLs",
     url: "https://airtable.com/appBase123/tblTable123/viwView123",
     attrs: {
-      provider: "airtable",
+      provider: AppLinkProvider.Airtable,
       kind: "view",
       workspace: "appBase123",
       resourceId: "viwView123",
@@ -184,7 +191,7 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Miro board URLs",
     url: "https://miro.com/app/board/uXjVKwz123=/",
     attrs: {
-      provider: "miro",
+      provider: AppLinkProvider.Miro,
       kind: "board",
       resourceId: "uXjVKwz123=",
     },
@@ -194,8 +201,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Loom share URLs",
     url: "https://www.loom.com/share/abcdef1234567890",
     attrs: {
-      provider: "loom",
-      kind: "video",
+      provider: AppLinkProvider.Loom,
+      kind: WorkLinkKind.Video,
       resourceId: "abcdef1234567890",
     },
     expected: { kind: "label", value: "Loom Video" },
@@ -204,7 +211,7 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Dropbox file URLs",
     url: "https://www.dropbox.com/scl/fi/abc123/Product-Plan.pdf?dl=0",
     attrs: {
-      provider: "dropbox",
+      provider: AppLinkProvider.Dropbox,
       kind: "file",
       resourceId: "abc123",
       resourceTitle: "Product Plan",
@@ -215,8 +222,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Zoom meeting URLs",
     url: "https://fastrepl.zoom.us/j/1234567890",
     attrs: {
-      provider: "zoom",
-      kind: "meeting",
+      provider: AppLinkProvider.Zoom,
+      kind: WorkLinkKind.Meeting,
       resourceId: "1234567890",
       workspace: "fastrepl",
     },
@@ -226,8 +233,8 @@ const appLinkCases: AppLinkTestCase[] = [
     name: "Calendly event URLs",
     url: "https://calendly.com/john/product-demo",
     attrs: {
-      provider: "calendly",
-      kind: "event",
+      provider: AppLinkProvider.Calendly,
+      kind: WorkLinkKind.Event,
       workspace: "john",
       resourceId: "product-demo",
       resourceTitle: "product demo",

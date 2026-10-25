@@ -9,6 +9,7 @@ import {
 import { getAudioDurationMs, useCaptureLifecycle } from "./capture-lifecycle";
 import { useListener } from "./contexts";
 
+import { AttachLiveSessionResult } from "~/store/zustand/listener/enums";
 import {
   clearCaptureAudioSaved,
   clearCaptureLifecycleMarker,
@@ -215,7 +216,7 @@ export function useResumeListeningLifecycle(sessionId: string) {
         return failRecovery();
       }
 
-      if (result === "attached") {
+      if (result === AttachLiveSessionResult.Attached) {
         try {
           await state.lifecycle.startAudioRecovery();
           await state.ensureMarker();
@@ -232,7 +233,7 @@ export function useResumeListeningLifecycle(sessionId: string) {
         stoppedCapture = await readStoppedCapture();
       }
       const processStopped = options?.processStopped || stoppedCapture !== null;
-      if (result === "error") {
+      if (result === AttachLiveSessionResult.Error) {
         const stoppedProcessing = stoppedProcessingRef.current;
         if (stoppedProcessing) {
           try {

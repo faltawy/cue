@@ -1,7 +1,13 @@
-export type DiscordLinkKind = "channel" | "message" | "invite";
+import { AppLinkProvider } from "./provider";
+
+export enum DiscordLinkKind {
+  Channel = "channel",
+  Message = "message",
+  Invite = "invite",
+}
 
 export interface DiscordAttrs {
-  provider: "discord";
+  provider: AppLinkProvider.Discord;
   kind: DiscordLinkKind;
   url: string;
   guildId?: string;
@@ -15,11 +21,11 @@ export function getDiscordDisplayParts(attrs: DiscordAttrs): {
   subline: string;
 } {
   switch (attrs.kind) {
-    case "invite":
+    case DiscordLinkKind.Invite:
       return { header: "Discord", subline: `Invite ${attrs.inviteCode}` };
-    case "channel":
+    case DiscordLinkKind.Channel:
       return { header: "Discord", subline: "Channel" };
-    case "message":
+    case DiscordLinkKind.Message:
       return { header: "Discord", subline: "Message" };
   }
 }

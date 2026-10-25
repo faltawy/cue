@@ -1,22 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
-import { usesDeferredProviderAuthentication } from "@anlg/provider-validation";
+import {
+  AIProviderType,
+  usesDeferredProviderAuthentication,
+} from "@anlg/provider-validation";
 import { Spinner } from "@anlg/ui/components/ui/spinner";
 
+import { SttHealthStatus } from "~/settings/enums";
 import { useConfigValues } from "~/shared/config";
 import { isLocalFileSttModel, isOnDeviceSttModel } from "~/stt/capabilities";
+import { SttConnectionStatus } from "~/stt/enums";
 import { useSTTConnection } from "~/stt/useSTTConnection";
 
 export type HealthStatus = {
-  status: "pending" | "error" | "success" | null;
+  status: SttHealthStatus | null;
   message?: string;
 };
 
 export function HealthStatusIndicator() {
   const health = useConnectionHealth();
 
-  if (health.status === "pending") {
+  if (health.status === SttHealthStatus.Pending) {
     return <Spinner size={14} className="text-muted-foreground shrink-0" />;
   }
 
@@ -66,73 +71,84 @@ export function useConnectionHealth(): HealthStatus {
 
   if (isManagedProvider && current_stt_model && !isLocalModel) {
     return {
-      status: "error",
+      status: SttHealthStatus.Error,
       message: "Selected model is no longer available.",
     };
   }
 
   if (isLocalModel) {
-    const serverStatus = local.data?.status ?? "unavailable";
-    if (serverStatus === "not_downloaded") {
+    const serverStatus = local.data?.status ?? SttConnectionStatus.Unavailable;
+    if (serverStatus === SttConnectionStatus.NotDownloaded) {
       return {
-        status: "error",
+        status: SttHealthStatus.Error,
         message: "Selected model is not downloaded.",
       };
     }
-    if (serverStatus === "not_selected") {
+    if (serverStatus === SttConnectionStatus.NotSelected) {
       return {
-        status: "error",
+        status: SttHealthStatus.Error,
         message: "Choose a local transcription model file.",
       };
     }
-    if (serverStatus === "error") {
+    if (serverStatus === SttConnectionStatus.Error) {
       return {
-        status: "error",
+        status: SttHealthStatus.Error,
         message:
           local.data && "error" in local.data
             ? local.data.error
             : "Could not load the local speech-to-text model.",
       };
     }
-    if (serverStatus === "loading") {
+    if (serverStatus === SttConnectionStatus.Loading) {
       return {
-        status: "pending",
+        status: SttHealthStatus.Pending,
         message: "Local STT server is starting up…",
       };
     }
-    if (serverStatus === "ready" && conn) {
-      return { status: "success" };
+    if (serverStatus === SttConnectionStatus.Ready && conn) {
+      return { status: SttHealthStatus.Success };
     }
     return {
-      status: "error",
+      status: SttHealthStatus.Error,
       message: "Could not connect to the local speech-to-text model.",
     };
   }
 
   if (!conn) {
-    return { status: "error", message: "Provider not configured." };
+    return {
+      status: SttHealthStatus.Error,
+      message: "Provider not configured.",
+    };
   }
 
   if (isDeepgram) {
     if (deepgramHealth.isPending) {
-      return { status: "pending", message: "Verifying API key..." };
+      return {
+        status: SttHealthStatus.Pending,
+        message: "Verifying API key...",
+      };
     }
     if (deepgramHealth.isError) {
       return {
-        status: "error",
+        status: SttHealthStatus.Error,
         message: `API key verification failed: ${deepgramHealth.error.message}`,
       };
     }
     if (deepgramHealth.isSuccess) {
-      return { status: "success" };
+      return { status: SttHealthStatus.Success };
     }
   }
 
-  if (usesDeferredProviderAuthentication("stt", current_stt_provider ?? "")) {
+  if (
+    usesDeferredProviderAuthentication(
+      AIProviderType.Stt,
+      current_stt_provider ?? "",
+    )
+  ) {
     return {
       status: null,
       message: "Credentials will be checked when transcription starts.",
     };
   }
-  return { status: "success" };
+  return { status: SttHealthStatus.Success };
 }

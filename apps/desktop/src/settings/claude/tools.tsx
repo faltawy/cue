@@ -15,6 +15,8 @@ import { Button } from "@anlg/ui/components/ui/button";
 import { Input } from "@anlg/ui/components/ui/input";
 import { Switch } from "@anlg/ui/components/ui/switch";
 
+import { ServerProblem } from "~/settings/enums";
+
 const RESERVED_NAME = "meeting";
 const NAME_PATTERN = /^[a-z0-9_-]+$/;
 const HEADER_PATTERN = /^[A-Za-z0-9_-]+$/;
@@ -41,14 +43,7 @@ const EMPTY_DRAFT: Draft = {
   useHeader: false,
 };
 
-export type ServerProblem =
-  | "name"
-  | "reserved"
-  | "duplicate"
-  | "url"
-  | "header"
-  | "username"
-  | "secret";
+export { ServerProblem };
 
 function unwrap<T>(
   result: { status: "ok"; data: T } | { status: "error"; error: string },
@@ -110,19 +105,21 @@ export function findServerProblem(
   secret: McpSecretInput | null,
   existing: readonly McpServer[],
 ): ServerProblem | null {
-  if (!NAME_PATTERN.test(name) || name.includes("__")) return "name";
-  if (name === RESERVED_NAME) return "reserved";
-  if (existing.some((server) => server.name === name)) return "duplicate";
+  if (!NAME_PATTERN.test(name) || name.includes("__"))
+    return ServerProblem.Name;
+  if (name === RESERVED_NAME) return ServerProblem.Reserved;
+  if (existing.some((server) => server.name === name))
+    return ServerProblem.Duplicate;
   if (auth.kind === "header" && !HEADER_PATTERN.test(auth.name)) {
-    return "header";
+    return ServerProblem.Header;
   }
   if (
     auth.kind === "basic" &&
     (!auth.username || auth.username.includes(":"))
   ) {
-    return "username";
+    return ServerProblem.Username;
   }
-  if (secret && !secretValue(secret)) return "secret";
+  if (secret && !secretValue(secret)) return ServerProblem.Secret;
   return null;
 }
 

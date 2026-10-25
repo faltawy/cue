@@ -24,13 +24,14 @@ const mocks = vi.hoisted(() => {
 });
 vi.mock("@anlg/plugin-dictation", () => ({ commands: mocks.commands }));
 
-import { DictationPhase } from "./controller";
 import {
   createDictationOverlaySynchronizer,
   getDictationOverlayState,
   waitForDictationPanel,
 } from "./panel";
 import { useDictationStatus } from "./state";
+
+import { DictationPhase } from "~/dictation/controller";
 
 const overlay = (
   owner: string,

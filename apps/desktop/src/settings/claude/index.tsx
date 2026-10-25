@@ -24,6 +24,7 @@ import { SpendLimitInput } from "./spend-limit";
 import { CoachToolsSection } from "./tools";
 
 import { COACH_SETTINGS_QUERY_KEY, useCoachSettings } from "~/ai/hooks";
+import { SettingControlWidth } from "~/settings/enums";
 import { SettingsPageTitle } from "~/settings/page-title";
 import {
   SETTING_CONTROL_CLASS,
@@ -217,7 +218,7 @@ export function SettingsClaude() {
                 <Trans>Choose the folder the coach can read.</Trans>
               )
             }
-            controlWidth="content"
+            controlWidth={SettingControlWidth.Content}
           >
             {(labelProps) => (
               <Button

@@ -1,6 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 
+import { AIProviderType } from "@anlg/provider-validation";
 import { Accordion } from "@anlg/ui/components/ui/accordion";
 
 import { useSttSettings } from "./context";
@@ -42,7 +43,7 @@ export function ConfigureProviders() {
           <ProviderCard
             key={provider.id}
             config={provider}
-            providerType="stt"
+            providerType={AIProviderType.Stt}
             providers={PROVIDERS}
             providerContext={<ProviderContext providerId={provider.id} />}
             currentProvider={currentProvider}

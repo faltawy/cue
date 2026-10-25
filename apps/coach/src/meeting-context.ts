@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { type AskContent, type AskImage, askContent, thumbsOf } from "./images";
-import type { CoachEvent, TurnKind } from "./protocol";
+import { askContent, type AskContent, type AskImage, thumbsOf } from "./images";
+import { type CoachEvent, CoachEventType, type TurnKind } from "./protocol";
 
 const meetingRefSchema = z.object({ id: z.string(), title: z.string() });
 
@@ -12,7 +12,11 @@ export const meetingSeenSchema = meetingRefSchema.extend({
 
 export type MeetingSeen = z.infer<typeof meetingSeenSchema>;
 
-export type MeetingNow = MeetingSeen & { people: string[]; startedAtMs: number | null; endedAtMs: number | null };
+export type MeetingNow = MeetingSeen & {
+  people: string[];
+  startedAtMs: number | null;
+  endedAtMs: number | null;
+};
 
 const MINUTE_MS = 60_000;
 
@@ -27,7 +31,9 @@ function stateText(meeting: MeetingNow, nowMs: number): string {
   if (meeting.live) {
     if (meeting.startedAtMs === null) return "live";
     const elapsed = nowMs - meeting.startedAtMs;
-    return elapsed < MINUTE_MS ? "live, just started" : `live, ${span(elapsed)} in`;
+    return elapsed < MINUTE_MS
+      ? "live, just started"
+      : `live, ${span(elapsed)} in`;
   }
   if (meeting.endedAtMs === null) return "ended";
   const since = nowMs - meeting.endedAtMs;
@@ -39,7 +45,8 @@ function meetingLine(meeting: MeetingNow, nowMs: number): string {
   if (meeting.elsewhere) {
     return `[This chat is about "${meeting.title}" (${state}). The user is now in a different meeting: "${meeting.elsewhere.title}" (live). Your meeting tools act on "${meeting.title}".]`;
   }
-  const people = meeting.people.length > 0 ? ` with ${meeting.people.join(", ")}` : "";
+  const people =
+    meeting.people.length > 0 ? ` with ${meeting.people.join(", ")}` : "";
   return `[Meeting: "${meeting.title}"${people} · ${state}]`;
 }
 
@@ -58,9 +65,13 @@ export function meetingUpdate(
   meeting: MeetingNow | null,
   nowMs: number,
 ): { line: string | null; seen: MeetingSeen | undefined } {
-  if (!meeting || (seen && sameMeeting(seen, meeting))) return { line: null, seen };
+  if (!meeting || (seen && sameMeeting(seen, meeting)))
+    return { line: null, seen };
   const { id, title, live, elsewhere } = meeting;
-  return { line: meetingLine(meeting, nowMs), seen: { id, title, live, elsewhere } };
+  return {
+    line: meetingLine(meeting, nowMs),
+    seen: { id, title, live, elsewhere },
+  };
 }
 
 export function userTurn(input: {
@@ -72,7 +83,12 @@ export function userTurn(input: {
 }): { event: CoachEvent; content: AskContent } {
   const { kind, label, prompt, line, images } = input;
   return {
-    event: { type: "user", kind, text: label, ...(images.length > 0 ? { images: thumbsOf(images) } : {}) },
+    event: {
+      type: CoachEventType.User,
+      kind,
+      text: label,
+      ...(images.length > 0 ? { images: thumbsOf(images) } : {}),
+    },
     content: askContent(line ? `${line}\n\n${prompt}` : prompt, images),
   };
 }

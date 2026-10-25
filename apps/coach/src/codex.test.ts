@@ -15,8 +15,9 @@ import {
   startCodexSession,
 } from "./codex-session";
 import { codexFileTools } from "./codex-tools";
-import { runLlm } from "./llm";
-import type { RuntimeMessage } from "./runtime-message";
+import { LlmEventType, runLlm } from "./llm";
+import { CoachProvider } from "./provider";
+import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
 import { tool } from "./runtime-tool";
 import { startCoach } from "./session";
 import { MissingConversationError } from "./supervisor";
@@ -52,7 +53,7 @@ async function turn(messages: AsyncIterator<RuntimeMessage>) {
     const next = await messages.next();
     if (next.done) throw new Error("Turn ended without a result");
     events.push(next.value);
-    if (next.value.type === "result") return events;
+    if (next.value.type === RuntimeMessageType.Result) return events;
   }
 }
 
@@ -71,9 +72,12 @@ test("Codex streams host tool output, rejects native/unknown tools, and preserve
   try {
     session.ask("read");
     const first = await turn(messages);
-    expect(first).toContainEqual({ type: "text", delta: "from the meeting" });
     expect(first).toContainEqual({
-      type: "tool_start",
+      type: RuntimeMessageType.Text,
+      delta: "from the meeting",
+    });
+    expect(first).toContainEqual({
+      type: RuntimeMessageType.ToolStart,
       id: "echo-1",
       name: "echo",
       input: { text: "from the meeting" },
@@ -125,13 +129,13 @@ test("Codex exposes meeting tools outside its reserved MCP namespace", async () 
     const events = await turn(session.messages[Symbol.asyncIterator]());
 
     expect(events).toContainEqual({
-      type: "tool_start",
+      type: RuntimeMessageType.ToolStart,
       id: "meeting-1",
       name: "mcp__meeting__live_transcript",
       input: {},
     });
     expect(events).toContainEqual({
-      type: "text",
+      type: RuntimeMessageType.Text,
       delta: "Transcript from the meeting",
     });
     expect(events.at(-1)).toMatchObject({
@@ -179,7 +183,7 @@ test("Codex interruption finishes the active turn and a resumed session can answ
     });
     session.ask("Recovered");
     expect(await turn(messages)).toContainEqual({
-      type: "text",
+      type: RuntimeMessageType.Text,
       delta: "Recovered",
     });
   } finally {
@@ -192,7 +196,7 @@ test("Codex structured LLM calls carry the schema and report the actual resolved
   const events = await Array.fromAsync(
     runLlm(
       {
-        provider: "codex",
+        provider: CoachProvider.Codex,
         model: "",
         messages: [
           { role: "user", content: [{ type: "text", text: "title" }] },
@@ -210,9 +214,9 @@ test("Codex structured LLM calls carry the schema and report the actual resolved
     ),
   );
   expect(events).toEqual([
-    { type: "text", delta: '{"title":"Review"}' },
+    { type: LlmEventType.Text, delta: '{"title":"Review"}' },
     {
-      type: "done",
+      type: LlmEventType.Done,
       model: "gpt-5.4-mini",
       inputTokens: 80,
       outputTokens: 30,
@@ -312,7 +316,7 @@ test("Codex coach resolves relative reads inside the project and refuses its pri
   ).toBe("private credential");
   const db = new Database(":memory:");
   const session = startCoach({
-    provider: "codex",
+    provider: CoachProvider.Codex,
     pathToCodexExecutable: options.executable,
     codexHome: account,
     project,
@@ -323,7 +327,7 @@ test("Codex coach resolves relative reads inside the project and refuses its pri
   try {
     session.ask("file:notes.txt");
     expect(await turn(messages)).toContainEqual({
-      type: "text",
+      type: RuntimeMessageType.Text,
       delta: "Meeting is at noon",
     });
     session.ask("file:private/secret.txt");

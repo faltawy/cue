@@ -8,6 +8,7 @@ import { useSidebarNotes } from "./note-filter";
 import { SidebarSection } from "./sidebar-section";
 
 import { sameTag, useTagCounts } from "~/session/tags";
+import { SidebarSectionId } from "~/sidebar/enums";
 
 export function SidebarTagNav() {
   const { t } = useLingui();
@@ -15,7 +16,7 @@ export function SidebarTagNav() {
   const tagFilter = useSidebarNotes((state) => state.tagFilter);
   const setTagFilter = useSidebarNotes((state) => state.setTagFilter);
   const expanded = useSidebarNotes(
-    (state) => !state.collapsedSections.includes("tags"),
+    (state) => !state.collapsedSections.includes(SidebarSectionId.Tags),
   );
   const setSectionExpanded = useSidebarNotes(
     (state) => state.setSectionExpanded,
@@ -33,7 +34,9 @@ export function SidebarTagNav() {
     <SidebarSection
       title={t`Tags`}
       expanded={expanded}
-      onExpandedChange={(next) => setSectionExpanded("tags", next)}
+      onExpandedChange={(next) =>
+        setSectionExpanded(SidebarSectionId.Tags, next)
+      }
     >
       <ul className="flex flex-col">
         {rows.map((tag) => {

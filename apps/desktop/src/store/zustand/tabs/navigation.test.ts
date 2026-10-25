@@ -6,6 +6,8 @@ import { useTabs } from ".";
 import { MAX_TAB_HISTORY_ENTRIES } from "./navigation";
 import { createSessionTab, resetTabsStore } from "./test-utils";
 
+import { TabType } from "~/store/zustand/tabs/enums";
+
 describe("navigation", () => {
   beforeEach(() => {
     resetTabsStore();
@@ -119,19 +121,25 @@ describe("navigation", () => {
 
       expect(useTabs.getState()).toHaveHistoryLength(3);
 
-      useTabs.getState().invalidateResource("sessions", tab2.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab2.id);
 
       const state = useTabs.getState();
       expect(state).toHaveHistoryLength(2);
       const history = Array.from(state.history.values())[0];
       expect(
-        history.stack.some((t) => t.type === "sessions" && t.id === tab2.id),
+        history.stack.some(
+          (t) => t.type === TabType.Sessions && t.id === tab2.id,
+        ),
       ).toBe(false);
       expect(
-        history.stack.some((t) => t.type === "sessions" && t.id === tab1.id),
+        history.stack.some(
+          (t) => t.type === TabType.Sessions && t.id === tab1.id,
+        ),
       ).toBe(true);
       expect(
-        history.stack.some((t) => t.type === "sessions" && t.id === tab3.id),
+        history.stack.some(
+          (t) => t.type === TabType.Sessions && t.id === tab3.id,
+        ),
       ).toBe(true);
     });
 
@@ -146,7 +154,7 @@ describe("navigation", () => {
 
       expect(useTabs.getState()).toHaveCurrentTab({ id: tab3.id });
 
-      useTabs.getState().invalidateResource("sessions", tab1.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab1.id);
 
       const state = useTabs.getState();
       expect(state).toHaveHistoryLength(2);
@@ -165,11 +173,11 @@ describe("navigation", () => {
       expect(useTabs.getState()).toHaveCurrentTab({ id: tab2.id });
       expect(useTabs.getState().tabs).toHaveLength(2);
 
-      useTabs.getState().invalidateResource("sessions", tab2.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab2.id);
 
       const state = useTabs.getState();
       expect(state.tabs).toHaveLength(2);
-      expect(state).toHaveCurrentTab({ type: "empty" });
+      expect(state).toHaveCurrentTab({ type: TabType.Empty });
       expect(state.tabs[0]).toMatchObject({ id: tab1.id, active: false });
     });
 
@@ -179,11 +187,11 @@ describe("navigation", () => {
       useTabs.getState().openNew({ type: "settings" });
       useTabs.getState().openCurrent(tab);
 
-      useTabs.getState().invalidateResource("sessions", tab.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab.id);
 
       const state = useTabs.getState();
       expect(state.tabs).toHaveLength(1);
-      expect(state).toHaveCurrentTab({ type: "empty" });
+      expect(state).toHaveCurrentTab({ type: TabType.Empty });
       expect(
         Array.from(state.history.values()).flatMap((entry) => entry.stack),
       ).not.toContainEqual(expect.objectContaining({ id: tab.id }));
@@ -199,12 +207,12 @@ describe("navigation", () => {
       expect(useTabs.getState().history.size).toBe(1);
       expect(useTabs.getState()).toHaveHistoryLength(2);
 
-      useTabs.getState().invalidateResource("sessions", tab1.id);
-      useTabs.getState().invalidateResource("sessions", tab2.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab1.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab2.id);
 
       const state = useTabs.getState();
       expect(state.tabs).toHaveLength(1);
-      expect(state).toHaveCurrentTab({ type: "empty" });
+      expect(state).toHaveCurrentTab({ type: TabType.Empty });
       expect(state.history.size).toBe(0);
     });
 
@@ -222,7 +230,7 @@ describe("navigation", () => {
       expect(useTabs.getState().canGoBack).toBe(true);
       expect(useTabs.getState().canGoNext).toBe(true);
 
-      useTabs.getState().invalidateResource("sessions", tab1.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab1.id);
 
       const state = useTabs.getState();
       expect(state).toHaveCurrentTab({ id: tab2.id });
@@ -241,18 +249,18 @@ describe("navigation", () => {
 
       expect(useTabs.getState().tabs).toHaveLength(3);
 
-      useTabs.getState().invalidateResource("sessions", tab2.id);
+      useTabs.getState().invalidateResource(TabType.Sessions, tab2.id);
 
       const state = useTabs.getState();
       expect(state.tabs).toHaveLength(2);
       expect(
-        state.tabs.some((t) => t.type === "sessions" && t.id === tab1.id),
+        state.tabs.some((t) => t.type === TabType.Sessions && t.id === tab1.id),
       ).toBe(true);
       expect(
-        state.tabs.some((t) => t.type === "sessions" && t.id === tab2.id),
+        state.tabs.some((t) => t.type === TabType.Sessions && t.id === tab2.id),
       ).toBe(false);
       expect(
-        state.tabs.some((t) => t.type === "sessions" && t.id === tab3.id),
+        state.tabs.some((t) => t.type === TabType.Sessions && t.id === tab3.id),
       ).toBe(true);
     });
 
@@ -263,7 +271,9 @@ describe("navigation", () => {
 
       expect(useTabs.getState().tabs).toHaveLength(1);
 
-      useTabs.getState().invalidateResource("sessions", "non-existent-id");
+      useTabs
+        .getState()
+        .invalidateResource(TabType.Sessions, "non-existent-id");
 
       const state = useTabs.getState();
       expect(state.tabs).toHaveLength(1);

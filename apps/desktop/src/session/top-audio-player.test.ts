@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import { shouldShowSessionTopAudioPlayer } from "./top-audio-player";
 
 describe("shouldShowSessionTopAudioPlayer", () => {
@@ -8,7 +10,7 @@ describe("shouldShowSessionTopAudioPlayer", () => {
       shouldShowSessionTopAudioPlayer({
         audioExists: true,
         audioUrlReady: true,
-        currentView: { type: "transcript" },
+        currentView: { type: SessionNoteViewType.Transcript },
         sessionMode: "inactive",
       }),
     ).toBe(true);
@@ -17,7 +19,7 @@ describe("shouldShowSessionTopAudioPlayer", () => {
       shouldShowSessionTopAudioPlayer({
         audioExists: true,
         audioUrlReady: true,
-        currentView: { type: "enhanced", id: "summary-1" },
+        currentView: { type: SessionNoteViewType.Enhanced, id: "summary-1" },
         sessionMode: "inactive",
       }),
     ).toBe(false);
@@ -28,7 +30,7 @@ describe("shouldShowSessionTopAudioPlayer", () => {
       shouldShowSessionTopAudioPlayer({
         audioExists: true,
         audioUrlReady: true,
-        currentView: { type: "transcript" },
+        currentView: { type: SessionNoteViewType.Transcript },
         sessionMode: "active",
       }),
     ).toBe(false);
@@ -37,7 +39,7 @@ describe("shouldShowSessionTopAudioPlayer", () => {
       shouldShowSessionTopAudioPlayer({
         audioExists: true,
         audioUrlReady: true,
-        currentView: { type: "transcript" },
+        currentView: { type: SessionNoteViewType.Transcript },
         sessionMode: "finalizing",
       }),
     ).toBe(false);

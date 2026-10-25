@@ -1,13 +1,14 @@
-export type ThemePreference = "light" | "dark" | "system";
+import { ThemePreference } from "~/shared/enums";
+export { ThemePreference };
 
 export function resolveIsDarkMode(
   theme: ThemePreference,
   prefersDark: boolean,
 ): boolean {
-  if (theme === "dark") {
+  if (theme === ThemePreference.Dark) {
     return true;
   }
-  if (theme === "light") {
+  if (theme === ThemePreference.Light) {
     return false;
   }
   return prefersDark;

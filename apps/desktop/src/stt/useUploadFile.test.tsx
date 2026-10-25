@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { isAudioUploadFile, useUploadFile } from "./useUploadFile";
 
+import { UploadKind } from "~/stt/enums";
+
 const {
   audioSourceMetadataMock,
   audioImportDataMock,
@@ -375,7 +377,7 @@ describe("useUploadFile", () => {
     });
 
     act(() => {
-      result.current.processFile("/tmp/session.vtt", "transcript");
+      result.current.processFile("/tmp/session.vtt", UploadKind.Transcript);
     });
 
     await waitFor(() => {

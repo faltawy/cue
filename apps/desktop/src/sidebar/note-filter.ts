@@ -1,8 +1,12 @@
 import { create } from "zustand";
 
-export type SidebarNotesGroupBy = "date" | "folder";
-type SidebarNotesSortOrder = "newest" | "oldest";
-type SidebarSectionId = "folders" | "tags";
+import {
+  TimelineGroupBy as SidebarNotesGroupBy,
+  NoteSortOrder as SidebarNotesSortOrder,
+  SidebarSectionId,
+} from "~/sidebar/enums";
+
+export { SidebarNotesGroupBy };
 
 type SidebarNotesState = {
   folderFilter: string | null;
@@ -22,8 +26,8 @@ type SidebarNotesState = {
 const defaultSidebarNotes = {
   folderFilter: null,
   tagFilter: null,
-  groupBy: "date" as const,
-  sortOrder: "newest" as const,
+  groupBy: SidebarNotesGroupBy.Date,
+  sortOrder: SidebarNotesSortOrder.Newest,
   collapsedSections: [],
   expandedFolders: [],
 };

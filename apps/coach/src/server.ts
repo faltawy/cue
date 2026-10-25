@@ -10,14 +10,16 @@ import {
   withAccess,
 } from "./access";
 import {
+  ProjectSource,
   type AppBridge,
   appBridgeFromEnv,
   type CoachEdit,
   type MeetingProject,
 } from "./app-bridge";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
-import { actionItemText, blockItemCount } from "./blocks";
+import { BlockKind, actionItemText, blockItemCount } from "./blocks";
 import {
+  ResumeReason,
   type ChatStore,
   dropResume,
   keepWrapUp,
@@ -31,14 +33,30 @@ import {
   saveChats,
   type SettledWrapUp,
   wrappedTranscripts,
+  coachingFor,
+  setMeetingCoaching,
+  deferCoaching,
 } from "./chat-store";
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { claudeAccount } from "./claude-account";
 import { claudeCodeFromArgs } from "./claude-code";
+import {
+  MeetingIntent,
+  DEFAULT_COACHING,
+  meetingCoachingSchema,
+  meetingIntentSchema,
+  intentGuidance,
+} from "./coaching-preferences";
 import { codexAccount, signInCodex } from "./codex-account";
 import { codexCodeFromArgs } from "./codex-code";
 import { dictationHandler } from "./dictation";
-import { coachError, GAVE_UP, StderrTail, withSignIn } from "./errors";
+import {
+  CoachErrorKind,
+  coachError,
+  GAVE_UP,
+  StderrTail,
+  withSignIn,
+} from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { type AskImage, parseAskImages } from "./images";
 import { createInterrupter, type Interrupter } from "./interrupt";
@@ -49,6 +67,7 @@ import {
   userTurn,
 } from "./meeting-context";
 import {
+  StripState,
   isAnswering,
   type MeetingPointer,
   meetingChange,
@@ -60,13 +79,13 @@ import {
 import {
   evidenceMomentId,
   evidenceTargetSchema,
-  FEEDBACK_REASONS,
+  FeedbackReason,
   type CoachFeedback,
   type EvidenceTarget,
   type Moment,
-  MOVE_TAGS,
+  MoveTag,
+  moveText,
 } from "./move";
-import { moveText } from "./move";
 import {
   nudgeLabel,
   nudgeNote,
@@ -74,14 +93,23 @@ import {
   runNudge,
   withNudgeNotes,
 } from "./nudge";
+import { deliverNudge } from "./nudge-delivery";
 import { NO_SPEND, spendOf } from "./pricing";
 import {
+  SpendSource,
+  NudgePath,
+  NudgeDispatch,
+  ProactiveState,
   type NudgeRequest,
   PROACTIVE_DEFAULTS,
   Proactive,
   type ProactiveView,
 } from "./proactive";
 import {
+  ResetReason,
+  WrapUpState,
+  CoachEventType,
+  SetupState,
   addedBlockItem,
   appendHistory,
   type BlockItemRef,
@@ -91,12 +119,12 @@ import {
   type ProjectView,
   type SetupView,
   type StatusEvent,
-  type TurnKind,
+  TurnKind,
   type WrapUpView,
 } from "./protocol";
-import { type CoachProvider, parseProvider } from "./provider";
+import { CoachProvider, parseProvider } from "./provider";
 import { QuestionBroker } from "./questions";
-import type { RuntimeMessage } from "./runtime-message";
+import { RuntimeMessageType, type RuntimeMessage } from "./runtime-message";
 import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
 import { Supervisor } from "./supervisor";
@@ -148,9 +176,9 @@ const proactiveConfig = {
 const TRIAGE_TIMEOUT_MS = 30_000;
 const NUDGE_TIMEOUT_MS = 45_000;
 const coachFeedbackSchema = z.strictObject({
-  category: z.enum(MOVE_TAGS),
+  category: z.enum(MoveTag),
   useful: z.boolean(),
-  reason: z.enum(FEEDBACK_REASONS).optional(),
+  reason: z.enum(FeedbackReason).optional(),
   momentId: z.string().min(1).optional(),
 });
 const CONTEXT_PEOPLE_MAX = 8;
@@ -163,10 +191,12 @@ const selected = {
   models: {
     claude:
       values["claude-model"] ??
-      (selectedProvider === "claude" ? (options.model ?? "sonnet") : "sonnet"),
+      (selectedProvider === CoachProvider.Claude
+        ? (options.model ?? "sonnet")
+        : "sonnet"),
     codex:
       values["codex-model"] ??
-      (selectedProvider === "codex" ? (options.model ?? "") : ""),
+      (selectedProvider === CoachProvider.Codex ? (options.model ?? "") : ""),
   },
 };
 let provider = selected.provider;
@@ -179,7 +209,7 @@ const noProject = values["no-project"];
 
 const defaultProject: ProjectView = {
   path: options.project,
-  source: "default",
+  source: ProjectSource.Default,
   series: null,
   defaultProject: options.project,
   needsFolder: noProject,
@@ -218,7 +248,7 @@ let proactiveMeeting: string | undefined;
 let selfName: string | null = null;
 let signedInNow: boolean | null = null;
 let signingIn = false;
-let setup: SetupView = { state: "checking" };
+let setup: SetupView = { state: SetupState.Checking };
 const executables = new Map<CoachProvider, Promise<string>>();
 const { claudeCode, executable: claudeCodeExecutable } =
   claudeCodeFromArgs(values);
@@ -237,8 +267,8 @@ for (const [owner, runtime] of [
       totalBytes > 0
         ? Math.min(99, Math.floor((receivedBytes / totalBytes) * 100))
         : null;
-    if (setup.state !== "downloading" || setup.percent !== percent)
-      setSetup({ state: "downloading", percent });
+    if (setup.state !== SetupState.Downloading || setup.percent !== percent)
+      setSetup({ state: SetupState.Downloading, percent });
   });
 }
 
@@ -251,7 +281,9 @@ function executable(owner: CoachProvider = provider): Promise<string> {
   let pending = executables.get(owner);
   if (!pending) {
     pending = (
-      owner === "codex" ? codexCodeExecutable() : claudeCodeExecutable()
+      owner === CoachProvider.Codex
+        ? codexCodeExecutable()
+        : claudeCodeExecutable()
     ).catch((error: unknown) => {
       executables.delete(owner);
       throw error;
@@ -263,15 +295,15 @@ function executable(owner: CoachProvider = provider): Promise<string> {
 
 function retrySetup() {
   executables.delete(provider);
-  setSetup({ state: "checking" });
-  enqueue(() => openChat("startup"));
+  setSetup({ state: SetupState.Checking });
+  enqueue(() => openChat(ResumeReason.Startup));
 }
 
 function checkSignIn() {
   const owner = provider;
   executable(owner).then(
     (resolved) =>
-      (owner === "codex"
+      (owner === CoachProvider.Codex
         ? codexAccount(resolved, codexHome)
         : claudeAccount(resolved)
       ).then(
@@ -288,9 +320,14 @@ function checkSignIn() {
 }
 
 const questions = new QuestionBroker({
-  opened: (id, asked) => feed({ type: "question", id, questions: asked }),
+  opened: (id, asked) =>
+    feed({ type: CoachEventType.Question, id, questions: asked }),
   closed: (id, answers) =>
-    feed({ type: "question_closed", id, answered: answers !== null }),
+    feed({
+      type: CoachEventType.QuestionClosed,
+      id,
+      answered: answers !== null,
+    }),
 });
 
 if (values["exit-with-stdin"]) {
@@ -316,10 +353,14 @@ function broadcast(event: CoachEvent) {
 
 function feed(next: CoachEvent) {
   const event =
-    next.type === "error"
+    next.type === CoachEventType.Error
       ? { ...next, error: withSignIn(next.error, signedInNow, provider) }
       : next;
-  if (event.type === "error" && event.error.kind === "auth") checkSignIn();
+  if (
+    event.type === CoachEventType.Error &&
+    event.error.kind === CoachErrorKind.Auth
+  )
+    checkSignIn();
   history = appendHistory(history, event);
   broadcast(event);
   schedulePersist();
@@ -356,6 +397,7 @@ function saveStore() {
 function changeFeedback(input: CoachFeedback | null): Response {
   try {
     store = saveFeedback(stateFile, store, input);
+    applyCoaching();
     return new Response(null, { status: 204 });
   } catch (error) {
     console.error("[coach] could not save feedback", { _e: errorText(error) });
@@ -369,7 +411,7 @@ function schedulePersist() {
 }
 
 function notice(text: string) {
-  feed({ type: "notice", text });
+  feed({ type: CoachEventType.Notice, text });
 }
 
 function errorText(error: unknown): string {
@@ -378,7 +420,7 @@ function errorText(error: unknown): string {
 
 function status(): StatusEvent {
   return {
-    type: "status",
+    type: CoachEventType.Status,
     provider,
     project,
     model,
@@ -386,6 +428,14 @@ function status(): StatusEvent {
     appConnected: bridge !== null,
     meeting: chatSessionId !== undefined,
     proactive: proactiveView(),
+    ...(chatSessionId
+      ? {
+          coaching: {
+            ...meetingCoachingSchema.parse(coachingFor(store, chatSessionId)),
+            sessionId: chatSessionId,
+          },
+        }
+      : {}),
     setup,
   };
 }
@@ -393,7 +443,7 @@ function status(): StatusEvent {
 function proactiveView(): ProactiveView {
   return (
     proactive?.view() ?? {
-      state: proactiveConfig.enabled ? "on" : "off",
+      state: proactiveConfig.enabled ? ProactiveState.On : ProactiveState.Off,
       nudgesUsd: 0,
       capUsd: proactiveConfig.capUsd,
       meetingUsd: 0,
@@ -437,6 +487,8 @@ function meetingNow(): MeetingNow | null {
 function startProactive(sessionId: string | undefined) {
   selfName = sessionId ? readSelfName(db, sessionId) : null;
   if (proactive && proactiveMeeting === sessionId) return;
+  nudgeAbort?.abort();
+  nudgeAbort = null;
   proactiveMeeting = sessionId;
   const current = new Proactive(proactiveConfig, {
     triage: async (request) =>
@@ -448,7 +500,8 @@ function startProactive(sessionId: string | undefined) {
         codexHome,
       }),
     nudge: (request) => {
-      if (!coach || busy || proactive !== current) return "retry";
+      if (!coach || busy || nudgeAbort || proactive !== current)
+        return NudgeDispatch.Retry;
       const sourceLines = request.hits.length
         ? request.hits.flatMap((hit) => {
             const line = request.lines[hit.lineIndex];
@@ -467,16 +520,27 @@ function startProactive(sessionId: string | undefined) {
           ),
         )
       )
-        return "drop";
+        return NudgeDispatch.Drop;
       void runLightNudge(current, request);
-      return "started";
+      return NudgeDispatch.Started;
     },
-    busy: () => busy,
+    busy: () => busy || nudgeAbort !== null,
     context: () => (sessionId ? meetingContext(sessionId) : "Untitled"),
     changed: () => broadcast(status()),
     metric: (metric) => console.info("[coach] proactive metric", metric),
   });
   proactive = current;
+  applyCoaching();
+}
+
+function applyCoaching() {
+  nudgeAbort?.abort();
+  nudgeAbort = null;
+  proactive?.setCoaching(
+    chatSessionId ? coachingFor(store, chatSessionId) : DEFAULT_COACHING,
+    store.feedback.carefulTiming,
+  );
+  broadcast(status());
 }
 
 async function runLightNudge(owner: Proactive, request: NudgeRequest) {
@@ -484,90 +548,102 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
   const hits = prioritizeHitsByFeedback(store, request.hits);
   const abort = new AbortController();
   nudgeAbort = abort;
+  const startedAt = Date.now();
   const label = `${nudgeLabel(hits)} · ${clockTime()}`;
-  busy = true;
-  askedAt = Date.now();
-  feed({ type: "user", kind: "nudge", text: label });
-  broadcast(status());
-  const result = await executable(selected.provider)
-    .then((claudePath) =>
-      runNudge(
-        { ...request, hits, sessionId: sessionId ?? undefined },
-        {
-          instructions: options.instructions ?? "",
-          signal: AbortSignal.any([
-            abort.signal,
-            AbortSignal.timeout(NUDGE_TIMEOUT_MS),
-          ]),
-          claudePath,
-          provider: selected.provider,
-          model: selected.model,
-          fast: request.path === "fast",
-          codexHome,
-        },
-      ),
-    )
-    .catch((error: unknown) => ({
-      ok: false as const,
-      error: errorText(error),
-      spend: NO_SPEND,
-    }));
-  const interruptedBeforeReport = abort.signal.aborted;
+  const { result, outcome } = await deliverNudge(
+    () =>
+      executable(selected.provider)
+        .then((claudePath) =>
+          runNudge(
+            { ...request, hits, sessionId },
+            {
+              instructions: options.instructions ?? "",
+              signal: AbortSignal.any([
+                abort.signal,
+                AbortSignal.timeout(NUDGE_TIMEOUT_MS),
+              ]),
+              claudePath,
+              provider: selected.provider,
+              model: selected.model,
+              fast: request.path === NudgePath.Fast,
+              codexHome,
+            },
+          ),
+        )
+        .catch((error: unknown) => ({
+          ok: false as const,
+          error: errorText(error),
+          spend: NO_SPEND,
+        })),
+    {
+      signal: abort.signal,
+      current: () =>
+        nudgeAbort === abort &&
+        proactive === owner &&
+        chatSessionId === sessionId &&
+        !busy,
+      canDeliver: () => {
+        const transcript = readTranscript();
+        if (
+          !transcript ||
+          transcript.sessionId !== sessionId ||
+          !transcript.live
+        )
+          return false;
+        owner.observe({
+          lines: transcript.lines,
+          pending: transcript.pending,
+          live: transcript.live,
+          selfName,
+        });
+        return owner.canDeliver(request);
+      },
+      defer: (note) => {
+        if (!sessionId) return;
+        store = deferCoaching(store, sessionId, note);
+        saveStore();
+      },
+      publish: (move) => {
+        feed({ type: CoachEventType.User, kind: TurnKind.Nudge, text: label });
+        feed({
+          type: CoachEventType.Block,
+          id: crypto.randomUUID(),
+          block: { kind: BlockKind.Move, ...move },
+        });
+        feed({
+          type: CoachEventType.Done,
+          seconds: (Date.now() - startedAt) / 1000,
+          ok: true,
+          silent: false,
+          interrupted: false,
+        });
+        if (bridge && sessionId) {
+          void bridge
+            .nudged(sessionId, { tag: move.tag, line: move.line })
+            .catch((error: unknown) => {
+              console.error("[coach] could not tell the app about a nudge", {
+                _e: errorText(error),
+                sessionId,
+              });
+            });
+        }
+        nudgeNotes = rememberNote(nudgeNotes, nudgeNote(label, moveText(move)));
+        persistNow();
+      },
+    },
+  );
   owner.reportMetric({
     path: request.path,
-    outcome: interruptedBeforeReport
-      ? "suppressed"
-      : result.ok
-        ? result.move
-          ? "nudge"
-          : "silence"
-        : "error",
+    outcome,
     latencyMs: Math.max(0, Date.now() - request.observedAtMs),
-    modelCalls: request.path === "fallback" ? 2 : 1,
+    modelCalls: request.path === NudgePath.Fallback ? 2 : 1,
     tokens: request.priorSpend.tokens + result.spend.tokens,
     cachedTokens: request.priorSpend.cachedTokens + result.spend.cachedTokens,
   });
-  owner.spend("nudges", result.spend);
-  if (nudgeAbort !== abort) return;
-  nudgeAbort = null;
-  const interrupted = abort.signal.aborted;
-  if (!result.ok) {
-    if (!interrupted) {
-      console.error("[coach] nudge failed", { _e: result.error });
-      feed({
-        type: "error",
-        error: coachError({
-          message: result.error,
-          provider: selected.provider,
-        }),
-      });
-    }
-    settleTurn({ ok: false, interrupted });
-    return;
-  }
-  if (result.move) {
-    feed({
-      type: "block",
-      id: crypto.randomUUID(),
-      block: { kind: "move", ...result.move },
-    });
-    if (bridge && sessionId) {
-      bridge
-        .nudged(sessionId, { tag: result.move.tag, line: result.move.line })
-        .catch((error: unknown) => {
-          console.error("[coach] could not tell the app about a nudge", {
-            _e: errorText(error),
-            sessionId,
-          });
-        });
-    }
-    if (result.talk) feed({ type: "talk", talk: result.talk });
-    nudgeNotes = rememberNote(
-      nudgeNotes,
-      nudgeNote(label, moveText(result.move)),
-    );
-  }
-  settleTurn({ ok: true, interrupted: false, silent: result.move === null });
+  owner.spend(SpendSource.Nudges, result.spend);
+  if (nudgeAbort === abort) nudgeAbort = null;
+  if (!result.ok && !abort.signal.aborted)
+    console.error("[coach] background suggestion failed", { _e: result.error });
 }
 
 function clockTime(): string {
@@ -599,7 +675,7 @@ function projectView(resolved: MeetingProject): ProjectView {
     source: resolved.source,
     series: resolved.series?.label ?? null,
     defaultProject: resolved.default_project,
-    needsFolder: noProject && resolved.source === "default",
+    needsFolder: noProject && resolved.source === ProjectSource.Default,
   };
 }
 
@@ -634,7 +710,7 @@ function settleTurn(input: {
   const silent = input.silent ?? false;
   busy = false;
   const done: CoachEvent = {
-    type: "done",
+    type: CoachEventType.Done,
     seconds: (Date.now() - askedAt) / 1000,
     ok: input.ok,
     silent,
@@ -660,7 +736,7 @@ const supervisor = new Supervisor<RuntimeMessage>({
   failed: (message) => {
     console.error("[coach] the coach session stopped", { _e: message });
     feed({
-      type: "error",
+      type: CoachEventType.Error,
       error: coachError({ message, provider, stderr: stderr.take() }),
     });
   },
@@ -670,7 +746,7 @@ const supervisor = new Supervisor<RuntimeMessage>({
       { _e: message },
     );
     feed({
-      type: "error",
+      type: CoachEventType.Error,
       error: {
         ...coachError({ message, provider, stderr: stderr.take() }),
         ...GAVE_UP,
@@ -687,7 +763,7 @@ const supervisor = new Supervisor<RuntimeMessage>({
     store = dropResume(store, chatSessionId);
     saveStore();
   },
-  restart: () => enqueue(() => openChat("recover")),
+  restart: () => enqueue(() => openChat(ResumeReason.Recover)),
   schedule: (run, delayMs) => {
     const timer = setTimeout(run, delayMs);
     return () => clearTimeout(timer);
@@ -699,25 +775,25 @@ function editHooks(bridge: AppBridge) {
     bridge,
     onEdit(edit: CoachEdit) {
       editSessions.set(edit.id, edit.session_id);
-      feed({ type: "edit", edit });
+      feed({ type: CoachEventType.Edit, edit });
     },
     onUndo(edit: CoachEdit) {
-      feed({ type: "undone", id: edit.id, summary: edit.summary });
+      feed({ type: CoachEventType.Undone, id: edit.id, summary: edit.summary });
     },
   };
 }
 
 function rememberEdits(events: readonly CoachEvent[]) {
   for (const event of events)
-    if (event.type === "edit")
+    if (event.type === CoachEventType.Edit)
       editSessions.set(event.edit.id, event.edit.session_id);
 }
 
 async function openChat(reason: OpenReason) {
   const sessionId = attached?.sessionId;
   const nextProject =
-    reason === "recover" ? project : await projectFor(sessionId);
-  if (reason !== "recover") {
+    reason === ResumeReason.Recover ? project : await projectFor(sessionId);
+  if (reason !== ResumeReason.Recover) {
     persistNow();
     supervisor.reset();
   }
@@ -755,20 +831,20 @@ async function openChat(reason: OpenReason) {
   nudgeAbort?.abort();
   nudgeAbort = null;
   saveStore();
-  setSetup({ state: "checking" });
+  setSetup({ state: SetupState.Checking });
   const runtimePath = await executable().catch((error: unknown) => {
-    setSetup({ state: "failed", message: errorText(error) });
+    setSetup({ state: SetupState.Failed, message: errorText(error) });
     return null;
   });
   if (!runtimePath) return;
-  setSetup({ state: "ready" });
+  setSetup({ state: SetupState.Ready });
   checkSignIn();
   const session = startCoach({
     ...options,
     provider,
     model,
     codexHome,
-    ...(provider === "codex"
+    ...(provider === CoachProvider.Codex
       ? { pathToCodexExecutable: runtimePath, connectors: {} }
       : { pathToClaudeCodeExecutable: runtimePath }),
     project: project.path,
@@ -780,13 +856,13 @@ async function openChat(reason: OpenReason) {
       const transcript = sessionId
         ? readLiveTranscript(db, { sessionId, recording })
         : null;
-      const move = block.kind === "move" ? block : null;
+      const move = block.kind === BlockKind.Move ? block : null;
       const evidence =
         move?.moment && sessionId
           ? evidenceForMoment(move.moment, sessionId, transcript?.lines ?? [])
           : undefined;
       feed({
-        type: "block",
+        type: CoachEventType.Block,
         id: crypto.randomUUID(),
         block: move && evidence ? { ...move, evidence } : block,
       });
@@ -804,29 +880,30 @@ async function openChat(reason: OpenReason) {
     },
   });
   busy = false;
-  if (reason !== "recover") nudgeNotes = [];
+  if (reason !== ResumeReason.Recover) nudgeNotes = [];
   startProactive(sessionId);
-  if (plan.resume && reason !== "recover" && history.length > 0) {
+  if (plan.resume && reason !== ResumeReason.Recover && history.length > 0) {
     history = appendHistory(history, {
-      type: "divider",
+      type: CoachEventType.Divider,
       text: "Picked up where you left off",
     });
   }
   if (!wrapUp && plan.wrapUp && sessionId) {
     const { view, transcriptId } = plan.wrapUp;
     wrapUp =
-      view.state === "ready"
+      view.state === WrapUpState.Ready
         ? { ...view, sessionId, actions: actionsFor(view.wrapUp) }
         : view;
     wrapUpMeeting = { sessionId, transcriptId };
   }
-  if (reason !== "startup")
+  if (reason !== ResumeReason.Startup)
     broadcast({
-      type: "reset",
-      reason: reason === "recover" ? "sync" : reason,
+      type: CoachEventType.Reset,
+      reason: reason === ResumeReason.Recover ? ResetReason.Sync : reason,
     });
   for (const event of history) broadcast(event);
-  if (reason !== "startup" && wrapUp) broadcast({ type: "wrapup", wrapUp });
+  if (reason !== ResumeReason.Startup && wrapUp)
+    broadcast({ type: CoachEventType.Wrapup, wrapUp });
   broadcast(status());
   supervisor.watch(session, plan.resume);
 }
@@ -838,6 +915,8 @@ function startTurn(
   prompt: string,
   images: AskImage[] = [],
 ) {
+  nudgeAbort?.abort();
+  nudgeAbort = null;
   busy = true;
   askedAt = Date.now();
   tracker.beginTurn();
@@ -846,7 +925,10 @@ function startTurn(
   const turn = userTurn({
     kind,
     label,
-    prompt: withNudgeNotes(nudgeNotes, prompt),
+    prompt: withNudgeNotes(
+      nudgeNotes,
+      `${intentGuidance(chatSessionId ? coachingFor(store, chatSessionId).intent : MeetingIntent.General)}\n\n${prompt}`,
+    ),
     line: update.line,
     images,
   });
@@ -861,12 +943,12 @@ function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
   const since = Math.max(0, (lines.at(-1)?.end_ms ?? 0) - CATCH_UP_WINDOW_MS);
   startTurn(
     session,
-    "catchup",
+    TurnKind.Catchup,
     `Catch me up · ${clockTime()}`,
     catchUpPrompt(since),
   );
   const talk = talkStats(lines, CATCH_UP_WINDOW_MS);
-  if (talk) feed({ type: "talk", talk });
+  if (talk) feed({ type: CoachEventType.Talk, talk });
 }
 
 function readTranscript() {
@@ -891,10 +973,10 @@ async function refreshRecording() {
 function transcriptEvent(transcript = readTranscript()): CoachEvent {
   const strip = stripView(transcript);
   return {
-    type: "transcript",
+    type: CoachEventType.Transcript,
     strip,
     lines:
-      strip.state === "live" && transcript
+      strip.state === StripState.Live && transcript
         ? transcript.lines.slice(-6).map((line) => ({
             speaker: line.speaker,
             you: line.channel === 0,
@@ -902,16 +984,18 @@ function transcriptEvent(transcript = readTranscript()): CoachEvent {
           }))
         : [],
     pending:
-      strip.state === "live" && transcript ? transcript.pending.trim() : "",
+      strip.state === StripState.Live && transcript
+        ? transcript.pending.trim()
+        : "",
   };
 }
 
 function setWrapUp(next: WrapUpView | null) {
   wrapUp = next;
-  if (wrapUp?.state === "ready" && wrapUpMeeting)
+  if (wrapUp?.state === WrapUpState.Ready && wrapUpMeeting)
     wrapUp = { ...wrapUp, sessionId: wrapUpMeeting.sessionId };
-  broadcast({ type: "wrapup", wrapUp });
-  if (wrapUpMeeting && wrapUp && wrapUp.state !== "running")
+  broadcast({ type: CoachEventType.Wrapup, wrapUp });
+  if (wrapUpMeeting && wrapUp && wrapUp.state !== WrapUpState.Running)
     storeWrapUp(wrapUpMeeting, wrapUp);
 }
 
@@ -938,6 +1022,8 @@ function actionsFor(result: WrapUp): WrapUpActions {
 
 function startWrapUp(transcript: LiveTranscript) {
   if (transcript.lines.length === 0) return;
+  nudgeAbort?.abort();
+  nudgeAbort = null;
   wrapUpAbort?.abort();
   const abort = new AbortController();
   wrapUpAbort = abort;
@@ -946,10 +1032,12 @@ function startWrapUp(transcript: LiveTranscript) {
     transcriptId: transcript.transcriptId,
   };
   const title = transcript.title;
-  setWrapUp({ state: "running", title });
+  setWrapUp({ state: WrapUpState.Running, title });
   executable(selected.provider)
     .then((claudePath) =>
       generateWrapUp(transcript, readMeetingInfo(db, transcript.sessionId), {
+        intent: coachingFor(store, transcript.sessionId).intent,
+        deferred: coachingFor(store, transcript.sessionId).deferred,
         model: selected.model,
         provider: selected.provider,
         codexHome,
@@ -960,7 +1048,7 @@ function startWrapUp(transcript: LiveTranscript) {
     .then((result) => {
       if (wrapUpAbort !== abort) return;
       setWrapUp({
-        state: "ready",
+        state: WrapUpState.Ready,
         title,
         wrapUp: result,
         commitments: result.commitments.map(commitmentText),
@@ -973,7 +1061,11 @@ function startWrapUp(transcript: LiveTranscript) {
     .catch((error: unknown) => {
       if (wrapUpAbort !== abort) return;
       console.error("[coach] wrap-up failed", { _e: errorText(error) });
-      setWrapUp({ state: "failed", title, message: errorText(error) });
+      setWrapUp({
+        state: WrapUpState.Failed,
+        title,
+        message: errorText(error),
+      });
     });
 }
 
@@ -986,7 +1078,7 @@ function cancelWrapUp() {
 
 await refreshRecording();
 attached = meetingPointer(readTranscript());
-enqueue(() => openChat("startup"));
+enqueue(() => openChat(ResumeReason.Startup));
 
 let polling = false;
 setInterval(() => {
@@ -1012,7 +1104,7 @@ async function poll() {
   if (next) attached = next;
   if (change.newChat) {
     cancelWrapUp();
-    enqueue(() => openChat("meeting"));
+    enqueue(() => openChat(ResetReason.Meeting));
     return;
   }
   if (change.wrapUp && transcript) {
@@ -1030,7 +1122,7 @@ async function poll() {
 }
 
 function handle(message: RuntimeMessage) {
-  if (message.type === "result") {
+  if (message.type === RuntimeMessageType.Result) {
     const interrupted = interrupter?.pending ?? false;
     interrupter?.settled();
     const outcome = tracker.finishTurn(message, {
@@ -1039,15 +1131,16 @@ function handle(message: RuntimeMessage) {
     });
     if (outcome.ok) supervisor.reset();
     if (outcome.sources.length > 0)
-      feed({ type: "sources", sources: outcome.sources });
+      feed({ type: CoachEventType.Sources, sources: outcome.sources });
     if (outcome.usage) {
-      feed({ type: "usage", usage: outcome.usage });
+      feed({ type: CoachEventType.Usage, usage: outcome.usage });
       proactive?.spend(
-        "asks",
+        SpendSource.Asks,
         spendOf(outcome.usage.model ?? model, outcome.usage),
       );
     }
-    if (outcome.error) feed({ type: "error", error: outcome.error });
+    if (outcome.error)
+      feed({ type: CoachEventType.Error, error: outcome.error });
     settleTurn({ ok: outcome.ok, interrupted });
     return;
   }
@@ -1079,7 +1172,7 @@ async function changeSeriesProject(
   return bridgeCall(async () => {
     const resolved = await change(bridge, sessionId);
     if (resolved && resolved.project !== project.path)
-      enqueue(() => openChat("project"));
+      enqueue(() => openChat(ResetReason.Project));
     else if (resolved) {
       project = projectView(resolved);
       broadcast(status());
@@ -1137,9 +1230,12 @@ const server = Bun.serve({
           controller.enqueue(`retry: ${RECONNECT_MS}\n\n`);
           controller.enqueue(frame(status()));
           controller.enqueue(frame(transcriptEvent()));
-          controller.enqueue(frame({ type: "reset", reason: "sync" }));
+          controller.enqueue(
+            frame({ type: CoachEventType.Reset, reason: ResetReason.Sync }),
+          );
           for (const event of history) controller.enqueue(frame(event));
-          if (wrapUp) controller.enqueue(frame({ type: "wrapup", wrapUp }));
+          if (wrapUp)
+            controller.enqueue(frame({ type: CoachEventType.Wrapup, wrapUp }));
         },
         cancel() {
           clients.delete(controller);
@@ -1154,7 +1250,8 @@ const server = Bun.serve({
       });
     },
     "/dictation": { POST: dictationHandler(bridge) },
-    "/busy": () => Response.json({ busy: isAnswering(busy, wrapUp) }),
+    "/busy": () =>
+      Response.json({ busy: isAnswering(busy, wrapUp, nudgeAbort !== null) }),
     "/ask": {
       POST: async (request) => {
         const body = await jsonBody(request);
@@ -1171,7 +1268,7 @@ const server = Bun.serve({
           return conflict(
             "The coach is still answering. Stop it first, or wait a moment.",
           );
-        startTurn(coach, "ask", text, text, images.images);
+        startTurn(coach, TurnKind.Ask, text, text, images.images);
         return new Response(null, { status: 204 });
       },
     },
@@ -1182,7 +1279,7 @@ const server = Bun.serve({
         if (!ref || typeof body.checked !== "boolean")
           return new Response("That item no longer exists.", { status: 404 });
         feed({
-          type: "block_check",
+          type: CoachEventType.BlockCheck,
           id: ref.id,
           index: ref.index,
           checked: body.checked,
@@ -1195,7 +1292,9 @@ const server = Bun.serve({
         const ref = blockItemRef(await jsonBody(request));
         const block = ref && findBlock(history, ref.id);
         const item =
-          ref && block?.kind === "actions" ? block.items[ref.index] : undefined;
+          ref && block?.kind === BlockKind.Actions
+            ? block.items[ref.index]
+            : undefined;
         if (!ref || !item)
           return new Response("That item no longer exists.", { status: 404 });
         const key = `${ref.id}:${ref.index}`;
@@ -1214,7 +1313,7 @@ const server = Bun.serve({
               actionItemText(item),
             );
             editSessions.set(edit.id, edit.session_id);
-            feed({ type: "edit", edit, block: ref });
+            feed({ type: CoachEventType.Edit, edit, block: ref });
             return new Response(null, { status: 204 });
           } finally {
             addingBlockItems.delete(key);
@@ -1244,8 +1343,9 @@ const server = Bun.serve({
     },
     "/stop": {
       POST: () => {
-        if (nudgeAbort) nudgeAbort.abort();
-        else if (busy) interrupter?.request();
+        nudgeAbort?.abort();
+        nudgeAbort = null;
+        if (busy) interrupter?.request();
         return new Response(null, { status: 204 });
       },
     },
@@ -1310,16 +1410,16 @@ const server = Bun.serve({
             "The coach is still setting up. Sign in once it's ready.",
             { status: 503 },
           );
-        if (provider === "codex") {
+        if (provider === CoachProvider.Codex) {
           signingIn = true;
           void signInCodex(runtimePath, codexHome)
             .then(checkSignIn)
             .catch((error: unknown) => {
               feed({
-                type: "error",
+                type: CoachEventType.Error,
                 error: coachError({
                   message: errorText(error),
-                  provider: "codex",
+                  provider: CoachProvider.Codex,
                 }),
               });
             })
@@ -1336,7 +1436,7 @@ const server = Bun.serve({
     },
     "/setup/retry": {
       POST: () => {
-        if (setup.state !== "failed")
+        if (setup.state !== SetupState.Failed)
           return conflict("There's nothing to retry.");
         retrySetup();
         return new Response(null, { status: 204 });
@@ -1350,6 +1450,44 @@ const server = Bun.serve({
             status: 400,
           });
         return changeFeedback(feedback.data);
+      },
+    },
+    "/coaching": {
+      POST: async (request) => {
+        const parsed = z
+          .strictObject({
+            sessionId: z.string().min(1),
+            intent: meetingIntentSchema.optional(),
+            quiet: z.boolean().optional(),
+          })
+          .safeParse(await jsonBody(request));
+        if (!parsed.success)
+          return new Response("Those coaching preferences are invalid.", {
+            status: 400,
+          });
+        const transcript = readTranscript();
+        if (
+          !chatSessionId ||
+          parsed.data.sessionId !== chatSessionId ||
+          transcript?.sessionId !== chatSessionId ||
+          !transcript.live
+        )
+          return conflict("These controls apply to the current live meeting.");
+        const { sessionId, ...patch } = parsed.data;
+        try {
+          const updated = setMeetingCoaching(store, sessionId, patch);
+          saveChats(stateFile, updated);
+          store = updated;
+          applyCoaching();
+          return new Response(null, { status: 204 });
+        } catch (error) {
+          console.error("[coach] could not save meeting preferences", {
+            _e: errorText(error),
+          });
+          return new Response("Could not save your preference. Try again.", {
+            status: 503,
+          });
+        }
       },
     },
     "/feedback/reset": {
@@ -1368,7 +1506,7 @@ const server = Bun.serve({
     },
     "/new-chat": {
       POST: () => {
-        enqueue(() => openChat("manual"));
+        enqueue(() => openChat(ResetReason.Manual));
         return new Response(null, { status: 204 });
       },
     },
@@ -1404,7 +1542,11 @@ const server = Bun.serve({
           });
         return bridgeCall(async () => {
           const edit = await bridge.undo(sessionId, editId);
-          feed({ type: "undone", id: edit.id, summary: edit.summary });
+          feed({
+            type: CoachEventType.Undone,
+            id: edit.id,
+            summary: edit.summary,
+          });
           return new Response(null, { status: 204 });
         });
       },
@@ -1412,7 +1554,7 @@ const server = Bun.serve({
     "/wrapup/action-items": {
       POST: () => {
         if (
-          wrapUp?.state !== "ready" ||
+          wrapUp?.state !== WrapUpState.Ready ||
           !wrapUp.actions.addActionItems.enabled ||
           wrapUp.added
         ) {
@@ -1444,7 +1586,7 @@ const server = Bun.serve({
     "/wrapup/log-clients": {
       POST: () => {
         if (
-          wrapUp?.state !== "ready" ||
+          wrapUp?.state !== WrapUpState.Ready ||
           !wrapUp.actions.logToClients.enabled ||
           wrapUp.logged
         ) {
@@ -1458,7 +1600,7 @@ const server = Bun.serve({
           });
         startTurn(
           coach,
-          "ask",
+          TurnKind.Ask,
           "Log promises to clients",
           logToClientsPrompt(wrapUp.title, wrapUp.wrapUp),
         );

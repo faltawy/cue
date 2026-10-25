@@ -8,6 +8,7 @@ import {
 } from "@anlg/plugin-coach";
 import { Button } from "@anlg/ui/components/ui/button";
 
+import { SettingControlWidth } from "~/settings/enums";
 import { SettingRow } from "~/settings/setting-row";
 
 const CLAUDE_CODE_STATUS_QUERY_KEY = ["claude-code-status"] as const;
@@ -99,7 +100,7 @@ export function ClaudeCodeRow() {
           </>
         )
       }
-      controlWidth="content"
+      controlWidth={SettingControlWidth.Content}
     >
       {({ "aria-describedby": describedBy }) =>
         status.data?.using === "cue" && status.data.installed ? (

@@ -14,6 +14,7 @@ import { TimelineView } from "./timeline";
 import { hasOwnSidebarHeaderTab } from "./use-custom-sidebar";
 
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function LeftSidebar({
   folderFilter = null,
@@ -28,11 +29,11 @@ export function LeftSidebar({
 } = {}) {
   const currentTab = useTabs((state) => state.currentTab);
 
-  const isSettingsMode = currentTab?.type === "settings";
-  const isCalendarMode = currentTab?.type === "calendar";
-  const isContactsMode = currentTab?.type === "contacts";
-  const isTemplatesMode = currentTab?.type === "templates";
-  const isFoldersMode = currentTab?.type === "folders";
+  const isSettingsMode = currentTab?.type === TabType.Settings;
+  const isCalendarMode = currentTab?.type === TabType.Calendar;
+  const isContactsMode = currentTab?.type === TabType.Contacts;
+  const isTemplatesMode = currentTab?.type === TabType.Templates;
+  const isFoldersMode = currentTab?.type === TabType.Folders;
   const isSpecialMode =
     isSettingsMode ||
     isCalendarMode ||

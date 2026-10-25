@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 
 import { type Tab } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 const TabContentFolders = lazy(async () => ({
   default: (await import("~/folders")).TabContentFolders,
@@ -42,34 +43,34 @@ export function MainTabContent({ tab }: { tab: Tab }) {
 }
 
 function LazyTabContent({ tab }: { tab: Tab }) {
-  if (tab.type === "folders") {
+  if (tab.type === TabType.Folders) {
     return <TabContentFolders />;
   }
-  if (tab.type === "sessions") {
+  if (tab.type === TabType.Sessions) {
     return <TabContentNote tab={tab} />;
   }
-  if (tab.type === "humans") {
+  if (tab.type === TabType.Humans) {
     return <TabContentHuman tab={tab} />;
   }
-  if (tab.type === "contacts") {
+  if (tab.type === TabType.Contacts) {
     return <TabContentContact tab={tab} />;
   }
-  if (tab.type === "calendar") {
+  if (tab.type === TabType.Calendar) {
     return <TabContentCalendar />;
   }
-  if (tab.type === "changelog") {
+  if (tab.type === TabType.Changelog) {
     return <TabContentChangelog tab={tab} />;
   }
-  if (tab.type === "settings") {
+  if (tab.type === TabType.Settings) {
     return <TabContentSettings tab={tab} />;
   }
-  if (tab.type === "templates") {
+  if (tab.type === TabType.Templates) {
     return <TabContentTemplate tab={tab} />;
   }
-  if (tab.type === "onboarding") {
+  if (tab.type === TabType.Onboarding) {
     return <TabContentOnboarding tab={tab} />;
   }
-  if (tab.type === "task") {
+  if (tab.type === TabType.Task) {
     return <TabContentTask tab={tab} />;
   }
   return null;

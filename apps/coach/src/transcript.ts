@@ -8,6 +8,18 @@ import {
 } from "./speakers";
 import { formatTimestamp } from "./timestamp";
 
+export enum ParticipantResolutionStatus {
+  Resolved = "resolved",
+  Ambiguous = "ambiguous",
+  NotFound = "not_found",
+}
+
+export enum TranscriptEditStatus {
+  Ready = "ready",
+  Live = "live",
+  NotFound = "not_found",
+}
+
 export type Word = {
   id: string;
   text: string;
@@ -292,17 +304,17 @@ export type TranscriptEditSpeaker = {
 };
 
 export type TranscriptEditContext =
-  | { status: "ready"; lines: TranscriptEditLine[] }
-  | { status: "live"; speakers: TranscriptEditSpeaker[] }
-  | { status: "not_found" };
+  | { status: TranscriptEditStatus.Ready; lines: TranscriptEditLine[] }
+  | { status: TranscriptEditStatus.Live; speakers: TranscriptEditSpeaker[] }
+  | { status: TranscriptEditStatus.NotFound };
 
 export function readTranscriptEditContext(
   db: Database,
   sessionId: string,
 ): TranscriptEditContext {
-  return db.transaction(() => {
+  return db.transaction((): TranscriptEditContext => {
     const row = transcriptRow(db, { sessionId });
-    if (!row) return { status: "not_found" as const };
+    if (!row) return { status: TranscriptEditStatus.NotFound };
 
     const base: Word[] = row.words_json ? JSON.parse(row.words_json) : [];
     const deltas = db
@@ -334,7 +346,10 @@ export function readTranscriptEditContext(
           });
         }
       }
-      return { status: "live" as const, speakers: [...speakers.values()] };
+      return {
+        status: TranscriptEditStatus.Live,
+        speakers: [...speakers.values()],
+      };
     }
 
     const lines: TranscriptEditLine[] = [];
@@ -366,7 +381,7 @@ export function readTranscriptEditContext(
       }
     }
 
-    return { status: "ready" as const, lines };
+    return { status: TranscriptEditStatus.Ready, lines };
   })();
 }
 
@@ -382,9 +397,13 @@ export function readSelfName(db: Database, sessionId: string): string | null {
 }
 
 export type ParticipantResolution =
-  | { status: "resolved"; humanId: string; name: string }
-  | { status: "ambiguous" }
-  | { status: "not_found" };
+  | {
+      status: ParticipantResolutionStatus.Resolved;
+      humanId: string;
+      name: string;
+    }
+  | { status: ParticipantResolutionStatus.Ambiguous }
+  | { status: ParticipantResolutionStatus.NotFound };
 
 export function resolveMeetingParticipant(
   db: Database,
@@ -392,7 +411,7 @@ export function resolveMeetingParticipant(
   requestedName: string,
 ): ParticipantResolution {
   const requested = requestedName.trim().toLocaleLowerCase();
-  if (!requested) return { status: "not_found" };
+  if (!requested) return { status: ParticipantResolutionStatus.NotFound };
   const participants = db
     .query<{ human_id: string; name: string; human_name: string }, [string]>(
       `SELECT p.human_id,
@@ -412,11 +431,12 @@ export function resolveMeetingParticipant(
       matches.set(participant.human_id, participant.name.trim());
     }
   }
-  if (matches.size > 1) return { status: "ambiguous" };
+  if (matches.size > 1)
+    return { status: ParticipantResolutionStatus.Ambiguous };
   const [humanId, name] = matches.entries().next().value ?? [];
   return humanId && name
-    ? { status: "resolved", humanId, name }
-    : { status: "not_found" };
+    ? { status: ParticipantResolutionStatus.Resolved, humanId, name }
+    : { status: ParticipantResolutionStatus.NotFound };
 }
 
 export type MeetingInfo = {

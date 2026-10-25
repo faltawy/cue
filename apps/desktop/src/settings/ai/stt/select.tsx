@@ -14,6 +14,7 @@ import {
 } from "@anlg/plugin-local-stt";
 import { commands as miscCommands } from "@anlg/plugin-misc";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
+import { AIProviderType } from "@anlg/provider-validation";
 import type { AIProviderStorage } from "@anlg/store";
 import {
   Check,
@@ -74,11 +75,17 @@ import {
   getConfiguredProviders,
   getVisibleModelSelection,
 } from "~/settings/ai/shared/selection";
+import {
+  ModelCategoryKind,
+  SttHealthStatus,
+  TranscriptionMode,
+} from "~/settings/enums";
 import { getBaseLanguageDisplayName } from "~/settings/general/language";
 import { useAiProvidersState } from "~/settings/providers";
 import { useSetSettingValues } from "~/settings/queries";
 import { useConfigValues } from "~/shared/config";
 import { SettingsAlertToast } from "~/shared/ui/settings-alert";
+import { AlertVariant, AlertLifecycle } from "~/sidebar/enums";
 import { usePendingSttSelection } from "~/store/zustand/pending-stt-selection";
 import {
   canAppleSpeechTranscribe,
@@ -155,7 +162,7 @@ export function SelectProviderAndModel() {
   const visibleProvider = effectiveSelection.provider as ProviderId | "";
   const isConfigured =
     !pendingSelection && !!(visibleProvider && effectiveSelection.model);
-  const hasError = isConfigured && health.status === "error";
+  const hasError = isConfigured && health.status === SttHealthStatus.Error;
   const alertDescription = !providerSettingsReady
     ? undefined
     : pendingSelection
@@ -258,8 +265,8 @@ export function SelectProviderAndModel() {
       <SettingsAlertToast
         id="stt-settings-alert"
         description={alertDescription}
-        variant={hasError ? "error" : "warning"}
-        lifecycle="condition-bound"
+        variant={hasError ? AlertVariant.Error : AlertVariant.Warning}
+        lifecycle={AlertLifecycle.ConditionBound}
       />
       {!alertDescription && !pendingSelection && (
         <TranscriptionLanguageWarningToast />
@@ -357,7 +364,7 @@ export function SelectProviderAndModel() {
                   </span>
                 )}
                 {isConfigured && <HealthStatusIndicator />}
-                {isConfigured && health.status === "success" && (
+                {isConfigured && health.status === SttHealthStatus.Success && (
                   <Check className="text-success size-3.5 shrink-0" />
                 )}
               </SelectTrigger>
@@ -550,7 +557,7 @@ function useTranscriptionLanguageWarning() {
     isLocalFileSttModel(current_stt_provider, selectedSttModel);
   const useLiveOnDeviceModel =
     isOnDeviceModel && isRealtimeLocalModel(selectedSttModel);
-  const hasError = isConfigured && health.status === "error";
+  const hasError = isConfigured && health.status === SttHealthStatus.Error;
   const liveSupport = useQuery({
     queryKey: ["stt-live-support", current_stt_provider, selectedSttModel],
     queryFn: () =>
@@ -629,7 +636,7 @@ function formatLanguageList(languages: string[]) {
   return visibleLanguages.join(", ");
 }
 
-type ModelCategory = "hardware" | null;
+type ModelCategory = ModelCategoryKind | null;
 type ModelEntry = {
   id: string;
   isDownloaded: boolean;
@@ -637,11 +644,11 @@ type ModelEntry = {
   isDeprecated?: boolean;
   category?: ModelCategory;
   sizeBytes?: number | null;
-  mode?: "realtime" | "batch";
+  mode?: TranscriptionMode;
 };
 
 function getModelCategoryLabel(category?: ModelCategory) {
-  if (category === "hardware") {
+  if (category === ModelCategoryKind.Hardware) {
     return <Trans>Best for this Mac</Trans>;
   }
 
@@ -658,9 +665,10 @@ export function useConfiguredMapping(): {
   >;
   isReady: boolean;
 } {
-  const availability = useProviderAvailability("stt", PROVIDERS);
-  const { providers: configuredProviders, isReady } =
-    useAiProvidersState("stt");
+  const availability = useProviderAvailability(AIProviderType.Stt, PROVIDERS);
+  const { providers: configuredProviders, isReady } = useAiProvidersState(
+    AIProviderType.Stt,
+  );
   const { local_stt_model_path } = useConfigValues([
     "local_stt_model_path",
   ] as const);
@@ -702,9 +710,9 @@ export function useConfiguredMapping(): {
 
   const providers = Object.fromEntries(
     PROVIDERS.map((provider) => {
-      const config = configuredProviders[providerRowId("stt", provider.id)] as
-        | AIProviderStorage
-        | undefined;
+      const config = configuredProviders[
+        providerRowId(AIProviderType.Stt, provider.id)
+      ] as AIProviderStorage | undefined;
       const baseUrl = String(config?.base_url || provider.baseUrl || "").trim();
       const apiKey = String(config?.api_key || "").trim();
 
@@ -751,7 +759,7 @@ export function useConfiguredMapping(): {
               {
                 id: "local-file",
                 isDownloaded: !!local_stt_model_path?.trim(),
-                mode: "batch" as const,
+                mode: TranscriptionMode.Batch as const,
               },
             ],
           },
@@ -771,7 +779,12 @@ export function useConfiguredMapping(): {
             return {
               id: model,
               isDownloaded: true,
-              mode: mode === "live" ? "realtime" : mode,
+              mode: mode
+                ? {
+                    live: TranscriptionMode.Realtime,
+                    batch: TranscriptionMode.Batch,
+                  }[mode]
+                : undefined,
               isDeprecated: isDeprecatedSttModel(provider.id, model),
             };
           }),
@@ -822,9 +835,10 @@ function buildOnDeviceModelEntries(
       displayName: model.display_name,
       sizeBytes: model.size_bytes,
       mode: model.supports_realtime
-        ? ("realtime" as const)
-        : ("batch" as const),
-      category: model.key === recommendedModel ? ("hardware" as const) : null,
+        ? TranscriptionMode.Realtime
+        : TranscriptionMode.Batch,
+      category:
+        model.key === recommendedModel ? ModelCategoryKind.Hardware : null,
     }))
     .sort(
       (a, b) =>
@@ -868,7 +882,9 @@ function ModelSelectItem({
       <div className="text-caption flex shrink-0 items-center gap-2">
         <LocalModelBackendBadge model={model.id} />
         {isDeprecated && <DeprecatedBadge />}
-        {model.mode !== "realtime" && <ModelModeBadge mode={model.mode} />}
+        {model.mode !== TranscriptionMode.Realtime && (
+          <ModelModeBadge mode={model.mode} />
+        )}
         {!model.isDownloaded && sizeLabel && (
           <span className="text-muted-foreground tabular-nums">
             {sizeLabel}
@@ -989,7 +1005,7 @@ function ModelModeBadge({ mode }: { mode?: ModelEntry["mode"] }) {
     return null;
   }
 
-  const isRealtime = mode === "realtime";
+  const isRealtime = mode === TranscriptionMode.Realtime;
 
   return (
     <Tooltip delayDuration={100}>

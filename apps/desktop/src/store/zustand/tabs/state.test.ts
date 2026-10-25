@@ -2,6 +2,8 @@ import "./test-matchers";
 
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import { type Tab, useTabs } from ".";
 import {
   createContactsTab,
@@ -21,7 +23,7 @@ describe("State Updater Actions", () => {
 
       useTabs.getState().updateSessionTabState(tab, {
         ...tab.state,
-        view: { type: "enhanced", id: "note-1" },
+        view: { type: SessionNoteViewType.Enhanced, id: "note-1" },
       });
 
       const state = useTabs.getState();
@@ -36,14 +38,14 @@ describe("State Updater Actions", () => {
       expect(useTabs.getState()).toHaveCurrentTab({
         id: tab.id,
         state: {
-          view: { type: "enhanced", id: "note-1" },
+          view: { type: SessionNoteViewType.Enhanced, id: "note-1" },
           autoStart: null,
           scheduledAutoStart: null,
         },
       });
       expect(useTabs.getState()).toHaveLastHistoryEntry({
         state: {
-          view: { type: "enhanced", id: "note-1" },
+          view: { type: SessionNoteViewType.Enhanced, id: "note-1" },
           autoStart: null,
           scheduledAutoStart: null,
         },
@@ -58,7 +60,7 @@ describe("State Updater Actions", () => {
 
       useTabs.getState().updateSessionTabState(tab, {
         ...tab.state,
-        view: { type: "enhanced", id: "note-1" },
+        view: { type: SessionNoteViewType.Enhanced, id: "note-1" },
       });
 
       const state = useTabs.getState();

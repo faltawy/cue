@@ -30,6 +30,7 @@ import { folderDisplayName, normalizeFolderPath } from "~/session/folders";
 import { useFolderIcons } from "~/session/queries";
 import { useFolderMaterialUpload } from "~/shared/hooks/useFileUpload";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
+import { IconPickerSize } from "~/templates/enums";
 import { TemplateIconPicker } from "~/templates/template-icon-picker";
 
 export function FolderEditor({ folderPath }: { folderPath: string }) {
@@ -99,7 +100,7 @@ export function FolderEditor({ folderPath }: { folderPath: string }) {
       <div className="flex h-12 items-center justify-between gap-3 ps-3 pe-1">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <TemplateIconPicker
-            size="sm"
+            size={IconPickerSize.Sm}
             label={t`Choose folder icon`}
             value={icon}
             onChange={(nextIcon) => {

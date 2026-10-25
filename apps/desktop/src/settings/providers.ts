@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { commands as store2Commands } from "@anlg/plugin-store2";
-import { verifyProviderCredentials } from "@anlg/provider-validation";
+import {
+  AIProviderType,
+  verifyProviderCredentials,
+} from "@anlg/provider-validation";
 
 import { providerFetch } from "~/ai/provider-fetch";
 import { executeTransaction, liveQueryClient, useLiveQuery } from "~/db";
@@ -10,7 +13,7 @@ import { enqueueDatabaseWrite } from "~/db/write-queue";
 
 export { isKeychainAccessError, repairKeychainAccess } from "~/shared/keychain";
 
-export type AiProviderType = "stt";
+export type AiProviderType = AIProviderType.Stt;
 
 export type AiProviderConfig = {
   type: AiProviderType;
@@ -347,7 +350,7 @@ export async function migratePlaintextAiProviderApiKeys(): Promise<void> {
   const rows = await liveQueryClient.execute<AppSettingRow>(
     `SELECT id, value_json FROM app_settings ORDER BY id`,
   );
-  if (await migratePlaintextProviderApiKeys(rows, "stt")) {
+  if (await migratePlaintextProviderApiKeys(rows, AIProviderType.Stt)) {
     await liveQueryClient.execute(`PRAGMA wal_checkpoint(TRUNCATE)`);
   }
 }

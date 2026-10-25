@@ -7,6 +7,8 @@ import {
   useState,
 } from "react";
 
+import { TranscriptScrollTarget } from "~/stt/enums";
+
 export async function preserveScrollPosition<T>(
   element: HTMLElement | null,
   action: () => Promise<T>,
@@ -81,9 +83,8 @@ export function useScrollDetection(
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [canScroll, setCanScroll] = useState(false);
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
-  const [scrollTarget, setScrollTarget] = useState<"top" | "bottom" | null>(
-    null,
-  );
+  const [scrollTarget, setScrollTarget] =
+    useState<TranscriptScrollTarget | null>(null);
   const lastScrollTopRef = useRef(0);
   const userScrolledAwayRef = useRef(false);
   const wasActiveRef = useRef(active);
@@ -124,11 +125,11 @@ export function useScrollDetection(
       if (scrolledUp) {
         userScrolledAwayRef.current = true;
         setAutoScrollEnabled(false);
-        setScrollTarget("bottom");
+        setScrollTarget(TranscriptScrollTarget.Bottom);
       }
 
       if (scrolledDown) {
-        setScrollTarget("top");
+        setScrollTarget(TranscriptScrollTarget.Top);
       }
 
       if (isNearBottom && !userScrolledAwayRef.current) {

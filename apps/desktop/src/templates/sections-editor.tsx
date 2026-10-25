@@ -11,8 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@anlg/ui/components/ui/dropdown-menu";
-import { Input } from "@anlg/ui/components/ui/input";
-import { fieldClassName } from "@anlg/ui/components/ui/input";
+import { Input, fieldClassName } from "@anlg/ui/components/ui/input";
 import { cn } from "@anlg/utils";
 
 type SectionDraft = TemplateSection & { key: string };

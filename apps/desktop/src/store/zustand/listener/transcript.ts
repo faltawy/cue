@@ -7,6 +7,7 @@ import type {
   LiveTranscriptSegmentDelta,
 } from "@anlg/plugin-transcription";
 
+import { TranscriptWriteMode } from "~/stt/enums";
 import type { RuntimeSpeakerHint, WordLike } from "~/stt/segment";
 
 type WordsByChannel = Record<number, LiveTranscriptDelta["partials"][number][]>;
@@ -16,7 +17,7 @@ export const LIVE_TRANSCRIPT_PREVIEW_SEGMENT_LIMIT = 200;
 export type BatchPersistCallback = (
   words: WordLike[],
   hints: RuntimeSpeakerHint[],
-  options?: { mode?: "append" | "replace" },
+  options?: { mode?: TranscriptWriteMode },
 ) => void;
 
 export type LiveTranscriptPersistCallback = (

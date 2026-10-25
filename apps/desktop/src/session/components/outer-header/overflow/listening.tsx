@@ -1,7 +1,12 @@
 import { Microphone, MicrophoneSlash } from "@anlg/ui/components/icons";
 import { DropdownMenuItem } from "@anlg/ui/components/ui/dropdown-menu";
 
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
 import { useListener } from "~/stt/contexts";
+import { ListenerControlAction } from "~/stt/enums";
 import { useStartListeningWithBatchOverride } from "~/stt/useStartListeningWithBatchOverride";
 import {
   isMainWebviewWindow,
@@ -19,15 +24,16 @@ export function Listening({
     mode: state.getSessionMode(sessionId),
     stop: state.stop,
   }));
-  const isListening = mode === "active" || mode === "finalizing";
-  const isFinalizing = mode === "finalizing";
-  const isBatching = mode === "running_batch";
+  const isListening =
+    mode === LiveSessionStatus.Active || mode === LiveSessionStatus.Finalizing;
+  const isFinalizing = mode === LiveSessionStatus.Finalizing;
+  const isBatching = mode === BatchSessionMode.RunningBatch;
   const startListening = useStartListeningWithBatchOverride(sessionId);
 
   const handleToggleListening = () => {
     if (!isMainWebviewWindow()) {
       void requestMainListenerControl(
-        isListening ? "stop" : "start",
+        isListening ? ListenerControlAction.Stop : ListenerControlAction.Start,
         sessionId,
       );
       return;

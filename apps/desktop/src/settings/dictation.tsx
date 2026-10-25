@@ -9,6 +9,7 @@ import { Textarea } from "@anlg/ui/components/ui/textarea";
 
 import { DictationShortcut } from "./dictation-shortcut";
 
+import { DictationPhase } from "~/dictation/controller";
 import { useDictationStatus } from "~/dictation/state";
 import { AudioDeviceRow } from "~/settings/general/audio-settings";
 import { SettingsPageTitle } from "~/settings/page-title";
@@ -143,11 +144,11 @@ export function SettingsDictation() {
         {enabled && (
           <div className="border-border rounded-lg border p-4" role="status">
             <p className="text-body">
-              {status.phase === "recording"
+              {status.phase === DictationPhase.Recording
                 ? t`Listening…`
-                : status.phase === "transcribing"
+                : status.phase === DictationPhase.Transcribing
                   ? t`Transcribing…`
-                  : status.phase === "starting"
+                  : status.phase === DictationPhase.Starting
                     ? t`Starting microphone…`
                     : status.ready
                       ? t`Ready to dictate`
@@ -169,7 +170,7 @@ export function SettingsDictation() {
                 <Trans>Retry setup</Trans>
               </Button>
             )}
-            {status.phase !== "idle" && (
+            {status.phase !== DictationPhase.Idle && (
               <Button
                 className="mt-2"
                 variant="outline"

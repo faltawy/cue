@@ -1,6 +1,8 @@
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ThemePreference, AppIconPreference } from "~/shared/enums";
+
 const themeState = vi.hoisted(() => ({
   settingsReady: false,
   theme: "system" as "light" | "dark" | "system",
@@ -271,7 +273,7 @@ describe("AppThemeProvider", () => {
     applyDocumentTheme.mockClear();
     writeStoredThemePreference.mockClear();
 
-    await applyThemePreference("light");
+    await applyThemePreference(ThemePreference.Light);
 
     expect(applyDocumentTheme).toHaveBeenCalledOnce();
     expect(applyDocumentTheme).toHaveBeenCalledWith("light", false);
@@ -282,7 +284,7 @@ describe("AppThemeProvider", () => {
   it("applies a selected system theme and Dock icon from the native appearance", async () => {
     nativeTheme.mockResolvedValue("dark");
 
-    await applyThemePreference("system");
+    await applyThemePreference(ThemePreference.System);
 
     expect(setNativeTheme).toHaveBeenCalledWith(null);
     expect(nativeTheme).toHaveBeenCalledOnce();
@@ -292,8 +294,8 @@ describe("AppThemeProvider", () => {
   });
 
   it.each([
-    ["light", false, "stable"],
-    ["dark", true, "stable-dark"],
+    [ThemePreference.Light, false, "stable"],
+    [ThemePreference.Dark, true, "stable-dark"],
   ] as const)(
     "applies the selected %s theme immediately",
     async (theme, isDark, expectedIcon) => {
@@ -318,7 +320,7 @@ describe("AppThemeProvider", () => {
     {
       name: "explicit theme",
       matches: true,
-      theme: "light",
+      theme: ThemePreference.Light,
       expectedIcon: "dev",
       readsNativeTheme: false,
     },
@@ -328,7 +330,7 @@ describe("AppThemeProvider", () => {
       systemTheme.matches = matches;
       nativeTheme.mockResolvedValue("dark");
 
-      await applyAppIconPreference("dev", theme);
+      await applyAppIconPreference(AppIconPreference.Dev, theme);
 
       if (readsNativeTheme) {
         expect(nativeTheme).toHaveBeenCalledOnce();

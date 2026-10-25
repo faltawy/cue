@@ -8,6 +8,7 @@ import {
   loadChats,
   planChat,
   remember,
+  ResumeReason,
   saveChats,
 } from "./chat-store";
 import {
@@ -16,6 +17,7 @@ import {
   meetingUpdate,
   userTurn,
 } from "./meeting-context";
+import { CoachEventType, TurnKind } from "./protocol";
 
 const MINUTE = 60_000;
 const NOW = Date.parse("2026-10-20T15:00:00Z");
@@ -93,7 +95,7 @@ describe("after a restart", () => {
     });
     saveChats(file, stored);
     return planChat({
-      reason: "startup",
+      reason: ResumeReason.Startup,
       store: loadChats(file),
       meeting: live,
       project,
@@ -134,15 +136,15 @@ describe("userTurn", () => {
   test("the meeting line reaches the model but not the chat the user sees", () => {
     const line = '[Meeting: "Pilot Pricing" with Sara · live, 12 min in]';
     const turn = userTurn({
-      kind: "ask",
+      kind: TurnKind.Ask,
       label: "What did Sara ask?",
       prompt: "What did Sara ask?",
       line,
       images: [],
     });
     expect(turn.event).toEqual({
-      type: "user",
-      kind: "ask",
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
       text: "What did Sara ask?",
     });
     expect(turn.content).toBe(`${line}\n\nWhat did Sara ask?`);
@@ -150,15 +152,15 @@ describe("userTurn", () => {
 
   test("without a line the prompt goes as is", () => {
     const turn = userTurn({
-      kind: "catchup",
+      kind: TurnKind.Catchup,
       label: "Catch me up · 15:00",
       prompt: "Catch up.",
       line: null,
       images: [],
     });
     expect(turn.event).toEqual({
-      type: "user",
-      kind: "catchup",
+      type: CoachEventType.User,
+      kind: TurnKind.Catchup,
       text: "Catch me up · 15:00",
     });
     expect(turn.content).toBe("Catch up.");

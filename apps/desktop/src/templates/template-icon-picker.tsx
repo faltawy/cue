@@ -19,6 +19,12 @@ import {
   type TemplateIcon,
 } from "./template-icon";
 
+import {
+  TemplateIconKind,
+  IconPickerSize,
+  IconPickerTab,
+} from "~/templates/enums";
+
 const ICON_COLORS = [
   "#9ca3af",
   "#94a3b8",
@@ -172,29 +178,35 @@ function SearchField({
 export function TemplateIconPicker({
   value,
   onChange,
-  size = "default",
+  size = IconPickerSize.Default,
   label,
 }: {
   value: TemplateIcon;
   onChange: (value: TemplateIcon) => void;
-  size?: "default" | "sm";
+  size?: IconPickerSize;
   label?: string;
 }) {
   const { t } = useLingui();
   const selected = normalizeTemplateIcon(value);
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"icons" | "emojis">(
-    selected.type === "emoji" ? "emojis" : "icons",
+  const [tab, setTab] = useState<IconPickerTab>(
+    selected.type === TemplateIconKind.Emoji
+      ? IconPickerTab.Emojis
+      : IconPickerTab.Icons,
   );
   const [iconSearch, setIconSearch] = useState("");
   const [emojiSearch, setEmojiSearch] = useState("");
   const [customColorOpen, setCustomColorOpen] = useState(false);
   const [recentEmojiIds, setRecentEmojiIds] = useState(loadRecentEmojiIds);
   const [iconColor, setIconColor] = useState(
-    selected.type === "icon" ? selected.color : DEFAULT_TEMPLATE_ICON.color,
+    selected.type === TemplateIconKind.Icon
+      ? selected.color
+      : DEFAULT_TEMPLATE_ICON.color,
   );
   const [lastIconValue, setLastIconValue] = useState(
-    selected.type === "icon" ? selected.value : DEFAULT_TEMPLATE_ICON.value,
+    selected.type === TemplateIconKind.Icon
+      ? selected.value
+      : DEFAULT_TEMPLATE_ICON.value,
   );
   const emojiCategoryLabels: Record<string, string> = {
     people: t`Smileys & People`,
@@ -233,12 +245,16 @@ export function TemplateIconPicker({
 
   const selectIcon = (iconValue: string) => {
     setLastIconValue(iconValue);
-    onChange({ type: "icon", value: iconValue, color: iconColor });
+    onChange({
+      type: TemplateIconKind.Icon,
+      value: iconValue,
+      color: iconColor,
+    });
     setOpen(false);
   };
   const selectColor = (color: string) => {
     setIconColor(color);
-    onChange({ type: "icon", value: lastIconValue, color });
+    onChange({ type: TemplateIconKind.Icon, value: lastIconValue, color });
   };
   const selectEmoji = (emoji: EmojiItem) => {
     const nextRecent = [
@@ -254,7 +270,7 @@ export function TemplateIconPicker({
     } catch {
       // Recent emoji history is optional in restricted webviews.
     }
-    onChange({ type: "emoji", value: emoji.native });
+    onChange({ type: TemplateIconKind.Emoji, value: emoji.native });
     setOpen(false);
   };
 
@@ -265,7 +281,7 @@ export function TemplateIconPicker({
           type="button"
           className={cn([
             "relative flex shrink-0 items-center justify-center overflow-hidden rounded-md transition-colors",
-            size === "sm"
+            size === IconPickerSize.Sm
               ? "hover:bg-accent size-7"
               : "border-border bg-muted/60 hover:bg-accent after:border-t-background size-9 border after:absolute after:end-0 after:top-0 after:size-0 after:border-s-[8px] after:border-t-[8px] after:border-s-transparent",
           ])}
@@ -274,11 +290,11 @@ export function TemplateIconPicker({
           <TemplateIconGlyph
             icon={selected}
             className={
-              selected.type === "emoji"
-                ? size === "sm"
+              selected.type === TemplateIconKind.Emoji
+                ? size === IconPickerSize.Sm
                   ? "text-body"
                   : "text-lg"
-                : size === "sm"
+                : size === IconPickerSize.Sm
                   ? "size-4"
                   : "size-[18px]"
             }
@@ -291,7 +307,7 @@ export function TemplateIconPicker({
         className="w-[420px] max-w-[calc(100vw-24px)] overflow-hidden p-0"
       >
         <div className="border-border flex h-12 items-end gap-6 border-b px-4">
-          {(["icons", "emojis"] as const).map((nextTab) => (
+          {Object.values(IconPickerTab).map((nextTab) => (
             <button
               key={nextTab}
               type="button"
@@ -305,12 +321,12 @@ export function TemplateIconPicker({
                   : "text-muted-foreground hover:text-foreground",
               ])}
             >
-              {nextTab === "icons" ? t`Icons` : t`Emojis`}
+              {nextTab === IconPickerTab.Icons ? t`Icons` : t`Emojis`}
             </button>
           ))}
         </div>
 
-        {tab === "icons" ? (
+        {tab === IconPickerTab.Icons ? (
           <div>
             <div className="border-border border-b px-4 py-3">
               <div className="flex items-center justify-between">
@@ -383,7 +399,7 @@ export function TemplateIconPicker({
                     onClick={() => selectIcon(icon.value)}
                     className={cn([
                       "hover:bg-accent flex size-7 items-center justify-center rounded-md transition-colors",
-                      selected.type === "icon" &&
+                      selected.type === TemplateIconKind.Icon &&
                         selected.value === icon.value &&
                         "bg-accent",
                     ])}

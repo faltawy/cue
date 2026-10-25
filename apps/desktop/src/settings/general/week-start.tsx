@@ -9,18 +9,19 @@ import {
   SelectValue,
 } from "@anlg/ui/components/ui/select";
 
+import { WeekStart } from "~/settings/enums";
 import { useSetSettingValue } from "~/settings/queries";
 import { SETTING_CONTROL_CLASS, SettingRow } from "~/settings/setting-row";
 import { useConfigValue } from "~/shared/config";
 
-function getSystemWeekStart(): "sunday" | "monday" {
+function getSystemWeekStart(): WeekStart {
   const locale = navigator.language || "en-US";
   try {
     const options = new Intl.Locale(locale);
     const info = (options as any).getWeekInfo?.() ?? (options as any).weekInfo;
-    if (info?.firstDay === 1) return "monday";
+    if (info?.firstDay === 1) return WeekStart.Monday;
   } catch {}
-  return "sunday";
+  return WeekStart.Sunday;
 }
 
 export function WeekStartSelector() {
@@ -32,8 +33,8 @@ export function WeekStartSelector() {
 
   const options = useMemo(
     () => [
-      { value: "sunday", label: t`Sunday` },
-      { value: "monday", label: t`Monday` },
+      { value: WeekStart.Sunday, label: t`Sunday` },
+      { value: WeekStart.Monday, label: t`Monday` },
     ],
     [t],
   );

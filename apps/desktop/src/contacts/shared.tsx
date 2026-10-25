@@ -22,6 +22,7 @@ import {
 } from "@anlg/ui/components/ui/input";
 import { cn } from "@anlg/utils";
 
+import { SortOption } from "~/contacts/enums";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 
 export function ContactFacehash({
@@ -36,11 +37,7 @@ export function ContactFacehash({
   return <Avatar seed={name} label={name} size={size} className={className} />;
 }
 
-export type SortOption =
-  | "alphabetical"
-  | "reverse-alphabetical"
-  | "oldest"
-  | "newest";
+export { SortOption };
 
 function SortDropdown({
   sortOption,

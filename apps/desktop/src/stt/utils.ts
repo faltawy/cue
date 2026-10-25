@@ -2,6 +2,11 @@ import type { LiveTranscriptDelta } from "@anlg/plugin-transcription";
 
 import type { SpeakerHintWithId, WordWithId } from "./types";
 
+import {
+  SpeakerAssignmentScopeKind,
+  AssignmentMode,
+  TranscriptWriteMode,
+} from "~/stt/enums";
 import type { SegmentKey } from "~/stt/live-segment";
 
 interface TranscriptStore {
@@ -185,9 +190,9 @@ export class TranscriptAccumulator {
   appendWordsAndHints(
     words: WordWithId[],
     hints: SpeakerHintWithId[],
-    options?: { mode?: "append" | "replace" },
+    options?: { mode?: TranscriptWriteMode },
   ): void {
-    if (options?.mode === "replace") {
+    if (options?.mode === TranscriptWriteMode.Replace) {
       this.words = [...words];
       this.hints = [...hints];
     } else {
@@ -251,7 +256,7 @@ export function upsertSpeakerAssignment(
   humanId: string,
   anchorWordId: string,
   options: {
-    mode?: "all" | "segment";
+    mode?: AssignmentMode;
     wordIds?: string[];
     extendToAdjacent?: boolean;
   } = {},
@@ -260,7 +265,8 @@ export function upsertSpeakerAssignment(
   const words = parseTranscriptWords(store, transcriptId);
   const wordsById = new Map(words.map((word) => [word.id, word]));
   const mode =
-    options.mode === "segment" || !Number.isInteger(segmentKey.speaker_index)
+    options.mode === AssignmentMode.Segment ||
+    !Number.isInteger(segmentKey.speaker_index)
       ? "segment"
       : "all";
   const assignmentWordIds =
@@ -276,11 +282,11 @@ export function upsertSpeakerAssignment(
   const nextScope: SpeakerAssignmentScope =
     mode === "segment"
       ? {
-          kind: "words",
+          kind: SpeakerAssignmentScopeKind.Words,
           wordIds: new Set(assignmentWordIds),
         }
       : {
-          kind: "all",
+          kind: SpeakerAssignmentScopeKind.All,
           channel,
           speakerIndex:
             typeof segmentKey.speaker_index === "number"
@@ -344,9 +350,9 @@ export function upsertSpeakerAssignment(
     }
 
     const hintScope = getSpeakerAssignmentScopeForHint(hints, wordsById, hint);
-    if (hintScope?.kind === "words") {
+    if (hintScope?.kind === SpeakerAssignmentScopeKind.Words) {
       const remainingWordIds = [...hintScope.wordIds].filter((wordId) =>
-        nextScope.kind === "words"
+        nextScope.kind === SpeakerAssignmentScopeKind.Words
           ? !nextScope.wordIds.has(wordId)
           : wordsById.get(wordId)?.channel !== nextScope.channel ||
             (nextScope.speakerIndex != null &&
@@ -418,7 +424,7 @@ export function mergeTranscriptSegmentAssignments(
       segmentKey,
       segmentKey.speaker_human_id,
       assignmentWordIds[0]!,
-      { mode: "segment", wordIds: assignmentWordIds },
+      { mode: AssignmentMode.Segment, wordIds: assignmentWordIds },
     );
     return;
   }
@@ -472,12 +478,12 @@ function unifyProviderSpeakerIndex(
         wordsById,
         hint,
       );
-      if (hintScope?.kind === "all") {
+      if (hintScope?.kind === SpeakerAssignmentScopeKind.All) {
         nextHints.push(hint);
         continue;
       }
       if (
-        hintScope?.kind === "words" &&
+        hintScope?.kind === SpeakerAssignmentScopeKind.Words &&
         setsOverlap(hintScope.wordIds, wordIdSet)
       ) {
         continue;
@@ -536,12 +542,12 @@ function markTranscriptAccumulatorDirty(transcriptId: string): void {
 
 type SpeakerAssignmentScope =
   | {
-      kind: "all";
+      kind: SpeakerAssignmentScopeKind.All;
       channel: number | null | undefined;
       speakerIndex: number | null;
     }
   | {
-      kind: "words";
+      kind: SpeakerAssignmentScopeKind.Words;
       wordIds: Set<string>;
     };
 
@@ -568,7 +574,7 @@ function getSpeakerAssignmentScopeForHint(
     const speakerIndex = explicitScope.speaker_index;
     if (speakerIndex === null || typeof speakerIndex === "number") {
       return {
-        kind: "all",
+        kind: SpeakerAssignmentScopeKind.All,
         channel: explicitScope.channel,
         speakerIndex,
       };
@@ -582,7 +588,7 @@ function getSpeakerAssignmentScopeForHint(
     Array.isArray((value as { word_ids?: unknown }).word_ids)
   ) {
     return {
-      kind: "words",
+      kind: SpeakerAssignmentScopeKind.Words,
       wordIds: new Set(
         (value as { word_ids: unknown[] }).word_ids.filter(
           (wordId): wordId is string =>
@@ -603,7 +609,7 @@ function getSpeakerAssignmentScopeForHint(
   }
 
   return {
-    kind: "all",
+    kind: SpeakerAssignmentScopeKind.All,
     channel: word.channel,
     speakerIndex: findSpeakerIndexForWord(hints, wordId),
   };
@@ -615,15 +621,15 @@ function speakerAssignmentScopesConflict(
   hints: SpeakerHintWithId[],
   wordsById: Map<string, WordWithId>,
 ): boolean {
-  if (right.kind === "words") {
-    if (left.kind === "words") {
+  if (right.kind === SpeakerAssignmentScopeKind.Words) {
+    if (left.kind === SpeakerAssignmentScopeKind.Words) {
       return setsOverlap(left.wordIds, right.wordIds);
     }
 
     return false;
   }
 
-  if (left.kind === "words") {
+  if (left.kind === SpeakerAssignmentScopeKind.Words) {
     for (const wordId of left.wordIds) {
       const word = wordsById.get(wordId);
       if (!word || word.channel !== right.channel) {

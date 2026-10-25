@@ -16,15 +16,20 @@ import {
   tickTranscriptionStallWatchdog,
 } from "./general-shared";
 
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
+
 describe("isBatchTranscriptionPending", () => {
   it.each([
-    ["active", false, false, true],
-    ["active", true, false, true],
-    ["finalizing", false, false, true],
-    ["finalizing", true, true, false],
-    ["running_batch", null, null, true],
-    ["active", true, true, false],
-    ["inactive", false, false, false],
+    [LiveSessionStatus.Active, false, false, true],
+    [LiveSessionStatus.Active, true, false, true],
+    [LiveSessionStatus.Finalizing, false, false, true],
+    [LiveSessionStatus.Finalizing, true, true, false],
+    [BatchSessionMode.RunningBatch, null, null, true],
+    [LiveSessionStatus.Active, true, true, false],
+    [LiveSessionStatus.Inactive, false, false, false],
   ] as const)(
     "handles mode %s with requested=%s and active=%s",
     (sessionMode, requested, active, expected) => {
@@ -40,7 +45,7 @@ describe("isBatchTranscriptionPending", () => {
   it("covers the post-stop gap before batch processing starts", () => {
     expect(
       isBatchTranscriptionPending(
-        "inactive",
+        LiveSessionStatus.Inactive,
         {
           requestedLiveTranscription: null,
           liveTranscriptionActive: null,
@@ -64,7 +69,7 @@ function createLive(): GeneralState["live"] {
 function createActiveLive(): GeneralState["live"] {
   return {
     ...createLive(),
-    status: "active",
+    status: LiveSessionStatus.Active,
     sessionId: "session-1",
     requestedLiveTranscription: true,
     liveTranscriptionActive: true,

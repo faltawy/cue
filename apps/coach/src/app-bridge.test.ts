@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { appBridge, BridgeError } from "./app-bridge";
+import { appBridge, BridgeError, DictationAction } from "./app-bridge";
 
 type Seen = {
   method: string;
@@ -230,7 +230,7 @@ test("dictation validates the native response and keeps recording ownership in i
         : { text: 42 },
     ),
   );
-  expect(await bridge.dictation(recordingId, "stop")).toEqual({
+  expect(await bridge.dictation(recordingId, DictationAction.Stop)).toEqual({
     text: "My question",
   });
   expect(seen[0]).toEqual({
@@ -239,5 +239,7 @@ test("dictation validates the native response and keeps recording ownership in i
     auth: "Bearer secret",
     body: { recording_id: recordingId, action: "stop" },
   });
-  await expect(bridge.dictation(recordingId, "start")).rejects.toThrow();
+  await expect(
+    bridge.dictation(recordingId, DictationAction.Start),
+  ).rejects.toThrow();
 });

@@ -4,23 +4,19 @@ import {
   type Theme,
   type Window,
 } from "@tauri-apps/api/window";
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import { commands as iconCommands } from "@anlg/plugin-icon";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { applyDocumentTheme, writeStoredThemePreference } from "./apply";
-import {
-  type AppIconPreference,
-  normalizeAppIconPreference,
-  resolveDockIconName,
-} from "./icon";
-import type { ThemePreference } from "./resolve";
+import { normalizeAppIconPreference, resolveDockIconName } from "./icon";
 import { useSettingsThemeReady } from "./use-settings-theme-ready";
 
 import { useConfigValue } from "~/shared/config";
+import { AppIconPreference, ThemePreference } from "~/shared/enums";
 
-let activeThemePreference: ThemePreference = "system";
+let activeThemePreference: ThemePreference = ThemePreference.System;
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const theme = useConfigValue("theme") as ThemePreference;
@@ -67,8 +63,8 @@ function ThemeSync({
       applySystemTheme(await readSystemIsDark(appWindow));
     };
 
-    if (theme !== "system") {
-      applySystemTheme(theme === "dark");
+    if (theme !== ThemePreference.System) {
+      applySystemTheme(theme === ThemePreference.Dark);
       void setNativeThemePreference(appWindow, theme);
 
       return () => {
@@ -115,15 +111,15 @@ function ThemeSync({
 
 export async function applyThemePreference(
   theme: ThemePreference,
-  appIcon: AppIconPreference = "default",
+  appIcon: AppIconPreference = AppIconPreference.Default,
 ) {
   activeThemePreference = theme;
   const appWindow = getCurrentWindow();
 
-  if (theme !== "system") {
+  if (theme !== ThemePreference.System) {
     await Promise.all([
       setNativeThemePreference(appWindow, theme),
-      applyAppearance(theme, appIcon, theme === "dark"),
+      applyAppearance(theme, appIcon, theme === ThemePreference.Dark),
     ]);
     return;
   }
@@ -144,12 +140,14 @@ async function applyAppearance(
 
 export async function applyAppIconPreference(
   appIcon: AppIconPreference,
-  theme: ThemePreference = "system",
+  theme: ThemePreference = ThemePreference.System,
 ) {
   await applyDockIcon(
     appIcon,
     theme,
-    theme === "system" ? await readSystemIsDark() : theme === "dark",
+    theme === ThemePreference.System
+      ? await readSystemIsDark()
+      : theme === ThemePreference.Dark,
   );
 }
 
@@ -158,7 +156,7 @@ async function setNativeThemePreference(
   theme: ThemePreference,
 ) {
   try {
-    await appWindow.setTheme(theme === "system" ? null : theme);
+    await appWindow.setTheme(theme === ThemePreference.System ? null : theme);
   } catch (error) {
     console.error("[theme] failed to update native appearance", error);
   }

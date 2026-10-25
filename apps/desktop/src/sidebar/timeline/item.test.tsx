@@ -8,6 +8,8 @@ import {
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TimelinePrecision } from "~/sidebar/enums";
+
 const mocks = vi.hoisted(() => ({
   addDeletion: vi.fn(),
   ignoreEvent: vi.fn(),
@@ -221,7 +223,7 @@ describe("TimelineItemComponent", () => {
             ...data,
           },
         }}
-        precision="time"
+        precision={TimelinePrecision.Time}
         selected={props.selected ?? false}
         timezone="UTC"
         multiSelected={false}
@@ -392,7 +394,7 @@ describe("TimelineItemComponent", () => {
               session_folder: "Work",
             },
           }}
-          precision="time"
+          precision={TimelinePrecision.Time}
           selected={selected}
           timezone="UTC"
           multiSelected={false}
@@ -419,7 +421,7 @@ describe("TimelineItemComponent", () => {
             session_folder: "",
           },
         }}
-        precision="time"
+        precision={TimelinePrecision.Time}
         selected={false}
         timezone="UTC"
         multiSelected={false}

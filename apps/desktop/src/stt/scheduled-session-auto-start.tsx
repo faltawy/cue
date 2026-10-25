@@ -6,7 +6,9 @@ import { isLockedFlag } from "~/lock/flag";
 import { useAppLock } from "~/lock/store";
 import { useSession } from "~/session/queries";
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { useListener } from "~/stt/contexts";
 import { readDueScheduledSessionMeeting } from "~/stt/scheduled-auto-start";
 import {
@@ -27,7 +29,7 @@ export function ScheduledSessionAutoStart({
     state.canStartLiveSession(sessionId),
   );
   const recordingActive = useListener(
-    (state) => state.live.status === "active",
+    (state) => state.live.status === LiveSessionStatus.Active,
   );
   const session = useSession(sessionId);
   const revealed = useAppLock((state) =>
@@ -170,8 +172,8 @@ function StartScheduledSessionAutoStart({
 function clearPendingAutoStart(sessionId: string) {
   const tabsState = useTabs.getState();
   const currentTab = tabsState.tabs.find(
-    (candidate): candidate is Extract<Tab, { type: "sessions" }> =>
-      candidate.type === "sessions" && candidate.id === sessionId,
+    (candidate): candidate is Extract<Tab, { type: TabType.Sessions }> =>
+      candidate.type === TabType.Sessions && candidate.id === sessionId,
   );
   if (!currentTab?.state.autoStart) {
     return;

@@ -9,8 +9,11 @@ import {
 import { createRef, type ReactNode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { MultiSelectionBar, SelectionMenu } from "./selection-menu";
-import type { TranscriptContextMenuRequest } from "./selection-menu";
+import {
+  MultiSelectionBar,
+  SelectionMenu,
+  type TranscriptContextMenuRequest,
+} from "./selection-menu";
 
 import { setSessionFabSelectionHost } from "~/session/components/floating/selection-slot";
 

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { constrainPanel, resizePanel } from "./scan-panel-layout";
 
+import { Edge } from "~/devtools-bar/enums";
+
 beforeEach(() => {
   vi.stubGlobal("innerWidth", 1200);
   vi.stubGlobal("innerHeight", 900);
@@ -20,13 +22,13 @@ it("keeps offscreen saved geometry inside a smaller window", () => {
 });
 it("resizes from the top left while anchoring the opposite corner and enforcing minimum size", () => {
   const rect = { x: 200, y: 150, width: 800, height: 600 };
-  expect(resizePanel(rect, "nw", 100, 100)).toEqual({
+  expect(resizePanel(rect, Edge.Nw, 100, 100)).toEqual({
     x: 300,
     y: 250,
     width: 700,
     height: 500,
   });
-  expect(resizePanel(rect, "nw", 1000, 1000)).toEqual({
+  expect(resizePanel(rect, Edge.Nw, 1000, 1000)).toEqual({
     x: 440,
     y: 490,
     width: 560,

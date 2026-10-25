@@ -6,14 +6,14 @@ import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { cn } from "@anlg/utils";
 
 import { useDevtoolsMetrics } from "./metrics";
-import type { ReactToolsState } from "./react-tools";
 import {
+  type ReactToolsState,
   setReactInspecting,
   setReactToolbarVisible,
   setReactScanSettings,
 } from "./react-tools";
-import type { PromptMode, ScanEvent } from "./scan-data";
 import {
+  ScanEvent,
   clearScanHistory,
   getScanPrompt,
   mountScanInspector,
@@ -21,9 +21,11 @@ import {
 } from "./scan-data";
 import { RESIZE_HANDLES, useScanPanelLayout } from "./scan-panel-layout";
 
+import { Edge, ScanSeverity, View, PromptMode } from "~/devtools-bar/enums";
+
 const buttonClass =
   "rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground";
-type View = "ranked" | "overview" | "prompts" | "settings";
+
 type Selection = Readonly<{
   event: ScanEvent;
   prompts: Record<PromptMode, string>;
@@ -32,9 +34,9 @@ function captureSelection(event: ScanEvent): Selection {
   return {
     event,
     prompts: {
-      fix: getScanPrompt(event.id, "fix"),
-      explanation: getScanPrompt(event.id, "explanation"),
-      data: getScanPrompt(event.id, "data"),
+      fix: getScanPrompt(event.id, PromptMode.Fix),
+      explanation: getScanPrompt(event.id, PromptMode.Explanation),
+      data: getScanPrompt(event.id, PromptMode.Data),
     },
   };
 }
@@ -52,7 +54,7 @@ export function ScanPanel({
   useEffect(() => {
     panelRef.current?.showPopover?.();
   }, [panelRef]);
-  const [view, setView] = useState<View>("ranked");
+  const [view, setView] = useState<View>(View.Ranked);
   // Retain only the user's selected event and its exact prompts when the
   // bounded live buffer rolls over. Clear explicitly releases the selection.
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -118,9 +120,9 @@ export function ScanPanel({
                   aria-hidden="true"
                   className={cn([
                     "size-1.5 shrink-0 rounded-full",
-                    event.severity === "high"
+                    event.severity === ScanSeverity.High
                       ? "bg-destructive"
-                      : event.severity === "needs-improvement"
+                      : event.severity === ScanSeverity.NeedsImprovement
                         ? "bg-warm"
                         : "bg-muted-foreground",
                   ])}
@@ -156,30 +158,28 @@ export function ScanPanel({
               aria-label="Performance views"
               className="flex min-w-0 items-center gap-1"
             >
-              {(["ranked", "overview", "prompts", "settings"] as const).map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    role="tab"
-                    aria-selected={!state.inspecting && view === tab}
-                    className={cn([
-                      buttonClass,
-                      !state.inspecting &&
-                        view === tab &&
-                        "bg-muted text-foreground",
-                    ])}
-                    onClick={() => {
-                      setReactInspecting(false);
-                      if (selected && !selection)
-                        setSelection(captureSelection(selected));
-                      setView(tab);
-                    }}
-                  >
-                    {tab[0].toUpperCase() + tab.slice(1)}
-                  </button>
-                ),
-              )}
+              {Object.values(View).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={!state.inspecting && view === tab}
+                  className={cn([
+                    buttonClass,
+                    !state.inspecting &&
+                      view === tab &&
+                      "bg-muted text-foreground",
+                  ])}
+                  onClick={() => {
+                    setReactInspecting(false);
+                    if (selected && !selection)
+                      setSelection(captureSelection(selected));
+                    setView(tab);
+                  }}
+                >
+                  {tab[0].toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
             </div>
             <button
               type="button"
@@ -190,7 +190,7 @@ export function ScanPanel({
               ×
             </button>
           </div>
-          {view === "settings" && !state.inspecting ? (
+          {view === View.Settings && !state.inspecting ? (
             <div className="space-y-3 overflow-auto p-3">
               <p>React Scan {state.version}</p>
               <label className="flex items-center justify-between gap-3">
@@ -262,7 +262,7 @@ export function ScanPanel({
                     : ` · ${Math.round(selected.fps)} FPS`}
                 </span>
               </div>
-              {view === "prompts" ? (
+              {view === View.Prompts ? (
                 <Prompts
                   key={selected.id}
                   prompts={(selection ?? captureSelection(selected)).prompts}
@@ -270,7 +270,7 @@ export function ScanPanel({
                 />
               ) : (
                 <div className="min-h-0 flex-1 overflow-auto p-3">
-                  {view === "ranked" ? (
+                  {view === View.Ranked ? (
                     <Ranked event={selected} />
                   ) : (
                     <Overview event={selected} />
@@ -294,7 +294,7 @@ export function ScanPanel({
           onPointerDown={(event) => layout.resize(event, edge)}
           className={cn(["absolute z-10 touch-none", className])}
         >
-          {edge === "se" ? (
+          {edge === Edge.Se ? (
             <span className="text-muted-foreground pointer-events-none absolute end-2 bottom-2">
               ◢
             </span>
@@ -313,7 +313,7 @@ function Prompts({
   prompts: Record<PromptMode, string>;
   copyText?: (text: string) => Promise<void>;
 }>) {
-  const [mode, setMode] = useState<PromptMode>("fix");
+  const [mode, setMode] = useState<PromptMode>(PromptMode.Fix);
   const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const prompt = prompts[mode];
@@ -324,7 +324,7 @@ function Prompts({
         role="tablist"
         aria-label="Prompt type"
       >
-        {(["fix", "explanation", "data"] as const).map((tab) => (
+        {Object.values(PromptMode).map((tab) => (
           <button
             type="button"
             role="tab"

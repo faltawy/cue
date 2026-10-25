@@ -5,7 +5,10 @@ import {
   events as detectEvents,
 } from "@anlg/plugin-detect";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { parseEventInstant } from "@anlg/utils";
 
@@ -14,9 +17,14 @@ import { liveQueryClient } from "~/db";
 import { getOrCreateSessionForEventId } from "~/session/queries";
 import { useConfigValues } from "~/shared/config";
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
-import type { LiveSessionStatus } from "~/store/zustand/listener/general-shared";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
+import {
+  ScheduledAutoStartAction,
+  ScheduledAutoStartResult,
+} from "~/stt/enums";
 import { isMeetingCapableMicApp, type MicApp } from "~/stt/meeting-apps";
 import { hasScheduledAutoStartInFlight } from "~/stt/scheduled-auto-start-state";
 import { decideAutomaticMeetingAttendance } from "~/stt/scheduled-meeting-attendance";
@@ -191,16 +199,19 @@ export function isPreviousCallOnMic({
 export function hasPendingAutoStart(tabs: readonly Tab[]): boolean {
   return tabs.some(
     (tab) =>
-      tab.type === "sessions" && tab.active && Boolean(tab.state.autoStart),
+      tab.type === TabType.Sessions &&
+      tab.active &&
+      Boolean(tab.state.autoStart),
   );
 }
 
 export function getScheduledAutoStartAction(
   status: LiveSessionStatus,
-): "start" | "retry" | "skip" {
-  if (status === "active") return "skip";
-  if (status === "finalizing") return "retry";
-  return "start";
+): ScheduledAutoStartAction {
+  if (status === LiveSessionStatus.Active) return ScheduledAutoStartAction.Skip;
+  if (status === LiveSessionStatus.Finalizing)
+    return ScheduledAutoStartAction.Retry;
+  return ScheduledAutoStartAction.Start;
 }
 
 async function readDueScheduledMeeting(
@@ -286,30 +297,30 @@ function isIgnoredScheduledMeeting(
 export async function startScheduledMeeting(
   row: ScheduledMeetingRow,
   autoJoin: boolean,
-): Promise<"started" | "ignored" | "blocked" | "ineligible"> {
-  if (listenerStore.getState().live.status === "active") {
-    return "ignored";
+): Promise<ScheduledAutoStartResult> {
+  if (listenerStore.getState().live.status === LiveSessionStatus.Active) {
+    return ScheduledAutoStartResult.Ignored;
   }
 
   const { ignoredIds, ignoredSeriesIds } = await getIgnoredEventSets();
   if (
-    listenerStore.getState().live.status === "active" ||
+    listenerStore.getState().live.status === LiveSessionStatus.Active ||
     isIgnoredScheduledMeeting(row, ignoredIds, ignoredSeriesIds)
   ) {
-    return "ignored";
+    return ScheduledAutoStartResult.Ignored;
   }
 
   let currentRow = await readDueScheduledMeeting(row.id);
   if (!currentRow) {
-    return "ineligible";
+    return ScheduledAutoStartResult.Ineligible;
   }
 
   const sessionId = await getOrCreateSessionForEventId(currentRow.id);
-  if (listenerStore.getState().live.status === "active") {
-    return "ignored";
+  if (listenerStore.getState().live.status === LiveSessionStatus.Active) {
+    return ScheduledAutoStartResult.Ignored;
   }
   if (!listenerStore.getState().canStartLiveSession(sessionId)) {
-    return "blocked";
+    return ScheduledAutoStartResult.Blocked;
   }
 
   // Session creation can cross a calendar sync boundary. Re-check immediately
@@ -317,19 +328,19 @@ export async function startScheduledMeeting(
   // cancellation, or reschedule cannot trigger either automatic action.
   currentRow = await readDueScheduledMeeting(currentRow.id);
   if (!currentRow) {
-    return "ineligible";
+    return ScheduledAutoStartResult.Ineligible;
   }
 
   const latestIgnoredEvents = await getIgnoredEventSets();
   if (
-    listenerStore.getState().live.status === "active" ||
+    listenerStore.getState().live.status === LiveSessionStatus.Active ||
     isIgnoredScheduledMeeting(
       currentRow,
       latestIgnoredEvents.ignoredIds,
       latestIgnoredEvents.ignoredSeriesIds,
     )
   ) {
-    return "ignored";
+    return ScheduledAutoStartResult.Ignored;
   }
 
   // Joining and listening are independent: the link opens as soon as the
@@ -345,7 +356,7 @@ export async function startScheduledMeeting(
     state: { view: null, autoStart: true, scheduledAutoStart: true },
   });
 
-  return "started";
+  return ScheduledAutoStartResult.Started;
 }
 
 export function ScheduledMeetingAutoStart() {
@@ -367,7 +378,7 @@ export function ScheduledMeetingAutoStart() {
   );
 
   useMountEffect(() => {
-    if (getCurrentWebviewWindowLabel() !== "main") {
+    if (getCurrentWebviewWindowLabel() !== StaticWindowLabel.Main) {
       return;
     }
 
@@ -466,7 +477,11 @@ export function ScheduledMeetingAutoStart() {
 
       const tabsState = useTabs.getState();
       for (const tab of tabsState.tabs) {
-        if (tab.type !== "sessions" || tab.active || !tab.state.autoStart) {
+        if (
+          tab.type !== TabType.Sessions ||
+          tab.active ||
+          !tab.state.autoStart
+        ) {
           continue;
         }
 
@@ -492,7 +507,7 @@ export function ScheduledMeetingAutoStart() {
       };
       const liveStatus = listenerStore.getState().live.status;
       const action = getScheduledAutoStartAction(liveStatus);
-      if (action === "skip") {
+      if (action === ScheduledAutoStartAction.Skip) {
         // Do not let an overlapping meeting start after the active recording ends.
         for (const row of due) {
           firedEventIds.add(row.id);
@@ -502,7 +517,7 @@ export function ScheduledMeetingAutoStart() {
       }
 
       if (
-        action === "retry" ||
+        action === ScheduledAutoStartAction.Retry ||
         hasScheduledAutoStartInFlight() ||
         hasPendingAutoStart(useTabs.getState().tabs)
       ) {
@@ -535,7 +550,7 @@ export function ScheduledMeetingAutoStart() {
         .then((outcome) => {
           // A blocked start is transient (another session finalizing, a start
           // already in flight), so leave it eligible for the next tick.
-          if (outcome === "blocked") {
+          if (outcome === ScheduledAutoStartResult.Blocked) {
             scheduleTick(TICK_MS);
             return;
           }
@@ -543,7 +558,7 @@ export function ScheduledMeetingAutoStart() {
           // Keep this event dormant until calendar data changes, then try the
           // next overlapping meeting immediately instead of letting the newer
           // ineligible event hide it for the full grace window.
-          if (outcome === "ineligible") {
+          if (outcome === ScheduledAutoStartResult.Ineligible) {
             const currentEventRevision = eventRevisions.get(next.id) ?? 0;
             if (currentEventRevision !== startEventRevision) {
               scheduleTick(1);
@@ -554,7 +569,7 @@ export function ScheduledMeetingAutoStart() {
             return;
           }
 
-          if (outcome === "ignored") {
+          if (outcome === ScheduledAutoStartResult.Ignored) {
             firedEventIds.add(next.id);
             return;
           }
@@ -581,7 +596,7 @@ export function ScheduledMeetingAutoStart() {
     const unsubscribeTabs = useTabs.subscribe(tick);
     const unsubscribeListener = listenerStore.subscribe((state, previous) => {
       if (state.live.status === previous.live.status) return;
-      if (previous.live.status === "active") {
+      if (previous.live.status === LiveSessionStatus.Active) {
         lastRecordingEndedMs = Date.now();
       }
       tick();

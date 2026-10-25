@@ -1,4 +1,4 @@
-import type { TaskStatus } from "@anlg/store";
+import { TaskStatus } from "@anlg/store";
 
 import type { JSONContent } from "./note";
 
@@ -9,7 +9,7 @@ export interface TaskSource {
   id: string;
 }
 
-export type { TaskStatus } from "@anlg/store";
+export { TaskStatus } from "@anlg/store";
 
 export interface TaskRecord {
   taskId: string;
@@ -30,7 +30,7 @@ export function createTaskItemId(): string {
   return id();
 }
 
-export const DEFAULT_TASK_STATUS: TaskStatus = "todo";
+export const DEFAULT_TASK_STATUS: TaskStatus = TaskStatus.Todo;
 
 export function isTaskStatus(value: unknown): value is TaskStatus {
   return value === "todo" || value === "in_progress" || value === "done";
@@ -42,11 +42,11 @@ export function normalizeTaskStatus(
   fallback: TaskStatus = DEFAULT_TASK_STATUS,
 ): TaskStatus {
   if (status === true) {
-    return "done";
+    return TaskStatus.Done;
   }
 
   if (status === false) {
-    return "todo";
+    return TaskStatus.Todo;
   }
 
   if (isTaskStatus(status)) {
@@ -54,11 +54,11 @@ export function normalizeTaskStatus(
   }
 
   if (checked === true) {
-    return "done";
+    return TaskStatus.Done;
   }
 
   if (checked === false) {
-    return "todo";
+    return TaskStatus.Todo;
   }
 
   return fallback;
@@ -69,11 +69,11 @@ export function getOptionalTaskStatus(
   checked?: unknown,
 ): TaskStatus | null {
   if (status === true) {
-    return "done";
+    return TaskStatus.Done;
   }
 
   if (status === false) {
-    return "todo";
+    return TaskStatus.Todo;
   }
 
   if (isTaskStatus(status)) {
@@ -81,18 +81,18 @@ export function getOptionalTaskStatus(
   }
 
   if (checked === true) {
-    return "done";
+    return TaskStatus.Done;
   }
 
   if (checked === false) {
-    return "todo";
+    return TaskStatus.Todo;
   }
 
   return null;
 }
 
 export function createTaskStatusAttrs(status: TaskStatus) {
-  return { status, checked: status === "done" };
+  return { status, checked: status === TaskStatus.Done };
 }
 
 export function createTaskItemAttrs(
@@ -105,11 +105,11 @@ export function createTaskItemAttrs(
 }
 
 export function getNextTaskStatus(status: TaskStatus): TaskStatus {
-  return status === "done" ? "todo" : "done";
+  return status === TaskStatus.Done ? TaskStatus.Todo : TaskStatus.Done;
 }
 
 export function isTaskDone(status: TaskStatus): boolean {
-  return status === "done";
+  return status === TaskStatus.Done;
 }
 
 export function createTaskSourceKey(source: TaskSource): string {

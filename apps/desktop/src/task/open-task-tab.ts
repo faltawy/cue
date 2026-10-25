@@ -1,9 +1,14 @@
 import type { Node } from "prosemirror-model";
 
-import type { AppLinkAttrs } from "@anlg/editor/app-link";
+import {
+  AppLinkProvider,
+  GitHubLinkKind,
+  type AppLinkAttrs,
+} from "@anlg/editor/app-link";
 
 import { id } from "~/shared/utils";
 import { type Tab, type TaskResource, useTabs } from "~/store/zustand/tabs";
+import { TaskResourceType, TabType } from "~/store/zustand/tabs/enums";
 
 export function collectSiblingResources(
   doc: Node,
@@ -26,19 +31,19 @@ export function collectSiblingResources(
   target.descendants((node) => {
     if (node.type.name !== "appLink") return true;
     const attrs = node.attrs as AppLinkAttrs;
-    if (attrs.provider !== "github") return false;
+    if (attrs.provider !== AppLinkProvider.Github) return false;
     if (!attrs.owner || !attrs.repo || !attrs.number) return false;
 
-    if (attrs.kind === "issue") {
+    if (attrs.kind === GitHubLinkKind.Issue) {
       resources.push({
-        type: "github_issue",
+        type: TaskResourceType.GithubIssue,
         owner: attrs.owner,
         repo: attrs.repo,
         number: attrs.number,
       });
-    } else if (attrs.kind === "pull_request") {
+    } else if (attrs.kind === GitHubLinkKind.PullRequest) {
       resources.push({
-        type: "github_pr",
+        type: TaskResourceType.GithubPr,
         owner: attrs.owner,
         repo: attrs.repo,
         number: attrs.number,
@@ -56,7 +61,7 @@ export function openTaskTab(resources: TaskResource[]) {
   const { tabs } = state;
 
   const newTab: Tab = {
-    type: "task",
+    type: TabType.Task,
     id: id(),
     resources,
     active: true,
@@ -66,7 +71,7 @@ export function openTaskTab(resources: TaskResource[]) {
 
   const existing = tabs.find(
     (tab) =>
-      tab.type === "task" &&
+      tab.type === TabType.Task &&
       tab.resources.length === newTab.resources.length &&
       tab.resources.every((resource, index) => {
         const next = newTab.resources[index];

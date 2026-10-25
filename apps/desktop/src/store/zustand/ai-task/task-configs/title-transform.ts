@@ -3,9 +3,13 @@ import type { TaskArgsMap, TaskArgsMapTransformed, TaskConfig } from ".";
 import { resolveSummaryLanguage } from "~/services/enhancer/summary-language";
 import { loadSessionContentSnapshot } from "~/session/content-queries";
 import type { SettingValues } from "~/settings/schema";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { parseDictionaryTermsJson } from "~/stt/keywords";
 
-export const titleTransform: Pick<TaskConfig<"title">, "transformArgs"> = {
+export const titleTransform: Pick<
+  TaskConfig<TaskType.Title>,
+  "transformArgs"
+> = {
   transformArgs,
 };
 

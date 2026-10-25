@@ -6,6 +6,7 @@ import {
 import { z } from "zod";
 
 import {
+  type CoachProvider,
   type ClaudeModel,
   commands as coachCommands,
   type Endpoint,
@@ -33,7 +34,7 @@ type ContentPart =
   | { type: "image"; mediaType: ImageType; data: string };
 
 export type ClaudeRequest = {
-  provider: "claude" | "codex";
+  provider: CoachProvider;
   model: string;
   system?: string;
   messages: Array<{ role: "user" | "assistant"; content: ContentPart[] }>;
@@ -92,7 +93,7 @@ function unsupported(functionality: string): never {
 export function buildClaudeRequest(
   model: string,
   options: CallOptions,
-  provider: "claude" | "codex" = "claude",
+  provider: CoachProvider = "claude",
 ): ClaudeRequest {
   if (options.tools?.length) {
     unsupported("tool calling");
@@ -199,7 +200,7 @@ export function createClaudeCodeModel(
 }
 
 export function createCoachModel(
-  provider: "claude" | "codex",
+  provider: CoachProvider,
   modelId: string,
   deps: ClaudeCodeDeps = defaultDeps,
 ): LanguageModelV3 {

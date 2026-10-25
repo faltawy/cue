@@ -2,6 +2,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TimelineGroupBy } from "~/sidebar/enums";
+
 const mocks = vi.hoisted(() => ({
   anchorNode: null as HTMLDivElement | null,
   openNew: vi.fn(),
@@ -670,7 +672,7 @@ describe("TimelineView", () => {
         folder_id: "",
       },
     };
-    useSidebarNotes.getState().setGroupBy("folder");
+    useSidebarNotes.getState().setGroupBy(TimelineGroupBy.Folder);
 
     render(<TimelineView topChromeInset />);
 

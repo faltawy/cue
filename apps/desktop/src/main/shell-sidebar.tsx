@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 import { useShell } from "~/contexts/shell";
 import { LeftSidebar } from "~/sidebar";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function ClassicMainSidebar({
   folderFilter = null,
@@ -17,7 +18,7 @@ export function ClassicMainSidebar({
 } = {}) {
   const { leftsidebar } = useShell();
   const currentTab = useTabs((state) => state.currentTab);
-  const isOnboarding = currentTab?.type === "onboarding";
+  const isOnboarding = currentTab?.type === TabType.Onboarding;
 
   if (!leftsidebar.expanded || isOnboarding) {
     return null;

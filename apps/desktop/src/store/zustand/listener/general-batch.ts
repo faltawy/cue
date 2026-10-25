@@ -16,6 +16,7 @@ import {
 } from "./batch";
 
 import { playCompletionSound } from "~/shared/completion-sound";
+import { BatchTerminalReason } from "~/store/zustand/listener/enums";
 import { BatchResponseProcessingError } from "~/stt/batch-response-processing-error";
 
 type BatchStore = BatchActions & BatchState;
@@ -127,7 +128,9 @@ export const runBatchSession = async <T extends BatchStore>(
     reject: (reason?: unknown) => void,
     options?: {
       clearSession?: boolean;
-      terminalReason?: "failed" | "timed_out";
+      terminalReason?:
+        | BatchTerminalReason.Failed
+        | BatchTerminalReason.TimedOut;
       errorCode?: BatchErrorCode;
     },
   ) => {
@@ -195,7 +198,9 @@ export const runBatchSession = async <T extends BatchStore>(
         if (payload.type === "failed") {
           rejectFailure(payload.error, reject, {
             terminalReason:
-              payload.code === "timed_out" ? "timed_out" : "failed",
+              payload.code === "timed_out"
+                ? BatchTerminalReason.TimedOut
+                : BatchTerminalReason.Failed,
             errorCode: payload.code,
           });
         }
@@ -396,7 +401,9 @@ export async function recoverRunningBatchSessions<T extends BatchStore>(
           get().handleBatchFailed(
             sessionId,
             payload.error,
-            payload.code === "timed_out" ? "timed_out" : "failed",
+            payload.code === "timed_out"
+              ? BatchTerminalReason.TimedOut
+              : BatchTerminalReason.Failed,
             payload.code,
           );
           break;

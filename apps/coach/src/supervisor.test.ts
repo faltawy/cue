@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  MissingConversationError,
   missingConversation,
+  MissingConversationError,
   restartAfter,
+  RestartKind,
   Supervisor,
 } from "./supervisor";
 
@@ -112,15 +113,15 @@ describe("missingConversation", () => {
 describe("restartAfter", () => {
   test("one immediate retry, then doubling waits up to the cap, then stop", () => {
     expect([1, 2, 3, 4, 5].map((failures) => restartAfter(failures))).toEqual([
-      { kind: "now" },
-      { kind: "later", delayMs: 2_000 },
-      { kind: "later", delayMs: 4_000 },
-      { kind: "later", delayMs: 8_000 },
-      { kind: "stop" },
+      { kind: RestartKind.Now },
+      { kind: RestartKind.Later, delayMs: 2_000 },
+      { kind: RestartKind.Later, delayMs: 4_000 },
+      { kind: RestartKind.Later, delayMs: 8_000 },
+      { kind: RestartKind.Stop },
     ]);
     expect(
       restartAfter(9, { maxFailures: 20, baseMs: 2_000, capMs: 30_000 }),
-    ).toEqual({ kind: "later", delayMs: 30_000 });
+    ).toEqual({ kind: RestartKind.Later, delayMs: 30_000 });
   });
 });
 

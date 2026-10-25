@@ -28,8 +28,11 @@ import {
   TranscriptSelectionProvider,
   useTranscriptSelectionSources,
 } from "./selection-context";
-import { MultiSelectionBar, SelectionMenu } from "./selection-menu";
-import type { TranscriptContextMenuRequest } from "./selection-menu";
+import {
+  MultiSelectionBar,
+  SelectionMenu,
+  type TranscriptContextMenuRequest,
+} from "./selection-menu";
 import { TranscriptSeparator } from "./separator";
 import { RenderTranscript } from "./transcript";
 import {
@@ -40,7 +43,9 @@ import {
 } from "./viewport-hooks";
 
 import { useAudioPlayer } from "~/audio-player";
+import { AudioPlayerState } from "~/audio-player/enums";
 import { useAudioTime } from "~/audio-player/provider";
+import { AssignmentMode, TranscriptSelectionAction } from "~/stt/enums";
 import type { Segment } from "~/stt/live-segment";
 import {
   assignTranscriptSpeaker,
@@ -126,16 +131,16 @@ export function TranscriptViewer({
   } = useAudioPlayer();
   const time = useAudioTime();
   const deferredCurrentMs = useDeferredValue(time.current * 1000);
-  const isPlaying = playerState === "playing";
+  const isPlaying = playerState === AudioPlayerState.Playing;
   useHotkeys(
     "space",
     (e) => {
       e.preventDefault();
-      if (playerState === "playing") {
+      if (playerState === AudioPlayerState.Playing) {
         pause();
-      } else if (playerState === "paused") {
+      } else if (playerState === AudioPlayerState.Paused) {
         resume();
-      } else if (playerState === "stopped") {
+      } else if (playerState === AudioPlayerState.Stopped) {
         start();
       }
     },
@@ -160,8 +165,8 @@ export function TranscriptViewer({
   visibleTranscriptIdsRef.current = visibleTranscriptIds;
 
   const handleSelectionAction = useCallback(
-    (action: "copy" | "play", selection: TranscriptWordSelection) => {
-      if (action === "copy") {
+    (action: TranscriptSelectionAction, selection: TranscriptWordSelection) => {
+      if (action === TranscriptSelectionAction.Copy) {
         void navigator.clipboard.writeText(selection.text);
         return;
       }
@@ -187,7 +192,7 @@ export function TranscriptViewer({
               segmentKey: group.segmentKey,
               humanId,
               anchorWordId: group.wordIds[0]!,
-              mode: "segment",
+              mode: AssignmentMode.Segment,
               wordIds: group.wordIds,
               extendToAdjacent,
             }),

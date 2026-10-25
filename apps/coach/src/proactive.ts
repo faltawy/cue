@@ -1,13 +1,32 @@
-import { detectHits, type Hit, type HitKind } from "./detect";
+import {
+  DEFAULT_COACHING,
+  type MeetingCoaching,
+  MeetingIntent,
+} from "./coaching-preferences";
+import { detectHits, type Hit, HitKind } from "./detect";
+import { NudgeOutcome } from "./nudge-outcome";
 import { NO_SPEND, type Spend } from "./pricing";
 import { monologue } from "./talk-time";
 import { formatTimestamp } from "./timestamp";
 import type { TranscriptLine } from "./transcript";
 import type { TriageRequest, TriageResult } from "./triage";
 
+export enum NudgePath {
+  Fast = "fast",
+  Fallback = "fallback",
+}
+
+export enum ProactiveState {
+  On = "on",
+  Off = "off",
+  Quiet = "quiet",
+  Capped = "capped",
+  Unpriced = "unpriced",
+}
+
 export const PROACTIVE_DEFAULTS = {
   pauseMs: 1_800,
-  maxHoldMs: 8_000,
+  deliveryTtlMs: 30_000,
   hitTtlMs: 90_000,
   triageGapMs: 15_000,
   nudgeGapMs: 60_000,
@@ -20,9 +39,12 @@ export const PROACTIVE_DEFAULTS = {
 };
 
 export type ProactiveConfig = typeof PROACTIVE_DEFAULTS & { enabled: boolean };
-export type SpendSource = "nudges" | "asks";
+export enum SpendSource {
+  Nudges = "nudges",
+  Asks = "asks",
+}
 export type ProactiveView = {
-  state: "on" | "off" | "capped" | "unpriced";
+  state: ProactiveState;
   nudgesUsd: number | null;
   capUsd: number;
   meetingUsd: number | null;
@@ -30,18 +52,24 @@ export type ProactiveView = {
   cachedTokens: number;
 };
 export type NudgeRequest = {
+  revision: number;
+  intent: MeetingIntent;
   context: string;
   hits: Hit[];
   why: string;
   lines: readonly TranscriptLine[];
-  path: "fast" | "fallback";
+  path: NudgePath;
   observedAtMs: number;
   priorSpend: Spend;
 };
-export type NudgeDispatch = "started" | "retry" | "drop";
+export enum NudgeDispatch {
+  Started = "started",
+  Retry = "retry",
+  Drop = "drop",
+}
 export type ProactiveMetric = {
-  path: "fast" | "fallback";
-  outcome: "nudge" | "silence" | "suppressed" | "error";
+  path: NudgePath;
+  outcome: NudgeOutcome;
   latencyMs: number;
   modelCalls: number;
   tokens: number;
@@ -68,9 +96,9 @@ type HeldHit = Hit & { seenAt: number };
 
 export function isFastCue(hit: Hit): boolean {
   return (
-    hit.kind === "question" ||
-    hit.kind === "objection" ||
-    hit.kind === "commitment"
+    hit.kind === HitKind.Question ||
+    hit.kind === HitKind.Objection ||
+    hit.kind === HitKind.Commitment
   );
 }
 
@@ -83,7 +111,11 @@ export function monologueNudge(
   if (!stretch || !last || stretch.ms < minMs) return null;
   return {
     startMs: stretch.startMs,
-    hit: { kind: "monologue", lineIndex: stretch.lineIndex, text: last.text },
+    hit: {
+      kind: HitKind.Monologue,
+      lineIndex: stretch.lineIndex,
+      text: last.text,
+    },
     why: `You have talked for ${formatTimestamp(stretch.ms)} without handing over`,
   };
 }
@@ -94,8 +126,13 @@ export class Proactive {
   private live = false;
   private liveEpoch = 0;
   private scanned = 0;
+  private scanFloor = 0;
   private readonly reported = new Set<string>();
   private activityKey = "";
+  private revision = 0;
+  private pending = "";
+  private coaching = DEFAULT_COACHING;
+  private carefulTiming = false;
   private lastActivityAt: number;
   private held: HeldHit[] = [];
   private lastTriageAt = Number.NEGATIVE_INFINITY;
@@ -120,8 +157,12 @@ export class Proactive {
   observe(input: Observed) {
     const now = this.now();
     this.lines = input.lines;
-    if (this.live !== input.live) this.liveEpoch += 1;
+    if (this.live !== input.live) {
+      this.liveEpoch += 1;
+      this.revision += 1;
+    }
     this.live = input.live;
+    this.pending = input.pending;
     const latestEnd = input.lines.at(-1)?.end_ms ?? 0;
     const recentLines = input.lines
       .filter((line) => line.end_ms >= latestEnd - this.config.windowMs)
@@ -133,12 +174,13 @@ export class Proactive {
       ]);
     const key = JSON.stringify([recentLines, input.pending]);
     if (key !== this.activityKey) {
+      this.revision += 1;
       this.activityKey = key;
       this.lastActivityAt = now;
     }
-    if (!this.config.enabled || !input.live) return;
+    if (!this.config.enabled || !input.live || this.coaching.quiet) return;
 
-    const paused = now - this.lastActivityAt >= this.config.pauseMs;
+    const paused = this.atOpening(now);
     this.scan(
       input,
       paused ? input.lines.length : input.lines.length - 1,
@@ -150,12 +192,50 @@ export class Proactive {
     );
     if (this.fastDue(now, paused)) return;
     if (this.due(now, paused)) this.triage(now);
-    else this.handOver(now);
+    else if (paused) this.handOver(now);
+  }
+
+  setCoaching(coaching: MeetingCoaching, carefulTiming = false) {
+    if (
+      this.coaching.intent === coaching.intent &&
+      this.coaching.quiet === coaching.quiet &&
+      this.carefulTiming === carefulTiming
+    )
+      return;
+    this.coaching = { intent: coaching.intent, quiet: coaching.quiet };
+    this.carefulTiming = carefulTiming;
+    this.revision += 1;
+    this.held = [];
+    this.scanned = this.lines.length;
+    this.scanFloor = this.lines.length;
+    this.triagedLineCount = this.lines.length;
+    this.deps.changed(this.view());
+  }
+
+  canDeliver(request: NudgeRequest): boolean {
+    return (
+      this.config.enabled &&
+      this.live &&
+      !this.coaching.quiet &&
+      request.revision === this.revision &&
+      this.atOpening(this.now()) &&
+      this.now() - request.observedAtMs < this.config.deliveryTtlMs
+    );
+  }
+
+  private atOpening(now: number): boolean {
+    return (
+      !this.pending.trim() &&
+      now - this.lastActivityAt >=
+        (this.carefulTiming
+          ? Math.max(3_000, this.config.pauseMs)
+          : this.config.pauseMs)
+    );
   }
 
   spend(source: SpendSource, cost: Spend) {
     if (cost.usd !== null && cost.usd <= 0 && cost.tokens <= 0) return;
-    if (source === "nudges")
+    if (source === SpendSource.Nudges)
       this.nudgesUsd =
         this.nudgesUsd === null || cost.usd === null
           ? null
@@ -176,13 +256,15 @@ export class Proactive {
   }
 
   view(): ProactiveView {
-    const state = !this.config.enabled
-      ? "off"
-      : this.nudgesUsd === null
-        ? "unpriced"
-        : this.capped()
-          ? "capped"
-          : "on";
+    const state: ProactiveState = !this.config.enabled
+      ? ProactiveState.Off
+      : this.coaching.quiet
+        ? ProactiveState.Quiet
+        : this.nudgesUsd === null
+          ? ProactiveState.Unpriced
+          : this.capped()
+            ? ProactiveState.Capped
+            : ProactiveState.On;
     return {
       state,
       nudgesUsd: this.nudgesUsd,
@@ -217,7 +299,10 @@ export class Proactive {
     selfName: string | null,
     now: number,
   ) {
-    const from = Math.max(0, Math.min(this.scanned, input.lines.length) - 1);
+    const from = Math.max(
+      this.scanFloor,
+      Math.min(this.scanned, input.lines.length) - 1,
+    );
     for (let index = from; index < finalCount; index += 1) {
       const line = input.lines[index];
       if (!line) continue;
@@ -234,6 +319,7 @@ export class Proactive {
   private blocked(now: number): boolean {
     return (
       this.triaging ||
+      this.coaching.quiet ||
       this.capped() ||
       this.rateLimited(now) ||
       this.deps.busy()
@@ -247,11 +333,7 @@ export class Proactive {
     if (!first && now - this.lastActivityAt > this.config.hitTtlMs)
       return false;
     if (!first && !this.hasUntriagedLines()) return false;
-    if (
-      !paused &&
-      now - (first?.seenAt ?? this.lastActivityAt) < this.config.maxHoldMs
-    )
-      return false;
+    if (!paused) return false;
     return (
       now - this.lastTriageAt >= this.config.triageGapMs &&
       now - this.lastNudgeAt >= this.config.nudgeGapMs
@@ -263,30 +345,38 @@ export class Proactive {
     const first = hits[0];
     if (!first || this.blocked(now) || !this.lines.length) return false;
     if (now - first.seenAt >= this.config.hitTtlMs) return false;
-    if (!paused && now - first.seenAt < this.config.maxHoldMs) return false;
+    if (!paused) return false;
     if (now - this.lastNudgeAt < this.config.nudgeGapMs) return false;
 
     const sent = hits.map(({ seenAt: _seenAt, ...hit }) => hit);
     const request: NudgeRequest = {
+      revision: this.revision,
+      intent: this.coaching.intent,
       context: this.deps.context(),
       hits: sent,
       why: `Fast local cue: ${sent.map((hit) => hit.kind).join(", ")}`,
       lines: this.lines,
-      path: "fast",
+      path: NudgePath.Fast,
       observedAtMs: Math.min(...hits.map((hit) => hit.seenAt)),
       priorSpend: NO_SPEND,
     };
     const dispatch = this.deps.nudge(request);
-    if (dispatch === "retry") return true;
+    if (dispatch === NudgeDispatch.Retry) return true;
     for (const hit of hits) this.fastHandledLines.add(hit.lineIndex);
     this.held = this.held.filter((hit) => !isFastCue(hit));
-    if (dispatch === "drop") return true;
+    if (dispatch === NudgeDispatch.Drop) return true;
     this.lastNudgeAt = now;
     this.nudgedAt.push(now);
     return true;
   }
 
   private handOver(now: number) {
+    if (this.lines.length <= this.scanFloor) return;
+    if (
+      this.coaching.intent === MeetingIntent.Presenting ||
+      this.coaching.intent === MeetingIntent.Listening
+    )
+      return;
     const stretch = monologueNudge(this.lines, this.config.monologueMs);
     if (!stretch || stretch.startMs === this.monologueNudged) return;
     if (
@@ -296,15 +386,17 @@ export class Proactive {
       return;
     if (this.blocked(now)) return;
     const request: NudgeRequest = {
+      revision: this.revision,
+      intent: this.coaching.intent,
       context: this.deps.context(),
       hits: [stretch.hit],
       why: stretch.why,
       lines: this.lines,
-      path: "fast",
+      path: NudgePath.Fast,
       observedAtMs: now,
       priorSpend: NO_SPEND,
     };
-    if (this.deps.nudge(request) !== "started") return;
+    if (this.deps.nudge(request) !== NudgeDispatch.Started) return;
     this.monologueNudged = stretch.startMs;
     this.lastMonologueAt = now;
     this.lastNudgeAt = now;
@@ -339,8 +431,10 @@ export class Proactive {
     const context = this.deps.context();
     const activityKey = this.activityKey;
     const liveEpoch = this.liveEpoch;
+    const revision = this.revision;
     this.deps
       .triage({
+        intent: this.coaching.intent,
         context,
         kinds,
         lines: this.lines.filter(
@@ -348,18 +442,21 @@ export class Proactive {
         ),
       })
       .then((result) => {
-        this.spend("nudges", result.spend);
+        this.spend(SpendSource.Nudges, result.spend);
         if (
           !result.verdict?.nudge ||
           !this.live ||
           this.activityKey !== activityKey ||
           this.liveEpoch !== liveEpoch ||
+          this.revision !== revision ||
           this.capped() ||
           this.deps.busy()
         ) {
           this.deps.metric({
-            path: "fallback",
-            outcome: !result.verdict?.nudge ? "silence" : "suppressed",
+            path: NudgePath.Fallback,
+            outcome: !result.verdict?.nudge
+              ? NudgeOutcome.Silence
+              : NudgeOutcome.Suppressed,
             latencyMs: Math.max(0, this.now() - observedAtMs),
             modelCalls: 1,
             tokens: result.spend.tokens,
@@ -368,18 +465,20 @@ export class Proactive {
           return;
         }
         const dispatch = this.deps.nudge({
+          revision,
+          intent: this.coaching.intent,
           context,
           hits,
           why: result.verdict.why,
           lines: this.lines,
-          path: "fallback",
+          path: NudgePath.Fallback,
           observedAtMs,
           priorSpend: result.spend,
         });
-        if (dispatch !== "started") {
+        if (dispatch !== NudgeDispatch.Started) {
           this.deps.metric({
-            path: "fallback",
-            outcome: "suppressed",
+            path: NudgePath.Fallback,
+            outcome: NudgeOutcome.Suppressed,
             latencyMs: Math.max(0, this.now() - observedAtMs),
             modelCalls: 1,
             tokens: result.spend.tokens,
@@ -397,8 +496,8 @@ export class Proactive {
           kinds,
         });
         this.deps.metric({
-          path: "fallback",
-          outcome: "error",
+          path: NudgePath.Fallback,
+          outcome: NudgeOutcome.Error,
           latencyMs: Math.max(0, this.now() - observedAtMs),
           modelCalls: 1,
           tokens: 0,

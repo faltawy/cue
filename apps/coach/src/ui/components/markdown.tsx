@@ -6,9 +6,21 @@ import remarkGfm from "remark-gfm";
 import { post } from "../use-coach";
 import { cx } from "./primitives";
 
+export enum ImageSourceKind {
+  Local = "local",
+  Remote = "remote",
+  Blocked = "blocked",
+}
+
 const REMARK_PLUGINS = [remarkGfm];
 
-function ExternalLink({ href, children }: { href?: string; children?: ReactNode }) {
+function ExternalLink({
+  href,
+  children,
+}: {
+  href?: string;
+  children?: ReactNode;
+}) {
   const external = href !== undefined && /^https?:\/\//i.test(href);
   return (
     <a
@@ -25,9 +37,9 @@ function ExternalLink({ href, children }: { href?: string; children?: ReactNode 
 }
 
 export type ImageSource =
-  | { kind: "local"; src: string; path: string }
-  | { kind: "remote"; src: string; host: string }
-  | { kind: "blocked" };
+  | { kind: ImageSourceKind.Local; src: string; path: string }
+  | { kind: ImageSourceKind.Remote; src: string; host: string }
+  | { kind: ImageSourceKind.Blocked };
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:/i;
 
@@ -41,23 +53,32 @@ function decodedPath(value: string): string {
 
 export function imageSource(src: string | undefined): ImageSource {
   const value = (src ?? "").trim();
-  if (!value || value.startsWith("//")) return { kind: "blocked" };
+  if (!value || value.startsWith("//"))
+    return { kind: ImageSourceKind.Blocked };
   if (SCHEME.test(value)) {
-    if (!/^https:\/\//i.test(value)) return { kind: "blocked" };
+    if (!/^https:\/\//i.test(value)) return { kind: ImageSourceKind.Blocked };
     try {
       const url = new URL(value);
-      return { kind: "remote", src: url.href, host: url.hostname.replace(/^www\./, "") };
+      return {
+        kind: ImageSourceKind.Remote,
+        src: url.href,
+        host: url.hostname.replace(/^www\./, ""),
+      };
     } catch {
-      return { kind: "blocked" };
+      return { kind: ImageSourceKind.Blocked };
     }
   }
   const path = decodedPath(value);
-  return { kind: "local", src: `/file?path=${encodeURIComponent(path)}`, path };
+  return {
+    kind: ImageSourceKind.Local,
+    src: `/file?path=${encodeURIComponent(path)}`,
+    path,
+  };
 }
 
 function ImageNote({ text }: { text: string }) {
   return (
-    <span className="my-1 flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+    <span className="text-muted-foreground my-1 flex items-center gap-1.5 text-[12.5px]">
       <ImageOff aria-hidden className="size-3.5 shrink-0" />
       <span dir="auto" className="min-w-0 [overflow-wrap:anywhere]">
         {text}
@@ -72,32 +93,36 @@ function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
   const [failed, setFailed] = useState(false);
   const caption = alt?.trim() ?? "";
   const name = caption || "image";
-  if (source.kind === "blocked") return <ImageNote text={`${caption ? `${caption}: ` : ""}image link blocked`} />;
-  if (source.kind === "remote" && !allowed) {
+  if (source.kind === ImageSourceKind.Blocked)
+    return (
+      <ImageNote text={`${caption ? `${caption}: ` : ""}image link blocked`} />
+    );
+  if (source.kind === ImageSourceKind.Remote && !allowed) {
     return (
       <button
         type="button"
         onClick={() => setAllowed(true)}
         aria-label={`Image from ${source.host}${caption ? `, ${caption}` : ""}. Load`}
         title={source.src}
-        className="my-1 flex max-w-full items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-start text-[12.5px] text-muted-foreground transition-colors duration-100 hover:bg-muted"
+        className="border-border text-muted-foreground hover:bg-muted my-1 flex max-w-full items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-start text-[12.5px] transition-colors duration-100"
       >
         <ImageIcon aria-hidden className="size-3.5 shrink-0" />
         <span className="min-w-0 truncate">
           Image from <bdi>{source.host}</bdi>
         </span>
-        <span className="shrink-0 font-medium text-foreground">Load</span>
+        <span className="text-foreground shrink-0 font-medium">Load</span>
       </button>
     );
   }
-  if (failed) return <ImageNote text={`Couldn't load ${caption || "this image"}`} />;
+  if (failed)
+    return <ImageNote text={`Couldn't load ${caption || "this image"}`} />;
   return (
     <span className="my-2 flex max-w-full flex-col items-start gap-1">
       <button
         type="button"
         aria-label={`Open ${name} full size`}
         onClick={() =>
-          void (source.kind === "local"
+          void (source.kind === ImageSourceKind.Local
             ? post("/open-image", { path: source.path })
             : post("/open", { url: source.src }))
         }
@@ -108,11 +133,14 @@ function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
           alt={name}
           loading="lazy"
           onError={() => setFailed(true)}
-          className="block max-h-[360px] max-w-full min-h-6 min-w-6 rounded-lg border border-border object-contain"
+          className="border-border block max-h-[360px] min-h-6 max-w-full min-w-6 rounded-lg border object-contain"
         />
       </button>
       {caption && (
-        <span dir="auto" className="text-[12px] text-muted-foreground [overflow-wrap:anywhere]">
+        <span
+          dir="auto"
+          className="text-muted-foreground text-[12px] [overflow-wrap:anywhere]"
+        >
           {caption}
         </span>
       )}
@@ -146,7 +174,13 @@ export function splitBlocks(text: string): string[] {
     const line = lines[index] ?? "";
     if (line.trimStart().startsWith("```")) fenced = !fenced;
     const next = lines[index + 1];
-    if (!fenced && line.trim() === "" && next !== undefined && /^\S/.test(next) && index > start) {
+    if (
+      !fenced &&
+      line.trim() === "" &&
+      next !== undefined &&
+      /^\S/.test(next) &&
+      index > start
+    ) {
       blocks.push(lines.slice(start, index).join("\n"));
       start = index + 1;
     }
@@ -163,12 +197,31 @@ const Block = memo(function Block({ text }: { text: string }) {
   );
 });
 
-export const CoachMarkdown = memo(function CoachMarkdown({ text, streaming = false }: { text: string; streaming?: boolean }) {
+export const CoachMarkdown = memo(function CoachMarkdown({
+  text,
+  streaming = false,
+}: {
+  text: string;
+  streaming?: boolean;
+}) {
   const blocks = splitBlocks(text);
   return (
-    <div className={cx("coach-markdown min-w-0 text-[14px] leading-[1.6]", streaming && "coach-streaming")} dir="auto">
+    <div
+      className={cx(
+        "coach-markdown min-w-0 text-[14px] leading-[1.6]",
+        streaming && "coach-streaming",
+      )}
+      dir="auto"
+    >
       {blocks.map((block, index) => (
-        <Block key={index} text={streaming && index === blocks.length - 1 ? completeMarkdown(block) : block} />
+        <Block
+          key={index}
+          text={
+            streaming && index === blocks.length - 1
+              ? completeMarkdown(block)
+              : block
+          }
+        />
       ))}
     </div>
   );

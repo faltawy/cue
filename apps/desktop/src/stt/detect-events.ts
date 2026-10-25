@@ -39,6 +39,7 @@ import {
 } from "~/calendar/queries";
 import { useConfigValue } from "~/shared/config";
 import type { ListenerStore } from "~/store/zustand/listener";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 
 const MAX_TIMEOUT_DELAY_MS = 2_147_483_647;
 
@@ -93,7 +94,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
     isOnlineRef.current = navigator.onLine;
     const clearNotificationsIfActive = () => {
       const live = store.getState().live;
-      if (live.status === "active") {
+      if (live.status === LiveSessionStatus.Active) {
         if (live.sessionId) {
           cancelAutoStopEndedNotification(live.sessionId);
         }
@@ -103,8 +104,8 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
     clearNotificationsIfActive();
     const unsubscribeStore = store.subscribe((state, previousState) => {
       if (
-        state.live.status === "active" &&
-        previousState.live.status !== "active"
+        state.live.status === LiveSessionStatus.Active &&
+        previousState.live.status !== LiveSessionStatus.Active
       ) {
         if (state.live.sessionId) {
           cancelAutoStopEndedNotification(state.live.sessionId);
@@ -123,8 +124,10 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
     const shouldCaptureMicDetectedTriggerApps = () => {
       const live = store.getState().live;
       return (
-        live.status === "active" ||
-        (live.status === "inactive" && live.loading && !!live.sessionId)
+        live.status === LiveSessionStatus.Active ||
+        (live.status === LiveSessionStatus.Inactive &&
+          live.loading &&
+          !!live.sessionId)
       );
     };
     const captureTriggerApps = (apps: { id: string; name: string }[]) => {
@@ -198,7 +201,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
       const live = store.getState().live;
       if (
         pendingAutoStopRef.current !== pending ||
-        live.status !== "active" ||
+        live.status !== LiveSessionStatus.Active ||
         live.sessionId !== pending.sessionId
       ) {
         return;
@@ -243,7 +246,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
           const liveAfterCheck = store.getState().live;
           if (
             pendingAutoStopRef.current !== pending ||
-            liveAfterCheck.status !== "active" ||
+            liveAfterCheck.status !== LiveSessionStatus.Active ||
             liveAfterCheck.sessionId !== pending.sessionId
           ) {
             return;
@@ -354,7 +357,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
       const currentLive = store.getState().live;
       if (
         pendingAutoStopRef.current !== pending ||
-        currentLive.status !== "active" ||
+        currentLive.status !== LiveSessionStatus.Active ||
         currentLive.sessionId !== pending.sessionId
       ) {
         return;

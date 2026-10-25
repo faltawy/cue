@@ -27,7 +27,6 @@ import {
   isTimelineItemInFuture,
   type SessionTimelineItem,
   type TimelineItem,
-  TimelinePrecision,
 } from "./utils";
 
 import { useIgnoredEvents } from "~/calendar/ignored-events";
@@ -45,15 +44,20 @@ import {
 import { getSessionEvent } from "~/session/utils";
 import { openStandaloneNoteWindow } from "~/session/window";
 import { useConfigValue } from "~/shared/config";
-import type { MenuItemDef } from "~/shared/hooks/useNativeContextMenu";
+import { type MenuItemDef } from "~/shared/hooks/useNativeContextMenu";
 import { useTimeFormat } from "~/shared/hooks/useTimeFormat";
 import { FolderPathLabel } from "~/shared/ui/folder-path-label";
 import { InteractiveButton } from "~/shared/ui/interactive-button";
+import { TimelinePrecision } from "~/sidebar/enums";
 import {
   formatSidebarItemTags,
   resolveSidebarItemMeta,
 } from "~/sidebar/item-fields";
 import { useSidebarNotes } from "~/sidebar/note-filter";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
 import { useSessionTitle } from "~/store/zustand/live-title";
 import { useTabs } from "~/store/zustand/tabs";
 import { useTimelineSelection } from "~/store/zustand/timeline-selection";
@@ -619,13 +623,16 @@ const SessionItem = memo(
       return {
         sessionMode,
         stop: state.stop,
-        amplitude: sessionMode === "active" ? state.live.amplitude : null,
+        amplitude:
+          sessionMode === LiveSessionStatus.Active
+            ? state.live.amplitude
+            : null,
       };
     });
     const isEnhancing = useIsSessionEnhancing(sessionId);
-    const isLive = sessionMode === "active";
-    const isFinalizing = sessionMode === "finalizing";
-    const isBatching = sessionMode === "running_batch";
+    const isLive = sessionMode === LiveSessionStatus.Active;
+    const isFinalizing = sessionMode === LiveSessionStatus.Finalizing;
+    const isBatching = sessionMode === BatchSessionMode.RunningBatch;
     const [isOpening, setIsOpening] = useState(false);
     const showSpinner =
       !selected &&
@@ -818,7 +825,7 @@ function formatDisplayTime(
   const date = timezone ? new TZDate(parsed, timezone) : parsed;
   const time = format(date, timeFormat).toUpperCase();
 
-  if (precision === "time") {
+  if (precision === TimelinePrecision.Time) {
     return time;
   }
 

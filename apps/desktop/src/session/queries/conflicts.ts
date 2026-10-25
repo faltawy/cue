@@ -5,10 +5,11 @@ import { updateSession } from "./sessions";
 
 import { useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import { SessionConflictField } from "~/session/enums";
 
 export type SessionConflictRecord = {
   id: string;
-  field: "body" | "title";
+  field: SessionConflictField;
   lostSide: string;
   editedAtMs: number | null;
   createdAt: string;
@@ -124,7 +125,7 @@ export async function applySessionConflict(
   sessionId: string,
   conflict: SessionConflictRecord,
 ): Promise<void> {
-  if (conflict.field === "title") {
+  if (conflict.field === SessionConflictField.Title) {
     await updateSession(sessionId, { title: conflict.value });
   } else {
     await updateSession(sessionId, {
@@ -187,7 +188,10 @@ function toEditorBody(body: string, bodyFormat: string): string {
 function mapConflictRow(row: ConflictSqlRow): SessionConflictRecord {
   return {
     id: row.id,
-    field: row.field_name === "title" ? "title" : "body",
+    field:
+      row.field_name === "title"
+        ? SessionConflictField.Title
+        : SessionConflictField.Body,
     lostSide: row.lost_side,
     editedAtMs: row.edited_at_ms ?? null,
     createdAt: row.created_at,

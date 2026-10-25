@@ -9,6 +9,7 @@ import {
   type CalendarItem,
   CalendarSelection,
 } from "~/calendar/components/calendar-selection";
+import { SyncStatus } from "~/calendar/enums";
 import { setCalendarEnabled, useCalendarRows } from "~/calendar/queries";
 
 const SUBSCRIBED_SOURCE_NAME = "Subscribed Calendars";
@@ -92,7 +93,7 @@ export function useAppleCalendarSelection() {
     groups,
     handleRefresh,
     handleToggle,
-    isLoading: status === "syncing",
+    isLoading: status === SyncStatus.Syncing,
     scheduleSync,
   };
 }

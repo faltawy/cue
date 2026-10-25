@@ -11,42 +11,46 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Enhanced as SessionEnhanced } from "./index";
 
+import { LLMConnectionState, ManagedProviderId } from "~/ai/enums";
 import type { LLMConnectionStatus } from "~/ai/hooks";
 
-const hoisted = vi.hoisted(() => ({
-  enhanceTask: undefined as
-    | {
-        status: string;
-        error: Error | undefined;
-        streamedText: string;
-        currentStep: unknown;
-        isGenerating: boolean;
-      }
-    | undefined,
-  titleTask: undefined as
-    | {
-        status: string;
-        error: Error | undefined;
-        streamedText: string;
-        currentStep: unknown;
-        isGenerating: boolean;
-      }
-    | undefined,
-  llmStatus: {
-    status: "success",
-    providerId: "claude_code",
-  } as LLMConnectionStatus,
-  content: "",
-  noteExists: true,
-  sessionTitle: "",
-  enhancedEditorMountCount: 0,
-  generate: vi.fn(),
-  claudeSetup: { state: "ready" } as
-    | { state: "ready" }
-    | { state: "preparing"; percent: number | null }
-    | { state: "failed"; message: string },
-  retryClaudeSetup: vi.fn(),
-}));
+const hoisted = await vi.hoisted(async () => {
+  const { LLMConnectionState, ManagedProviderId } = await import("~/ai/enums");
+  return {
+    enhanceTask: undefined as
+      | {
+          status: string;
+          error: Error | undefined;
+          streamedText: string;
+          currentStep: unknown;
+          isGenerating: boolean;
+        }
+      | undefined,
+    titleTask: undefined as
+      | {
+          status: string;
+          error: Error | undefined;
+          streamedText: string;
+          currentStep: unknown;
+          isGenerating: boolean;
+        }
+      | undefined,
+    llmStatus: {
+      status: LLMConnectionState.Success,
+      providerId: ManagedProviderId.ClaudeCode,
+    } as LLMConnectionStatus,
+    content: "",
+    noteExists: true,
+    sessionTitle: "",
+    enhancedEditorMountCount: 0,
+    generate: vi.fn(),
+    claudeSetup: { state: "ready" } as
+      | { state: "ready" }
+      | { state: "preparing"; percent: number | null }
+      | { state: "failed"; message: string },
+    retryClaudeSetup: vi.fn(),
+  };
+});
 
 vi.mock("~/services/enhancer", () => ({
   getEnhancerService: () => ({ enhance: hoisted.generate }),
@@ -164,8 +168,8 @@ describe("Enhanced", () => {
     hoisted.enhanceTask = undefined;
     hoisted.titleTask = undefined;
     hoisted.llmStatus = {
-      status: "success",
-      providerId: "claude_code",
+      status: LLMConnectionState.Success,
+      providerId: ManagedProviderId.ClaudeCode,
     };
     hoisted.content = "";
     hoisted.noteExists = true;

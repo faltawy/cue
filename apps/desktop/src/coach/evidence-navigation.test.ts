@@ -1,8 +1,16 @@
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { openCoachEvidence, useCoachEvidenceTarget } from "./evidence-navigation";
+import {
+  openCoachEvidence,
+  useCoachEvidenceTarget,
+} from "./evidence-navigation";
+
 import { useTabs } from "~/store/zustand/tabs";
-import { createSessionTab, resetTabsStore } from "~/store/zustand/tabs/test-utils";
+import { TabType } from "~/store/zustand/tabs/enums";
+import {
+  createSessionTab,
+  resetTabsStore,
+} from "~/store/zustand/tabs/test-utils";
 
 describe("coach evidence navigation", () => {
   beforeEach(() => {
@@ -25,7 +33,7 @@ describe("coach evidence navigation", () => {
       useTabs
         .getState()
         .tabs.some(
-          (tab) => tab.type === "sessions" && tab.id === "other-session",
+          (tab) => tab.type === TabType.Sessions && tab.id === "other-session",
         ),
     ).toBe(true);
     expect(useCoachEvidenceTarget.getState().target).toEqual(target);

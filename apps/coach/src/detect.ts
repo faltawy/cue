@@ -1,6 +1,13 @@
-import type { TranscriptLine } from "./transcript";
+import { type TranscriptLine } from "./transcript";
 
-export type HitKind = "question" | "name" | "objection" | "commitment" | "number" | "monologue";
+export enum HitKind {
+  Question = "question",
+  Name = "name",
+  Objection = "objection",
+  Commitment = "commitment",
+  Number = "number",
+  Monologue = "monologue",
+}
 export type Hit = { kind: HitKind; lineIndex: number; text: string };
 
 const YOU = "You";
@@ -22,8 +29,30 @@ const NOT_LETTER_BEFORE = "(?<![\\p{L}\\p{N}_])";
 const NOT_LETTER_AFTER = "(?![\\p{L}\\p{N}_])";
 const words = (list: readonly string[]) => list.join("|");
 
-const FILLERS = ["so", "and", "but", "okay", "ok", "well", "um", "uh", "also", "then", "hey", "alright", "yeah", "طيب", "يعني", "بس", "اه", "و"];
-const LEADING_FILLER = new RegExp(`^(?:${words(FILLERS)})${NOT_LETTER_AFTER}[,،]?\\s*`, "u");
+const FILLERS = [
+  "so",
+  "and",
+  "but",
+  "okay",
+  "ok",
+  "well",
+  "um",
+  "uh",
+  "also",
+  "then",
+  "hey",
+  "alright",
+  "yeah",
+  "طيب",
+  "يعني",
+  "بس",
+  "اه",
+  "و",
+];
+const LEADING_FILLER = new RegExp(
+  `^(?:${words(FILLERS)})${NOT_LETTER_AFTER}[,،]?\\s*`,
+  "u",
+);
 const VOCATIVE = /^(?:يا\s+\p{L}+|\p{L}+(?:\s\p{L}+)?)\s*[,،]\s*/u;
 
 const DIRECT_ASKS = [
@@ -66,7 +95,10 @@ const WH_QUESTIONS = [
   "which (?:one|is|are|do|does)",
   "(?:does|is|are|was|were|can|could|should|shall|would|will) (?:it|this|that|there|we|they|he|she)",
 ];
-const OPENER = new RegExp(`^(?:${words(DIRECT_ASKS)}|${words(WH_QUESTIONS)})${NOT_LETTER_AFTER}`, "u");
+const OPENER = new RegExp(
+  `^(?:${words(DIRECT_ASKS)}|${words(WH_QUESTIONS)})${NOT_LETTER_AFTER}`,
+  "u",
+);
 const ASK_ANYWHERE = new RegExp(
   `${NOT_LETTER_BEFORE}(?:what do you think|what's your take|any thoughts|ايه رايك|رايك ايه|ما رايك|شو رايك|ايش رايك)${NOT_LETTER_AFTER}`,
   "u",
@@ -93,7 +125,11 @@ function isQuestion(sentence: string): boolean {
   const body = tagged ? sentence.replace(RHETORICAL_TAG, "").trim() : sentence;
   if (!body || SMALL_TALK.test(body)) return false;
   if (ASK_ANYWHERE.test(body) || OPENER.test(stripLead(body))) return true;
-  return !tagged && /[?؟]$/.test(body) && body.split(" ").length >= MIN_QUESTION_WORDS;
+  return (
+    !tagged &&
+    /[?؟]$/.test(body) &&
+    body.split(" ").length >= MIN_QUESTION_WORDS
+  );
 }
 
 function sentences(text: string): string[] {
@@ -108,12 +144,16 @@ export function asksQuestion(text: string): boolean {
 }
 
 const bounded = (alternatives: readonly string[]) =>
-  new RegExp(`${NOT_LETTER_BEFORE}(?:${words(alternatives)})${NOT_LETTER_AFTER}`, "u");
+  new RegExp(
+    `${NOT_LETTER_BEFORE}(?:${words(alternatives)})${NOT_LETTER_AFTER}`,
+    "u",
+  );
 
 const DECIDERS =
   "boss|manager|team|ceo|cfo|cto|coo|director|vp|head of \\p{L}+|legal|procurement|finance|board|partners?|leadership|management|founders?";
 const AR_NOT = "مش|مو|مب|ما|مهو|مهوش|ماني|مانيش|مانيب|ما ني|مني";
-const AR_DECIDERS = "(?:لل|ل|ال)?(?:مدير\\p{L}*|مدراء|اداره|مجلس|ريس|رئيس|مسؤول\\p{L}*|شركاء|شريك\\p{L}*|مالك)";
+const AR_DECIDERS =
+  "(?:لل|ل|ال)?(?:مدير\\p{L}*|مدراء|اداره|مجلس|ريس|رئيس|مسؤول\\p{L}*|شركاء|شريك\\p{L}*|مالك)";
 const AR_ASK_UP =
   "ارجع|نرجع|هرجع|هنرجع|حرجع|اشاور|نشاور|هشاور|استشير|نستشير|اسال|نسال|هسال|اكلم|نكلم|هكلم|هنكلم|اتكلم مع|نتكلم مع|هتكلم مع";
 const OBJECTION = bounded([
@@ -188,7 +228,22 @@ const PRICEY = new RegExp(
   `${NOT_LETTER_BEFORE}(?:(?:too|so|very|really|quite|pretty|a bit|kind of|kinda|way too) )?(?:expensive|pricey|costly|overpriced|غالي|غاليه|مكلف|مكلفه)${NOT_LETTER_AFTER}`,
   "gu",
 );
-const NEGATION = new Set(["not", "isn't", "wasn't", "aren't", "never", "no", "hardly", "مش", "مو", "مب", "ما", "مهو", "مهوش", "مهوا"]);
+const NEGATION = new Set([
+  "not",
+  "isn't",
+  "wasn't",
+  "aren't",
+  "never",
+  "no",
+  "hardly",
+  "مش",
+  "مو",
+  "مب",
+  "ما",
+  "مهو",
+  "مهوش",
+  "مهوا",
+]);
 const NEGATION_REACH = 2;
 
 function negated(text: string, at: number): boolean {
@@ -202,7 +257,9 @@ function negated(text: string, at: number): boolean {
 
 function isObjection(text: string): boolean {
   if (OBJECTION.test(text)) return true;
-  return [...text.matchAll(PRICEY)].some((match) => !negated(text, match.index));
+  return [...text.matchAll(PRICEY)].some(
+    (match) => !negated(text, match.index),
+  );
 }
 
 const PROMISE_VERBS = [
@@ -267,7 +324,9 @@ const COMMITMENT = [
     `\\b(?:i|we)(?:'ll| will| shall|'m going to| am going to|'re going to| are going to)\\s+(?:\\w+\\s+)?(?:${words(PROMISE_VERBS)})\\b`,
   ),
   /\blet me (?:send|share|check|follow up|get back|look into|find out|loop|draft)\b/,
-  new RegExp(`\\bby (?:${WEEKDAYS}|tomorrow|tonight|eod|eow|the end of|end of)\\b`),
+  new RegExp(
+    `\\bby (?:${WEEKDAYS}|tomorrow|tonight|eod|eow|the end of|end of)\\b`,
+  ),
   new RegExp(`\\bnext (?:week|month|quarter|${WEEKDAYS})\\b`),
   /\bend of (?:the )?(?:day|week|month|quarter)\b/,
   new RegExp(`${NOT_LETTER_BEFORE}(?:${words(ARABIC_PROMISES)})`, "u"),
@@ -327,7 +386,10 @@ const UNITS = [
 ];
 const NUMBER = [
   /[$€£¥]\s?\d/,
-  new RegExp(`\\d(?:[\\d,.]*\\d)?\\s?(?:${words(UNITS)})${NOT_LETTER_AFTER}`, "u"),
+  new RegExp(
+    `\\d(?:[\\d,.]*\\d)?\\s?(?:${words(UNITS)})${NOT_LETTER_AFTER}`,
+    "u",
+  ),
   /\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b/,
   new RegExp(`\\b(?:${MONTHS})\\.?\\s+\\d{1,2}(?:st|nd|rd|th)?\\b`),
   new RegExp(`\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:of\\s+)?(?:${MONTHS})\\b`),
@@ -346,19 +408,29 @@ function namePattern(selfName: string | null): RegExp | null {
     .split(" ")
     .filter((part) => part.length >= MIN_NAME_PART);
   if (parts.length === 0) return null;
-  return new RegExp(`${NOT_LETTER_BEFORE}(?:${parts.map(escape).join("|")})${NOT_LETTER_AFTER}`, "u");
+  return new RegExp(
+    `${NOT_LETTER_BEFORE}(?:${parts.map(escape).join("|")})${NOT_LETTER_AFTER}`,
+    "u",
+  );
 }
 
-export function detectHits(line: TranscriptLine, lineIndex: number, selfName: string | null): Hit[] {
+export function detectHits(
+  line: TranscriptLine,
+  lineIndex: number,
+  selfName: string | null,
+): Hit[] {
   const text = line.text.trim();
   const plain = normalize(text);
   if (!plain) return [];
   const fromOthers = line.speaker !== YOU;
   const found: HitKind[] = [];
-  if (fromOthers && sentences(plain).some(isQuestion)) found.push("question");
-  if (fromOthers && namePattern(selfName)?.test(plain)) found.push("name");
-  if (fromOthers && isObjection(plain)) found.push("objection");
-  if (COMMITMENT.some((pattern) => pattern.test(plain))) found.push("commitment");
-  if (NUMBER.some((pattern) => pattern.test(plain))) found.push("number");
+  if (fromOthers && sentences(plain).some(isQuestion))
+    found.push(HitKind.Question);
+  if (fromOthers && namePattern(selfName)?.test(plain))
+    found.push(HitKind.Name);
+  if (fromOthers && isObjection(plain)) found.push(HitKind.Objection);
+  if (COMMITMENT.some((pattern) => pattern.test(plain)))
+    found.push(HitKind.Commitment);
+  if (NUMBER.some((pattern) => pattern.test(plain))) found.push(HitKind.Number);
   return found.map((kind) => ({ kind, lineIndex, text }));
 }

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { type ComponentType, useId, useState } from "react";
 
-import type { Step } from "../state";
+import { type Step, StepStatus } from "../state";
 import { cx } from "./primitives";
 
 type Icon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
@@ -34,8 +34,13 @@ function iconFor(name: string): Icon {
 }
 
 function stepsSummary(steps: readonly Step[]): string {
-  const failed = steps.filter((step) => step.status === "failed").length;
-  const base = steps.length === 1 ? steps[0]?.label ?? "1 step" : `${steps.length} steps`;
+  const failed = steps.filter(
+    (step) => step.status === StepStatus.Failed,
+  ).length;
+  const base =
+    steps.length === 1
+      ? (steps[0]?.label ?? "1 step")
+      : `${steps.length} steps`;
   return failed > 0 ? `${base} · ${failed} failed` : base;
 }
 
@@ -58,11 +63,14 @@ export function Steps({ steps }: { steps: readonly Step[] }) {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={regionId}
-        className="-ms-1 flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[12px] text-muted-foreground transition-colors duration-100 hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground -ms-1 flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[12px] transition-colors duration-100"
       >
         <ChevronRight
           aria-hidden
-          className={cx("size-3 shrink-0 transition-transform duration-150", open ? "rotate-90" : "rtl:-scale-x-100")}
+          className={cx(
+            "size-3 shrink-0 transition-transform duration-150",
+            open ? "rotate-90" : "rtl:-scale-x-100",
+          )}
         />
         <span dir="auto" className="truncate">
           {stepsSummary(steps)}
@@ -77,7 +85,7 @@ export function Steps({ steps }: { steps: readonly Step[] }) {
         inert={!open}
       >
         <div className="overflow-hidden">
-          <ul className="mt-1 ms-1.5 flex flex-col gap-0.5 border-s border-border ps-2.5">
+          <ul className="border-border ms-1.5 mt-1 flex flex-col gap-0.5 border-s ps-2.5">
             {steps.map((step) => (
               <StepRow key={step.id} step={step} />
             ))}
@@ -94,12 +102,18 @@ function StepRow({ step }: { step: Step }) {
   const Icon = iconFor(step.name);
   const expandable = Boolean(step.detail || step.output);
   const status =
-    step.status === "failed" ? (
-      <X aria-label="Failed" className="size-3 shrink-0 text-destructive" />
-    ) : step.status === "stopped" ? (
-      <CircleSlash aria-label="Stopped" className="size-3 shrink-0 text-muted-foreground" />
-    ) : step.status === "ok" ? (
-      <Check aria-label="Done" className="size-3 shrink-0 text-muted-foreground/70" />
+    step.status === StepStatus.Failed ? (
+      <X aria-label="Failed" className="text-destructive size-3 shrink-0" />
+    ) : step.status === StepStatus.Stopped ? (
+      <CircleSlash
+        aria-label="Stopped"
+        className="text-muted-foreground size-3 shrink-0"
+      />
+    ) : step.status === StepStatus.Ok ? (
+      <Check
+        aria-label="Done"
+        className="text-muted-foreground/70 size-3 shrink-0"
+      />
     ) : null;
   return (
     <li data-testid="step" data-status={step.status}>
@@ -110,12 +124,19 @@ function StepRow({ step }: { step: Step }) {
         aria-controls={expandable ? regionId : undefined}
         className={cx(
           "flex w-full items-center gap-1.5 rounded px-1 py-[3px] text-left text-[12px] text-muted-foreground",
-          expandable ? "transition-colors duration-100 hover:bg-muted hover:text-foreground" : "cursor-default",
+          expandable
+            ? "transition-colors duration-100 hover:bg-muted hover:text-foreground"
+            : "cursor-default",
         )}
       >
         <Icon aria-hidden className="size-3.5 shrink-0 opacity-70" />
-        <span className={cx("min-w-0 flex-1 truncate", step.status === "running" && "coach-sheen")}>
-          {step.status === "running" ? step.activeLabel : step.label}
+        <span
+          className={cx(
+            "min-w-0 flex-1 truncate",
+            step.status === StepStatus.Running && "coach-sheen",
+          )}
+        >
+          {step.status === StepStatus.Running ? step.activeLabel : step.label}
         </span>
         {status}
       </button>
@@ -129,9 +150,14 @@ function StepRow({ step }: { step: Step }) {
           inert={!open}
         >
           <div className="overflow-hidden">
-            <div className="mt-0.5 mb-1.5 ms-5 flex flex-col gap-1">
+            <div className="ms-5 mt-0.5 mb-1.5 flex flex-col gap-1">
               {step.detail && <Payload label="Input" text={step.detail} />}
-              {step.output && <Payload label={step.status === "failed" ? "Error" : "Result"} text={step.output} />}
+              {step.output && (
+                <Payload
+                  label={step.status === StepStatus.Failed ? "Error" : "Result"}
+                  text={step.output}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -143,10 +169,12 @@ function StepRow({ step }: { step: Step }) {
 function Payload({ label, text }: { label: string; text: string }) {
   return (
     <div>
-      <div className="mb-0.5 text-[10.5px] font-medium tracking-wide text-muted-foreground uppercase">{label}</div>
+      <div className="text-muted-foreground mb-0.5 text-[10.5px] font-medium tracking-wide uppercase">
+        {label}
+      </div>
       <pre
         dir="auto"
-        className="coach-scroll max-h-48 overflow-auto rounded-md border border-border bg-background px-2 py-1.5 font-mono text-[11.5px] leading-[1.45] break-words whitespace-pre-wrap text-foreground/85"
+        className="coach-scroll border-border bg-background text-foreground/85 max-h-48 overflow-auto rounded-md border px-2 py-1.5 font-mono text-[11.5px] leading-[1.45] break-words whitespace-pre-wrap"
       >
         {text}
       </pre>

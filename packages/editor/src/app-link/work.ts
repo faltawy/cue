@@ -1,28 +1,31 @@
-export type WorkProvider =
-  | "airtable"
-  | "asana"
-  | "calendly"
-  | "dropbox"
-  | "loom"
-  | "miro"
-  | "trello"
-  | "zoom";
+import { AppLinkProvider } from "./provider";
 
-export type WorkLinkKind =
-  | "base"
-  | "board"
-  | "card"
-  | "event"
-  | "file"
-  | "folder"
-  | "meeting"
-  | "project"
-  | "recording"
-  | "share"
-  | "table"
-  | "task"
-  | "video"
-  | "view";
+export type WorkProvider =
+  | AppLinkProvider.Airtable
+  | AppLinkProvider.Asana
+  | AppLinkProvider.Calendly
+  | AppLinkProvider.Dropbox
+  | AppLinkProvider.Loom
+  | AppLinkProvider.Miro
+  | AppLinkProvider.Trello
+  | AppLinkProvider.Zoom;
+
+export enum WorkLinkKind {
+  Base = "base",
+  Board = "board",
+  Card = "card",
+  Event = "event",
+  File = "file",
+  Folder = "folder",
+  Meeting = "meeting",
+  Project = "project",
+  Recording = "recording",
+  Share = "share",
+  Table = "table",
+  Task = "task",
+  Video = "video",
+  View = "view",
+}
 
 export interface WorkAttrs {
   provider: WorkProvider;
@@ -35,54 +38,54 @@ export interface WorkAttrs {
 
 function getProviderLabel(provider: WorkProvider): string {
   switch (provider) {
-    case "airtable":
+    case AppLinkProvider.Airtable:
       return "Airtable";
-    case "asana":
+    case AppLinkProvider.Asana:
       return "Asana";
-    case "calendly":
+    case AppLinkProvider.Calendly:
       return "Calendly";
-    case "dropbox":
+    case AppLinkProvider.Dropbox:
       return "Dropbox";
-    case "loom":
+    case AppLinkProvider.Loom:
       return "Loom";
-    case "miro":
+    case AppLinkProvider.Miro:
       return "Miro";
-    case "trello":
+    case AppLinkProvider.Trello:
       return "Trello";
-    case "zoom":
+    case AppLinkProvider.Zoom:
       return "Zoom";
   }
 }
 
 function getKindLabel(attrs: WorkAttrs): string {
   switch (attrs.kind) {
-    case "base":
+    case WorkLinkKind.Base:
       return "Base";
-    case "board":
+    case WorkLinkKind.Board:
       return attrs.resourceTitle ? `Board: ${attrs.resourceTitle}` : "Board";
-    case "card":
+    case WorkLinkKind.Card:
       return attrs.resourceTitle ? `Card: ${attrs.resourceTitle}` : "Card";
-    case "event":
+    case WorkLinkKind.Event:
       return attrs.resourceTitle ? `Event: ${attrs.resourceTitle}` : "Event";
-    case "file":
+    case WorkLinkKind.File:
       return attrs.resourceTitle ? `File: ${attrs.resourceTitle}` : "File";
-    case "folder":
+    case WorkLinkKind.Folder:
       return "Folder";
-    case "meeting":
+    case WorkLinkKind.Meeting:
       return attrs.resourceId ? `Meeting ${attrs.resourceId}` : "Meeting";
-    case "project":
+    case WorkLinkKind.Project:
       return attrs.resourceId ? `Project ${attrs.resourceId}` : "Project";
-    case "recording":
+    case WorkLinkKind.Recording:
       return "Recording";
-    case "share":
+    case WorkLinkKind.Share:
       return "Shared view";
-    case "table":
+    case WorkLinkKind.Table:
       return "Table";
-    case "task":
+    case WorkLinkKind.Task:
       return attrs.resourceId ? `Task ${attrs.resourceId}` : "Task";
-    case "video":
+    case WorkLinkKind.Video:
       return "Video";
-    case "view":
+    case WorkLinkKind.View:
       return "View";
   }
 }

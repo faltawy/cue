@@ -1,13 +1,8 @@
+import { AttendanceSelfStatus, AttendanceRosterStatus } from "~/services/enums";
 export type EventAttendanceSnapshotV1 = {
   version: 1;
-  self_status:
-    | "organizer"
-    | "accepted"
-    | "tentative"
-    | "pending"
-    | "declined"
-    | "unknown";
-  roster_status: "complete" | "incomplete" | "unknown";
+  self_status: AttendanceSelfStatus;
+  roster_status: AttendanceRosterStatus;
   others: {
     accepted: number;
     tentative: number;
@@ -17,21 +12,6 @@ export type EventAttendanceSnapshotV1 = {
   };
   observed_at: string;
 };
-
-const SELF_STATUSES = new Set<EventAttendanceSnapshotV1["self_status"]>([
-  "organizer",
-  "accepted",
-  "tentative",
-  "pending",
-  "declined",
-  "unknown",
-]);
-
-const ROSTER_STATUSES = new Set<EventAttendanceSnapshotV1["roster_status"]>([
-  "complete",
-  "incomplete",
-  "unknown",
-]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -43,22 +23,13 @@ function isCount(value: unknown): value is number {
 
 function parseSnapshot(value: unknown): EventAttendanceSnapshotV1 | null {
   if (!isRecord(value) || value.version !== 1) return null;
-  if (
-    typeof value.self_status !== "string" ||
-    !SELF_STATUSES.has(
-      value.self_status as EventAttendanceSnapshotV1["self_status"],
-    )
-  ) {
-    return null;
-  }
-  if (
-    typeof value.roster_status !== "string" ||
-    !ROSTER_STATUSES.has(
-      value.roster_status as EventAttendanceSnapshotV1["roster_status"],
-    )
-  ) {
-    return null;
-  }
+  const selfStatus = Object.values(AttendanceSelfStatus).find(
+    (status) => status === value.self_status,
+  );
+  const rosterStatus = Object.values(AttendanceRosterStatus).find(
+    (status) => status === value.roster_status,
+  );
+  if (!selfStatus || !rosterStatus) return null;
   if (!isRecord(value.others)) return null;
   if (
     !isCount(value.others.accepted) ||
@@ -78,9 +49,8 @@ function parseSnapshot(value: unknown): EventAttendanceSnapshotV1 | null {
 
   return {
     version: 1,
-    self_status: value.self_status as EventAttendanceSnapshotV1["self_status"],
-    roster_status:
-      value.roster_status as EventAttendanceSnapshotV1["roster_status"],
+    self_status: selfStatus,
+    roster_status: rosterStatus,
     others: {
       accepted: value.others.accepted,
       tentative: value.others.tentative,

@@ -1,15 +1,18 @@
-export type LinearLinkKind =
-  | "document"
-  | "issue"
-  | "initiative"
-  | "project"
-  | "route"
-  | "team"
-  | "view"
-  | "workspace";
+import { AppLinkProvider } from "./provider";
+
+export enum LinearLinkKind {
+  Document = "document",
+  Issue = "issue",
+  Initiative = "initiative",
+  Project = "project",
+  Route = "route",
+  Team = "team",
+  View = "view",
+  Workspace = "workspace",
+}
 
 export interface LinearAttrs {
-  provider: "linear";
+  provider: AppLinkProvider.Linear;
   kind: LinearLinkKind;
   url: string;
   workspace?: string;
@@ -19,27 +22,27 @@ export interface LinearAttrs {
 
 function getKindLabel(attrs: LinearAttrs): string {
   switch (attrs.kind) {
-    case "document":
+    case LinearLinkKind.Document:
       return attrs.resourceTitle
         ? `Document: ${attrs.resourceTitle}`
         : "Document";
-    case "issue":
+    case LinearLinkKind.Issue:
       return attrs.resourceId ? `Issue ${attrs.resourceId}` : "Issue";
-    case "initiative":
+    case LinearLinkKind.Initiative:
       return attrs.resourceTitle
         ? `Initiative: ${attrs.resourceTitle}`
         : "Initiative";
-    case "project":
+    case LinearLinkKind.Project:
       return attrs.resourceTitle
         ? `Project: ${attrs.resourceTitle}`
         : "Project";
-    case "route":
+    case LinearLinkKind.Route:
       return attrs.resourceTitle ? `Route: ${attrs.resourceTitle}` : "Route";
-    case "team":
+    case LinearLinkKind.Team:
       return attrs.resourceTitle ? `Team: ${attrs.resourceTitle}` : "Team";
-    case "view":
+    case LinearLinkKind.View:
       return attrs.resourceTitle ? `View: ${attrs.resourceTitle}` : "View";
-    case "workspace":
+    case LinearLinkKind.Workspace:
       return "Workspace";
   }
 }

@@ -9,6 +9,8 @@ import {
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
+import { ZoomAction } from "~/shared/enums";
+
 export const ZOOM_STORAGE_KEY = "cue-zoom-factor";
 export const ZOOM_CHANGED_EVENT = "anlg:zoom-factor-changed";
 
@@ -91,24 +93,24 @@ async function syncWindowMinSize(factor: number) {
   }
 }
 
-export function stepZoomFactor(
-  current: number,
-  direction: "in" | "out" | "reset",
-): number {
-  if (direction === "reset") {
+export function stepZoomFactor(current: number, direction: ZoomAction): number {
+  if (direction === ZoomAction.Reset) {
     return DEFAULT_ZOOM_FACTOR;
   }
 
-  const steps = direction === "in" ? ZOOM_STEPS : [...ZOOM_STEPS].reverse();
+  const steps =
+    direction === ZoomAction.In ? ZOOM_STEPS : [...ZOOM_STEPS].reverse();
   const candidate = steps.find((step) =>
-    direction === "in" ? step > current + 1e-6 : step < current - 1e-6,
+    direction === ZoomAction.In ? step > current + 1e-6 : step < current - 1e-6,
   );
 
   if (candidate !== undefined) {
     return candidate;
   }
 
-  return direction === "in" ? ZOOM_STEPS[ZOOM_STEPS.length - 1] : ZOOM_STEPS[0];
+  return direction === ZoomAction.In
+    ? ZOOM_STEPS[ZOOM_STEPS.length - 1]
+    : ZOOM_STEPS[0];
 }
 
 export function readZoomFactor(
@@ -192,16 +194,16 @@ export function useZoomShortcuts() {
         case "-":
         case "_":
           event.preventDefault();
-          setFactor(stepZoomFactor(factor, "out"), true);
+          setFactor(stepZoomFactor(factor, ZoomAction.Out), true);
           return;
         case "=":
         case "+":
           event.preventDefault();
-          setFactor(stepZoomFactor(factor, "in"), true);
+          setFactor(stepZoomFactor(factor, ZoomAction.In), true);
           return;
         case "0":
           event.preventDefault();
-          setFactor(stepZoomFactor(factor, "reset"), true);
+          setFactor(stepZoomFactor(factor, ZoomAction.Reset), true);
           return;
       }
     };

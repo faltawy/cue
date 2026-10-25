@@ -1,7 +1,9 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { PastNoteRelationship } from "~/session/enums";
 import type { PastSessionNote } from "~/session/insights/past-notes";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 
 const mocks = vi.hoisted(() => ({
   event: {
@@ -88,7 +90,7 @@ function renderBriefHook(
   return renderHook(() =>
     useCreatePreMeetingBrief({
       sessionId: "current",
-      sessionMode: "inactive",
+      sessionMode: LiveSessionStatus.Inactive,
       isMemoView: true,
       onSwitchToMemos: () => {},
       getMemoEditor: () => null,
@@ -116,7 +118,7 @@ describe("useCreatePreMeetingBrief", () => {
         dateLabel: "Aug 14, 2026",
         occurredAt: "2026-08-14T09:00:00.000Z",
         sourceSummary: "Ada will share the prototype.",
-        relationship: "same_series",
+        relationship: PastNoteRelationship.SameSeries,
         summary: "Ada will share the prototype.",
         isGenerating: false,
       },
@@ -217,7 +219,7 @@ describe("useCreatePreMeetingBrief", () => {
       ({ isMemoEmpty }) =>
         useCreatePreMeetingBrief({
           sessionId: "current",
-          sessionMode: "inactive",
+          sessionMode: LiveSessionStatus.Inactive,
           isMemoView: true,
           isMemoEmpty,
           onSwitchToMemos: () => {},

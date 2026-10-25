@@ -6,23 +6,19 @@ import type {
   CaptureStatusEvent,
 } from "@anlg/plugin-transcription";
 
-export type LiveSessionStatus = "inactive" | "active" | "finalizing";
-export type SessionMode = LiveSessionStatus | "running_batch";
-export type LiveCaptureUiMode = "live" | "record_only" | "fallback_record_only";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+  LiveCaptureUiMode,
+  LoadingPhase,
+  LiveStartBlockReason,
+} from "~/store/zustand/listener/enums";
 
-type LoadingPhase =
-  | "idle"
-  | "audio_initializing"
-  | "audio_ready"
-  | "connecting"
-  | "connected";
+export { LiveSessionStatus };
+export type SessionMode = LiveSessionStatus | BatchSessionMode;
+export { LiveCaptureUiMode };
 
-export type LiveStartBlockReason =
-  | "session_active"
-  | "session_finalizing"
-  | "post_stop_processing"
-  | "another_session_active"
-  | "start_in_progress";
+export { LiveStartBlockReason };
 
 export type LiveIntervalId = ReturnType<typeof setInterval>;
 
@@ -72,10 +68,10 @@ export type GeneralState = {
 type LiveState = GeneralState["live"];
 
 const initialLiveState: LiveState = {
-  status: "inactive",
+  status: LiveSessionStatus.Inactive,
   eventUnlistenersBySession: {},
   loading: false,
-  loadingPhase: "idle",
+  loadingPhase: LoadingPhase.Idle,
   amplitude: { mic: 0, speaker: 0 },
   seconds: 0,
   captureGenerationCounter: 0,
@@ -116,31 +112,31 @@ export const getLiveStartBlockReason = (
   targetSessionId: string,
 ): LiveStartBlockReason | null => {
   if (live.postStopProcessingBySession[targetSessionId]) {
-    return "post_stop_processing";
+    return LiveStartBlockReason.PostStopProcessing;
   }
 
   if (live.sessionId === targetSessionId) {
-    if (live.status === "active") {
-      return "session_active";
+    if (live.status === LiveSessionStatus.Active) {
+      return LiveStartBlockReason.SessionActive;
     }
-    if (live.status === "finalizing") {
-      return "session_finalizing";
+    if (live.status === LiveSessionStatus.Finalizing) {
+      return LiveStartBlockReason.SessionFinalizing;
     }
     if (live.loading) {
-      return "start_in_progress";
+      return LiveStartBlockReason.StartInProgress;
     }
   }
 
   if (live.finalizingBySession[targetSessionId]) {
-    return "session_finalizing";
+    return LiveStartBlockReason.SessionFinalizing;
   }
 
-  if (live.status === "active") {
-    return "another_session_active";
+  if (live.status === LiveSessionStatus.Active) {
+    return LiveStartBlockReason.AnotherSessionActive;
   }
 
-  if (live.status === "inactive" && live.loading) {
-    return "start_in_progress";
+  if (live.status === LiveSessionStatus.Inactive && live.loading) {
+    return LiveStartBlockReason.StartInProgress;
   }
 
   return null;
@@ -179,7 +175,7 @@ export const markLiveCaptureStarted = (live: LiveState, sessionId: string) => {
     live.lastErrorIsAudioRelated = false;
   }
   ensureLiveCaptureGeneration(live, sessionId);
-  live.status = "active";
+  live.status = LiveSessionStatus.Active;
   live.loading = false;
   live.sessionId = sessionId;
 };
@@ -188,7 +184,7 @@ export const markLiveStartRequested = (live: LiveState, sessionId: string) => {
   live.captureHealth = { mic: null, speaker: null, unavailable: false };
   ensureLiveCaptureGeneration(live, sessionId);
   live.loading = true;
-  live.status = "inactive";
+  live.status = LiveSessionStatus.Inactive;
   live.sessionId = sessionId;
   live.lastError = null;
   live.lastErrorSessionId = null;
@@ -210,7 +206,7 @@ export const markLiveActive = (
   degraded: DegradedError | null,
 ) => {
   markLiveCaptureStarted(live, sessionId);
-  live.loadingPhase = "idle";
+  live.loadingPhase = LoadingPhase.Idle;
   live.seconds = 0;
   live.intervalId = intervalId;
   live.degraded = degraded;
@@ -234,7 +230,7 @@ export const markLiveFinalizing = (live: LiveState, sessionId: string) => {
       : (existing?.needsBatchRepair ?? false);
   ensureLiveCaptureGeneration(live, sessionId);
   if (live.sessionId === sessionId) {
-    live.status = "finalizing";
+    live.status = LiveSessionStatus.Finalizing;
     live.loading = true;
     live.intervalId = undefined;
   }
@@ -256,9 +252,9 @@ export const markLiveInactive = (
     live.lastErrorSessionId === sessionId &&
     live.lastErrorIsAudioRelated;
   const audioError = isAudioRelated ? live.lastError : null;
-  live.status = "inactive";
+  live.status = LiveSessionStatus.Inactive;
   live.loading = false;
-  live.loadingPhase = "idle";
+  live.loadingPhase = LoadingPhase.Idle;
   live.sessionId = null;
   live.intervalId = undefined;
   live.lastError = audioError ?? error;
@@ -290,8 +286,8 @@ export const markLiveStartFailed = (
   releaseLiveCaptureGeneration(live, sessionId);
   live.intervalId = undefined;
   live.loading = false;
-  live.loadingPhase = "idle";
-  live.status = "inactive";
+  live.loadingPhase = LoadingPhase.Idle;
+  live.status = LiveSessionStatus.Inactive;
   live.amplitude = { mic: 0, speaker: 0 };
   live.seconds = 0;
   live.sessionId = null;
@@ -320,7 +316,7 @@ export const tickTranscriptionStallWatchdog = (live: LiveState): boolean => {
   // Mic mute must not disable the watchdog: speaker audio keeps feeding live
   // STT, and the amplitude gate below already ignores silent stretches.
   if (
-    live.status !== "active" ||
+    live.status !== LiveSessionStatus.Active ||
     live.requestedLiveTranscription !== true ||
     live.liveTranscriptionActive !== true ||
     live.transcriptionStalled
@@ -412,14 +408,14 @@ export const updateLiveProgress = (
 ) => {
   switch (payload.type) {
     case "audio_initializing":
-      live.loadingPhase = "audio_initializing";
+      live.loadingPhase = LoadingPhase.AudioInitializing;
       if (!live.lastErrorIsAudioRelated) {
         live.lastError = null;
         live.lastErrorSessionId = null;
       }
       return;
     case "audio_ready":
-      live.loadingPhase = "audio_ready";
+      live.loadingPhase = LoadingPhase.AudioReady;
       live.device = payload.device;
       if (
         !getCaptureWarning(live) ||
@@ -433,10 +429,10 @@ export const updateLiveProgress = (
       }
       return;
     case "connecting":
-      live.loadingPhase = "connecting";
+      live.loadingPhase = LoadingPhase.Connecting;
       return;
     case "connected":
-      live.loadingPhase = "connected";
+      live.loadingPhase = LoadingPhase.Connected;
       // A reconnect resolves a connection error; it does nothing for the audio device.
       if (!live.lastErrorIsAudioRelated) {
         live.lastError = null;
@@ -459,7 +455,7 @@ export const updateLiveProgress = (
       }
       return;
     case "connection_error":
-      live.loadingPhase = "idle";
+      live.loadingPhase = LoadingPhase.Idle;
       live.lastError = payload.error;
       live.lastErrorSessionId = payload.session_id;
       live.lastErrorIsAudioRelated = false;
@@ -486,11 +482,11 @@ export const getLiveCaptureUiMode = (
 ): LiveCaptureUiMode => {
   if (live.liveTranscriptionActive === false) {
     return live.requestedLiveTranscription === true
-      ? "fallback_record_only"
-      : "record_only";
+      ? LiveCaptureUiMode.FallbackRecordOnly
+      : LiveCaptureUiMode.RecordOnly;
   }
 
-  return "live";
+  return LiveCaptureUiMode.Live;
 };
 
 export const isLiveTranscriptInterrupted = (
@@ -503,7 +499,7 @@ export const isLiveTranscriptInterrupted = (
     | "transcriptionStalled"
   >,
 ) =>
-  live.status === "active" &&
+  live.status === LiveSessionStatus.Active &&
   live.requestedLiveTranscription === true &&
   (live.liveTranscriptionActive === false ||
     live.degraded !== null ||
@@ -518,6 +514,7 @@ export const isBatchTranscriptionPending = (
   postStopBatchPending = false,
 ) =>
   postStopBatchPending ||
-  sessionMode === "running_batch" ||
-  ((sessionMode === "active" || sessionMode === "finalizing") &&
-    getLiveCaptureUiMode(live) !== "live");
+  sessionMode === BatchSessionMode.RunningBatch ||
+  ((sessionMode === LiveSessionStatus.Active ||
+    sessionMode === LiveSessionStatus.Finalizing) &&
+    getLiveCaptureUiMode(live) !== LiveCaptureUiMode.Live);

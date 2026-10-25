@@ -1,11 +1,13 @@
 import { Waveform } from "@anlg/ui/components/icons";
 
+import { ListeningStatus } from "~/stt/enums";
+
 export function TranscriptListeningState({
   status,
 }: {
-  status: "listening" | "finalizing";
+  status: ListeningStatus;
 }) {
-  const isFinalizing = status === "finalizing";
+  const isFinalizing = status === ListeningStatus.Finalizing;
 
   return (
     <div

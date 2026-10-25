@@ -6,6 +6,8 @@ import {
 import type { NodeSpec } from "prosemirror-model";
 import { forwardRef, type ReactNode } from "react";
 
+import { TaskStatus } from "@anlg/store";
+
 import {
   createTaskStatusAttrs,
   getNextTaskStatus,
@@ -56,7 +58,7 @@ export const taskItemNodeSpec: NodeSpec = {
       {
         "data-type": "taskItem",
         "data-status": status,
-        "data-checked": status === "done" ? "true" : "false",
+        "data-checked": status === TaskStatus.Done ? "true" : "false",
         "data-task-id": node.attrs.taskId,
         "data-task-item-id": node.attrs.taskItemId,
       },
@@ -93,7 +95,7 @@ export const TaskItemView = forwardRef<
       {...htmlAttrs}
       data-type="taskItem"
       data-status={status}
-      data-checked={status === "done" ? "true" : "false"}
+      data-checked={status === TaskStatus.Done ? "true" : "false"}
       data-task-id={taskId ?? undefined}
       data-task-item-id={
         (node.attrs.taskItemId as string | null | undefined) ?? undefined

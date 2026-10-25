@@ -2,6 +2,7 @@ import type { SessionEvent } from "@anlg/store";
 
 import { executeTransaction, liveQueryClient } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import { RecurringContentKind } from "~/devtools-bar/enums";
 import {
   buildPastSessionNotes,
   buildSessionKeyFactsStatements,
@@ -267,7 +268,7 @@ function buildSessionStatements({
     buildDocumentStatement({
       id: sessionId,
       sessionId,
-      kind: "note",
+      kind: RecurringContentKind.Note,
       title: "",
       body: rawMd,
       ownerUserId,
@@ -276,7 +277,7 @@ function buildSessionStatements({
     buildDocumentStatement({
       id: `${sessionId}:summary`,
       sessionId,
-      kind: "summary",
+      kind: RecurringContentKind.Summary,
       title: "Summary",
       body: rawMd,
       ownerUserId,
@@ -367,7 +368,7 @@ function buildDocumentStatement({
 }: {
   id: string;
   sessionId: string;
-  kind: "note" | "summary";
+  kind: RecurringContentKind;
   title: string;
   body: string;
   ownerUserId: string;

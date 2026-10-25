@@ -11,13 +11,15 @@ import { commands as transcription } from "@anlg/plugin-transcription";
 import { toast } from "@anlg/ui/components/ui/toast";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-import { DictationController, DictationPhase } from "./controller";
+import { DictationController } from "./controller";
 import { waitForDictationPanel } from "./panel";
 import { useDictationStatus } from "./state";
 import { transcribeDictation } from "./transcribe";
 
+import { DictationPhase } from "~/dictation/controller";
 import { useSettingsReady } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { useListener } from "~/stt/contexts";
 import { useRunBatch } from "~/stt/useRunBatch";
 import { useSTTConnection } from "~/stt/useSTTConnection";
@@ -39,7 +41,8 @@ export function DictationLifecycle() {
   );
   const retry = useDictationStatus((state) => state.retry);
   const meetingActive = useListener(
-    (state) => state.live.status !== "inactive" || state.live.loading,
+    (state) =>
+      state.live.status !== LiveSessionStatus.Inactive || state.live.loading,
   );
 
   if (!settingsReady || !enabled) return null;

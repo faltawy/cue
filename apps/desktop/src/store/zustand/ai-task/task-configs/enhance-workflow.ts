@@ -17,6 +17,7 @@ import {
   formatSummaryDetailGuidance,
   formatSummaryLengthGuidance,
 } from "~/services/enhancer/summary-length";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { normalizeBulletPoints } from "~/store/zustand/ai-task/shared/transform_impl";
 import { withEarlyValidationRetry } from "~/store/zustand/ai-task/shared/validate";
 import { assertCanonicalTemplateSections } from "~/templates/codec";
@@ -27,7 +28,7 @@ const IMAGE_CONTEXT_NOTE =
   "Attached note images are included as visual context. Use visible text, diagrams, screenshots, and other image content when it materially improves the summary.";
 
 export const enhanceWorkflow: Pick<
-  TaskConfig<"enhance">,
+  TaskConfig<TaskType.Enhance>,
   "executeWorkflow" | "transforms"
 > = {
   executeWorkflow,

@@ -16,6 +16,7 @@ import { useAudioPlayer } from "~/audio-player";
 import { useNow } from "~/calendar/hooks";
 import { CoachStrip } from "~/coach/open-button";
 import { useShell } from "~/contexts/shell";
+import { TitleInputVariant, RemoteMeetingType } from "~/session/enums";
 import { useEventCountdown } from "~/session/hooks/useEventCountdown";
 import { useMeetingMicInUse } from "~/session/hooks/useMeetingMicInUse";
 import {
@@ -28,8 +29,14 @@ import {
   WINDOW_CONTROLS_GUTTER_CLASS,
   WINDOW_CONTROLS_GUTTER_PLUS_32_CLASS,
 } from "~/shared/hooks/useWindowControlsGutter";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
+import { TabType } from "~/store/zustand/tabs/enums";
 import type { EditorView, Tab } from "~/store/zustand/tabs/schema";
 import { useListener } from "~/stt/contexts";
+import { ListenerControlAction } from "~/stt/enums";
 import { useStartListening } from "~/stt/useStartListening";
 import {
   isMainWebviewWindow,
@@ -45,7 +52,7 @@ export function OuterHeader({
 }: {
   sessionId: string;
   currentView: EditorView;
-  tab?: Extract<Tab, { type: "sessions" }>;
+  tab?: Extract<Tab, { type: TabType.Sessions }>;
   standaloneWindow?: boolean;
   viewSwitcher?: React.ReactNode;
 }) {
@@ -63,8 +70,10 @@ export function OuterHeader({
     : null;
   const ended = !!endedAt && endedAt.getTime() <= now.getTime();
   const isRecording =
-    sessionMode === "active" || sessionMode === "running_batch";
-  const isLiveMeeting = isRecording || sessionMode === "finalizing";
+    sessionMode === LiveSessionStatus.Active ||
+    sessionMode === BatchSessionMode.RunningBatch;
+  const isLiveMeeting =
+    isRecording || sessionMode === LiveSessionStatus.Finalizing;
   const meetingOver = !isRecording && (ended || hasTranscript || audioExists);
   const showTitleInput =
     Boolean(tab) && !viewSwitcher && !isLiveMeeting && !meetingOver;
@@ -94,7 +103,11 @@ export function OuterHeader({
             /
           </span>
           <div className="max-w-56 min-w-0 shrink">
-            <TitleInput key={tab.id} tab={tab} variant="breadcrumb" />
+            <TitleInput
+              key={tab.id}
+              tab={tab}
+              variant={TitleInputVariant.Breadcrumb}
+            />
           </div>
         </div>
       ) : null}
@@ -205,7 +218,7 @@ function HeaderMeetingAction({
   const [joiningMeeting, setJoiningMeeting] = useState(false);
   const start = useCallback(async () => {
     if (!isMainWebviewWindow()) {
-      await requestMainListenerControl("start", sessionId);
+      await requestMainListenerControl(ListenerControlAction.Start, sessionId);
       return;
     }
 
@@ -235,7 +248,7 @@ function HeaderMeetingAction({
   const countdown = useEventCountdown(sessionId);
   const stopListening = useCallback(() => {
     if (!isMainWebviewWindow()) {
-      void requestMainListenerControl("stop", sessionId);
+      void requestMainListenerControl(ListenerControlAction.Stop, sessionId);
       return;
     }
 
@@ -312,7 +325,7 @@ function HeaderMeetingAction({
 
 function getMeetingDisplay(type: RemoteMeeting["type"]) {
   switch (type) {
-    case "zoom":
+    case RemoteMeetingType.Zoom:
       return {
         name: "Zoom",
         icon: (
@@ -323,7 +336,7 @@ function getMeetingDisplay(type: RemoteMeeting["type"]) {
           />
         ),
       };
-    case "google-meet":
+    case RemoteMeetingType.GoogleMeet:
       return {
         name: "Meet",
         icon: (
@@ -334,26 +347,26 @@ function getMeetingDisplay(type: RemoteMeeting["type"]) {
           />
         ),
       };
-    case "webex":
+    case RemoteMeetingType.Webex:
       return {
         name: "Webex",
         icon: (
           <img src="/assets/webex.png" alt="" className="size-3.5 shrink-0" />
         ),
       };
-    case "teams":
+    case RemoteMeetingType.Teams:
       return {
         name: "Teams",
         icon: (
           <img src="/assets/teams.png" alt="" className="size-3.5 shrink-0" />
         ),
       };
-    case "cal-com":
+    case RemoteMeetingType.CalCom:
       return {
         name: "Cal.com",
         icon: <VideoCamera className="size-3.5 shrink-0" />,
       };
-    case "x-call":
+    case RemoteMeetingType.XCall:
       return {
         name: "X",
         icon: (

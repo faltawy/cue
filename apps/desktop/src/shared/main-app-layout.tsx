@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 
+import { LinkedItemOpenBehavior } from "@anlg/editor/note";
 import { events as windowsEvents } from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
@@ -38,7 +39,7 @@ export default function MainAppLayout() {
 const useNavigationEvents = () => {
   const navigate = useNavigate();
   const openNew = useTabs((state) => state.openNew);
-  const openNewNote = useNewNote({ behavior: "new" });
+  const openNewNote = useNewNote({ behavior: LinkedItemOpenBehavior.New });
 
   useMountEffect(() => {
     const navigateFromNative = (path: string) => {
@@ -84,7 +85,9 @@ const useNavigationEvents = () => {
             void getOrCreateSessionForEventId(calendarEventId)
               .then((sessionId) => {
                 if (shouldRecord) {
-                  openSessionAndListen(sessionId, { behavior: "new" });
+                  openSessionAndListen(sessionId, {
+                    behavior: LinkedItemOpenBehavior.New,
+                  });
                   return;
                 }
 
@@ -105,7 +108,7 @@ const useNavigationEvents = () => {
                 );
               });
           } else if (shouldRecord) {
-            openNewNoteAndListen({ behavior: "new" });
+            openNewNoteAndListen({ behavior: LinkedItemOpenBehavior.New });
           } else {
             openNewNote();
           }

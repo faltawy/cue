@@ -7,7 +7,8 @@ import { CustomSidebarHeader } from "./custom-sidebar-header";
 import { useSettingsNavGroups } from "./settings-nav-groups";
 
 import { SidebarSearchField } from "~/sidebar/search-field";
-import { type SettingsTab, useTabs } from "~/store/zustand/tabs";
+import { useTabs } from "~/store/zustand/tabs";
+import { TabType, SettingsTab } from "~/store/zustand/tabs/enums";
 
 export function SettingsNav() {
   const { t } = useLingui();
@@ -20,12 +21,15 @@ export function SettingsNav() {
   const openNew = useTabs((state) => state.openNew);
 
   const requestedTab =
-    currentTab?.type === "settings" ? (currentTab.state.tab ?? "app") : "app";
-  const activeTab = requestedTab === "audio" ? "meetings" : requestedTab;
+    currentTab?.type === TabType.Settings
+      ? (currentTab.state.tab ?? SettingsTab.App)
+      : "app";
+  const activeTab =
+    requestedTab === SettingsTab.Audio ? "meetings" : requestedTab;
 
   const setActiveTab = useCallback(
     (tab: SettingsTab) => {
-      if (currentTab?.type === "settings") {
+      if (currentTab?.type === TabType.Settings) {
         updateSettingsTabState(currentTab, { tab });
       }
     },

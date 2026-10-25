@@ -1,33 +1,22 @@
-const AUDIO_RETENTION_DURATION_MS = {
-  none: 0,
-  oneDay: 24 * 60 * 60 * 1000,
-  threeDays: 3 * 24 * 60 * 60 * 1000,
-  oneWeek: 7 * 24 * 60 * 60 * 1000,
-  oneMonth: 30 * 24 * 60 * 60 * 1000,
-} as const;
+import { AudioRetentionPolicy } from "~/services/enums";
 
-type ExpiringAudioRetentionPolicy = keyof typeof AUDIO_RETENTION_DURATION_MS;
-export type AudioRetentionPolicy = ExpiringAudioRetentionPolicy | "forever";
-
-const AUDIO_RETENTION_VALUES = new Set([
-  ...Object.keys(AUDIO_RETENTION_DURATION_MS),
-  "forever",
-]);
+export { AudioRetentionPolicy };
 
 export function normalizeAudioRetention<
-  T extends AudioRetentionPolicy | undefined = "forever",
+  T extends AudioRetentionPolicy | undefined = AudioRetentionPolicy.Forever,
 >(value: unknown, fallback?: T): AudioRetentionPolicy | T {
-  if (typeof value === "string" && AUDIO_RETENTION_VALUES.has(value)) {
-    return value as AudioRetentionPolicy;
-  }
+  const policy = Object.values(AudioRetentionPolicy).find(
+    (candidate) => candidate === value,
+  );
+  if (policy !== undefined) return policy;
 
   if (value === false) {
-    return "none";
+    return AudioRetentionPolicy.None;
   }
 
   if (value === true) {
-    return "forever";
+    return AudioRetentionPolicy.Forever;
   }
 
-  return arguments.length >= 2 ? (fallback as T) : ("forever" as T);
+  return arguments.length >= 2 ? (fallback as T) : AudioRetentionPolicy.Forever;
 }

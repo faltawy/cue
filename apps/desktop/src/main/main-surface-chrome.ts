@@ -1,4 +1,4 @@
-import { type MainSurfaceChrome } from "~/shared/main";
+import { MainSurfaceChrome } from "~/shared/enums";
 
 export function resolveMainSurfaceChrome({
   hasLeftSurfaceCustomSidebar,
@@ -14,16 +14,16 @@ export function resolveMainSurfaceChrome({
   showSidebarTimelineChrome: boolean;
 }): MainSurfaceChrome {
   if (showSidebarTimelineChrome && !leftSidebarExpanded) {
-    return "top-borderless";
+    return MainSurfaceChrome.TopBorderless;
   }
 
   if (isChangelog && !showSidebarTimeline) {
-    return "top";
+    return MainSurfaceChrome.Top;
   }
 
   if (showSidebarTimeline || hasLeftSurfaceCustomSidebar) {
-    return "left";
+    return MainSurfaceChrome.Left;
   }
 
-  return "default";
+  return MainSurfaceChrome.Default;
 }

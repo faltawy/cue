@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { AlertLifecycle, AlertVariant, ToastDismissal } from "~/sidebar/enums";
+
 type ToastAction = {
   label: string;
   icon?: ReactNode;
@@ -14,10 +16,10 @@ export type DownloadProgress = {
 };
 
 type ToastLifecycle =
-  | { type: "condition-bound" }
+  | { type: AlertLifecycle.ConditionBound }
   | {
-      type: "persistent";
-      dismissal: "permanent" | "session";
+      type: AlertLifecycle.Persistent;
+      dismissal: ToastDismissal;
       dismissalId?: string;
     };
 
@@ -28,7 +30,7 @@ export type ToastType = {
   detail?: string;
   primaryAction?: ToastAction;
   lifecycle: ToastLifecycle;
-  variant?: "default" | "error" | "warning";
+  variant?: AlertVariant;
   loading?: boolean;
 };
 

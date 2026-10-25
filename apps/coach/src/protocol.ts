@@ -1,18 +1,65 @@
-import type { CoachEdit, MeetingProject } from "./app-bridge";
-import type { Block } from "./blocks";
-import type { CoachError } from "./errors";
-import type { ImageThumb } from "./image-limits";
-import type { StripView, WrapUpActions } from "./meeting-state";
-import type { ProactiveView } from "./proactive";
-import type { CoachProvider } from "./provider";
-import type { Question } from "./questions";
-import type { Source } from "./sources";
-import type { TalkStats } from "./talk-time";
-import type { TurnUsage } from "./usage";
-import type { WrapUp } from "./wrapup";
+import { type CoachEdit, type MeetingProject } from "./app-bridge";
+import { type Block } from "./blocks";
+import { type MeetingCoaching } from "./coaching-preferences";
+import { type CoachError } from "./errors";
+import { type ImageThumb } from "./image-limits";
+import { type StripView, type WrapUpActions } from "./meeting-state";
+import { type ProactiveView } from "./proactive";
+import { type CoachProvider } from "./provider";
+import { type Question } from "./questions";
+import { type Source } from "./sources";
+import { type TalkStats } from "./talk-time";
+import { type TurnUsage } from "./usage";
+import { type WrapUp } from "./wrapup";
 
-export type TurnKind = "ask" | "nudge" | "catchup";
-export type ResetReason = "meeting" | "manual" | "project" | "sync";
+export enum SetupState {
+  Checking = "checking",
+  Downloading = "downloading",
+  Failed = "failed",
+  Ready = "ready",
+}
+
+export enum WrapUpState {
+  Running = "running",
+  Ready = "ready",
+  Failed = "failed",
+}
+
+export enum CoachEventType {
+  Status = "status",
+  Reset = "reset",
+  Divider = "divider",
+  User = "user",
+  Text = "text",
+  Tool = "tool",
+  ToolResult = "tool_result",
+  Question = "question",
+  QuestionClosed = "question_closed",
+  Usage = "usage",
+  Error = "error",
+  Done = "done",
+  Edit = "edit",
+  Block = "block",
+  BlockCheck = "block_check",
+  Sources = "sources",
+  Talk = "talk",
+  Undone = "undone",
+  Notice = "notice",
+  Wrapup = "wrapup",
+  Transcript = "transcript",
+}
+
+export enum TurnKind {
+  Ask = "ask",
+  Nudge = "nudge",
+  Catchup = "catchup",
+}
+export enum ResetReason {
+  Meeting = "meeting",
+  Manual = "manual",
+  Project = "project",
+  Sync = "sync",
+}
 
 export type ProjectView = {
   path: string;
@@ -23,9 +70,9 @@ export type ProjectView = {
 };
 
 export type WrapUpView =
-  | { state: "running"; title: string | null }
+  | { state: WrapUpState.Running; title: string | null }
   | {
-      state: "ready";
+      state: WrapUpState.Ready;
       title: string | null;
       sessionId?: string;
       wrapUp: WrapUp;
@@ -35,7 +82,7 @@ export type WrapUpView =
       logged: boolean;
       talk: TalkStats | null;
     }
-  | { state: "failed"; title: string | null; message: string };
+  | { state: WrapUpState.Failed; title: string | null; message: string };
 
 export type TranscriptLineView = {
   speaker: string;
@@ -45,13 +92,13 @@ export type TranscriptLineView = {
 
 /** Getting Claude Code ready: the person's own, or Cue's copy downloaded on first use. */
 export type SetupView =
-  | { state: "checking" }
-  | { state: "downloading"; percent: number | null }
-  | { state: "failed"; message: string }
-  | { state: "ready" };
+  | { state: SetupState.Checking }
+  | { state: SetupState.Downloading; percent: number | null }
+  | { state: SetupState.Failed; message: string }
+  | { state: SetupState.Ready };
 
 export type StatusEvent = {
-  type: "status";
+  type: CoachEventType.Status;
   provider?: CoachProvider;
   project: ProjectView;
   model: string;
@@ -59,6 +106,7 @@ export type StatusEvent = {
   appConnected: boolean;
   meeting: boolean;
   proactive: ProactiveView;
+  coaching?: MeetingCoaching & { sessionId: string };
   setup: SetupView;
 };
 
@@ -66,12 +114,17 @@ export type BlockItemRef = { id: string; index: number };
 
 export type CoachEvent =
   | StatusEvent
-  | { type: "reset"; reason: ResetReason }
-  | { type: "divider"; text: string }
-  | { type: "user"; kind: TurnKind; text: string; images?: ImageThumb[] }
-  | { type: "text"; delta: string }
+  | { type: CoachEventType.Reset; reason: ResetReason }
+  | { type: CoachEventType.Divider; text: string }
   | {
-      type: "tool";
+      type: CoachEventType.User;
+      kind: TurnKind;
+      text: string;
+      images?: ImageThumb[];
+    }
+  | { type: CoachEventType.Text; delta: string }
+  | {
+      type: CoachEventType.Tool;
       id: string;
       name: string;
       label: string;
@@ -79,57 +132,63 @@ export type CoachEvent =
       detail: string | null;
     }
   | {
-      type: "tool_result";
+      type: CoachEventType.ToolResult;
       id: string;
       ok: boolean;
       output: string | null;
       durationMs: number | null;
     }
-  | { type: "question"; id: string; questions: Question[] }
-  | { type: "question_closed"; id: string; answered: boolean }
-  | { type: "usage"; usage: TurnUsage }
-  | { type: "error"; error: CoachError }
+  | { type: CoachEventType.Question; id: string; questions: Question[] }
+  | { type: CoachEventType.QuestionClosed; id: string; answered: boolean }
+  | { type: CoachEventType.Usage; usage: TurnUsage }
+  | { type: CoachEventType.Error; error: CoachError }
   | {
-      type: "done";
+      type: CoachEventType.Done;
       seconds: number;
       ok: boolean;
       silent: boolean;
       interrupted: boolean;
     }
-  | { type: "edit"; edit: CoachEdit; block?: BlockItemRef }
-  | { type: "block"; id: string; block: Block }
-  | { type: "block_check"; id: string; index: number; checked: boolean }
-  | { type: "sources"; sources: Source[] }
-  | { type: "talk"; talk: TalkStats }
-  | { type: "undone"; id: string; summary: string }
-  | { type: "notice"; text: string }
-  | { type: "wrapup"; wrapUp: WrapUpView | null }
+  | { type: CoachEventType.Edit; edit: CoachEdit; block?: BlockItemRef }
+  | { type: CoachEventType.Block; id: string; block: Block }
   | {
-      type: "transcript";
+      type: CoachEventType.BlockCheck;
+      id: string;
+      index: number;
+      checked: boolean;
+    }
+  | { type: CoachEventType.Sources; sources: Source[] }
+  | { type: CoachEventType.Talk; talk: TalkStats }
+  | { type: CoachEventType.Undone; id: string; summary: string }
+  | { type: CoachEventType.Notice; text: string }
+  | { type: CoachEventType.Wrapup; wrapUp: WrapUpView | null }
+  | {
+      type: CoachEventType.Transcript;
       strip: StripView;
       lines: TranscriptLineView[];
       pending: string;
     };
 
-export const FEED_EVENTS: ReadonlySet<CoachEvent["type"]> = new Set([
-  "divider",
-  "user",
-  "text",
-  "tool",
-  "tool_result",
-  "question",
-  "question_closed",
-  "usage",
-  "error",
-  "done",
-  "edit",
-  "undone",
-  "notice",
-  "block",
-  "block_check",
-  "sources",
-  "talk",
-]);
+export const FEED_EVENTS: ReadonlySet<CoachEvent["type"]> =
+  new Set<CoachEventType>([
+    CoachEventType.Divider,
+    CoachEventType.User,
+    CoachEventType.Text,
+    CoachEventType.Tool,
+    CoachEventType.ToolResult,
+    CoachEventType.Question,
+    CoachEventType.QuestionClosed,
+    CoachEventType.Usage,
+    CoachEventType.Error,
+    CoachEventType.Done,
+    CoachEventType.Edit,
+    CoachEventType.Undone,
+    CoachEventType.Notice,
+    CoachEventType.Block,
+    CoachEventType.BlockCheck,
+    CoachEventType.Sources,
+    CoachEventType.Talk,
+  ]);
 
 export function appendHistory(
   history: CoachEvent[],
@@ -137,10 +196,13 @@ export function appendHistory(
 ): CoachEvent[] {
   if (!FEED_EVENTS.has(event.type)) return history;
   const last = history.at(-1);
-  if (event.type === "text" && last?.type === "text") {
+  if (
+    event.type === CoachEventType.Text &&
+    last?.type === CoachEventType.Text
+  ) {
     return [
       ...history.slice(0, -1),
-      { type: "text", delta: last.delta + event.delta },
+      { type: CoachEventType.Text, delta: last.delta + event.delta },
     ];
   }
   return [...history, event];
@@ -151,7 +213,8 @@ export function findBlock(
   id: string,
 ): Block | null {
   for (const event of history)
-    if (event.type === "block" && event.id === id) return event.block;
+    if (event.type === CoachEventType.Block && event.id === id)
+      return event.block;
   return null;
 }
 
@@ -162,12 +225,13 @@ export function addedBlockItem(
   let editId: string | null = null;
   for (const event of history) {
     if (
-      event.type === "edit" &&
+      event.type === CoachEventType.Edit &&
       event.block?.id === ref.id &&
       event.block.index === ref.index
     )
       editId = event.edit.id;
-    else if (event.type === "undone" && event.id === editId) editId = null;
+    else if (event.type === CoachEventType.Undone && event.id === editId)
+      editId = null;
   }
   return editId;
 }
@@ -175,8 +239,8 @@ export function addedBlockItem(
 export function dropSilentNudge(history: CoachEvent[]): CoachEvent[] {
   for (let index = history.length - 1; index >= 0; index -= 1) {
     const event = history[index];
-    if (event?.type === "user")
-      return event.kind === "nudge" ? history.slice(0, index) : history;
+    if (event?.type === CoachEventType.User)
+      return event.kind === TurnKind.Nudge ? history.slice(0, index) : history;
   }
   return history;
 }

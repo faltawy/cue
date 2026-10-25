@@ -10,8 +10,8 @@ import {
   getBatchProvider,
   getSessionSpeakerCount,
   isTerminalTranscriptionError,
+  useRunBatch,
 } from "./useRunBatch";
-import { useRunBatch } from "./useRunBatch";
 
 vi.mock("./capture-completion", () => ({
   completeCaptureTranscript: vi.fn().mockResolvedValue(undefined),

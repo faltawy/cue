@@ -4,7 +4,10 @@ import {
   commands as trayCommands,
   type TrayScheduleEvent,
 } from "@anlg/plugin-tray";
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { addDays, parseEventInstant, startOfDay, TZDate } from "@anlg/utils";
 
@@ -120,7 +123,7 @@ function toTimezone(date: Date, timezone?: string): Date {
 
 function TraySchedulePublisher({ events }: { events: TrayScheduleEvent[] }) {
   useMountEffect(() => {
-    if (getCurrentWebviewWindowLabel() !== "main") {
+    if (getCurrentWebviewWindowLabel() !== StaticWindowLabel.Main) {
       return;
     }
 

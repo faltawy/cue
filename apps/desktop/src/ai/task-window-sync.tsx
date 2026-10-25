@@ -1,15 +1,16 @@
 import { emit, emitTo, listen, type UnlistenFn } from "@tauri-apps/api/event";
 
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-import {
-  type AutoEnhanceMode,
-  type EnhancerService,
-  getEnhancerService,
-} from "~/services/enhancer";
+import { type EnhancerService, getEnhancerService } from "~/services/enhancer";
+import { AutoEnhanceMode } from "~/services/enums";
 import { id } from "~/shared/utils";
-import type { AITaskStore } from "~/store/zustand/ai-task";
+import { type AITaskStore } from "~/store/zustand/ai-task";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { getAIErrorSource } from "~/store/zustand/ai-task/shared/error-source";
 import {
   MAX_AI_TASK_STREAM_CHARACTERS,
@@ -76,7 +77,7 @@ export async function handleMainEnhanceRequest(
 }
 
 export function isMainAITaskHostWindow() {
-  return getCurrentWebviewWindowLabel() === "main";
+  return getCurrentWebviewWindowLabel() === StaticWindowLabel.Main;
 }
 
 export async function requestMainAITaskCancel(taskId: string) {
@@ -364,7 +365,7 @@ function RemoteAITaskWindowSyncBridge({ store }: { store: AITaskStore }) {
 export function serializeEnhanceTasks(tasks: Record<string, TaskState>) {
   return Object.fromEntries(
     Object.entries(tasks)
-      .filter(([, task]) => task.taskType === "enhance")
+      .filter(([, task]) => task.taskType === TaskType.Enhance)
       .slice(-MAX_SYNCED_ENHANCE_TASKS)
       .map(([taskId, task]) => [
         taskId,
@@ -445,9 +446,9 @@ function isTaskAutoEnhanceRequestPayload(
     candidate.sourceLabel.length > 0 &&
     typeof candidate.sessionId === "string" &&
     candidate.sessionId.length > 0 &&
-    (candidate.mode === "regenerate" ||
-      candidate.mode === "if_empty" ||
-      candidate.mode === "refresh")
+    (candidate.mode === AutoEnhanceMode.Regenerate ||
+      candidate.mode === AutoEnhanceMode.IfEmpty ||
+      candidate.mode === AutoEnhanceMode.Refresh)
   );
 }
 

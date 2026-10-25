@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TranscriptEmptyState } from "./empty";
 
+import { BatchPhase } from "~/stt/enums";
+
 describe("TranscriptEmptyState", () => {
   afterEach(() => {
     cleanup();
@@ -14,7 +16,7 @@ describe("TranscriptEmptyState", () => {
     render(
       <TranscriptEmptyState
         isBatching
-        phase="transcribing"
+        phase={BatchPhase.Transcribing}
         onStopTranscription={onStopTranscription}
       />,
     );
@@ -25,7 +27,7 @@ describe("TranscriptEmptyState", () => {
   });
 
   it("hides the stop control while importing audio", () => {
-    render(<TranscriptEmptyState isBatching phase="importing" />);
+    render(<TranscriptEmptyState isBatching phase={BatchPhase.Importing} />);
 
     expect(
       screen.queryByRole("button", { name: "Stop transcription" }),

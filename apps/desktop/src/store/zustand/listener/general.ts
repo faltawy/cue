@@ -5,8 +5,8 @@ import {
   commands as listenerCommands,
   type CaptureConfigUpdate,
   type CaptureParams,
+  type TranscriptionParams,
 } from "@anlg/plugin-transcription";
-import type { TranscriptionParams } from "@anlg/plugin-transcription";
 
 import type { BatchActions, BatchState } from "./batch";
 import { hasConflictingBatchSession, runBatchSession } from "./general-batch";
@@ -33,6 +33,11 @@ import type {
 } from "./transcript";
 
 import { enqueueSessionAudioOperation } from "~/session/audio-operations";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+  AttachLiveSessionResult,
+} from "~/store/zustand/listener/enums";
 
 export type { GeneralState, SessionMode } from "./general-shared";
 
@@ -51,7 +56,7 @@ export type GeneralActions = {
       handlePersist?: LiveTranscriptPersistCallback;
       onStopped?: OnStoppedCallback;
     },
-  ) => Promise<"attached" | "inactive" | "error">;
+  ) => Promise<AttachLiveSessionResult>;
   beginCaptureRecoveryFinalization: (sessionId: string) => boolean;
   finishCaptureRecoveryFinalization: (sessionId: string) => void;
   setMuted: (value: boolean) => void;
@@ -95,7 +100,7 @@ export const createGeneralSlice = <
 
     return enqueueSessionAudioOperation(targetSessionId, async () => {
       const currentMode = get().getSessionMode(targetSessionId);
-      if (currentMode === "running_batch") {
+      if (currentMode === BatchSessionMode.RunningBatch) {
         console.warn(
           `[listener] cannot start live session while batch processing session ${targetSessionId}`,
         );
@@ -137,7 +142,7 @@ export const createGeneralSlice = <
   },
   attachLiveSession: async (sessionId, options) => {
     if (!sessionId) {
-      return "inactive";
+      return AttachLiveSessionResult.Inactive;
     }
 
     return attachLiveSession(set, get, sessionId, options);
@@ -156,7 +161,10 @@ export const createGeneralSlice = <
   finishCaptureRecoveryFinalization: (sessionId) => {
     setLiveState(set, (live) => {
       delete live.postStopProcessingBySession[sessionId];
-      if (live.sessionId === sessionId && live.status === "inactive") {
+      if (
+        live.sessionId === sessionId &&
+        live.status === LiveSessionStatus.Inactive
+      ) {
         live.loading = false;
         live.sessionId = null;
       }
@@ -186,7 +194,10 @@ export const createGeneralSlice = <
   },
   updateCaptureConfig: async (update) => {
     const live = get().live;
-    if (live.status !== "active" || live.sessionId !== update.session_id) {
+    if (
+      live.status !== LiveSessionStatus.Active ||
+      live.sessionId !== update.session_id
+    ) {
       return;
     }
 
@@ -208,14 +219,17 @@ export const createGeneralSlice = <
     }
 
     const mode = get().getSessionMode(sessionId);
-    if (mode === "active" || mode === "finalizing") {
+    if (
+      mode === LiveSessionStatus.Active ||
+      mode === LiveSessionStatus.Finalizing
+    ) {
       throw new Error(
         `[listener] cannot start batch processing while session ${sessionId} is live`,
       );
     }
 
     if (
-      mode === "running_batch" &&
+      mode === BatchSessionMode.RunningBatch &&
       (!get().batch[sessionId]?.recovered ||
         (await hasConflictingBatchSession(params)))
     ) {
@@ -246,7 +260,7 @@ export const createGeneralSlice = <
         return;
       }
 
-      if (get().getSessionMode(sessionId) === "running_batch") {
+      if (get().getSessionMode(sessionId) === BatchSessionMode.RunningBatch) {
         get().handleBatchStopped(sessionId);
       }
     } catch (error) {
@@ -262,7 +276,7 @@ export const createGeneralSlice = <
       return false;
     }
 
-    if (get().getSessionMode(sessionId) === "running_batch") {
+    if (get().getSessionMode(sessionId) === BatchSessionMode.RunningBatch) {
       return false;
     }
 
@@ -270,7 +284,7 @@ export const createGeneralSlice = <
   },
   getSessionMode: (sessionId) => {
     if (!sessionId) {
-      return "inactive";
+      return LiveSessionStatus.Inactive;
     }
 
     const state = get();
@@ -280,13 +294,13 @@ export const createGeneralSlice = <
     }
 
     if (state.live.finalizingBySession[sessionId]) {
-      return "finalizing";
+      return LiveSessionStatus.Finalizing;
     }
 
     if (state.batch[sessionId] && !state.batch[sessionId].terminalReason) {
-      return "running_batch";
+      return BatchSessionMode.RunningBatch;
     }
 
-    return "inactive";
+    return LiveSessionStatus.Inactive;
   },
 });

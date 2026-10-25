@@ -38,6 +38,7 @@ import {
 import { RelatedNotesSection } from "./related-notes";
 import { ContactFacehash } from "./shared";
 
+import { ContactType } from "~/contacts/enums";
 import { useOwnerUserId } from "~/shared/owner-user";
 
 export function DetailsColumn({
@@ -143,14 +144,19 @@ export function DetailsColumn({
             showCompactIdentity={showCompactIdentity}
             pinned={Boolean(human.pinned)}
             onTogglePin={() => {
-              void toggleContactPin("human", human.id).catch((error) => {
-                console.error("[contacts] failed to toggle contact pin", error);
-              });
+              void toggleContactPin(ContactType.Human, human.id).catch(
+                (error) => {
+                  console.error(
+                    "[contacts] failed to toggle contact pin",
+                    error,
+                  );
+                },
+              );
             }}
             onDelete={() => onDelete(human.id)}
             onRemoveAvatar={
               human.avatarDataUrl
-                ? () => persistContactAvatar("human", human.id, null)
+                ? () => persistContactAvatar(ContactType.Human, human.id, null)
                 : undefined
             }
           />
@@ -172,7 +178,7 @@ export function DetailsColumn({
                 <AvatarUploadButton
                   label={t`Change photo`}
                   onUpload={(dataUrl) =>
-                    persistContactAvatar("human", human.id, dataUrl)
+                    persistContactAvatar(ContactType.Human, human.id, dataUrl)
                   }
                 >
                   {human.avatarDataUrl ? (

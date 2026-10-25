@@ -5,6 +5,11 @@ import { cn } from "@anlg/utils";
 
 import { X } from "../icons";
 
+export enum DialogPlacement {
+  Center = "center",
+  Top = "top",
+}
+
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
@@ -19,7 +24,7 @@ type DialogContentProps = React.ComponentPropsWithoutRef<
   /** A corner ✕ for dialogs without a Cancel button in the footer. */
   showCloseButton?: boolean;
   /** `top` for the command palette and pickers (cue.md §6). */
-  placement?: "center" | "top";
+  placement?: DialogPlacement;
 };
 
 const DialogOverlay = React.forwardRef<
@@ -51,7 +56,7 @@ const DialogContent = React.forwardRef<
       overlayClassName,
       overlayChildren,
       showCloseButton = false,
-      placement = "center",
+      placement = DialogPlacement.Center,
       ...props
     },
     ref,
@@ -65,7 +70,9 @@ const DialogContent = React.forwardRef<
       <div
         className={cn([
           "pointer-events-none fixed inset-0 z-50 flex justify-center px-6",
-          placement === "top" ? "items-start pt-14" : "items-center py-6",
+          placement === DialogPlacement.Top
+            ? "items-start pt-14"
+            : "items-center py-6",
         ])}
       >
         <DialogPrimitive.Content

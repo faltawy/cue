@@ -1,6 +1,8 @@
 import { defaultFilter } from "cmdk";
 
-export type CommandGroupId = "actions" | "notes" | "people" | "pages";
+import { CommandGroupId } from "~/shared/enums";
+
+export { CommandGroupId };
 
 export type RankableCommand = {
   id: string;
@@ -16,10 +18,10 @@ export type RankedGroup<T extends RankableCommand> = {
 };
 
 const GROUP_ORDER: readonly CommandGroupId[] = [
-  "actions",
-  "notes",
-  "people",
-  "pages",
+  CommandGroupId.Actions,
+  CommandGroupId.Notes,
+  CommandGroupId.People,
+  CommandGroupId.Pages,
 ];
 
 const GROUP_LIMITS: Record<CommandGroupId, number> = {

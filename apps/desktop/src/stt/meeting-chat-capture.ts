@@ -1,9 +1,12 @@
-import { commands as detectCommands } from "@anlg/plugin-detect";
-import type { MeetingCapturedChatMessage } from "@anlg/plugin-detect";
+import {
+  commands as detectCommands,
+  type MeetingCapturedChatMessage,
+} from "@anlg/plugin-detect";
 import { toast } from "@anlg/ui/components/ui/toast";
 
 import { getStoredSettingValues } from "~/settings/queries";
 import { resolveConfigValue } from "~/shared/config";
+import { ParticipantConsentSource, SessionListeningPolicy } from "~/stt/enums";
 import { persistMeetingChatRecords } from "~/stt/meeting-chat-records";
 import {
   interpretChatAsConsentResponse,
@@ -182,7 +185,7 @@ export function startMeetingChatCapture({
           sessionId,
           participantKey: entry.message.sender?.trim() || "unidentified",
           status: response,
-          source: "explicit_chat_reply",
+          source: ParticipantConsentSource.ExplicitChatReply,
           updatedAt: new Date().toISOString(),
         };
         consents.push(consent);
@@ -195,7 +198,11 @@ export function startMeetingChatCapture({
           );
         }
       }
-      if (sessionListeningPolicy(consents) === "stop_declined" && !stopped) {
+      if (
+        sessionListeningPolicy(consents) ===
+          SessionListeningPolicy.StopDeclined &&
+        !stopped
+      ) {
         onParticipantDeclined?.();
       }
     } catch (error) {

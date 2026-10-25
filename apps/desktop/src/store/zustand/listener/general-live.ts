@@ -47,6 +47,10 @@ import {
 
 import { prepareSessionPeaks } from "~/audio-player/waveform";
 import { getSessionResourcePath } from "~/session/resource-path";
+import {
+  LiveSessionStatus,
+  AttachLiveSessionResult,
+} from "~/store/zustand/listener/enums";
 import { fromResult } from "~/stt/fromResult";
 import { recordDetectedMeetingApps } from "~/stt/meeting-source-apps";
 import {
@@ -258,7 +262,7 @@ const notifyCaptureWarning = <T extends GeneralState>(
               const settings = await getStoredSettingValues();
               if (
                 get().live.sessionId !== targetSessionId ||
-                get().live.status !== "active"
+                get().live.status !== LiveSessionStatus.Active
               )
                 return;
               const result = await listenerCommands.retryAudioCapture(
@@ -311,7 +315,10 @@ const createSessionEventHandlers = <T extends LiveStore>(
       startSpeakerContextCapture(targetSessionId);
       const currentLive = get().live;
 
-      if (currentLive.status === "active" && currentLive.intervalId) {
+      if (
+        currentLive.status === LiveSessionStatus.Active &&
+        currentLive.intervalId
+      ) {
         setLiveState(set, (live) => {
           live.degraded = payload.degraded ?? null;
           live.requestedLiveTranscription =
@@ -568,7 +575,7 @@ const createSessionEventHandlers = <T extends LiveStore>(
     if (
       payload.type === "mic_isolated" &&
       get().live.sessionId === targetSessionId &&
-      (get().live.status === "active" || get().live.loading)
+      (get().live.status === LiveSessionStatus.Active || get().live.loading)
     ) {
       observeSpeakerMicrophone(targetSessionId, { isolated: payload.value });
       return;
@@ -753,11 +760,11 @@ export const attachLiveSession = <T extends LiveStore>(
     handlePersist?: LiveTranscriptPersistCallback;
     onStopped?: OnStoppedCallback;
   },
-): Promise<"attached" | "inactive" | "error"> => {
+): Promise<AttachLiveSessionResult> => {
   if (options?.onStopped) {
     setLiveState(set, (live) => {
       if (
-        live.status === "inactive" &&
+        live.status === LiveSessionStatus.Inactive &&
         (!live.sessionId || live.sessionId === targetSessionId)
       ) {
         live.loading = true;
@@ -805,7 +812,7 @@ export const attachLiveSession = <T extends LiveStore>(
   const currentLive = get().live;
   if (currentLive.eventUnlistenersBySession[targetSessionId]) {
     if (!options?.handlePersist && !options?.onStopped) {
-      return Promise.resolve("attached");
+      return Promise.resolve(AttachLiveSessionResult.Attached);
     }
 
     return getCaptureSnapshotWithTimeout()
@@ -815,7 +822,7 @@ export const attachLiveSession = <T extends LiveStore>(
             "[listener] capture snapshot unavailable:",
             result.error,
           );
-          return "error";
+          return AttachLiveSessionResult.Error;
         }
 
         const snapshot = result.data;
@@ -829,11 +836,13 @@ export const attachLiveSession = <T extends LiveStore>(
         if (!isAttached) {
           clearAttachedCallbacks();
         }
-        return isAttached ? "attached" : "inactive";
+        return isAttached
+          ? AttachLiveSessionResult.Attached
+          : AttachLiveSessionResult.Inactive;
       })
       .catch((error) => {
         console.error("[listener] capture snapshot unavailable:", error);
-        return "error";
+        return AttachLiveSessionResult.Error;
       });
   }
 
@@ -881,7 +890,7 @@ export const attachLiveSession = <T extends LiveStore>(
     ) {
       clearLiveEventUnlisteners(unlisteners);
       clearAttachedCallbacks();
-      return "error" as const;
+      return AttachLiveSessionResult.Error as const;
     }
 
     registeredUnlisteners = unlisteners;
@@ -896,7 +905,7 @@ export const attachLiveSession = <T extends LiveStore>(
         snapshotResult.error,
       );
       replayBufferedSegmentDeltas();
-      return "error" as const;
+      return AttachLiveSessionResult.Error as const;
     }
 
     const snapshot = snapshotResult.data;
@@ -909,7 +918,9 @@ export const attachLiveSession = <T extends LiveStore>(
     if (!isAttached) {
       clearAttachedCallbacks();
     }
-    return isAttached ? ("attached" as const) : ("inactive" as const);
+    return isAttached
+      ? AttachLiveSessionResult.Attached
+      : AttachLiveSessionResult.Inactive;
   });
 
   return Effect.runPromiseExit(program).then((exit) =>
@@ -927,12 +938,12 @@ export const attachLiveSession = <T extends LiveStore>(
           }
           if (
             live.sessionId === targetSessionId &&
-            live.status === "inactive"
+            live.status === LiveSessionStatus.Inactive
           ) {
             live.sessionId = null;
           }
         });
-        return "error" as const;
+        return AttachLiveSessionResult.Error as const;
       },
       onSuccess: (result) => result,
     }),
@@ -973,7 +984,8 @@ function applyCaptureSnapshot<T extends LiveStore>(
         : createLiveSecondsInterval(
             set,
             (live) =>
-              live.sessionId === targetSessionId && live.status === "active",
+              live.sessionId === targetSessionId &&
+              live.status === LiveSessionStatus.Active,
           );
 
     setLiveState(set, (live) => {
@@ -1010,7 +1022,10 @@ function applyCaptureSnapshot<T extends LiveStore>(
   }
 
   setLiveState(set, (live) => {
-    if (live.sessionId === targetSessionId && live.status === "inactive") {
+    if (
+      live.sessionId === targetSessionId &&
+      live.status === LiveSessionStatus.Inactive
+    ) {
       if (!live.loading) {
         releaseLiveCaptureGeneration(live, targetSessionId);
       }
@@ -1028,7 +1043,10 @@ export const stopLiveSession = <T extends GeneralState>(
 
   if (sessionId) {
     setLiveState(set, (live) => {
-      if (live.sessionId !== sessionId || live.status !== "active") {
+      if (
+        live.sessionId !== sessionId ||
+        live.status !== LiveSessionStatus.Active
+      ) {
         return;
       }
 
@@ -1048,14 +1066,14 @@ export const stopLiveSession = <T extends GeneralState>(
         setLiveState(set, (live) => {
           if (sessionId && live.sessionId === sessionId) {
             delete live.finalizingBySession[sessionId];
-            if (live.status === "finalizing") {
+            if (live.status === LiveSessionStatus.Finalizing) {
               const intervalId = createLiveSecondsInterval(
                 set,
                 (currentLive) =>
                   currentLive.sessionId === sessionId &&
-                  currentLive.status === "active",
+                  currentLive.status === LiveSessionStatus.Active,
               );
-              live.status = "active";
+              live.status = LiveSessionStatus.Active;
               live.intervalId = intervalId;
             }
           }

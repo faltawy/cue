@@ -16,11 +16,12 @@ import {
 } from "~/shared/hooks/useWindowControlsGutter";
 import { StandardContentWrapper } from "~/shared/main";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function TabContentChangelog({
   tab,
 }: {
-  tab: Extract<Tab, { type: "changelog" }>;
+  tab: Extract<Tab, { type: TabType.Changelog }>;
 }) {
   const { current } = tab.state;
   const { leftsidebar } = useShell();

@@ -1,6 +1,9 @@
 import type { StateCreator, StoreMutatorIdentifier } from "zustand";
 
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 
 import {
   getDefaultState,
@@ -130,7 +133,10 @@ const pinnedPersistenceMiddlewareImpl: PinnedPersistenceMiddlewareImpl =
           prevPinnedIds.length !== nextPinnedIds.length ||
           prevPinnedIds.some((id, i) => id !== nextPinnedIds[i]);
 
-        if (pinnedChanged && getCurrentWebviewWindowLabel() === "main") {
+        if (
+          pinnedChanged &&
+          getCurrentWebviewWindowLabel() === StaticWindowLabel.Main
+        ) {
           savePinnedTabs(nextState.tabs).catch((e) => {
             console.error("Failed to save pinned tabs:", e);
           });

@@ -1,5 +1,7 @@
-import { commands as calendarCommands } from "@anlg/plugin-calendar";
-import type { CalendarEvent } from "@anlg/plugin-calendar";
+import {
+  commands as calendarCommands,
+  type CalendarEvent,
+} from "@anlg/plugin-calendar";
 
 import { createAttendanceSnapshot } from "../attendance";
 import type { Ctx } from "../ctx";
@@ -8,6 +10,8 @@ import type {
   IncomingEvent,
   IncomingParticipants,
 } from "./types";
+
+import { AttendanceSelfStatus } from "~/services/enums";
 
 export class CalendarFetchError extends Error {
   constructor(
@@ -53,7 +57,7 @@ export async function fetchIncomingEvents(ctx: Ctx): Promise<{
       calendarEvent.attendance,
       observedAt,
     );
-    if (attendance?.self_status === "declined") continue;
+    if (attendance?.self_status === AttendanceSelfStatus.Declined) continue;
     const { event, eventParticipants } = normalizeCalendarEvent(
       calendarEvent,
       attendance,

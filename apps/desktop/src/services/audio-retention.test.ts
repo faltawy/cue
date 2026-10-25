@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { AudioRetentionPolicy } from "~/services/enums";
+
 const mocks = vi.hoisted(() => ({
   deleteProcessedSessionAudio: vi.fn(),
   getSessionMode: vi.fn(),
@@ -52,7 +54,7 @@ describe("audio retention", () => {
     mocks.live.sessionId = "session-1";
 
     await expect(
-      deleteProcessedAudioForRetention("none", "session-1"),
+      deleteProcessedAudioForRetention(AudioRetentionPolicy.None, "session-1"),
     ).resolves.toBe(false);
     expect(mocks.deleteProcessedSessionAudio).not.toHaveBeenCalled();
   });
@@ -65,7 +67,7 @@ describe("audio retention", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(
-      deleteProcessedAudioForRetention("none", "session-1"),
+      deleteProcessedAudioForRetention(AudioRetentionPolicy.None, "session-1"),
     ).resolves.toBe(false);
   });
 });

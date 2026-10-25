@@ -4,7 +4,7 @@ import path from "node:path";
 import { CLAUDE_ARGS } from "./claude-code";
 import { expandProtectedRoots } from "./guard";
 import { loadMcpConfig } from "./mcp-config";
-import { parseProvider } from "./provider";
+import { CoachProvider, parseProvider } from "./provider";
 import { type CoachOptions } from "./session";
 import { openAppDb } from "./transcript";
 
@@ -22,7 +22,7 @@ export const COACH_ARGS = {
   "claude-model": { type: "string" },
   "codex-model": { type: "string" },
   ...CLAUDE_ARGS,
-  provider: { type: "string", default: "claude" },
+  provider: { type: "string", default: CoachProvider.Claude },
   codex: { type: "string" },
   "codex-dir": { type: "string" },
   "mcp-config": { type: "string" },
@@ -77,7 +77,7 @@ export async function coachOptionsFromArgs(
     provider: parseProvider(values.provider),
     model:
       values.model ??
-      (parseProvider(values.provider) === "codex" ? "" : "sonnet"),
+      (parseProvider(values.provider) === CoachProvider.Codex ? "" : "sonnet"),
     ...(await loadMcpConfig(values["mcp-config"])),
     allowChanges: parseServerList(values["allow-changes"]),
     instructions: values.instructions

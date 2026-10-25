@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@anlg/ui/components/ui/dialog";
 
+import { LegacyCleanupState } from "~/settings/enums";
 import { formatBytes } from "~/shared/format-bytes";
 
 const QUERY_KEY = ["legacy-migration"] as const;
@@ -100,7 +101,7 @@ export function LegacyMigrationCleanupRow() {
     if (status) {
       if (status.migrationReady && !status.migrationVerified) {
         return {
-          state: "success" as const,
+          state: LegacyCleanupState.Success as const,
           label: t`Migration complete`,
           description: t`Older files that differ from your current data were kept as recovery copies. No action is required.`,
         };
@@ -108,7 +109,7 @@ export function LegacyMigrationCleanupRow() {
 
       if (!status.migrationVerified) {
         return {
-          state: "warning" as const,
+          state: LegacyCleanupState.Warning as const,
           label: t`Migration needs attention`,
           description:
             migrationIssue ?? t`SQLite migration verification is incomplete`,
@@ -116,7 +117,7 @@ export function LegacyMigrationCleanupRow() {
       }
 
       return {
-        state: "success" as const,
+        state: LegacyCleanupState.Success as const,
         label: t`Migration complete`,
         description: null,
       };
@@ -124,14 +125,14 @@ export function LegacyMigrationCleanupRow() {
 
     if (migrationQuery.isPending && !migrationQuery.error) {
       return {
-        state: "loading" as const,
+        state: LegacyCleanupState.Loading as const,
         label: t`Checking migration...`,
         description: t`Verifying the SQLite migration status`,
       };
     }
 
     return {
-      state: "unavailable" as const,
+      state: LegacyCleanupState.Unavailable as const,
       label: t`Migration status unavailable`,
       description: t`Cue will retry automatically. This does not affect your notes.`,
     };
@@ -143,16 +144,16 @@ export function LegacyMigrationCleanupRow() {
     <>
       <div className="flex items-center justify-between gap-4">
         <div className="text-ui flex min-w-0 flex-1 items-start gap-1.5">
-          {statusCopy.state === "loading" && (
+          {statusCopy.state === LegacyCleanupState.Loading && (
             <CircleNotch className="text-muted-foreground mt-0.5 size-3.5 shrink-0 animate-spin" />
           )}
-          {statusCopy.state === "success" && (
+          {statusCopy.state === LegacyCleanupState.Success && (
             <CheckCircle className="text-success mt-0.5 size-3.5 shrink-0" />
           )}
-          {statusCopy.state === "warning" && (
+          {statusCopy.state === LegacyCleanupState.Warning && (
             <Warning className="text-warm-strong mt-0.5 size-3.5 shrink-0" />
           )}
-          {statusCopy.state === "unavailable" && (
+          {statusCopy.state === LegacyCleanupState.Unavailable && (
             <Info className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
           )}
           <div className="min-w-0">

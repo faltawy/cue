@@ -1,15 +1,15 @@
 import path from "node:path";
 
-import { type CoachError, coachError } from "./errors";
-import type { CoachEvent } from "./protocol";
-import type { RuntimeMessage } from "./runtime-message";
+import { coachError, type CoachError } from "./errors";
+import { type CoachEvent, CoachEventType } from "./protocol";
+import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
 import {
   type FoundSource,
   pickSources,
   type Source,
   sourcesFromTool,
 } from "./sources";
-import { type TurnUsage, turnUsage, type UsageSource } from "./usage";
+import { turnUsage, type TurnUsage, type UsageSource } from "./usage";
 
 export const OUTPUT_MAX = 4_000;
 const DETAIL_MAX = 400;
@@ -251,19 +251,19 @@ export class TurnTracker {
 
   handle(message: RuntimeMessage): CoachEvent[] {
     switch (message.type) {
-      case "text":
+      case RuntimeMessageType.Text:
         this.answer += message.delta;
-        return [{ type: "text", delta: message.delta }];
-      case "assistant_usage":
+        return [{ type: CoachEventType.Text, delta: message.delta }];
+      case RuntimeMessageType.AssistantUsage:
         this.lastMainUsage = message.usage;
         if (message.error) this.sdkError = message.error;
         return [];
-      case "tool_start": {
+      case RuntimeMessageType.ToolStart: {
         this.starts.set(message.id, this.now());
         const labels = toolLabels(message.name, message.input);
         return [
           {
-            type: "tool",
+            type: CoachEventType.Tool,
             id: message.id,
             name: message.name,
             label: labels.done,
@@ -272,7 +272,7 @@ export class TurnTracker {
           },
         ];
       }
-      case "tool_result": {
+      case RuntimeMessageType.ToolResult: {
         const started = this.starts.get(message.id);
         if (started === undefined) return [];
         this.starts.delete(message.id);
@@ -280,7 +280,7 @@ export class TurnTracker {
         this.hookResults.delete(message.id);
         return [
           {
-            type: "tool_result",
+            type: CoachEventType.ToolResult,
             id: message.id,
             ok: !message.isError,
             output: toolResultText(message.content) ?? hook ?? null,

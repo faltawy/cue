@@ -1,6 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { SettingsTab } from "~/store/zustand/tabs/enums";
+
 vi.mock("~/settings/hydration-boundary", () => ({
   SettingsHydrationBoundary: ({ children }: { children: React.ReactNode }) =>
     children,
@@ -33,8 +35,8 @@ describe("TabContentSettings", () => {
   afterEach(cleanup);
 
   it.each([
-    ["app", "General settings"],
-    ["claude", "Claude settings"],
+    [SettingsTab.App, "General settings"],
+    [SettingsTab.Claude, "Claude settings"],
   ] as const)("opens the %s destination", (destination, heading) => {
     render(
       <TabContentSettings

@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   classifyError,
   coachError,
+  CoachErrorKind,
   SIGN_IN_STEPS,
   StderrTail,
   withSignIn,
@@ -10,16 +11,22 @@ import {
 
 describe("classifyError", () => {
   test.each([
-    ["Failed to authenticate. API Error: 401 OAuth token has expired", "auth"],
-    ["Invalid API key · Please run /login", "auth"],
-    ["Not logged in", "auth"],
-    ["Missing bearer or basic authentication in header", "auth"],
-    ["API Error: 429 rate_limit_error", "rate_limit"],
-    ["Claude AI usage limit reached|1792000000", "rate_limit"],
-    ["API Error: 529 Overloaded", "network"],
-    ["fetch failed: getaddrinfo ENOTFOUND api.anthropic.com", "network"],
-    ["Connection error.", "network"],
-    ["error_max_turns", "other"],
+    [
+      "Failed to authenticate. API Error: 401 OAuth token has expired",
+      CoachErrorKind.Auth,
+    ],
+    ["Invalid API key · Please run /login", CoachErrorKind.Auth],
+    ["Not logged in", CoachErrorKind.Auth],
+    ["Missing bearer or basic authentication in header", CoachErrorKind.Auth],
+    ["API Error: 429 rate_limit_error", CoachErrorKind.RateLimit],
+    ["Claude AI usage limit reached|1792000000", CoachErrorKind.RateLimit],
+    ["API Error: 529 Overloaded", CoachErrorKind.Network],
+    [
+      "fetch failed: getaddrinfo ENOTFOUND api.anthropic.com",
+      CoachErrorKind.Network,
+    ],
+    ["Connection error.", CoachErrorKind.Network],
+    ["error_max_turns", CoachErrorKind.Other],
   ] as const)("%s → %s", (message, kind) => {
     expect(classifyError({ message })).toBe(kind);
   });
@@ -30,8 +37,10 @@ describe("classifyError", () => {
         message: "something odd happened",
         sdkError: "rate_limit",
       }),
-    ).toBe("rate_limit");
-    expect(classifyError({ message: "something odd happened" })).toBe("other");
+    ).toBe(CoachErrorKind.RateLimit);
+    expect(classifyError({ message: "something odd happened" })).toBe(
+      CoachErrorKind.Other,
+    );
   });
 
   test("a 401 quoted from a tool's output is not a sign-in problem", () => {
@@ -39,8 +48,10 @@ describe("classifyError", () => {
       classifyError({
         message: "Tool Bash said: curl returned 401 Unauthorized",
       }),
-    ).toBe("other");
-    expect(classifyError({ message: "401 Unauthorized" })).toBe("auth");
+    ).toBe(CoachErrorKind.Other);
+    expect(classifyError({ message: "401 Unauthorized" })).toBe(
+      CoachErrorKind.Auth,
+    );
   });
 });
 
@@ -50,7 +61,7 @@ describe("coachError", () => {
       message: "Claude Code exited unexpectedly.",
       stderr: "Error: Invalid API key\n",
     });
-    expect(error.kind).toBe("auth");
+    expect(error.kind).toBe(CoachErrorKind.Auth);
     expect(error.title).toBe("Sign-in expired");
     expect(error.message).not.toContain("Terminal");
     expect(error.detail).toBe(

@@ -3,17 +3,19 @@ import { type ReactNode, useId } from "react";
 import { Switch } from "@anlg/ui/components/ui/switch";
 import { cn } from "@anlg/utils";
 
+import { SettingControlWidth } from "~/settings/enums";
+
 export const SETTING_CONTROL_CLASS = "h-8 w-full";
 
 export function SettingRow({
   title,
   description,
-  controlWidth = "fixed",
+  controlWidth = SettingControlWidth.Fixed,
   children,
 }: {
   title: ReactNode;
   description?: ReactNode;
-  controlWidth?: "fixed" | "content";
+  controlWidth?: SettingControlWidth;
   children: (labelProps: {
     "aria-labelledby": string;
     "aria-describedby": string | undefined;
@@ -26,7 +28,7 @@ export function SettingRow({
     <div
       className={cn([
         "flex w-full min-w-0 justify-between gap-4",
-        controlWidth === "fixed"
+        controlWidth === SettingControlWidth.Fixed
           ? "flex-col items-stretch gap-2 @md:flex-row @md:items-center @md:gap-4"
           : "items-center",
       ])}
@@ -47,8 +49,9 @@ export function SettingRow({
       <div
         className={cn([
           "flex justify-end",
-          controlWidth === "fixed" && "w-full min-w-0 @md:w-48",
-          controlWidth !== "fixed" && "shrink-0",
+          controlWidth === SettingControlWidth.Fixed &&
+            "w-full min-w-0 @md:w-48",
+          controlWidth !== SettingControlWidth.Fixed && "shrink-0",
         ])}
       >
         {children({
@@ -74,7 +77,11 @@ export function SettingSwitchRow({
   disabled?: boolean;
 }) {
   return (
-    <SettingRow title={title} description={description} controlWidth="content">
+    <SettingRow
+      title={title}
+      description={description}
+      controlWidth={SettingControlWidth.Content}
+    >
       {(labelProps) => (
         <Switch
           {...labelProps}

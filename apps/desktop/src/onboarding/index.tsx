@@ -20,13 +20,15 @@ import { FinalDescription, FinalSection, finishOnboarding } from "./final";
 import { PermissionsSection } from "./permissions";
 import { OnboardingSection } from "./shared";
 
+import { OnboardingStep } from "~/onboarding/enums";
 import { StandaloneWindowShell } from "~/shared/window-shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function TabContentOnboarding({
   tab: _tab,
 }: {
-  tab: Extract<Tab, { type: "onboarding" }>;
+  tab: Extract<Tab, { type: TabType.Onboarding }>;
 }) {
   const openCurrent = useTabs((state) => state.openCurrent);
 
@@ -84,7 +86,7 @@ function OnboardingScreenContent({
   const [currentStep, setCurrentStep] = useState(getInitialStep);
   const onboardingVideoRef = useRef<HTMLVideoElement>(null);
 
-  const skipped: readonly "claude"[] = [];
+  const skipped: readonly OnboardingStep[] = [];
 
   const goNext = () => {
     const next = getNextStep(currentStep, skipped);
@@ -165,7 +167,7 @@ function OnboardingScreenContent({
                   chat.
                 </Trans>
               }
-              status={getStepStatus("permissions", currentStep)}
+              status={getStepStatus(OnboardingStep.Permissions, currentStep)}
               skippable={false}
               onBack={goBack}
               onNext={goNext}
@@ -181,7 +183,7 @@ function OnboardingScreenContent({
                 </Trans>
               }
               completedTitle={<Trans>Calendar connected</Trans>}
-              status={getStepStatus("calendar", currentStep)}
+              status={getStepStatus(OnboardingStep.Calendar, currentStep)}
               onBack={goBack}
               onNext={goNext}
               onSkip={skipCurrentStep}
@@ -198,7 +200,7 @@ function OnboardingScreenContent({
                   switch providers later in Settings.
                 </Trans>
               }
-              status={getStepStatus("claude", currentStep)}
+              status={getStepStatus(OnboardingStep.Claude, currentStep)}
               onBack={goBack}
               onNext={goNext}
               onSkip={skipCurrentStep}
@@ -209,7 +211,7 @@ function OnboardingScreenContent({
             <OnboardingSection
               title={<Trans>Ready to go</Trans>}
               description={<FinalDescription />}
-              status={getStepStatus("final", currentStep)}
+              status={getStepStatus(OnboardingStep.Final, currentStep)}
               skippable={false}
               onBack={goBack}
               onNext={() => void finishOnboarding(handleFinish)}

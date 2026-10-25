@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
+  type CoachProvider,
   type ClaudeSetup,
   commands as coachCommands,
 } from "@anlg/plugin-coach";
@@ -24,7 +25,7 @@ async function retryClaudeSetup() {
  * Getting Claude ready, started at app launch: the person's own Claude Code
  * when it is new enough, else Cue's copy downloading in the background.
  */
-export function useClaudeSetup(provider: "claude" | "codex" = "claude"): {
+export function useClaudeSetup(provider: CoachProvider = "claude"): {
   setup: ClaudeSetup | undefined;
   error: Error | null;
   ready: boolean;

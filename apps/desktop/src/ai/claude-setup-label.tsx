@@ -1,13 +1,13 @@
 import { Trans } from "@lingui/react/macro";
 
-import type { ClaudeSetup } from "@anlg/plugin-coach";
+import { type CoachProvider, type ClaudeSetup } from "@anlg/plugin-coach";
 
 export function ClaudeSetupLabel({
   setup,
   provider = "claude",
 }: {
   setup: ClaudeSetup;
-  provider?: "claude" | "codex";
+  provider?: CoachProvider;
 }) {
   if (setup.state === "failed") return <>{setup.message}</>;
   if (setup.state === "ready") return null;

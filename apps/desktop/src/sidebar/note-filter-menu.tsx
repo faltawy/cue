@@ -22,15 +22,20 @@ import { cn } from "@anlg/utils";
 
 import { useSidebarNotes } from "./note-filter";
 
+import { TimelineGroupBy, NoteSortOrder } from "~/sidebar/enums";
+
 export function SidebarNoteFilterMenu() {
   const { t } = useLingui();
   const groupBy = useSidebarNotes((state) => state.groupBy);
   const sortOrder = useSidebarNotes((state) => state.sortOrder);
   const setGroupBy = useSidebarNotes((state) => state.setGroupBy);
   const setSortOrder = useSidebarNotes((state) => state.setSortOrder);
-  const isDefaultView = groupBy === "date" && sortOrder === "newest";
-  const groupingLabel = groupBy === "folder" ? t`Folder` : t`Date`;
-  const orderingLabel = sortOrder === "oldest" ? t`Oldest` : t`Newest`;
+  const isDefaultView =
+    groupBy === TimelineGroupBy.Date && sortOrder === NoteSortOrder.Newest;
+  const groupingLabel =
+    groupBy === TimelineGroupBy.Folder ? t`Folder` : t`Date`;
+  const orderingLabel =
+    sortOrder === NoteSortOrder.Oldest ? t`Oldest` : t`Newest`;
 
   return (
     <DropdownMenu>
@@ -67,7 +72,7 @@ export function SidebarNoteFilterMenu() {
           <DropdownMenuPortal>
             <DropdownMenuSubContent className="w-44">
               <DropdownMenuItem
-                onSelect={() => setGroupBy("date")}
+                onSelect={() => setGroupBy(TimelineGroupBy.Date)}
                 className="cursor-pointer"
               >
                 <CalendarBlank
@@ -77,12 +82,12 @@ export function SidebarNoteFilterMenu() {
                 <span className="flex-1">
                   <Trans>Date</Trans>
                 </span>
-                {groupBy === "date" ? (
+                {groupBy === TimelineGroupBy.Date ? (
                   <Check className="size-4" aria-hidden="true" />
                 ) : null}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => setGroupBy("folder")}
+                onSelect={() => setGroupBy(TimelineGroupBy.Folder)}
                 className="cursor-pointer"
               >
                 <FolderSimple
@@ -92,7 +97,7 @@ export function SidebarNoteFilterMenu() {
                 <span className="flex-1">
                   <Trans>Folder</Trans>
                 </span>
-                {groupBy === "folder" ? (
+                {groupBy === TimelineGroupBy.Folder ? (
                   <Check className="size-4" aria-hidden="true" />
                 ) : null}
               </DropdownMenuItem>
@@ -112,7 +117,7 @@ export function SidebarNoteFilterMenu() {
           <DropdownMenuPortal>
             <DropdownMenuSubContent className="w-44">
               <DropdownMenuItem
-                onSelect={() => setSortOrder("newest")}
+                onSelect={() => setSortOrder(NoteSortOrder.Newest)}
                 className="cursor-pointer"
               >
                 <SortDescending
@@ -122,12 +127,12 @@ export function SidebarNoteFilterMenu() {
                 <span className="flex-1">
                   <Trans>Newest</Trans>
                 </span>
-                {sortOrder === "newest" ? (
+                {sortOrder === NoteSortOrder.Newest ? (
                   <Check className="size-4" aria-hidden="true" />
                 ) : null}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => setSortOrder("oldest")}
+                onSelect={() => setSortOrder(NoteSortOrder.Oldest)}
                 className="cursor-pointer"
               >
                 <SortAscending
@@ -137,7 +142,7 @@ export function SidebarNoteFilterMenu() {
                 <span className="flex-1">
                   <Trans>Oldest</Trans>
                 </span>
-                {sortOrder === "oldest" ? (
+                {sortOrder === NoteSortOrder.Oldest ? (
                   <Check className="size-4" aria-hidden="true" />
                 ) : null}
               </DropdownMenuItem>

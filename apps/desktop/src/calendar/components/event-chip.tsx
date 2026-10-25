@@ -18,6 +18,7 @@ import {
 } from "@anlg/ui/components/ui/popover";
 import { cn } from "@anlg/utils";
 
+import { EventMenuView, SeriesFolderPickerMode } from "~/calendar/enums";
 import { toTz, useTimezone } from "~/calendar/hooks";
 import { useIgnoredEvents } from "~/calendar/ignored-events";
 import {
@@ -196,19 +197,20 @@ function EventPopoverContent({
     mapRows: (rows) => rows[0] ?? null,
   });
 
-  const [view, setView] = useState<"main" | "folders" | "manage">("main");
+  const [view, setView] = useState<EventMenuView>(EventMenuView.Main);
   const [filing, setFiling] = useState(false);
-  const [pickerMode, setPickerMode] = useState<"occurrence" | "rule">(
-    "occurrence",
+  const [pickerMode, setPickerMode] = useState<SeriesFolderPickerMode>(
+    SeriesFolderPickerMode.Occurrence,
   );
   const [folderAtPickerOpen, setFolderAtPickerOpen] = useState("");
   const [pickerClosed, setPickerClosed] = useState(false);
   const declinedSeriesIds = useDeclinedSeriesFolderIds();
 
   const sessionFolder = linkedSession?.folder_path ?? "";
-  const activeView = view === "manage" && !ruleFolder ? "main" : view;
+  const activeView =
+    view === EventMenuView.Manage && !ruleFolder ? "main" : view;
   const showAutoAdd =
-    activeView === "main" &&
+    activeView === EventMenuView.Main &&
     seriesId !== "" &&
     ruleFolder === null &&
     pickerClosed &&
@@ -217,11 +219,11 @@ function EventPopoverContent({
     !declinedSeriesIds.includes(seriesId);
 
   const openFolderPicker = useCallback(
-    (mode: "occurrence" | "rule") => {
+    (mode: SeriesFolderPickerMode) => {
       setPickerMode(mode);
       setFolderAtPickerOpen(sessionFolder);
       setPickerClosed(false);
-      setView("folders");
+      setView(EventMenuView.Folders);
     },
     [sessionFolder],
   );
@@ -248,15 +250,15 @@ function EventPopoverContent({
   const handleFolderButton = useCallback(() => {
     if (filing) return;
     if (ruleFolder) {
-      setView("manage");
+      setView(EventMenuView.Manage);
       return;
     }
-    openFolderPicker("occurrence");
+    openFolderPicker(SeriesFolderPickerMode.Occurrence);
   }, [filing, ruleFolder, openFolderPicker]);
 
   const handlePickerClose = useCallback(() => {
     setPickerClosed(true);
-    setView("main");
+    setView(EventMenuView.Main);
   }, []);
 
   const handleRuleFolderSelect = useCallback(
@@ -303,16 +305,16 @@ function EventPopoverContent({
     } catch (error) {
       console.error("[calendar] failed to clear series folder rule", error);
     } finally {
-      setView("main");
+      setView(EventMenuView.Main);
     }
   }, [seriesId]);
 
-  if (activeView === "folders") {
+  if (activeView === EventMenuView.Folders) {
     return (
       <div className="flex flex-col gap-1 p-2">
         <button
           type="button"
-          onClick={() => setView("main")}
+          onClick={() => setView(EventMenuView.Main)}
           className={cn([
             "text-muted-foreground hover:text-foreground text-label flex items-center gap-1 px-2 py-1 transition-colors",
           ])}
@@ -320,7 +322,7 @@ function EventPopoverContent({
           <CaretLeft className="size-3.5" aria-hidden="true" />
           {t`Back`}
         </button>
-        {pickerMode === "rule" ? (
+        {pickerMode === SeriesFolderPickerMode.Rule ? (
           <FolderPickerContent
             onClose={handlePickerClose}
             selectedPath={ruleFolder ?? ""}
@@ -337,12 +339,12 @@ function EventPopoverContent({
     );
   }
 
-  if (activeView === "manage" && ruleFolder) {
+  if (activeView === EventMenuView.Manage && ruleFolder) {
     return (
       <div className="flex flex-col gap-3 p-4">
         <button
           type="button"
-          onClick={() => setView("main")}
+          onClick={() => setView(EventMenuView.Main)}
           className={cn([
             "text-muted-foreground hover:text-foreground text-label flex items-center gap-1 transition-colors",
           ])}
@@ -370,7 +372,7 @@ function EventPopoverContent({
           variant="secondary"
           className="min-h-8 w-full"
           disabled={filing}
-          onClick={() => openFolderPicker("occurrence")}
+          onClick={() => openFolderPicker(SeriesFolderPickerMode.Occurrence)}
         >
           {t`Move this note`}
         </Button>
@@ -379,7 +381,7 @@ function EventPopoverContent({
           variant="secondary"
           className="min-h-8 w-full"
           disabled={filing}
-          onClick={() => openFolderPicker("rule")}
+          onClick={() => openFolderPicker(SeriesFolderPickerMode.Rule)}
         >
           {t`Change auto-add folder`}
         </Button>

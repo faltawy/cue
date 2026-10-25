@@ -8,6 +8,7 @@ import { toast } from "@anlg/ui/components/ui/toast";
 
 import type { HealthStatus } from "./health";
 
+import { SttHealthStatus } from "~/settings/enums";
 import { setSettingValue, setSettingValues } from "~/settings/queries";
 import { useConfigValue } from "~/shared/config";
 
@@ -121,10 +122,10 @@ export function LocalFileModel({
         </button>
       ) : null}
 
-      {modelPath && healthStatus === "pending" ? (
+      {modelPath && healthStatus === SttHealthStatus.Pending ? (
         <CircleNotch className="text-muted-foreground size-4 shrink-0 animate-spin" />
       ) : null}
-      {modelPath && healthStatus === "success" ? (
+      {modelPath && healthStatus === SttHealthStatus.Success ? (
         <Check className="text-success size-4 shrink-0" />
       ) : null}
     </div>

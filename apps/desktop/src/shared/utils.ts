@@ -1,27 +1,29 @@
 import { getIdentifier } from "@tauri-apps/api/app";
 
+import { DesktopScheme } from "~/shared/enums";
+
 // export * from "../shared/config/configure-pro-settings";
 // export * from "~/sidebar/timeline/utils";
 // export * from "~/stt/segment";
 
 export const id = () => crypto.randomUUID() as string;
 
-export type DesktopScheme = "cue" | "cue-staging" | "cue-nightly" | "cue-dev";
+export { DesktopScheme };
 
 export const getScheme = async (): Promise<DesktopScheme> => {
   const id = await getIdentifier();
   const schemes: Record<string, DesktopScheme> = {
-    "com.hyprnote.stable": "cue",
-    "com.hyprnote.Hyprnote": "cue",
-    "com.hyprnote.staging": "cue-staging",
-    "com.hyprnote.nightly": "cue-nightly",
-    "com.hyprnote.dev": "cue-dev",
-    "so.anarlog.Anarlog": "cue",
-    "com.anarlog.stable": "cue",
-    "com.anarlog.staging": "cue-staging",
-    "com.anarlog.dev": "cue-dev",
+    "com.hyprnote.stable": DesktopScheme.Cue,
+    "com.hyprnote.Hyprnote": DesktopScheme.Cue,
+    "com.hyprnote.staging": DesktopScheme.CueStaging,
+    "com.hyprnote.nightly": DesktopScheme.CueNightly,
+    "com.hyprnote.dev": DesktopScheme.CueDev,
+    "so.anarlog.Anarlog": DesktopScheme.Cue,
+    "com.anarlog.stable": DesktopScheme.Cue,
+    "com.anarlog.staging": DesktopScheme.CueStaging,
+    "com.anarlog.dev": DesktopScheme.CueDev,
   };
-  return schemes[id] ?? "cue";
+  return schemes[id] ?? DesktopScheme.Cue;
 };
 
 // https://www.rfc-editor.org/rfc/rfc4122#section-4.1.7

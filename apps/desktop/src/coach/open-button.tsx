@@ -9,6 +9,7 @@ import { useCoachNudges } from "~/coach/nudges";
 import { useConfigValue } from "~/shared/config";
 import { acceleratorKeys } from "~/shared/shortcut-keys";
 import { ShortcutHint } from "~/shared/ui/shortcut-hint";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { useListener } from "~/stt/contexts";
 
 export function CoachStrip({ sessionId }: { sessionId: string }) {
@@ -17,7 +18,10 @@ export function CoachStrip({ sessionId }: { sessionId: string }) {
   const shortcut = useConfigValue("coach_shortcut");
   const unseen = useCoachNudges((state) => state.unseen.includes(sessionId));
   const nudges = useCoachNudges((state) => state.counts[sessionId] ?? 0);
-  if (sessionMode !== "active" && sessionMode !== "finalizing") {
+  if (
+    sessionMode !== LiveSessionStatus.Active &&
+    sessionMode !== LiveSessionStatus.Finalizing
+  ) {
     return null;
   }
 

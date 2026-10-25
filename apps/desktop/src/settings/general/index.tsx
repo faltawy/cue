@@ -24,6 +24,7 @@ import { WeekStartSelector } from "./week-start";
 
 import { CoachShortcut } from "~/coach/shortcut";
 import { YourName } from "~/contacts/self-name";
+import { SettingsSection } from "~/settings/enums";
 import { SettingsPageTitle } from "~/settings/page-title";
 import {
   type StoredSettingValues,
@@ -128,14 +129,12 @@ function useSettingsForm(storedSettings: StoredSettingValues) {
   return { form, submitFieldValue, value: settingsValue };
 }
 
-type SettingsSection = "app" | "meetings";
-
 export function SettingsApp() {
-  return <SettingsSectionPage section="app" />;
+  return <SettingsSectionPage section={SettingsSection.App} />;
 }
 
 export function SettingsMeetings() {
-  return <SettingsSectionPage section="meetings" />;
+  return <SettingsSectionPage section={SettingsSection.Meetings} />;
 }
 
 function SettingsSectionPage({ section }: { section: SettingsSection }) {
@@ -193,18 +192,22 @@ function SettingsSectionContent({
       }
       return result.data;
     },
-    enabled: section === "meetings",
+    enabled: section === SettingsSection.Meetings,
     refetchInterval: 3_000,
   });
   return (
     <div className="flex flex-col gap-8">
       <SettingsPageTitle
         title={
-          section === "app" ? <Trans>General</Trans> : <Trans>Meetings</Trans>
+          section === SettingsSection.App ? (
+            <Trans>General</Trans>
+          ) : (
+            <Trans>Meetings</Trans>
+          )
         }
       />
 
-      {section === "app" && (
+      {section === SettingsSection.App && (
         <>
           <YourName />
 
@@ -323,7 +326,7 @@ function SettingsSectionContent({
         </>
       )}
 
-      {section === "meetings" && (
+      {section === SettingsSection.Meetings && (
         <>
           <form.Subscribe selector={(state) => state.values}>
             {(values) => (

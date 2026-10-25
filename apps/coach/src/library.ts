@@ -1,11 +1,24 @@
-import type { Database } from "bun:sqlite";
+import { type Database } from "bun:sqlite";
 
 import { renderNote } from "./notes";
 import { readLiveTranscript, renderLines } from "./transcript";
 
+export enum ActionItemStatus {
+  Todo = "todo",
+  Done = "done",
+}
+
+export enum MeetingInclude {
+  Notes = "notes",
+  Transcript = "transcript",
+  Both = "both",
+}
+
 export class LockedNoteError extends Error {
   constructor(title: string) {
-    super(`“${title || "Untitled"}” is locked in the app; its notes and transcript stay private.`);
+    super(
+      `“${title || "Untitled"}” is locked in the app; its notes and transcript stay private.`,
+    );
   }
 }
 
@@ -51,7 +64,10 @@ function snippet(text: string, query: string): string | null {
   if (!text) return null;
   const at = query ? text.toLowerCase().indexOf(query) : 0;
   const start = Math.max(0, at - SNIPPET_BEFORE);
-  const end = Math.min(text.length, Math.max(at, 0) + query.length + SNIPPET_AFTER);
+  const end = Math.min(
+    text.length,
+    Math.max(at, 0) + query.length + SNIPPET_AFTER,
+  );
   return `${start > 0 ? "…" : ""}${text.slice(start, end).trim()}${end < text.length ? "…" : ""}`;
 }
 
@@ -120,7 +136,9 @@ export function searchMeetings(db: Database, input: SearchInput): MeetingHit[] {
   }
   const query = input.query?.trim().toLowerCase() ?? "";
   if (query) {
-    where.push("(lower(s.title) LIKE ? OR (s.locked = 0 AND lower(COALESCE(d.body, '')) LIKE ?))");
+    where.push(
+      "(lower(s.title) LIKE ? OR (s.locked = 0 AND lower(COALESCE(d.body, '')) LIKE ?))",
+    );
     params.push(`%${query}%`, `%${query}%`);
   }
   const rows = db
@@ -134,14 +152,23 @@ export function searchMeetings(db: Database, input: SearchInput): MeetingHit[] {
   for (const row of rows) {
     const locked = row.locked !== 0;
     const text = locked ? "" : noteText(row);
-    if (query && !row.title.toLowerCase().includes(query) && !text.toLowerCase().includes(query)) continue;
+    if (
+      query &&
+      !row.title.toLowerCase().includes(query) &&
+      !text.toLowerCase().includes(query)
+    )
+      continue;
     hits.push({
       id: row.id,
       title: row.title,
       date: row.date,
       folder: row.folder_path,
-      participants: participantsOf(db, row.id, row.owner_user_id).map((person) => person.name),
-      snippet: locked ? null : snippet(text, text.toLowerCase().includes(query) ? query : ""),
+      participants: participantsOf(db, row.id, row.owner_user_id).map(
+        (person) => person.name,
+      ),
+      snippet: locked
+        ? null
+        : snippet(text, text.toLowerCase().includes(query) ? query : ""),
       locked,
     });
     if (hits.length >= input.limit) break;
@@ -162,9 +189,11 @@ export type MeetingDetail = {
 
 export function getMeeting(
   db: Database,
-  input: { id: string; include: "notes" | "transcript" | "both"; max_chars: number },
+  input: { id: string; include: MeetingInclude; max_chars: number },
 ): MeetingDetail {
-  const row = db.query<NoteRow, [string]>(`${NOTE_ROWS} AND s.id = ?`).get(input.id);
+  const row = db
+    .query<NoteRow, [string]>(`${NOTE_ROWS} AND s.id = ?`)
+    .get(input.id);
   if (!row) throw new Error(`There is no note with id ${input.id}.`);
   if (row.locked !== 0) throw new LockedNoteError(row.title);
   const tags = db
@@ -183,10 +212,14 @@ export function getMeeting(
     tags,
     participants: participantsOf(db, row.id, row.owner_user_id),
   };
-  if (input.include !== "transcript") detail.notes = clip(noteText(row), input.max_chars);
-  if (input.include !== "notes") {
+  if (input.include !== MeetingInclude.Transcript)
+    detail.notes = clip(noteText(row), input.max_chars);
+  if (input.include !== MeetingInclude.Notes) {
     const transcript = readLiveTranscript(db, { sessionId: row.id });
-    detail.transcript = clip(transcript ? renderLines(transcript.lines) : "", input.max_chars);
+    detail.transcript = clip(
+      transcript ? renderLines(transcript.lines) : "",
+      input.max_chars,
+    );
   }
   return detail;
 }
@@ -205,11 +238,14 @@ export function listFolders(db: Database): FolderEntry[] {
   const paths = new Set<string>();
   for (const path of known) {
     const segments = path.split("/").filter(Boolean);
-    for (let depth = 1; depth <= segments.length; depth += 1) paths.add(segments.slice(0, depth).join("/"));
+    for (let depth = 1; depth <= segments.length; depth += 1)
+      paths.add(segments.slice(0, depth).join("/"));
   }
   const ids = new Map(
     db
-      .query<{ id: string; path: string }, []>(`SELECT id, path FROM folders WHERE deleted_at IS NULL ORDER BY updated_at, id`)
+      .query<{ id: string; path: string }, []>(
+        `SELECT id, path FROM folders WHERE deleted_at IS NULL ORDER BY updated_at, id`,
+      )
       .all()
       .map((row) => [row.path, row.id]),
   );
@@ -218,7 +254,11 @@ export function listFolders(db: Database): FolderEntry[] {
   );
   return [...paths]
     .sort((left, right) => left.localeCompare(right))
-    .map((path) => ({ path, id: ids.get(path) ?? null, notes: notes.get(path, `${path}/%`)?.count ?? 0 }));
+    .map((path) => ({
+      path,
+      id: ids.get(path) ?? null,
+      notes: notes.get(path, `${path}/%`)?.count ?? 0,
+    }));
 }
 
 export function listTags(db: Database): Array<{ name: string; notes: number }> {
@@ -234,10 +274,22 @@ export function listTags(db: Database): Array<{ name: string; notes: number }> {
     .all();
 }
 
-export function searchPeople(db: Database, input: { query: string; limit: number }) {
+export function searchPeople(
+  db: Database,
+  input: { query: string; limit: number },
+) {
   const query = `%${input.query.trim().toLowerCase()}%`;
   const people = db
-    .query<{ id: string; name: string; email: string; organization: string; title: string }, [string, number]>(
+    .query<
+      {
+        id: string;
+        name: string;
+        email: string;
+        organization: string;
+        title: string;
+      },
+      [string, number]
+    >(
       `SELECT h.id, h.name, h.email, COALESCE(o.name, '') AS organization, h.job_title AS title
        FROM humans h LEFT JOIN organizations o ON o.id = h.organization_id AND o.deleted_at IS NULL
        WHERE h.deleted_at IS NULL AND h.name <> ''
@@ -270,8 +322,16 @@ function parseSections(value: string): Section[] {
     if (!Array.isArray(parsed)) return [];
     return parsed.flatMap((entry): Section[] => {
       if (typeof entry === "string") return [{ title: entry, description: "" }];
-      if (entry && typeof entry === "object" && "title" in entry && typeof entry.title === "string") {
-        const description = "description" in entry && typeof entry.description === "string" ? entry.description : "";
+      if (
+        entry &&
+        typeof entry === "object" &&
+        "title" in entry &&
+        typeof entry.title === "string"
+      ) {
+        const description =
+          "description" in entry && typeof entry.description === "string"
+            ? entry.description
+            : "";
         return [{ title: entry.title, description }];
       }
       return [];
@@ -283,16 +343,29 @@ function parseSections(value: string): Section[] {
 
 export function listTemplates(db: Database) {
   return db
-    .query<{ id: string; title: string; description: string; sections_json: string }, []>(
+    .query<
+      { id: string; title: string; description: string; sections_json: string },
+      []
+    >(
       `SELECT id, title, description, sections_json FROM templates ORDER BY title, id`,
     )
     .all()
-    .map((row) => ({ id: row.id, title: row.title, description: row.description, sections: parseSections(row.sections_json) }));
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      sections: parseSections(row.sections_json),
+    }));
 }
 
 export function listActionItems(
   db: Database,
-  input: { status?: "todo" | "done"; person_id?: string; note_id?: string; limit: number },
+  input: {
+    status?: ActionItemStatus;
+    person_id?: string;
+    note_id?: string;
+    limit: number;
+  },
 ) {
   const where: string[] = [];
   const params: Array<string | number> = [];
@@ -307,7 +380,15 @@ export function listActionItems(
   }
   return db
     .query<
-      { task_id: string; text: string; status: string; note_id: string; note_title: string; assignee: string | null; due: string | null },
+      {
+        task_id: string;
+        text: string;
+        status: string;
+        note_id: string;
+        note_title: string;
+        assignee: string | null;
+        due: string | null;
+      },
       Array<string | number>
     >(
       `SELECT a.id AS task_id, a.text, a.status, a.session_id AS note_id, s.title AS note_title,

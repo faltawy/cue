@@ -17,6 +17,7 @@ import {
 } from "./contexts";
 
 import { createListenerStore } from "~/store/zustand/listener";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 
 const {
   listMicUsingApplicationsMock,
@@ -76,7 +77,7 @@ function setStoreActive(
   sessionId = "session-1",
 ) {
   store.setState((state) => ({
-    live: { ...state.live, sessionId, status: "active" },
+    live: { ...state.live, sessionId, status: LiveSessionStatus.Active },
   }));
 }
 
@@ -1378,7 +1379,7 @@ describe("ListenerProvider detect events", () => {
             ...state.live,
             loading: true,
             sessionId: "session-1",
-            status: "inactive" as const,
+            status: LiveSessionStatus.Inactive as const,
           },
         })),
     },

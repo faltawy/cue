@@ -1,16 +1,31 @@
 import type {
   ChangelogState,
   ContactsState,
-  EditorView,
+  EditorView as NativeEditorView,
   SessionsState as WindowsSessionsState,
   TabInput as WindowsTabInput,
   TemplatesState,
 } from "@anlg/plugin-windows";
+import {
+  SessionNoteViewType,
+  type SessionNoteView as EditorView,
+} from "@anlg/utils/session";
+
+import {
+  TabType,
+  TaskResourceType,
+  SettingsTab,
+  SessionInitialTab,
+} from "~/store/zustand/tabs/enums";
 
 export type { EditorView };
 
-export type SessionsState = WindowsSessionsState & {
+type SessionInputState = WindowsSessionsState & {
   scheduledAutoStart?: boolean | null;
+};
+
+export type SessionsState = Omit<SessionInputState, "view"> & {
+  view: EditorView | null;
 };
 
 type WindowsSupportedWindowTabInput = Exclude<
@@ -24,7 +39,7 @@ export type SupportedWindowTabInput =
       Extract<WindowsSupportedWindowTabInput, { type: "sessions" }>,
       "state"
     > & {
-      state?: SessionsState | null;
+      state?: SessionInputState | null;
     });
 
 export type TabInput = SupportedWindowTabInput | { type: "folders" };
@@ -39,40 +54,29 @@ export const isTabInputSupported = (
   );
 };
 
-export type SettingsTab =
-  | "app"
-  | "meetings"
-  | "audio"
-  | "appearance"
-  | "notifications"
-  | "permissions"
-  | "dictionary"
-  | "dictation"
-  | "transcription"
-  | "claude"
-  | "todo";
+export { SettingsTab };
 
 const normalizeSettingsTab = (tab: string | null | undefined): SettingsTab => {
   switch (tab) {
-    case "app":
-    case "meetings":
-    case "appearance":
-    case "notifications":
-    case "permissions":
-    case "dictionary":
-    case "dictation":
-    case "transcription":
-    case "claude":
-    case "todo":
+    case SettingsTab.App:
+    case SettingsTab.Meetings:
+    case SettingsTab.Appearance:
+    case SettingsTab.Notifications:
+    case SettingsTab.Permissions:
+    case SettingsTab.Dictionary:
+    case SettingsTab.Dictation:
+    case SettingsTab.Transcription:
+    case SettingsTab.Claude:
+    case SettingsTab.Todo:
       return tab;
     case "intelligence":
-      return "claude";
+      return SettingsTab.Claude;
     case "audio":
-      return "meetings";
+      return SettingsTab.Meetings;
     case "personalization":
-      return "dictionary";
+      return SettingsTab.Dictionary;
     default:
-      return "app";
+      return SettingsTab.App;
   }
 };
 
@@ -81,7 +85,7 @@ type SettingsState = {
 };
 
 type DailySummaryState = {
-  activeTab: "timeline" | "raw" | null;
+  activeTab: SessionInitialTab | null;
 };
 
 type BaseTab = {
@@ -94,46 +98,70 @@ type BaseTab = {
 
 export type Tab =
   | (BaseTab & {
-      type: "sessions";
+      type: TabType.Sessions;
       id: string;
       state: SessionsState;
     })
   | (BaseTab & {
-      type: "contacts";
+      type: TabType.Contacts;
       state: ContactsState;
     })
   | (BaseTab & {
-      type: "templates";
+      type: TabType.Templates;
       state: TemplatesState;
     })
-  | (BaseTab & { type: "folders" })
+  | (BaseTab & { type: TabType.Folders })
   | (BaseTab & {
-      type: "humans";
+      type: TabType.Humans;
       id: string;
     })
-  | (BaseTab & { type: "organizations"; id: string })
-  | (BaseTab & { type: "empty" })
-  | (BaseTab & { type: "calendar" })
+  | (BaseTab & { type: TabType.Organizations; id: string })
+  | (BaseTab & { type: TabType.Empty })
+  | (BaseTab & { type: TabType.Calendar })
   | (BaseTab & {
-      type: "changelog";
+      type: TabType.Changelog;
       state: ChangelogState;
     })
-  | (BaseTab & { type: "settings"; state: SettingsState })
-  | (BaseTab & { type: "onboarding" })
+  | (BaseTab & { type: TabType.Settings; state: SettingsState })
+  | (BaseTab & { type: TabType.Onboarding })
   | (BaseTab & {
-      type: "task";
+      type: TabType.Task;
       id: string;
       resources: TaskResource[];
     })
   | (BaseTab & {
-      type: "daily_summary";
+      type: TabType.DailySummary;
       id: string;
       state: DailySummaryState;
     });
 
 export type TaskResource =
-  | { type: "github_issue"; owner: string; repo: string; number: number }
-  | { type: "github_pr"; owner: string; repo: string; number: number };
+  | {
+      type: TaskResourceType.GithubIssue;
+      owner: string;
+      repo: string;
+      number: number;
+    }
+  | {
+      type: TaskResourceType.GithubPr;
+      owner: string;
+      repo: string;
+      number: number;
+    };
+
+function normalizeEditorView(view: NativeEditorView | null): EditorView | null {
+  if (!view) return null;
+  switch (view.type) {
+    case "raw":
+      return { type: SessionNoteViewType.Raw };
+    case "transcript":
+      return { type: SessionNoteViewType.Transcript };
+    case "attachments":
+      return { type: SessionNoteViewType.Attachments };
+    case "enhanced":
+      return { type: SessionNoteViewType.Enhanced, id: view.id };
+  }
+}
 
 export const getDefaultState = (tab: TabInput): Tab => {
   const base = { active: false, slotId: "", pinned: false };
@@ -142,11 +170,12 @@ export const getDefaultState = (tab: TabInput): Tab => {
     case "sessions":
       return {
         ...base,
-        type: "sessions",
+        type: TabType.Sessions,
         id: tab.id,
         state: tab.state
           ? {
               ...tab.state,
+              view: normalizeEditorView(tab.state.view),
               scheduledAutoStart: tab.state.scheduledAutoStart ?? null,
             }
           : {
@@ -158,7 +187,7 @@ export const getDefaultState = (tab: TabInput): Tab => {
     case "contacts":
       return {
         ...base,
-        type: "contacts",
+        type: TabType.Contacts,
         state: tab.state ?? {
           selected: null,
         },
@@ -166,7 +195,7 @@ export const getDefaultState = (tab: TabInput): Tab => {
     case "templates":
       return {
         ...base,
-        type: "templates",
+        type: TabType.Templates,
         state: tab.state ?? {
           showHomepage: false,
           isWebMode: true,
@@ -175,39 +204,39 @@ export const getDefaultState = (tab: TabInput): Tab => {
         },
       };
     case "folders":
-      return { ...base, type: "folders" };
+      return { ...base, type: TabType.Folders };
     case "humans":
-      return { ...base, type: "humans", id: tab.id };
+      return { ...base, type: TabType.Humans, id: tab.id };
     case "organizations":
-      return { ...base, type: "organizations", id: tab.id };
+      return { ...base, type: TabType.Organizations, id: tab.id };
     case "empty":
-      return { ...base, type: "empty" };
+      return { ...base, type: TabType.Empty };
     case "calendar":
-      return { ...base, type: "calendar" };
+      return { ...base, type: TabType.Calendar };
     case "changelog":
       return {
         ...base,
-        type: "changelog",
+        type: TabType.Changelog,
         state: tab.state,
       };
     case "settings": {
       const subtab = tab.state?.tab as string | null | undefined;
       if (subtab === "calendar") {
-        return { ...base, type: "calendar" };
+        return { ...base, type: TabType.Calendar };
       }
       if (subtab === "folders") {
-        return { ...base, type: "folders" };
+        return { ...base, type: TabType.Folders };
       }
       return {
         ...base,
-        type: "settings",
+        type: TabType.Settings,
         state: {
           tab: normalizeSettingsTab(subtab),
         },
       };
     }
     case "onboarding":
-      return { ...base, type: "onboarding" };
+      return { ...base, type: TabType.Onboarding };
     default:
       const _exhaustive: never = tab;
       return _exhaustive;
@@ -216,31 +245,31 @@ export const getDefaultState = (tab: TabInput): Tab => {
 
 export const uniqueIdfromTab = (tab: Tab): string => {
   switch (tab.type) {
-    case "sessions":
+    case TabType.Sessions:
       return `sessions-${tab.id}`;
-    case "humans":
+    case TabType.Humans:
       return `humans-${tab.id}`;
-    case "organizations":
+    case TabType.Organizations:
       return `organizations-${tab.id}`;
-    case "contacts":
+    case TabType.Contacts:
       return `contacts`;
-    case "templates":
+    case TabType.Templates:
       return `templates`;
-    case "folders":
+    case TabType.Folders:
       return `folders`;
-    case "empty":
+    case TabType.Empty:
       return `empty-${tab.slotId}`;
-    case "calendar":
+    case TabType.Calendar:
       return `calendar`;
-    case "changelog":
+    case TabType.Changelog:
       return "changelog";
-    case "settings":
+    case TabType.Settings:
       return `settings`;
-    case "onboarding":
+    case TabType.Onboarding:
       return `onboarding`;
-    case "task":
+    case TabType.Task:
       return `task-${tab.id}`;
-    case "daily_summary":
+    case TabType.DailySummary:
       return `daily_summary-${tab.id}`;
   }
 };

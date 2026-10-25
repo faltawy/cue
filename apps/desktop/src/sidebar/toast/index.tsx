@@ -5,6 +5,7 @@ import {
   TOAST_DURATIONS,
 } from "@anlg/ui/components/ui/toast";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
+import { SessionNoteViewType } from "@anlg/utils/session";
 
 import {
   createDevtoolsToastPreview,
@@ -17,8 +18,11 @@ import { useDismissedToasts } from "./useDismissedToasts";
 import { useNotifications } from "~/contexts/notifications";
 import { useConfigValues } from "~/shared/config";
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
+import { AlertLifecycle, ToastDismissal, AlertVariant } from "~/sidebar/enums";
 import { useDevtoolsToastPreview } from "~/store/zustand/devtools-toast-preview";
+import { BatchSessionMode } from "~/store/zustand/listener/enums";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType, SettingsTab } from "~/store/zustand/tabs/enums";
 import { isConfiguredSttModel } from "~/stt/capabilities";
 import { useListener } from "~/stt/contexts";
 
@@ -67,16 +71,17 @@ export function ToastNotifications() {
     (state) => state.clearPreview,
   );
   const isAiTranscriptionTabActive =
-    currentTab?.type === "settings" &&
-    currentTab.state?.tab === "transcription";
+    currentTab?.type === TabType.Settings &&
+    currentTab.state?.tab === SettingsTab.Transcription;
   const activeTranscriptSessionId =
-    currentTab?.type === "sessions" &&
-    currentTab.state.view?.type === "transcript"
+    currentTab?.type === TabType.Sessions &&
+    currentTab.state.view?.type === SessionNoteViewType.Transcript
       ? currentTab.id
       : null;
   const isBatchTranscribingInActiveTranscriptTab = useListener((state) =>
     activeTranscriptSessionId
-      ? state.getSessionMode(activeTranscriptSessionId) === "running_batch"
+      ? state.getSessionMode(activeTranscriptSessionId) ===
+        BatchSessionMode.RunningBatch
       : false,
   );
 
@@ -86,8 +91,8 @@ export function ToastNotifications() {
   );
 
   const handleOpenSTTSettings = useCallback(() => {
-    if (currentTab?.type === "settings") {
-      updateSettingsTabState(currentTab, { tab: "transcription" });
+    if (currentTab?.type === TabType.Settings) {
+      updateSettingsTabState(currentTab, { tab: SettingsTab.Transcription });
     } else {
       openNew({ type: "settings", state: { tab: "transcription" } });
     }
@@ -121,12 +126,12 @@ export function ToastNotifications() {
 
   const isToastDismissed = useCallback(
     (toast: ToastType) => {
-      if (toast.lifecycle.type === "condition-bound") {
+      if (toast.lifecycle.type === AlertLifecycle.ConditionBound) {
         return false;
       }
 
       const dismissalId = toast.lifecycle.dismissalId ?? toast.id;
-      if (toast.lifecycle.dismissal === "permanent") {
+      if (toast.lifecycle.dismissal === ToastDismissal.Permanent) {
         return isDismissed(dismissalId);
       }
       return sessionDismissedToastIds.has(dismissalId);
@@ -160,12 +165,12 @@ export function ToastNotifications() {
     }
 
     if (currentToast) {
-      if (currentToast.lifecycle.type === "condition-bound") {
+      if (currentToast.lifecycle.type === AlertLifecycle.ConditionBound) {
         return;
       }
 
       const dismissalId = currentToast.lifecycle.dismissalId ?? currentToast.id;
-      if (currentToast.lifecycle.dismissal === "permanent") {
+      if (currentToast.lifecycle.dismissal === ToastDismissal.Permanent) {
         dismissToast(dismissalId);
         return;
       }
@@ -189,7 +194,9 @@ export function ToastNotifications() {
       key={previewKey}
       toast={displayToast}
       onDismiss={
-        displayToast.lifecycle.type === "persistent" ? handleDismiss : undefined
+        displayToast.lifecycle.type === AlertLifecycle.Persistent
+          ? handleDismiss
+          : undefined
       }
     />
   );
@@ -202,7 +209,7 @@ function toastPresentation(toast: ToastType) {
     toast.id,
     description,
     toast.detail ?? "",
-    toast.variant ?? "default",
+    toast.variant ?? AlertVariant.Default,
     toast.loading ? "loading" : "idle",
     toast.primaryAction?.label ?? "",
   ].join(":");
@@ -214,11 +221,12 @@ function showNotification(
   onDismissRef: { current?: () => void },
   dismissal: { persist: boolean },
 ) {
-  const dismissible = toast.lifecycle.type === "persistent";
+  const dismissible = toast.lifecycle.type === AlertLifecycle.Persistent;
   const options = {
     id: toast.id,
     description: toast.detail,
-    duration: toast.variant === "error" ? TOAST_DURATIONS.error : Infinity,
+    duration:
+      toast.variant === AlertVariant.Error ? TOAST_DURATIONS.error : Infinity,
     closeButton: dismissible,
     dismissible,
     icon: toast.icon,
@@ -240,9 +248,9 @@ function showNotification(
 
   if (toast.loading) {
     notificationToast.loading(toast.description, options);
-  } else if (toast.variant === "error") {
+  } else if (toast.variant === AlertVariant.Error) {
     notificationToast.error(toast.description, options);
-  } else if (toast.variant === "warning") {
+  } else if (toast.variant === AlertVariant.Warning) {
     notificationToast.warning(toast.description, options);
   } else {
     notificationToast.message(toast.description, options);

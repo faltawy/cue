@@ -1,14 +1,24 @@
+import {
+  ProviderRequirementKind,
+  EligibilityBlockerCode,
+} from "~/settings/enums";
+
 export type ConfigField = "base_url" | "api_key";
 
 export type ProviderRequirement =
-  | { kind: "requires_config"; fields: ConfigField[] }
-  | { kind: "requires_platform"; platform: "apple_silicon" };
+  | { kind: ProviderRequirementKind.RequiresConfig; fields: ConfigField[] }
+  | {
+      kind: ProviderRequirementKind.RequiresPlatform;
+      platform: "apple_silicon";
+    };
 
 export function getRequiredConfigFields(
   requirements: readonly ProviderRequirement[],
 ): ConfigField[] {
-  const req = requirements.find((r) => r.kind === "requires_config");
-  return req?.kind === "requires_config" ? req.fields : [];
+  const req = requirements.find(
+    (r) => r.kind === ProviderRequirementKind.RequiresConfig,
+  );
+  return req?.kind === ProviderRequirementKind.RequiresConfig ? req.fields : [];
 }
 
 export type ProviderEligibilityContext = {
@@ -23,17 +33,20 @@ export function getProviderSelectionBlockers(
 
   for (const req of requirements) {
     switch (req.kind) {
-      case "requires_config": {
+      case ProviderRequirementKind.RequiresConfig: {
         const missingFields = req.fields.filter((field) => {
           const value = context.config?.[field];
           return !value || value.trim() === "";
         });
         if (missingFields.length > 0) {
-          blockers.push({ code: "missing_config", fields: missingFields });
+          blockers.push({
+            code: EligibilityBlockerCode.MissingConfig,
+            fields: missingFields,
+          });
         }
         break;
       }
-      case "requires_platform":
+      case ProviderRequirementKind.RequiresPlatform:
         break;
     }
   }
@@ -42,9 +55,15 @@ export function getProviderSelectionBlockers(
 }
 
 export type EligibilityBlocker =
-  | { code: "missing_provider" }
-  | { code: "missing_model" }
-  | { code: "provider_disabled" }
-  | { code: "missing_config"; fields: Array<"base_url" | "api_key"> }
-  | { code: "model_not_downloaded"; modelId: string }
-  | { code: "unsupported_platform"; required: "apple_silicon" };
+  | { code: EligibilityBlockerCode.MissingProvider }
+  | { code: EligibilityBlockerCode.MissingModel }
+  | { code: EligibilityBlockerCode.ProviderDisabled }
+  | {
+      code: EligibilityBlockerCode.MissingConfig;
+      fields: Array<"base_url" | "api_key">;
+    }
+  | { code: EligibilityBlockerCode.ModelNotDownloaded; modelId: string }
+  | {
+      code: EligibilityBlockerCode.UnsupportedPlatform;
+      required: "apple_silicon";
+    };

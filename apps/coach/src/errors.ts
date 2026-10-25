@@ -1,15 +1,24 @@
-import type { SDKAssistantMessageError } from "@anthropic-ai/claude-agent-sdk";
+import { type SDKAssistantMessageError } from "@anthropic-ai/claude-agent-sdk";
 
-import { type CoachProvider, providerName } from "./provider";
+import { CoachProvider, providerName } from "./provider";
 
-export type CoachErrorKind = "auth" | "rate_limit" | "network" | "other";
+export enum CoachErrorAction {
+  NewChat = "new_chat",
+}
+
+export enum CoachErrorKind {
+  Auth = "auth",
+  RateLimit = "rate_limit",
+  Network = "network",
+  Other = "other",
+}
 
 export type CoachError = {
   kind: CoachErrorKind;
   title: string;
   message: string;
   detail: string | null;
-  action?: "new_chat";
+  action?: CoachErrorAction.NewChat;
   signedOut?: boolean;
 };
 
@@ -17,51 +26,57 @@ export const GAVE_UP = {
   title: "The coach stopped",
   message:
     "It failed to restart several times in a row. Start a new chat to try again.",
-  action: "new_chat",
+  action: CoachErrorAction.NewChat,
 } satisfies Partial<CoachError>;
 
 const KIND_SIGNATURES: Array<{ kind: CoachErrorKind; pattern: RegExp }> = [
   {
-    kind: "auth",
+    kind: CoachErrorKind.Auth,
     pattern:
       /\bnot logged in\b|\bmissing bearer\b|\bauthentication required\b/i,
   },
-  { kind: "auth", pattern: /\binvalid x-api-key\b/i },
-  { kind: "auth", pattern: /\binvalid api key\b/i },
-  { kind: "auth", pattern: /\bauthentication[_ ]error\b/i },
-  { kind: "auth", pattern: /\bno auth credentials\b/i },
-  { kind: "auth", pattern: /\bunauthorized\b/i },
-  { kind: "auth", pattern: /\bfailed to authenticate\b/i },
+  { kind: CoachErrorKind.Auth, pattern: /\binvalid x-api-key\b/i },
+  { kind: CoachErrorKind.Auth, pattern: /\binvalid api key\b/i },
+  { kind: CoachErrorKind.Auth, pattern: /\bauthentication[_ ]error\b/i },
+  { kind: CoachErrorKind.Auth, pattern: /\bno auth credentials\b/i },
+  { kind: CoachErrorKind.Auth, pattern: /\bunauthorized\b/i },
+  { kind: CoachErrorKind.Auth, pattern: /\bfailed to authenticate\b/i },
   {
-    kind: "auth",
+    kind: CoachErrorKind.Auth,
     pattern: /\boauth\b.{0,80}\b(expired|revoked|invalid|refresh)/i,
   },
-  { kind: "auth", pattern: /\b(token|session)\b.{0,40}\bexpired\b/i },
-  { kind: "auth", pattern: /\bplease run \/login\b/i },
-  { kind: "rate_limit", pattern: /\brate.?limit/i },
-  { kind: "rate_limit", pattern: /\b429\b/ },
-  { kind: "rate_limit", pattern: /\btoo many requests\b/i },
-  { kind: "rate_limit", pattern: /\bquota\b/i },
-  { kind: "rate_limit", pattern: /\busage limit\b/i },
-  { kind: "network", pattern: /\boverloaded\b/i },
-  { kind: "network", pattern: /\b50[023]\b/ },
-  { kind: "network", pattern: /\bservice unavailable\b/i },
-  { kind: "network", pattern: /\binternal server error\b/i },
-  { kind: "network", pattern: /\bECONN(RESET|REFUSED)\b/ },
-  { kind: "network", pattern: /\bETIMEDOUT\b|\bENOTFOUND\b|\bEAI_AGAIN\b/ },
-  { kind: "network", pattern: /\bfetch failed\b/i },
-  { kind: "network", pattern: /\bconnection error\b/i },
+  {
+    kind: CoachErrorKind.Auth,
+    pattern: /\b(token|session)\b.{0,40}\bexpired\b/i,
+  },
+  { kind: CoachErrorKind.Auth, pattern: /\bplease run \/login\b/i },
+  { kind: CoachErrorKind.RateLimit, pattern: /\brate.?limit/i },
+  { kind: CoachErrorKind.RateLimit, pattern: /\b429\b/ },
+  { kind: CoachErrorKind.RateLimit, pattern: /\btoo many requests\b/i },
+  { kind: CoachErrorKind.RateLimit, pattern: /\bquota\b/i },
+  { kind: CoachErrorKind.RateLimit, pattern: /\busage limit\b/i },
+  { kind: CoachErrorKind.Network, pattern: /\boverloaded\b/i },
+  { kind: CoachErrorKind.Network, pattern: /\b50[023]\b/ },
+  { kind: CoachErrorKind.Network, pattern: /\bservice unavailable\b/i },
+  { kind: CoachErrorKind.Network, pattern: /\binternal server error\b/i },
+  { kind: CoachErrorKind.Network, pattern: /\bECONN(RESET|REFUSED)\b/ },
+  {
+    kind: CoachErrorKind.Network,
+    pattern: /\bETIMEDOUT\b|\bENOTFOUND\b|\bEAI_AGAIN\b/,
+  },
+  { kind: CoachErrorKind.Network, pattern: /\bfetch failed\b/i },
+  { kind: CoachErrorKind.Network, pattern: /\bconnection error\b/i },
 ];
 
 const SDK_ERROR_KINDS: Partial<
   Record<SDKAssistantMessageError, CoachErrorKind>
 > &
   Record<string, CoachErrorKind | undefined> = {
-  authentication_failed: "auth",
-  oauth_org_not_allowed: "auth",
-  rate_limit: "rate_limit",
-  overloaded: "network",
-  server_error: "network",
+  authentication_failed: CoachErrorKind.Auth,
+  oauth_org_not_allowed: CoachErrorKind.Auth,
+  rate_limit: CoachErrorKind.RateLimit,
+  overloaded: CoachErrorKind.Network,
+  server_error: CoachErrorKind.Network,
 };
 
 export function classifyError(input: {
@@ -70,10 +85,10 @@ export function classifyError(input: {
 }): CoachErrorKind {
   const tagged = input.sdkError ? SDK_ERROR_KINDS[input.sdkError] : undefined;
   if (tagged) return tagged;
-  if (input.message.startsWith("Tool ")) return "other";
+  if (input.message.startsWith("Tool ")) return CoachErrorKind.Other;
   return (
     KIND_SIGNATURES.find(({ pattern }) => pattern.test(input.message))?.kind ??
-    "other"
+    CoachErrorKind.Other
   );
 }
 
@@ -117,12 +132,15 @@ export function coachError(input: {
   const raw = [input.message.trim(), stderr ? `Claude Code: ${stderr}` : ""]
     .filter(Boolean)
     .join("\n\n");
-  const detail = [kind === "auth" ? SIGN_IN_STEPS : "", raw.slice(-DETAIL_MAX)]
+  const detail = [
+    kind === CoachErrorKind.Auth ? SIGN_IN_STEPS : "",
+    raw.slice(-DETAIL_MAX),
+  ]
     .filter(Boolean)
     .join("\n\n");
   return errorForProvider(
     { kind, ...COPY[kind], detail: detail || null },
-    input.provider ?? "claude",
+    input.provider ?? CoachProvider.Claude,
   );
 }
 
@@ -131,7 +149,7 @@ export function errorForProvider(
   error: CoachError,
   provider: CoachProvider,
 ): CoachError {
-  if (provider === "claude") return error;
+  if (provider === CoachProvider.Claude) return error;
   return {
     ...error,
     title: error.title.replaceAll("Claude", "Codex"),
@@ -146,15 +164,15 @@ export function errorForProvider(
 export function withSignIn(
   error: CoachError,
   signedIn: boolean | null,
-  provider: CoachProvider = "claude",
+  provider: CoachProvider = CoachProvider.Claude,
 ): CoachError {
   error = errorForProvider(error, provider);
-  if (error.kind !== "auth" || signedIn !== false) return error;
+  if (error.kind !== CoachErrorKind.Auth || signedIn !== false) return error;
   return {
     ...error,
     title: `Sign in to ${providerName(provider)}`,
     message:
-      provider === "codex"
+      provider === CoachProvider.Codex
         ? "Sign in to Codex for Cue in Settings → AI."
         : "The coach uses the Claude sign-in on this Mac.",
     signedOut: true,

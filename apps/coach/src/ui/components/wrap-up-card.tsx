@@ -1,10 +1,10 @@
 import { Check, Copy, ListPlus, NotebookPen } from "lucide-react";
 import { useState } from "react";
 
-import type { WrapUpView } from "../../protocol";
-import type { EvidenceTarget } from "../../move";
-import { LineQuote, MomentQuote, TalkMeter } from "./coaching";
-import { Button, cx, useFlag } from "./primitives";
+import { type EvidenceTarget } from "../../move";
+import { WrapUpState, type WrapUpView } from "../../protocol";
+import { LineQuote, MomentQuote, TalkMeter, TalkScope } from "./coaching";
+import { Button, cx, Tone, useFlag } from "./primitives";
 
 export type WrapUpActions = {
   copy(text: string): Promise<boolean>;
@@ -15,7 +15,7 @@ export type WrapUpActions = {
 };
 
 export function isEmptyWrapUp(view: WrapUpView | null): boolean {
-  if (view?.state !== "ready") return false;
+  if (view?.state !== WrapUpState.Ready) return false;
   const { wrapUp } = view;
   return (
     wrapUp.commitments.length === 0 &&
@@ -26,32 +26,55 @@ export function isEmptyWrapUp(view: WrapUpView | null): boolean {
   );
 }
 
-export function WrapUpCard({ view, actions, busy }: { view: WrapUpView; actions: WrapUpActions; busy: boolean }) {
+export function WrapUpCard({
+  view,
+  actions,
+  busy,
+}: {
+  view: WrapUpView;
+  actions: WrapUpActions;
+  busy: boolean;
+}) {
   if (isEmptyWrapUp(view)) {
     return (
-      <p className="coach-enter text-center text-[12.5px] text-muted-foreground" data-testid="wrap-up">
+      <p
+        className="coach-enter text-muted-foreground text-center text-[12.5px]"
+        data-testid="wrap-up"
+      >
         Too short to wrap up.
       </p>
     );
   }
   return (
     <section
-      className="coach-enter rounded-lg border border-border bg-surface px-3 pt-2.5 pb-3"
+      className="coach-enter border-border bg-surface rounded-lg border px-3 pt-2.5 pb-3"
       aria-label="Meeting wrap-up"
       data-testid="wrap-up"
     >
       <h2 className="mb-2 text-[13px] font-semibold">Wrap-up</h2>
       <div>
-        {view.state === "running" && <WrapUpSkeleton />}
-        {view.state === "failed" && (
+        {view.state === WrapUpState.Running && <WrapUpSkeleton />}
+        {view.state === WrapUpState.Failed && (
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[13px] text-muted-foreground">Couldn't write the wrap-up.</p>
-            <Button tone="outline" disabled={busy} onClick={() => actions.ask("Summarize the meeting: commitments, open questions, and a short follow-up draft.")}>
+            <p className="text-muted-foreground text-[13px]">
+              Couldn't write the wrap-up.
+            </p>
+            <Button
+              tone={Tone.Outline}
+              disabled={busy}
+              onClick={() =>
+                actions.ask(
+                  "Summarize the meeting: commitments, open questions, and a short follow-up draft.",
+                )
+              }
+            >
               Try again
             </Button>
           </div>
         )}
-        {view.state === "ready" && <WrapUpBody view={view} actions={actions} />}
+        {view.state === WrapUpState.Ready && (
+          <WrapUpBody view={view} actions={actions} />
+        )}
       </div>
     </section>
   );
@@ -59,7 +82,11 @@ export function WrapUpCard({ view, actions, busy }: { view: WrapUpView; actions:
 
 function WrapUpSkeleton() {
   return (
-    <div className="flex flex-col gap-2" role="status" aria-label="Writing your wrap-up">
+    <div
+      className="flex flex-col gap-2"
+      role="status"
+      aria-label="Writing your wrap-up"
+    >
       <p className="coach-sheen text-[13px] font-medium">Writing…</p>
       <div className="coach-skeleton h-3 w-11/12" />
       <div className="coach-skeleton h-3 w-9/12" />
@@ -68,16 +95,30 @@ function WrapUpSkeleton() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <h3 className="mb-1 text-[12px] font-medium text-muted-foreground">{title}</h3>
+      <h3 className="text-muted-foreground mb-1 text-[12px] font-medium">
+        {title}
+      </h3>
       {children}
     </div>
   );
 }
 
-function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "ready" }>; actions: WrapUpActions }) {
+function WrapUpBody({
+  view,
+  actions,
+}: {
+  view: Extract<WrapUpView, { state: WrapUpState.Ready }>;
+  actions: WrapUpActions;
+}) {
   const [copied, flagCopied] = useFlag();
   const { wrapUp } = view;
   const hasDraft = hasFollowUp(wrapUp.follow_up_draft);
@@ -90,9 +131,19 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
         <Section title="Commitments">
           <ul className="flex flex-col gap-1">
             {wrapUp.commitments.map((commitment, index) => (
-              <li key={index} dir="auto" className="text-[13.5px] leading-[1.45]">
-                <span className="font-medium">{commitment.who}:</span> {commitment.what}
-                {commitment.when && <span className="text-muted-foreground"> · {commitment.when}</span>}
+              <li
+                key={index}
+                dir="auto"
+                className="text-[13.5px] leading-[1.45]"
+              >
+                <span className="font-medium">{commitment.who}:</span>{" "}
+                {commitment.what}
+                {commitment.when && (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · {commitment.when}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -102,8 +153,15 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
         <Section title="Open questions">
           <ul className="flex flex-col gap-1">
             {wrapUp.open_questions.map((question, index) => (
-              <li key={index} dir="auto" className="flex gap-2 text-[13.5px] leading-[1.45]">
-                <span aria-hidden className="mt-[0.6em] size-1 shrink-0 rounded-full bg-muted-foreground" />
+              <li
+                key={index}
+                dir="auto"
+                className="flex gap-2 text-[13.5px] leading-[1.45]"
+              >
+                <span
+                  aria-hidden
+                  className="bg-muted-foreground mt-[0.6em] size-1 shrink-0 rounded-full"
+                />
                 <span className="min-w-0">{question}</span>
               </li>
             ))}
@@ -116,46 +174,69 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
         </Section>
       )}
       {buttons > 0 && (
-      <div className={cx("grid gap-1.5", buttons === 1 ? "grid-cols-[auto] justify-start" : "grid-cols-2")}>
-        {hasDraft && (
-          <Button
-            tone="primary"
-            wrap
-            className={buttons === 3 ? "col-span-2" : undefined}
-            onClick={() => void actions.copy(wrapUp.follow_up_draft).then((ok) => ok && flagCopied())}
-          >
-            {copied ? <Check aria-hidden className="size-3.5" /> : <Copy aria-hidden className="size-3.5" />}
-            {copied ? "Copied" : "Copy follow-up"}
-          </Button>
-        )}
-        {canAdd && (
-          <ActionButton
-            done={view.added}
-            label="Add as action items"
-            doneLabel="Added as action items"
-            icon={<ListPlus aria-hidden className="size-3.5" />}
-            run={actions.addActionItems}
-          />
-        )}
-        {canLog && (
-          <ActionButton
-            done={view.logged}
-            label="Log promises to clients"
-            doneLabel="Logged to clients"
-            icon={<NotebookPen aria-hidden className="size-3.5" />}
-            run={actions.logToClients}
-          />
-        )}
-      </div>
+        <div
+          className={cx(
+            "grid gap-1.5",
+            buttons === 1 ? "grid-cols-[auto] justify-start" : "grid-cols-2",
+          )}
+        >
+          {hasDraft && (
+            <Button
+              tone={Tone.Primary}
+              wrap
+              className={buttons === 3 ? "col-span-2" : undefined}
+              onClick={() =>
+                void actions
+                  .copy(wrapUp.follow_up_draft)
+                  .then((ok) => ok && flagCopied())
+              }
+            >
+              {copied ? (
+                <Check aria-hidden className="size-3.5" />
+              ) : (
+                <Copy aria-hidden className="size-3.5" />
+              )}
+              {copied ? "Copied" : "Copy follow-up"}
+            </Button>
+          )}
+          {canAdd && (
+            <ActionButton
+              done={view.added}
+              label="Add as action items"
+              doneLabel="Added as action items"
+              icon={<ListPlus aria-hidden className="size-3.5" />}
+              run={actions.addActionItems}
+            />
+          )}
+          {canLog && (
+            <ActionButton
+              done={view.logged}
+              label="Log promises to clients"
+              doneLabel="Logged to clients"
+              icon={<NotebookPen aria-hidden className="size-3.5" />}
+              run={actions.logToClients}
+            />
+          )}
+        </div>
       )}
-      {view.talk && <TalkMeter talk={view.talk} scope="meeting" />}
+      {view.talk && <TalkMeter talk={view.talk} scope={TalkScope.Meeting} />}
       {wrapUp.coaching.went_well.length > 0 && (
         <Section title="Went well">
           <ul aria-label="Went well" className="flex flex-col gap-1">
             {wrapUp.coaching.went_well.map((point, index) => (
-              <li key={index} className="flex gap-2 text-[13.5px] leading-[1.45]">
-                <Check aria-hidden data-testid="went-well-check" className="mt-[3px] size-3.5 shrink-0 text-success" />
-                <span dir="auto" className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+              <li
+                key={index}
+                className="flex gap-2 text-[13.5px] leading-[1.45]"
+              >
+                <Check
+                  aria-hidden
+                  data-testid="went-well-check"
+                  className="text-success mt-[3px] size-3.5 shrink-0"
+                />
+                <span
+                  dir="auto"
+                  className="min-w-0 flex-1 [overflow-wrap:anywhere]"
+                >
                   {point}
                 </span>
               </li>
@@ -167,7 +248,10 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
         <Section title="Next time">
           <ul aria-label="Next time" className="flex flex-col gap-2">
             {wrapUp.coaching.next_time.map((item, index) => (
-              <li key={index} className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2.5">
+              <li
+                key={index}
+                className="border-border flex flex-col gap-2 rounded-lg border px-3 py-2.5"
+              >
                 <MomentQuote
                   moment={item.moment}
                   onOpen={
@@ -180,10 +264,17 @@ function WrapUpBody({ view, actions }: { view: Extract<WrapUpView, { state: "rea
                       : undefined
                   }
                 />
-                <p dir="auto" className="text-[13.5px] leading-[1.4] font-semibold [overflow-wrap:anywhere]">
+                <p
+                  dir="auto"
+                  className="text-[13.5px] leading-[1.4] font-semibold [overflow-wrap:anywhere]"
+                >
                   {item.headline}
                 </p>
-                <LineQuote verb={item.verb} line={item.line} copy={actions.copy} />
+                <LineQuote
+                  verb={item.verb}
+                  line={item.line}
+                  copy={actions.copy}
+                />
               </li>
             ))}
           </ul>
@@ -206,14 +297,17 @@ const DRAFT_PREVIEW_LINES = 6;
 
 function Draft({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
-  const long = text.split("\n").length > DRAFT_PREVIEW_LINES || text.length > 360;
+  const long =
+    text.split("\n").length > DRAFT_PREVIEW_LINES || text.length > 360;
   return (
-    <div className="border-s-2 border-border ps-3">
+    <div className="border-border border-s-2 ps-3">
       <p
         dir="auto"
         className={cx(
           "text-[13.5px] leading-[1.55] whitespace-pre-wrap",
-          long && !open && "coach-fade-bottom max-h-[calc(1.55em*6)] overflow-hidden",
+          long &&
+            !open &&
+            "coach-fade-bottom max-h-[calc(1.55em*6)] overflow-hidden",
         )}
         data-testid="follow-up-draft"
       >
@@ -224,7 +318,7 @@ function Draft({ text }: { text: string }) {
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
-          className="mt-1 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground mt-1 text-[12px] font-medium"
         >
           {open ? "Show less" : "Show all"}
         </button>
@@ -249,7 +343,7 @@ function ActionButton({
   const [pending, setPending] = useState(false);
   return (
     <Button
-      tone="outline"
+      tone={Tone.Outline}
       wrap
       disabled={done || pending}
       aria-busy={pending}

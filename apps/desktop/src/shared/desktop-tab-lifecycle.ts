@@ -9,6 +9,7 @@ import {
   type Tab,
   useTabs,
 } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 type InitializeDesktopTabsOptions = {
   getTabs: () => Tab[];
@@ -62,7 +63,7 @@ export function createSessionTabCloseHandler({
   deleteSessionFn = softDeleteSession,
 }: SessionTabCloseHandlerOptions) {
   return (tab: Tab) => {
-    if (tab.type !== "sessions") {
+    if (tab.type !== TabType.Sessions) {
       return;
     }
 
@@ -132,7 +133,7 @@ export function useDesktopTabLifecycle({
     registerOnClose(
       createSessionTabCloseHandler({
         invalidateSessionResource: (sessionId) => {
-          useTabs.getState().invalidateResource("sessions", sessionId);
+          useTabs.getState().invalidateResource(TabType.Sessions, sessionId);
         },
       }),
     );

@@ -8,7 +8,7 @@ import {
 } from "./claude-code";
 import { codexAccount, signInCodex } from "./codex-account";
 import { codexCodeFromArgs } from "./codex-code";
-import { parseProvider } from "./provider";
+import { CoachProvider, parseProvider } from "./provider";
 import { signInCommand } from "./sign-in";
 
 const { values } = parseArgs({
@@ -43,7 +43,10 @@ function statusJson(status: ClaudeCodeStatus) {
   };
 }
 
-if (parseProvider(values.provider) === "codex" || values["prepare-codex"]) {
+if (
+  parseProvider(values.provider) === CoachProvider.Codex ||
+  values["prepare-codex"]
+) {
   const {
     codexCode,
     executable: codexExecutable,

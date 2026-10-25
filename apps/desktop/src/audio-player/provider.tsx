@@ -19,6 +19,7 @@ import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 import { configureCenteredPlayback } from "./playback";
 import { loadWaveform } from "./waveform";
 
+import { AudioPlayerState } from "~/audio-player/enums";
 import {
   isSessionAudioIdle,
   subscribeToSessionAudioRetention,
@@ -26,8 +27,6 @@ import {
 import { deleteSessionAudio } from "~/session/attachments";
 
 const TIME_UPDATE_STEP_SECONDS = 0.1;
-
-type AudioPlayerState = "playing" | "paused" | "stopped";
 
 interface TimeSnapshot {
   current: number;
@@ -140,7 +139,9 @@ export function AudioPlayerProvider({
   const queryClient = useQueryClient();
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
-  const [state, setState] = useState<AudioPlayerState>("stopped");
+  const [state, setState] = useState<AudioPlayerState>(
+    AudioPlayerState.Stopped,
+  );
   const [playbackRate, setPlaybackRateState] = useState(1);
   const timeStoreRef = useRef(new TimeStore());
   const stopRequestedRef = useRef(false);
@@ -210,7 +211,7 @@ export function AudioPlayerProvider({
     const handlePlay = () => {
       stopRequestedRef.current = false;
       syncCurrentTime(ws.getCurrentTime(), true);
-      setState("playing");
+      setState(AudioPlayerState.Playing);
     };
 
     const handlePause = () => {
@@ -219,17 +220,17 @@ export function AudioPlayerProvider({
 
       if (stopRequestedRef.current) {
         stopRequestedRef.current = false;
-        setState("stopped");
+        setState(AudioPlayerState.Stopped);
         return;
       }
 
-      setState("paused");
+      setState(AudioPlayerState.Paused);
     };
 
     const handleFinish = () => {
       stopRequestedRef.current = false;
       syncCurrentTime(ws.getDuration(), true);
-      setState("stopped");
+      setState(AudioPlayerState.Stopped);
     };
 
     const handleTimeupdate = (currentTime: number) => {
@@ -248,7 +249,7 @@ export function AudioPlayerProvider({
 
     const handleDestroy = () => {
       stopRequestedRef.current = false;
-      setState("stopped");
+      setState(AudioPlayerState.Stopped);
     };
 
     ws.on("decode", handleDecode);
@@ -322,7 +323,7 @@ export function AudioPlayerProvider({
       wavesurfer.stop();
       timeStoreRef.current.setCurrent(0);
       if (!wasPlaying) {
-        setState("stopped");
+        setState(AudioPlayerState.Stopped);
       }
     }
   }, [wavesurfer]);

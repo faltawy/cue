@@ -3,6 +3,7 @@ import {
   uniqueIdfromTab,
   useTabs,
 } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function leaveAllOverlayTabs() {
   for (let attempt = 0; attempt < 10; attempt++) {
@@ -19,7 +20,10 @@ export function leaveOverlayTab() {
   const { tabs, currentTab, openCurrent, select, goBack, canGoBack } =
     useTabs.getState();
 
-  if (currentTab?.type === "onboarding" || currentTab?.type === "empty") {
+  if (
+    currentTab?.type === TabType.Onboarding ||
+    currentTab?.type === TabType.Empty
+  ) {
     return;
   }
 
@@ -43,7 +47,7 @@ export function leaveOverlayTab() {
     return;
   }
 
-  const existingHomeTab = tabs.find((tab) => tab.type === "empty");
+  const existingHomeTab = tabs.find((tab) => tab.type === TabType.Empty);
   if (existingHomeTab) {
     select(existingHomeTab);
     return;

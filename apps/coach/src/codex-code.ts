@@ -4,6 +4,10 @@ import path from "node:path";
 
 import { DEFAULT_CODEX_HOME } from "./codex-session";
 
+export enum CodexCodeSource {
+  Cue = "cue",
+}
+
 export const CODEX_VERSION = "0.160.0";
 const RELEASES = {
   "darwin-arm64": {
@@ -27,7 +31,10 @@ export class CodexCode {
   private listeners = new Set<
     (progress: { receivedBytes: number; totalBytes: number }) => void
   >();
-  private pending?: Promise<{ executablePath: string; source: "cue" }>;
+  private pending?: Promise<{
+    executablePath: string;
+    source: CodexCodeSource.Cue;
+  }>;
 
   constructor(
     private readonly rootDir: string,
@@ -58,7 +65,10 @@ export class CodexCode {
     return this.pending;
   }
 
-  private async install(): Promise<{ executablePath: string; source: "cue" }> {
+  private async install(): Promise<{
+    executablePath: string;
+    source: CodexCodeSource.Cue;
+  }> {
     const platform = `${process.platform}-${process.arch}`;
     const release =
       this.options.artifact ??
@@ -78,7 +88,8 @@ export class CodexCode {
           .stat(path.join(destination, "codex-code-mode-host"))
           .catch(() => null)
       )?.isFile();
-    if (await existing()) return { executablePath, source: "cue" };
+    if (await existing())
+      return { executablePath, source: CodexCodeSource.Cue };
     await fs.mkdir(this.rootDir, { recursive: true, mode: 0o700 });
     const staging = await fs.mkdtemp(path.join(this.rootDir, ".install-"));
     try {
@@ -178,7 +189,7 @@ export class CodexCode {
           if (!(await existing())) throw error;
         });
       });
-      return { executablePath, source: "cue" };
+      return { executablePath, source: CodexCodeSource.Cue };
     } catch (cause) {
       throw new CodexSetupError(
         `Cue could not set up Codex. ${cause instanceof Error ? cause.message : String(cause)} Try again.`,

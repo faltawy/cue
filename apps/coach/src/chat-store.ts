@@ -2,16 +2,24 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
-import type { Hit, HitKind } from "./detect";
+import {
+  DEFAULT_COACHING,
+  type MeetingCoaching,
+  meetingCoachingSchema,
+} from "./coaching-preferences";
+import { type Hit, type HitKind } from "./detect";
 import { type MeetingSeen, meetingSeenSchema } from "./meeting-context";
-import type { CoachFeedback, MoveTag } from "./move";
-import type { CoachEvent, ResetReason, WrapUpView } from "./protocol";
-import { type CoachProvider, providerSchema } from "./provider";
+import { CoachFeedback, FeedbackReason, MoveTag } from "./move";
+import { CoachEvent, ResetReason, WrapUpState, WrapUpView } from "./protocol";
+import { CoachProvider, providerSchema } from "./provider";
 
 export const MAX_MEETINGS = 20;
 export const MAX_HISTORY = 400;
 
-export type SettledWrapUp = Extract<WrapUpView, { state: "ready" | "failed" }>;
+export type SettledWrapUp = Extract<
+  WrapUpView,
+  { state: WrapUpState.Ready | WrapUpState.Failed }
+>;
 
 const chatSchema = z.preprocess(
   (value) => {
@@ -24,7 +32,7 @@ const chatSchema = z.preprocess(
     };
   },
   z.object({
-    provider: providerSchema.default("claude"),
+    provider: providerSchema.default(CoachProvider.Claude),
     model: z.string().optional(),
     runtimeSessionId: z.string().min(1).nullable(),
     project: z.string().min(1),
@@ -47,21 +55,31 @@ const wrapUpSchema = z.object({
       typeof value === "object" &&
       value !== null &&
       "state" in value &&
-      (value.state === "ready" || value.state === "failed"),
+      (value.state === WrapUpState.Ready || value.state === WrapUpState.Failed),
   ),
 });
 
 const storeSchema = z.object({
   meetings: z.record(z.string(), chatSchema),
   wrapUps: z.record(z.string(), wrapUpSchema).default({}),
+  coaching: z
+    .record(
+      z.string(),
+      meetingCoachingSchema.extend({
+        deferred: z.array(z.string().max(500)).max(20).default([]),
+        updatedAt: z.number(),
+      }),
+    )
+    .default({}),
   feedback: z
     .object({
       categories: z
         .record(z.string(), z.number().int().min(-3).max(3))
         .default({}),
       handledMoments: z.array(z.string()).max(500).default([]),
+      carefulTiming: z.boolean().default(false),
     })
-    .default({ categories: {}, handledMoments: [] }),
+    .default({ categories: {}, handledMoments: [], carefulTiming: false }),
 });
 
 export type StoredChat = z.infer<typeof chatSchema>;
@@ -71,28 +89,88 @@ export type ChatStore = z.infer<typeof storeSchema>;
 export const emptyStore = (): ChatStore => ({
   meetings: {},
   wrapUps: {},
-  feedback: { categories: {}, handledMoments: [] },
+  coaching: {},
+  feedback: { categories: {}, handledMoments: [], carefulTiming: false },
 });
+
+export function coachingFor(store: ChatStore, sessionId: string) {
+  return (
+    store.coaching[sessionId] ?? {
+      ...DEFAULT_COACHING,
+      deferred: [],
+      updatedAt: 0,
+    }
+  );
+}
+
+export function setMeetingCoaching(
+  store: ChatStore,
+  sessionId: string,
+  patch: Partial<MeetingCoaching>,
+): ChatStore {
+  return {
+    ...store,
+    coaching: newest({
+      ...store.coaching,
+      [sessionId]: {
+        ...coachingFor(store, sessionId),
+        ...patch,
+        updatedAt: Date.now(),
+      },
+    }),
+  };
+}
+
+export function deferCoaching(
+  store: ChatStore,
+  sessionId: string,
+  note: string,
+): ChatStore {
+  const current = coachingFor(store, sessionId);
+  return {
+    ...store,
+    coaching: newest({
+      ...store.coaching,
+      [sessionId]: {
+        ...current,
+        deferred: [...new Set([...current.deferred, note])].slice(-20),
+        updatedAt: Date.now(),
+      },
+    }),
+  };
+}
 
 export function recordFeedback(
   store: ChatStore,
   input: CoachFeedback,
 ): ChatStore {
   const current = store.feedback.categories[input.category] ?? 0;
-  const categories = {
-    ...store.feedback.categories,
-    [input.category]: Math.max(
-      -3,
-      Math.min(3, current + (input.useful ? 1 : -1)),
-    ),
-  };
+  const categories =
+    input.reason === FeedbackReason.PoorTiming
+      ? store.feedback.categories
+      : {
+          ...store.feedback.categories,
+          [input.category]: Math.max(
+            -3,
+            Math.min(3, current + (input.useful ? 1 : -1)),
+          ),
+        };
   const handledMoments =
-    input.reason === "already_handled" && input.momentId
+    input.reason === FeedbackReason.AlreadyHandled && input.momentId
       ? [...new Set([...store.feedback.handledMoments, input.momentId])].slice(
           -500,
         )
       : store.feedback.handledMoments;
-  return { ...store, feedback: { categories, handledMoments } };
+  return {
+    ...store,
+    feedback: {
+      categories,
+      handledMoments,
+      carefulTiming:
+        store.feedback.carefulTiming ||
+        input.reason === FeedbackReason.PoorTiming,
+    },
+  };
 }
 
 export function saveFeedback(
@@ -115,12 +193,16 @@ export function isHandledMoment(store: ChatStore, momentId: string): boolean {
 }
 
 const hitCategories: Record<HitKind, readonly MoveTag[]> = {
-  question: ["open_question", "buying_signal"],
-  name: ["risk"],
-  objection: ["pushback", "giving_ground", "risk"],
-  commitment: ["vague_promise", "over_promise", "decision_owner"],
-  number: ["risk", "buying_signal"],
-  monologue: ["talk_time"],
+  question: [MoveTag.OpenQuestion, MoveTag.BuyingSignal],
+  name: [MoveTag.Risk],
+  objection: [MoveTag.Pushback, MoveTag.GivingGround, MoveTag.Risk],
+  commitment: [
+    MoveTag.VaguePromise,
+    MoveTag.OverPromise,
+    MoveTag.DecisionOwner,
+  ],
+  number: [MoveTag.Risk, MoveTag.BuyingSignal],
+  monologue: [MoveTag.TalkTime],
 };
 
 export function prioritizeHitsByFeedback(
@@ -148,7 +230,10 @@ export function prioritizeHitsByFeedback(
 }
 
 export function clearFeedback(store: ChatStore): ChatStore {
-  return { ...store, feedback: { categories: {}, handledMoments: [] } };
+  return {
+    ...store,
+    feedback: { categories: {}, handledMoments: [], carefulTiming: false },
+  };
 }
 
 export function loadChats(file: string): ChatStore {
@@ -219,7 +304,7 @@ export function remember(
   const meetings = {
     ...store.meetings,
     [meetingId]: {
-      provider: "claude" as const,
+      provider: CoachProvider.Claude,
       model: "sonnet",
       ...chat,
       history: chat.history.slice(-MAX_HISTORY),
@@ -264,7 +349,11 @@ export function wrappedTranscripts(store: ChatStore): Set<string> {
   );
 }
 
-export type OpenReason = ResetReason | "startup" | "recover";
+export enum ResumeReason {
+  Startup = "startup",
+  Recover = "recover",
+}
+export type OpenReason = ResetReason | ResumeReason;
 
 export type ChatPlan = {
   provider: CoachProvider;
@@ -297,21 +386,23 @@ export function planChat(input: {
 }): ChatPlan {
   const { reason, meeting, project, current } = input;
   const selected = input.selected ?? {
-    provider: "claude" as const,
+    provider: CoachProvider.Claude,
     model: "sonnet",
   };
   const modelFor = (owner: CoachProvider, saved?: string) =>
     selected.models?.[owner] ??
     (owner === selected.provider
       ? selected.model
-      : (saved ?? (owner === "claude" ? "sonnet" : "")));
-  if (reason === "recover") {
+      : (saved ?? (owner === CoachProvider.Claude ? "sonnet" : "")));
+  if (reason === ResumeReason.Recover) {
     const same = current.project === project;
     const resume = same ? current.runtimeSessionId : null;
     return {
-      provider: same ? (current.provider ?? "claude") : selected.provider,
+      provider: same
+        ? (current.provider ?? CoachProvider.Claude)
+        : selected.provider,
       model: same
-        ? modelFor(current.provider ?? "claude", current.model)
+        ? modelFor(current.provider ?? CoachProvider.Claude, current.model)
         : selected.model,
       store: input.store,
       resume,
@@ -320,10 +411,11 @@ export function planChat(input: {
     };
   }
   const store =
-    reason === "manual" && meeting
+    reason === ResetReason.Manual && meeting
       ? forget(input.store, meeting.sessionId)
       : input.store;
-  const stored = reason === "manual" ? null : chatFor(store, meeting, project);
+  const stored =
+    reason === ResetReason.Manual ? null : chatFor(store, meeting, project);
   const resume = resumeFor(store, meeting, project)?.runtimeSessionId ?? null;
   const wrapUp = meeting ? store.wrapUps[meeting.sessionId] : undefined;
   return {

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { commands as localSttCommands } from "@anlg/plugin-local-stt";
+import { AIProviderType } from "@anlg/provider-validation";
 import type { AIProviderStorage } from "@anlg/store";
 
 import { type ProviderId, PROVIDERS } from "~/settings/ai/stt/shared";
@@ -13,6 +14,7 @@ import {
   isOnDeviceSttModel,
   isRealtimeLocalModel,
 } from "~/stt/capabilities";
+import { SttConnectionStatus } from "~/stt/enums";
 import { localSttQueries } from "~/stt/useLocalSttModel";
 
 export const useSTTConnection = () => {
@@ -28,8 +30,9 @@ export const useSTTConnection = () => {
       local_stt_model_path: string | undefined;
     };
 
-  const { providers, isReady: providerConfigReady } =
-    useAiProvidersState("stt");
+  const { providers, isReady: providerConfigReady } = useAiProvidersState(
+    AIProviderType.Stt,
+  );
   const providerConfig = (
     current_stt_provider ? providers[`stt:${current_stt_provider}`] : undefined
   ) as AIProviderStorage | undefined;
@@ -58,13 +61,13 @@ export const useSTTConnection = () => {
       local_stt_model_path,
     ],
     refetchInterval: (query) =>
-      query.state.data?.status === "loading" ? 1000 : false,
+      query.state.data?.status === SttConnectionStatus.Loading ? 1000 : false,
     queryFn: async () => {
       if (isLocalFile) {
         const path = local_stt_model_path?.trim();
         if (!path) {
           return {
-            status: "not_selected" as const,
+            status: SttConnectionStatus.NotSelected as const,
             connection: null,
           };
         }
@@ -72,14 +75,14 @@ export const useSTTConnection = () => {
         const started = await localSttCommands.startServerForPath(path);
         if (started.status === "error") {
           return {
-            status: "error" as const,
+            status: SttConnectionStatus.Error as const,
             error: started.error,
             connection: null,
           };
         }
 
         return {
-          status: "ready" as const,
+          status: SttConnectionStatus.Ready as const,
           connection: {
             provider: "local_file" as const,
             model: "local-file" as const,
@@ -95,7 +98,10 @@ export const useSTTConnection = () => {
 
       const downloaded = await localSttCommands.isModelDownloaded(localModel);
       if (downloaded.status !== "ok" || !downloaded.data) {
-        return { status: "not_downloaded" as const, connection: null };
+        return {
+          status: SttConnectionStatus.NotDownloaded as const,
+          connection: null,
+        };
       }
 
       const serverResult = await localSttCommands.getServerForModel(localModel);
@@ -108,7 +114,7 @@ export const useSTTConnection = () => {
 
       if (server?.status === "ready" && server.url) {
         return {
-          status: "ready" as const,
+          status: SttConnectionStatus.Ready as const,
           connection: {
             provider: current_stt_provider!,
             model: localModel,
@@ -119,7 +125,13 @@ export const useSTTConnection = () => {
       }
 
       return {
-        status: server?.status ?? "loading",
+        status: server
+          ? {
+              unreachable: SttConnectionStatus.Unreachable,
+              loading: SttConnectionStatus.Loading,
+              ready: SttConnectionStatus.Ready,
+            }[server.status]
+          : SttConnectionStatus.Loading,
         connection: null,
       };
     },

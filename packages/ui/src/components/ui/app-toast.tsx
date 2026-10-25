@@ -21,7 +21,30 @@ import { cn } from "@anlg/utils";
 
 import { buttonVariants } from "./button";
 
-export type AppToastTone = "info" | "success" | "warning" | "error";
+export enum AppToastDismissReason {
+  User = "user",
+  Timer = "timer",
+  Programmatic = "programmatic",
+}
+
+export enum AppToastTheme {
+  Light = "light",
+  Dark = "dark",
+  System = "system",
+}
+
+export enum AppToastPosition {
+  Top = "top",
+  Bottom = "bottom",
+}
+
+export enum AppToastTone {
+  Info = "info",
+  Success = "success",
+  Warning = "warning",
+  Error = "error",
+  Loading = "loading",
+}
 
 export type AppToastAction = Readonly<{
   label: ReactNode;
@@ -35,14 +58,14 @@ export type AppToastOptions = Readonly<{
   closeButton?: boolean;
   message: ReactNode;
   description?: ReactNode;
-  tone?: AppToastTone;
+  tone?: Exclude<AppToastTone, AppToastTone.Loading>;
   leading?: ReactNode;
   action?: AppToastAction;
   secondaryAction?: AppToastAction;
   durationMs?: number;
   dismissible?: boolean;
   /** Runs once when the toast starts leaving, whatever dismissed it: the user, the timer, or code. */
-  onDismiss?: (reason: "user" | "timer" | "programmatic") => void;
+  onDismiss?: (reason: AppToastDismissReason) => void;
 }>;
 
 /** Fields a live toast can morph in place; the rest are fixed at show time. */
@@ -66,11 +89,14 @@ export type AppToastHandle = Readonly<{
   dismiss: () => void;
 }>;
 
-export type AppToastAlign = "center" | "end";
+export enum AppToastAlign {
+  Center = "center",
+  End = "end",
+}
 
 export type AppToasterProps = Readonly<{
-  theme?: "light" | "dark" | "system";
-  position?: "top" | "bottom";
+  theme?: AppToastTheme;
+  position?: AppToastPosition;
   /** Horizontal placement of the stack: centered (mobile) or flush right (desktop). */
   align?: AppToastAlign;
   visibleToasts?: number;
@@ -79,14 +105,17 @@ export type AppToasterProps = Readonly<{
   style?: CSSProperties;
 }>;
 
-type AppToastPhase = "visible" | "exiting";
+enum AppToastPhase {
+  Visible = "visible",
+  Exiting = "exiting",
+}
 type AppToastDirection = -1 | 1;
 
 type AppToastItem = Readonly<{
   id: string;
   message: ReactNode;
   description?: ReactNode;
-  tone: AppToastTone;
+  tone: Exclude<AppToastTone, AppToastTone.Loading>;
   leading?: ReactNode;
   action?: AppToastAction;
   secondaryAction?: AppToastAction;
@@ -94,7 +123,7 @@ type AppToastItem = Readonly<{
   remainingMs: number;
   dismissible: boolean;
   closeButton: boolean;
-  onDismiss?: (reason: "user" | "timer" | "programmatic") => void;
+  onDismiss?: (reason: AppToastDismissReason) => void;
   paused: boolean;
   phase: AppToastPhase;
   exitDirection: AppToastDirection;
@@ -162,15 +191,15 @@ function removeAppToast(id: string): void {
 export function dismissAppToast(
   id: string,
   direction: AppToastDirection = 1,
-  reason: "user" | "timer" | "programmatic" = "programmatic",
+  reason: AppToastDismissReason = AppToastDismissReason.Programmatic,
 ): void {
   const toast = appToastSnapshot.find((candidate) => candidate.id === id);
-  if (!toast || toast.phase === "exiting") return;
+  if (!toast || toast.phase === AppToastPhase.Exiting) return;
 
   clearAppToastTimer(id);
   updateAppToast(id, (current) => ({
     ...current,
-    phase: "exiting",
+    phase: AppToastPhase.Exiting,
     exitDirection: direction,
   }));
   appToastExitTimers.set(
@@ -186,7 +215,7 @@ function startAppToastTimer(id: string, remainingMs: number): void {
   const safeRemainingMs = Math.max(0, remainingMs);
   const deadline = Date.now() + safeRemainingMs;
   const timeoutId = setTimeout(
-    () => dismissAppToast(id, 1, "timer"),
+    () => dismissAppToast(id, 1, AppToastDismissReason.Timer),
     safeRemainingMs,
   );
   appToastTimers.set(id, { deadline, timeoutId });
@@ -200,7 +229,7 @@ function pauseAppToastTimer(id: string): void {
     !toast ||
     toast.paused ||
     !Number.isFinite(toast.durationMs) ||
-    toast.phase === "exiting"
+    toast.phase === AppToastPhase.Exiting
   )
     return;
 
@@ -214,7 +243,7 @@ function pauseAppToastTimer(id: string): void {
 
 function resumeAppToastTimer(id: string): void {
   const toast = appToastSnapshot.find((candidate) => candidate.id === id);
-  if (!toast?.paused || toast.phase === "exiting") return;
+  if (!toast?.paused || toast.phase === AppToastPhase.Exiting) return;
   updateAppToast(id, (current) => ({ ...current, paused: false }));
   startAppToastTimer(id, toast.remainingMs);
 }
@@ -239,9 +268,9 @@ const getServerSnapshot = () => false;
  * `showAppToast` and friends.
  */
 export function AppToaster({
-  theme = "system",
-  position = "bottom",
-  align = "center",
+  theme = AppToastTheme.System,
+  position = AppToastPosition.Bottom,
+  align = AppToastAlign.Center,
   visibleToasts = 4,
   gap = 8,
   className,
@@ -293,13 +322,13 @@ export function AppToaster({
       aria-relevant="additions"
       className={cn([
         "pointer-events-none fixed inset-x-0 isolate z-50 flex",
-        align === "end"
+        align === AppToastAlign.End
           ? "justify-end pe-[max(1rem,env(safe-area-inset-right))]"
           : "justify-center",
-        position === "top"
+        position === AppToastPosition.Top
           ? "top-[max(1rem,env(safe-area-inset-top))] items-start"
           : "bottom-[max(1rem,env(safe-area-inset-bottom))] items-end",
-        theme === "dark" ? "dark" : undefined,
+        theme === AppToastTheme.Dark ? "dark" : undefined,
         className,
       ])}
       style={style}
@@ -342,7 +371,7 @@ export function showAppToast({
   closeButton = true,
   message,
   description,
-  tone = "info",
+  tone = AppToastTone.Info,
   leading,
   action,
   secondaryAction,
@@ -371,7 +400,7 @@ export function showAppToast({
     closeButton,
     onDismiss,
     paused: false,
-    phase: "visible",
+    phase: AppToastPhase.Visible,
     exitDirection: 1,
   };
 
@@ -385,27 +414,33 @@ export function showAppToast({
   return {
     update: (changes) =>
       updateAppToast(id, (current) =>
-        current.phase === "exiting" ? current : { ...current, ...changes },
+        current.phase === AppToastPhase.Exiting
+          ? current
+          : { ...current, ...changes },
       ),
     dismiss: () => dismissAppToast(id),
   };
 }
 
 export function showErrorToast(message: string): AppToastHandle {
-  return showAppToast({ message, tone: "error" });
+  return showAppToast({ message, tone: AppToastTone.Error });
 }
 
 export function showSuccessToast(message: string): AppToastHandle {
-  return showAppToast({ message, tone: "success" });
+  return showAppToast({ message, tone: AppToastTone.Success });
 }
 
 export function dismissAppToasts(): void {
-  const leaving = appToastSnapshot.filter((toast) => toast.phase === "visible");
+  const leaving = appToastSnapshot.filter(
+    (toast) => toast.phase === AppToastPhase.Visible,
+  );
   appToastTimers.forEach((_, id) => clearAppToastTimer(id));
   appToastExitTimers.forEach((timer) => clearTimeout(timer));
   appToastExitTimers.clear();
   publishAppToasts([]);
-  leaving.forEach((toast) => toast.onDismiss?.("programmatic"));
+  leaving.forEach((toast) =>
+    toast.onDismiss?.(AppToastDismissReason.Programmatic),
+  );
 }
 
 type AppToastProps = Readonly<{
@@ -437,7 +472,7 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
     typeof window === "undefined" ? 1_024 : window.innerWidth + 256;
 
   const dismiss = (direction: AppToastDirection = 1) =>
-    dismissAppToast(toast.id, direction, "user");
+    dismissAppToast(toast.id, direction, AppToastDismissReason.User);
   const handleDragEnd = (
     _event: globalThis.MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
@@ -453,7 +488,7 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
   return (
     <motion.div
       layout
-      role={toast.tone === "error" ? "alert" : "status"}
+      role={toast.tone === AppToastTone.Error ? "alert" : "status"}
       data-slot="app-toast"
       data-app-toast=""
       data-tone={toast.tone}
@@ -465,7 +500,7 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
       inert={stackedBehind}
       initial={reduceMotion ? false : { opacity: 0, y: 20, scale: 0.96 }}
       animate={
-        toast.phase === "exiting"
+        toast.phase === AppToastPhase.Exiting
           ? {
               opacity: 0,
               x: toast.exitDirection * exitDistance,
@@ -492,7 +527,9 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
               scale: { duration: 0.2, ease: "easeOut" },
             }
       }
-      drag={toast.dismissible && toast.phase === "visible" ? "x" : false}
+      drag={
+        toast.dismissible && toast.phase === AppToastPhase.Visible ? "x" : false
+      }
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.7}
       dragMomentum={false}
@@ -520,10 +557,10 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
         "no-drag pointer-events-auto col-start-1 row-start-1 mx-auto origin-top touch-pan-y self-start select-none",
         "w-[min(22rem,calc(100vw-2rem))] overflow-hidden",
         "bg-popover text-popover-foreground border-border rounded-lg border shadow-lg",
-        toast.dismissible && toast.phase === "visible"
+        toast.dismissible && toast.phase === AppToastPhase.Visible
           ? "cursor-grab active:cursor-grabbing"
           : null,
-        toast.phase === "exiting" || stackedBehind
+        toast.phase === AppToastPhase.Exiting || stackedBehind
           ? "pointer-events-none"
           : null,
       ])}
@@ -626,13 +663,13 @@ function AppToast({ toast, stackDepth, stacked }: AppToastProps) {
 
 function AppToastToneIcon({ tone }: Readonly<{ tone: AppToastTone }>) {
   switch (tone) {
-    case "success":
+    case AppToastTone.Success:
       return <CheckCircle className="text-success" />;
-    case "warning":
+    case AppToastTone.Warning:
       return <WarningCircle className="text-warm-strong" />;
-    case "error":
+    case AppToastTone.Error:
       return <WarningCircle className="text-destructive" />;
-    case "info":
+    case AppToastTone.Info:
       return <Info className="text-muted-foreground" />;
   }
 }

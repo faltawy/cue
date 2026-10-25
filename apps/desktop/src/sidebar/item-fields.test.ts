@@ -6,6 +6,8 @@ import {
   resolveSidebarItemMeta,
 } from "./item-fields";
 
+import { TimelineGroupBy } from "~/sidebar/enums";
+
 describe("parseSessionTagNames", () => {
   it("trims, dedupes, and sorts JSON tag names", () => {
     expect(
@@ -31,16 +33,30 @@ describe("parseSessionTagNames", () => {
 
 describe("resolveSidebarItemMeta", () => {
   it.each([
-    ["shows the folder by default", true, false, "date", "CS 101/week-3", []],
+    [
+      "shows the folder by default",
+      true,
+      false,
+      TimelineGroupBy.Date,
+      "CS 101/week-3",
+      [],
+    ],
     [
       "hides the folder when grouped by folder",
       true,
       true,
-      "folder",
+      TimelineGroupBy.Folder,
       "",
       ["launch"],
     ],
-    ["omits fields the user turned off", false, false, "date", "", []],
+    [
+      "omits fields the user turned off",
+      false,
+      false,
+      TimelineGroupBy.Date,
+      "",
+      [],
+    ],
   ] as const)("%s", (_, showFolder, showTags, groupBy, folder, tags) => {
     expect(
       resolveSidebarItemMeta({

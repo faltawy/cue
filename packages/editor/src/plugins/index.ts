@@ -4,6 +4,7 @@ export { clearMarksOnEnterPlugin } from "./clear-marks-on-enter";
 export {
   type CommentAnchorInput,
   type CommentAnchorsEvent,
+  CommentAnchorsEventType,
   commentAnchorsPlugin,
   commentAnchorsPluginKey,
   getCommentAnchorRanges,

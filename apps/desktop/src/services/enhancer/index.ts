@@ -1,6 +1,7 @@
 import type { LanguageModel } from "ai";
 
 import { hasSummaryContent, resolveSummaryDocument } from "@anlg/utils/session";
+import { SummaryEligibilitySkipCode } from "@anlg/utils/summary-eligibility";
 
 import { type EnhanceEligibilitySkipCode, getEligibility } from "./eligibility";
 import {
@@ -16,29 +17,38 @@ import {
 
 import { retryDatabaseLock } from "~/db/retry";
 import {
+  EnhanceFailureCode,
+  EnhanceResultType,
+  QueueEmptySummaryResultType,
+  EnhancerEventType,
+  AutoEnhanceMode,
+} from "~/services/enums";
+import {
   loadSessionContentSnapshot,
   type SessionContentSnapshot,
 } from "~/session/content-queries";
+import { TaskType, TaskStatus } from "~/store/zustand/ai-task/enums";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 import {
   isRetryableAIError,
   type TasksActions,
 } from "~/store/zustand/ai-task/tasks";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import { getTemplateById } from "~/templates/queries";
 
 type EnhanceResult =
-  | { type: "started"; noteId: string }
-  | { type: "already_active"; noteId: string }
-  | { type: "no_model" }
-  | { type: "too_short" };
+  | { type: EnhanceResultType.Started; noteId: string }
+  | { type: EnhanceResultType.AlreadyActive; noteId: string }
+  | { type: EnhanceResultType.NoModel }
+  | { type: EnhanceResultType.TooShort };
 
 type QueueEmptySummaryResult =
-  | { type: "queued" }
-  | { type: "summary_exists"; noteId: string };
+  | { type: QueueEmptySummaryResultType.Queued }
+  | { type: QueueEmptySummaryResultType.SummaryExists; noteId: string };
 
 // "refresh" regenerates an existing summary and otherwise behaves like "if_empty".
-export type AutoEnhanceMode = "regenerate" | "if_empty" | "refresh";
+export { AutoEnhanceMode };
 
 type EnhanceOpts = {
   isAuto?: boolean;
@@ -50,13 +60,17 @@ type EnhanceOpts = {
 
 type EnhancerEvent =
   | {
-      type: "auto-enhance-skipped";
+      type: EnhancerEventType.AutoEnhanceSkipped;
       sessionId: string;
       reason: string;
-      reasonCode: EnhanceEligibilitySkipCode | "error";
+      reasonCode: EnhanceEligibilitySkipCode | EnhanceFailureCode;
     }
-  | { type: "auto-enhance-started"; sessionId: string; noteId: string }
-  | { type: "auto-enhance-no-model"; sessionId: string };
+  | {
+      type: EnhancerEventType.AutoEnhanceStarted;
+      sessionId: string;
+      noteId: string;
+    }
+  | { type: EnhancerEventType.AutoEnhanceNoModel; sessionId: string };
 
 type EnhancerDeps = {
   aiTaskStore: {
@@ -143,7 +157,7 @@ export class EnhancerService {
     this.unsubscribe = listenerStore.subscribe((state) => {
       const { status, sessionId } = state.live;
 
-      if (status === "active" && sessionId) {
+      if (status === LiveSessionStatus.Active && sessionId) {
         this.activeAutoEnhance.delete(sessionId);
         this.clearRetry(sessionId);
       }
@@ -191,7 +205,7 @@ export class EnhancerService {
   async queueAutoEnhanceIfSummaryEmpty(
     sessionId: string,
   ): Promise<QueueEmptySummaryResult> {
-    return retryDatabaseLock(async () => {
+    return retryDatabaseLock(async (): Promise<QueueEmptySummaryResult> => {
       const snapshot = await this.loadSession(sessionId);
       const templateId = resolveTemplateId(
         undefined,
@@ -204,7 +218,10 @@ export class EnhancerService {
         existingNote &&
         hasSummaryContent(existingNote.content, snapshot.title)
       ) {
-        return { type: "summary_exists", noteId: existingNote.id };
+        return {
+          type: QueueEmptySummaryResultType.SummaryExists,
+          noteId: existingNote.id,
+        };
       }
 
       const eligibility = getEligibility(snapshot.transcripts);
@@ -222,17 +239,20 @@ export class EnhancerService {
         this.queueAutoEnhance(sessionId);
       }
 
-      return { type: "queued" };
+      return { type: QueueEmptySummaryResultType.Queued };
     });
   }
 
   async requestAutoEnhance(sessionId: string, mode: AutoEnhanceMode) {
-    if (mode === "refresh" && !(await this.hasGeneratingSummary(sessionId))) {
+    if (
+      mode === AutoEnhanceMode.Refresh &&
+      !(await this.hasGeneratingSummary(sessionId))
+    ) {
       const result = await this.queueAutoEnhanceIfSummaryEmpty(sessionId);
-      if (result.type !== "summary_exists") return;
+      if (result.type !== QueueEmptySummaryResultType.SummaryExists) return;
     }
 
-    if (mode !== "if_empty") {
+    if (mode !== AutoEnhanceMode.IfEmpty) {
       const pendingAutoEnhance = await retryDatabaseLock(async () => {
         const snapshot = await this.loadSession(sessionId);
         const selectedTemplateId = resolveTemplateId(
@@ -285,7 +305,10 @@ export class EnhancerService {
 
       for (const job of jobs) {
         const live = listenerStore.getState().live;
-        if (live.status === "active" && live.sessionId === job.sessionId) {
+        if (
+          live.status === LiveSessionStatus.Active &&
+          live.sessionId === job.sessionId
+        ) {
           continue;
         }
         const failure = this.autoEnhanceFailures.get(this.failureKey(job));
@@ -329,7 +352,7 @@ export class EnhancerService {
         await discardPendingAutoEnhanceJob(pendingJob);
       }
       this.emit({
-        type: "auto-enhance-skipped",
+        type: EnhancerEventType.AutoEnhanceSkipped,
         sessionId,
         reason: eligibility.reason,
         reasonCode: eligibility.code,
@@ -344,7 +367,7 @@ export class EnhancerService {
     });
     if (!this.activeAutoEnhance.has(sessionId)) return;
 
-    if (result.type === "too_short") {
+    if (result.type === EnhanceResultType.TooShort) {
       this.activeAutoEnhance.delete(sessionId);
       if (pendingAutoEnhance) {
         await discardPendingAutoEnhanceJob(pendingAutoEnhance);
@@ -352,18 +375,18 @@ export class EnhancerService {
       return;
     }
 
-    if (result.type === "no_model") {
+    if (result.type === EnhanceResultType.NoModel) {
       this.activeAutoEnhance.delete(sessionId);
       if (pendingAutoEnhance) {
         this.schedulePendingAutoEnhanceResume();
       }
-      this.emit({ type: "auto-enhance-no-model", sessionId });
+      this.emit({ type: EnhancerEventType.AutoEnhanceNoModel, sessionId });
       return;
     }
 
     this.activeAutoEnhance.delete(sessionId);
     this.emit({
-      type: "auto-enhance-started",
+      type: EnhancerEventType.AutoEnhanceStarted,
       sessionId,
       noteId: result.noteId,
     });
@@ -395,10 +418,10 @@ export class EnhancerService {
       await retryDatabaseLock(() => discardPendingAutoEnhanceJob(job));
       this.autoEnhanceFailures.delete(key);
       this.emit({
-        type: "auto-enhance-skipped",
+        type: EnhancerEventType.AutoEnhanceSkipped,
         sessionId,
         reason: "Could not generate the summary after repeated attempts.",
-        reasonCode: "error",
+        reasonCode: EnhanceFailureCode.Error,
       });
       return;
     }
@@ -421,10 +444,10 @@ export class EnhancerService {
     console.error("[enhancer] auto-enhance failed", error);
     this.schedulePendingAutoEnhanceResume();
     this.emit({
-      type: "auto-enhance-skipped",
+      type: EnhancerEventType.AutoEnhanceSkipped,
       sessionId,
       reason,
-      reasonCode: "error",
+      reasonCode: EnhanceFailureCode.Error,
     });
   }
 
@@ -442,8 +465,10 @@ export class EnhancerService {
       const { aiTaskStore } = this.deps;
       return snapshot.enhancedNotes.some(
         (note) =>
-          aiTaskStore.getState().getState(createTaskId(note.id, "enhance"))
-            ?.status === "generating",
+          aiTaskStore
+            .getState()
+            .getState(createTaskId(note.id, TaskType.Enhance))?.status ===
+          TaskStatus.Generating,
       );
     });
   }
@@ -453,7 +478,7 @@ export class EnhancerService {
       const snapshot = await this.loadSession(sessionId);
       const { aiTaskStore } = this.deps;
       for (const note of snapshot.enhancedNotes) {
-        aiTaskStore.getState().reset(createTaskId(note.id, "enhance"));
+        aiTaskStore.getState().reset(createTaskId(note.id, TaskType.Enhance));
       }
     });
   }
@@ -462,18 +487,21 @@ export class EnhancerService {
     const { aiTaskStore, getModel, getSelectedTemplateId } = this.deps;
 
     const model = getModel();
-    if (!model) return { type: "no_model" };
+    if (!model) return { type: EnhanceResultType.NoModel };
 
     const snapshot = await this.loadSession(sessionId);
     const eligibility = getEligibility(snapshot.transcripts);
-    if (!eligibility.eligible && eligibility.code === "transcript_too_short") {
+    if (
+      !eligibility.eligible &&
+      eligibility.code === SummaryEligibilitySkipCode.TranscriptTooShort
+    ) {
       this.emit({
-        type: "auto-enhance-skipped",
+        type: EnhancerEventType.AutoEnhanceSkipped,
         sessionId,
         reason: eligibility.reason,
         reasonCode: eligibility.code,
       });
-      return { type: "too_short" };
+      return { type: EnhanceResultType.TooShort };
     }
 
     let templateId = resolveTemplateId(
@@ -501,10 +529,10 @@ export class EnhancerService {
       pendingAutoEnhanceNote ??
       autoNote ??
       (await this.ensureNoteRecord(sessionId, templateId));
-    const enhanceTaskId = createTaskId(note.id, "enhance");
+    const enhanceTaskId = createTaskId(note.id, TaskType.Enhance);
     const existingTask = aiTaskStore.getState().getState(enhanceTaskId);
-    if (existingTask?.status === "generating") {
-      return { type: "already_active", noteId: note.id };
+    if (existingTask?.status === TaskStatus.Generating) {
+      return { type: EnhanceResultType.AlreadyActive, noteId: note.id };
     }
 
     if (targetNote) {
@@ -525,17 +553,17 @@ export class EnhancerService {
     }
 
     if (
-      existingTask?.status === "success" &&
+      existingTask?.status === TaskStatus.Success &&
       hasSummaryContent(note.content, snapshot.title)
     ) {
-      return { type: "already_active", noteId: note.id };
+      return { type: EnhanceResultType.AlreadyActive, noteId: note.id };
     }
 
     void aiTaskStore
       .getState()
       .generate(enhanceTaskId, {
         model,
-        taskType: "enhance",
+        taskType: TaskType.Enhance,
         args: {
           sessionId,
           enhancedNoteId: note.id,
@@ -554,7 +582,7 @@ export class EnhancerService {
       })
       .then(async () => {
         const taskState = aiTaskStore.getState().getState(enhanceTaskId);
-        if (taskState?.status === "error") {
+        if (taskState?.status === TaskStatus.Error) {
           if (opts?.pendingAutoEnhance && taskState.error) {
             if (isRetryableAIError(taskState.error)) {
               await this.recordAutoEnhanceFailure(
@@ -579,7 +607,7 @@ export class EnhancerService {
         );
       });
 
-    return { type: "started", noteId: note.id };
+    return { type: EnhanceResultType.Started, noteId: note.id };
   }
 
   async ensureNote(sessionId: string, templateId?: string): Promise<string> {

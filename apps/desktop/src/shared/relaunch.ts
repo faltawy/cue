@@ -3,6 +3,7 @@ import { relaunch as tauriRelaunch } from "@tauri-apps/plugin-process";
 import { commands as store2Commands } from "@anlg/plugin-store2";
 
 import { flushDatabaseWritesWithin } from "~/db/write-queue";
+import { AutomaticRelaunchResult } from "~/shared/enums";
 import { commands } from "~/types/tauri.gen";
 
 let pendingAutomaticRelaunch = false;
@@ -41,14 +42,14 @@ async function getOnboardingNeeded() {
 
 export async function scheduleAutomaticRelaunch(
   delayMs = 0,
-): Promise<"scheduled" | "deferred"> {
+): Promise<AutomaticRelaunchResult> {
   if (await getOnboardingNeeded()) {
     pendingAutomaticRelaunch = true;
-    return "deferred";
+    return AutomaticRelaunchResult.Deferred;
   }
 
   if (automaticRelaunchTimeout) {
-    return "scheduled";
+    return AutomaticRelaunchResult.Scheduled;
   }
 
   automaticRelaunchTimeout = setTimeout(() => {
@@ -56,7 +57,7 @@ export async function scheduleAutomaticRelaunch(
     void relaunch().catch(console.error);
   }, delayMs);
 
-  return "scheduled";
+  return AutomaticRelaunchResult.Scheduled;
 }
 
 export async function flushAutomaticRelaunch(): Promise<boolean> {

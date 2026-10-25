@@ -1,5 +1,7 @@
-import { commands as listenerCommands } from "@anlg/plugin-transcription";
-import type { CaptureLifecycleMarker } from "@anlg/plugin-transcription";
+import {
+  commands as listenerCommands,
+  type CaptureLifecycleMarker,
+} from "@anlg/plugin-transcription";
 
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 

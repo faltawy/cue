@@ -16,6 +16,8 @@ import {
   type SearchOptions,
 } from "./matching";
 
+import { NoteSearchAction } from "~/session/enums";
+
 interface SearchContextValue {
   query: string;
   isVisible: boolean;
@@ -55,22 +57,22 @@ interface SearchState {
 }
 
 type SearchAction =
-  | { type: "toggle_visible" }
-  | { type: "open_visible" }
-  | { type: "close" }
-  | { type: "set_query"; query: string }
-  | { type: "set_replace_query"; query: string }
-  | { type: "toggle_case_sensitive" }
-  | { type: "toggle_whole_word" }
-  | { type: "toggle_replace" }
+  | { type: NoteSearchAction.ToggleVisible }
+  | { type: NoteSearchAction.OpenVisible }
+  | { type: NoteSearchAction.Close }
+  | { type: NoteSearchAction.SetQuery; query: string }
+  | { type: NoteSearchAction.SetReplaceQuery; query: string }
+  | { type: NoteSearchAction.ToggleCaseSensitive }
+  | { type: NoteSearchAction.ToggleWholeWord }
+  | { type: NoteSearchAction.ToggleReplace }
   | {
-      type: "set_matches";
+      type: NoteSearchAction.SetMatches;
       totalMatches: number;
       currentMatchIndex: number;
       activeMatchId: string | null;
     }
   | {
-      type: "navigate";
+      type: NoteSearchAction.Navigate;
       currentMatchIndex: number;
       activeMatchId: string | null;
     };
@@ -89,32 +91,32 @@ const initialState: SearchState = {
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
-    case "toggle_visible":
+    case NoteSearchAction.ToggleVisible:
       return state.isVisible
         ? { ...initialState }
         : { ...state, isVisible: true };
-    case "open_visible":
+    case NoteSearchAction.OpenVisible:
       return { ...state, isVisible: true };
-    case "close":
+    case NoteSearchAction.Close:
       return { ...initialState };
-    case "set_query":
+    case NoteSearchAction.SetQuery:
       return { ...state, query: action.query };
-    case "set_replace_query":
+    case NoteSearchAction.SetReplaceQuery:
       return { ...state, replaceQuery: action.query };
-    case "toggle_case_sensitive":
+    case NoteSearchAction.ToggleCaseSensitive:
       return { ...state, caseSensitive: !state.caseSensitive };
-    case "toggle_whole_word":
+    case NoteSearchAction.ToggleWholeWord:
       return { ...state, wholeWord: !state.wholeWord };
-    case "toggle_replace":
+    case NoteSearchAction.ToggleReplace:
       return { ...state, showReplace: !state.showReplace };
-    case "set_matches":
+    case NoteSearchAction.SetMatches:
       return {
         ...state,
         totalMatches: action.totalMatches,
         currentMatchIndex: action.currentMatchIndex,
         activeMatchId: action.activeMatchId,
       };
-    case "navigate":
+    case NoteSearchAction.Navigate:
       return {
         ...state,
         currentMatchIndex: action.currentMatchIndex,
@@ -136,7 +138,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     "mod+f",
     (event) => {
       event.preventDefault();
-      dispatch({ type: "toggle_visible" });
+      dispatch({ type: NoteSearchAction.ToggleVisible });
     },
     {
       preventDefault: true,
@@ -150,8 +152,8 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     "mod+h",
     (event) => {
       event.preventDefault();
-      dispatch({ type: "open_visible" });
-      dispatch({ type: "toggle_replace" });
+      dispatch({ type: NoteSearchAction.OpenVisible });
+      dispatch({ type: NoteSearchAction.ToggleReplace });
     },
     {
       preventDefault: true,
@@ -164,7 +166,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
   useHotkeys(
     "esc",
     () => {
-      dispatch({ type: "close" });
+      dispatch({ type: NoteSearchAction.Close });
     },
     {
       preventDefault: true,
@@ -179,7 +181,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     if (!container || !state.query) {
       matchesRef.current = [];
       dispatch({
-        type: "set_matches",
+        type: NoteSearchAction.SetMatches,
         totalMatches: 0,
         currentMatchIndex: 0,
         activeMatchId: null,
@@ -190,7 +192,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     const matches = getMatchingElements(container, state.query, opts);
     matchesRef.current = matches;
     dispatch({
-      type: "set_matches",
+      type: NoteSearchAction.SetMatches,
       totalMatches: matches.length,
       currentMatchIndex: 0,
       activeMatchId: matches[0]?.id || null,
@@ -214,7 +216,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
 
     const nextIndex = (state.currentMatchIndex + 1) % matches.length;
     dispatch({
-      type: "navigate",
+      type: NoteSearchAction.Navigate,
       currentMatchIndex: nextIndex,
       activeMatchId: matches[nextIndex]?.id || null,
     });
@@ -231,7 +233,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     const prevIndex =
       (state.currentMatchIndex - 1 + matches.length) % matches.length;
     dispatch({
-      type: "navigate",
+      type: NoteSearchAction.Navigate,
       currentMatchIndex: prevIndex,
       activeMatchId: matches[prevIndex]?.id || null,
     });
@@ -269,13 +271,16 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
       replaceQuery: state.replaceQuery,
       onNext,
       onPrev,
-      close: () => dispatch({ type: "close" }),
-      setQuery: (query: string) => dispatch({ type: "set_query", query }),
-      toggleCaseSensitive: () => dispatch({ type: "toggle_case_sensitive" }),
-      toggleWholeWord: () => dispatch({ type: "toggle_whole_word" }),
-      toggleReplace: () => dispatch({ type: "toggle_replace" }),
+      close: () => dispatch({ type: NoteSearchAction.Close }),
+      setQuery: (query: string) =>
+        dispatch({ type: NoteSearchAction.SetQuery, query }),
+      toggleCaseSensitive: () =>
+        dispatch({ type: NoteSearchAction.ToggleCaseSensitive }),
+      toggleWholeWord: () =>
+        dispatch({ type: NoteSearchAction.ToggleWholeWord }),
+      toggleReplace: () => dispatch({ type: NoteSearchAction.ToggleReplace }),
       setReplaceQuery: (query: string) =>
-        dispatch({ type: "set_replace_query", query }),
+        dispatch({ type: NoteSearchAction.SetReplaceQuery, query }),
     }),
     [state, onNext, onPrev],
   );

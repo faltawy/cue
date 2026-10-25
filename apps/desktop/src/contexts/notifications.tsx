@@ -22,6 +22,7 @@ import { useConfigValues } from "~/shared/config";
 import type { DownloadProgress } from "~/sidebar/toast/types";
 import { usePendingSttSelection } from "~/store/zustand/pending-stt-selection";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType, SettingsTab } from "~/store/zustand/tabs/enums";
 import { isConfiguredSttModel, isOnDeviceSttModel } from "~/stt/capabilities";
 import { localSttQueries } from "~/stt/useLocalSttModel";
 
@@ -159,8 +160,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }) => state.currentTab,
   );
   const isAiTab =
-    currentTab?.type === "settings" &&
-    currentTab.state?.tab === "transcription";
+    currentTab?.type === TabType.Settings &&
+    currentTab.state?.tab === SettingsTab.Transcription;
 
   const value = useMemo<NotificationState>(() => {
     const hasActiveBanner = hasConfigBanner && !isAiTab;

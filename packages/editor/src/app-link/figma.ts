@@ -1,12 +1,15 @@
-export type FigmaLinkKind =
-  | "board"
-  | "design"
-  | "file"
-  | "prototype"
-  | "slides";
+import { AppLinkProvider } from "./provider";
+
+export enum FigmaLinkKind {
+  Board = "board",
+  Design = "design",
+  File = "file",
+  Prototype = "prototype",
+  Slides = "slides",
+}
 
 export interface FigmaAttrs {
-  provider: "figma";
+  provider: AppLinkProvider.Figma;
   kind: FigmaLinkKind;
   url: string;
   resourceId?: string;
@@ -15,14 +18,14 @@ export interface FigmaAttrs {
 
 function getKindLabel(kind: FigmaLinkKind): string {
   switch (kind) {
-    case "board":
+    case FigmaLinkKind.Board:
       return "FigJam board";
-    case "design":
-    case "file":
+    case FigmaLinkKind.Design:
+    case FigmaLinkKind.File:
       return "Design file";
-    case "prototype":
+    case FigmaLinkKind.Prototype:
       return "Prototype";
-    case "slides":
+    case FigmaLinkKind.Slides:
       return "Slides";
   }
 }

@@ -21,6 +21,8 @@ import {
 } from "./queries";
 import { ContactFacehash } from "./shared";
 
+import { ContactType } from "~/contacts/enums";
+
 export function OrganizationDetailsColumn({
   organization,
   humans,
@@ -56,20 +58,22 @@ export function OrganizationDetailsColumn({
             showCompactIdentity={showCompactIdentity}
             pinned={Boolean(organization.pinned)}
             onTogglePin={() => {
-              void toggleContactPin("organization", organization.id).catch(
-                (error) => {
-                  console.error(
-                    "[contacts] failed to toggle contact pin",
-                    error,
-                  );
-                },
-              );
+              void toggleContactPin(
+                ContactType.Organization,
+                organization.id,
+              ).catch((error) => {
+                console.error("[contacts] failed to toggle contact pin", error);
+              });
             }}
             onDelete={() => onDelete(organization.id)}
             onRemoveAvatar={
               organization.avatarDataUrl
                 ? () => {
-                    persistContactAvatar("organization", organization.id, null);
+                    persistContactAvatar(
+                      ContactType.Organization,
+                      organization.id,
+                      null,
+                    );
                   }
                 : undefined
             }
@@ -86,7 +90,7 @@ export function OrganizationDetailsColumn({
                 label={t`Change photo`}
                 onUpload={(dataUrl) => {
                   persistContactAvatar(
-                    "organization",
+                    ContactType.Organization,
                     organization.id,
                     dataUrl,
                   );

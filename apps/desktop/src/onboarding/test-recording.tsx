@@ -1,12 +1,14 @@
 import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 
+import { LinkedItemOpenBehavior } from "@anlg/editor/note";
 import { Button } from "@anlg/ui/components/ui/button";
 
 import { createSession } from "~/session/queries";
 import { softDeleteSession } from "~/session/queries/deletion";
 import { openSessionAndListen } from "~/shared/useNewNote";
 import { DEFAULT_USER_ID } from "~/shared/utils";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { useListener } from "~/stt/contexts";
 
 const TEST_RECORDING_ID = "cue-onboarding-test-recording-v1";
@@ -18,7 +20,7 @@ export function TestRecordingSection() {
     (state) =>
       Boolean(sessionId) &&
       state.live.sessionId === sessionId &&
-      state.live.status !== "inactive",
+      state.live.status !== LiveSessionStatus.Inactive,
   );
 
   const startTestRecording = async () => {
@@ -38,7 +40,7 @@ export function TestRecordingSection() {
         event_json: JSON.stringify(event),
       });
       setSessionId(id);
-      openSessionAndListen(id, { behavior: "new" });
+      openSessionAndListen(id, { behavior: LinkedItemOpenBehavior.New });
     } catch (error) {
       console.error("[onboarding] failed to start a test recording", error);
     } finally {

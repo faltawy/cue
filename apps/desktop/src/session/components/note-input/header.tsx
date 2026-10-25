@@ -2,7 +2,9 @@ import { useLingui } from "@lingui/react/macro";
 
 import { segmentedTrackClassName } from "@anlg/ui/components/ui/segmented";
 import { cn } from "@anlg/utils";
-import { createEditorTabs } from "@anlg/utils/session";
+import { SessionNoteViewType, createEditorTabs } from "@anlg/utils/session";
+
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 
 export { createEditorTabs } from "@anlg/utils/session";
 
@@ -43,8 +45,10 @@ export function SessionViewSwitcher({
 }) {
   const { t } = useLingui();
   const primaryEnhancedTabId = editorTabs.find(
-    (view): view is Extract<EditorView, { type: "enhanced" }> =>
-      view.type === "enhanced",
+    (
+      view,
+    ): view is Extract<EditorView, { type: SessionNoteViewType.Enhanced }> =>
+      view.type === SessionNoteViewType.Enhanced,
   )?.id;
   const shouldUseViewSwitcher = editorTabs.length > 1;
 
@@ -63,7 +67,7 @@ export function SessionViewSwitcher({
       ])}
     >
       {editorTabs.map((view, index) => {
-        if (view.type === "enhanced") {
+        if (view.type === SessionNoteViewType.Enhanced) {
           return (
             <HeaderViewEnhanced
               key={`enhanced-${view.id}`}
@@ -75,7 +79,7 @@ export function SessionViewSwitcher({
                   ? () => {
                       const previousView = editorTabs[index - 1];
                       if (
-                        currentTab.type === "enhanced" &&
+                        currentTab.type === SessionNoteViewType.Enhanced &&
                         currentTab.id === view.id &&
                         previousView
                       ) {
@@ -92,17 +96,21 @@ export function SessionViewSwitcher({
                   : undefined
               }
               onSelectNote={(enhancedNoteId) =>
-                handleTabChange({ type: "enhanced", id: enhancedNoteId })
+                handleTabChange({
+                  type: SessionNoteViewType.Enhanced,
+                  id: enhancedNoteId,
+                })
               }
               isActive={
-                currentTab.type === "enhanced" && currentTab.id === view.id
+                currentTab.type === SessionNoteViewType.Enhanced &&
+                currentTab.id === view.id
               }
               onClick={() => handleTabChange(view)}
             />
           );
         }
 
-        if (view.type === "raw") {
+        if (view.type === SessionNoteViewType.Raw) {
           return (
             <HeaderViewRaw
               key={view.type}
@@ -114,7 +122,7 @@ export function SessionViewSwitcher({
           );
         }
 
-        if (view.type === "transcript") {
+        if (view.type === SessionNoteViewType.Transcript) {
           return (
             <HeaderViewTranscript
               key={view.type}
@@ -146,7 +154,7 @@ export function useEditorTabs({
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
   const enhancedNoteIds = useEnhancedNotes(
     sessionId,
-    hasTranscript && sessionMode === "inactive",
+    hasTranscript && sessionMode === LiveSessionStatus.Inactive,
   );
 
   return createEditorTabs({

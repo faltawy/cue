@@ -1,7 +1,9 @@
 import { useSyncExternalStore } from "react";
 
+import { PromptMode, ScanEventKind, ScanSeverity } from "~/devtools-bar/enums";
+
 // Plain data only. The release renderer must never import React Scan's runtime.
-export type PromptMode = "fix" | "explanation" | "data";
+export { PromptMode };
 type ScanComponent = Readonly<{
   name: string;
   renders: number;
@@ -12,12 +14,12 @@ type ScanComponent = Readonly<{
 }>;
 export type ScanEvent = Readonly<{
   id: string;
-  kind: "interaction" | "dropped-frames";
+  kind: ScanEventKind;
   label: string;
   timestamp: number;
   duration: number;
   fps: number | null;
-  severity: "low" | "needs-improvement" | "high";
+  severity: ScanSeverity;
   path: readonly string[];
   timings: readonly Readonly<{ label: string; time: number }>[];
   components: readonly ScanComponent[];

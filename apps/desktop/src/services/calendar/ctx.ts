@@ -1,8 +1,8 @@
-import { commands as calendarCommands } from "@anlg/plugin-calendar";
-import type {
-  CalendarListItem,
-  CalendarProviderType,
-  ProviderConnectionIds,
+import {
+  commands as calendarCommands,
+  type CalendarListItem,
+  type CalendarProviderType,
+  type ProviderConnectionIds,
 } from "@anlg/plugin-calendar";
 
 import { applyCalendarInventory, loadEnabledCalendars } from "./storage";

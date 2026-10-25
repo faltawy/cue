@@ -1,3 +1,4 @@
+import { ContactNameSource } from "~/contacts/enums";
 const PERSONAL_EMAIL_DOMAINS = new Set([
   "gmail.com",
   "googlemail.com",
@@ -68,7 +69,7 @@ const SECOND_LEVEL_SUFFIX_LABELS = new Set([
 
 export type DerivedContactIdentity = {
   name: string;
-  nameSource: "provider" | "email";
+  nameSource: ContactNameSource;
   companyName?: string;
 };
 
@@ -83,7 +84,9 @@ export function deriveContactIdentity({
   const providedName = isLikelyPersonName(trimmedName);
   const derived: DerivedContactIdentity = {
     name: providedName ? trimmedName : nameFromEmailLocalPart(email) || email,
-    nameSource: providedName ? "provider" : "email",
+    nameSource: providedName
+      ? ContactNameSource.Provider
+      : ContactNameSource.Email,
   };
   const companyName = inferCompanyNameFromEmail(email);
   if (companyName) {

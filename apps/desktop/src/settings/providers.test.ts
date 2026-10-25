@@ -3,6 +3,8 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AIProviderType } from "@anlg/provider-validation";
+
 const mocks = vi.hoisted(() => ({
   execute: vi.fn(),
   verify: vi.fn<
@@ -29,7 +31,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@tauri-apps/plugin-http", () => ({ fetch: mocks.fetch }));
 
-vi.mock("@anlg/provider-validation", () => ({
+vi.mock("@anlg/provider-validation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anlg/provider-validation")>()),
   verifyProviderCredentials: mocks.verify,
 }));
 
@@ -89,7 +92,10 @@ describe("SQLite AI providers", () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children);
     const { result } = renderHook(
-      () => useSetAiProvider("stt", "openai", { verifyCredentials: true }),
+      () =>
+        useSetAiProvider(AIProviderType.Stt, "openai", {
+          verifyCredentials: true,
+        }),
       { wrapper },
     );
     const draft = { base_url: "https://api.openai.com/v1", api_key: "invalid" };
@@ -116,7 +122,10 @@ describe("SQLite AI providers", () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children);
     const { result, unmount } = renderHook(
-      () => useSetAiProvider("stt", "custom", { verifyCredentials: true }),
+      () =>
+        useSetAiProvider(AIProviderType.Stt, "custom", {
+          verifyCredentials: true,
+        }),
       { wrapper },
     );
     await result.current.mutateAsync({
@@ -154,7 +163,10 @@ describe("SQLite AI providers", () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children);
     const { result, unmount } = renderHook(
-      () => useSetAiProvider("stt", "openai", { verifyCredentials: true }),
+      () =>
+        useSetAiProvider(AIProviderType.Stt, "openai", {
+          verifyCredentials: true,
+        }),
       { wrapper },
     );
     const draft = {
@@ -205,7 +217,7 @@ describe("SQLite AI providers", () => {
         createElement(QueryClientProvider, { client: queryClient }, children);
       const { result } = renderHook(
         () =>
-          useSetAiProvider("stt", "openai", {
+          useSetAiProvider(AIProviderType.Stt, "openai", {
             verifyCredentials: true,
             defaultBaseUrl: "https://api.openai.com/v1",
           }),
@@ -257,9 +269,12 @@ describe("SQLite AI providers", () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children);
 
-    const { result } = renderHook(() => useAiProvidersState("stt"), {
-      wrapper,
-    });
+    const { result } = renderHook(
+      () => useAiProvidersState(AIProviderType.Stt),
+      {
+        wrapper,
+      },
+    );
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isReady).toBe(false);
@@ -299,7 +314,7 @@ describe("SQLite AI providers", () => {
           }),
         },
       ],
-      "stt",
+      AIProviderType.Stt,
     );
 
     expect(providers["stt:openai"]).toEqual({
@@ -326,7 +341,7 @@ describe("SQLite AI providers", () => {
       },
     ]);
 
-    await setAiProvider("stt", "deepgram", { api_key: "new-key" });
+    await setAiProvider(AIProviderType.Stt, "deepgram", { api_key: "new-key" });
 
     const statement = mocks.executeTransaction.mock.calls[0][0].find(
       (candidate) => candidate.sql.includes("INSERT INTO app_settings"),
@@ -374,7 +389,7 @@ describe("SQLite AI providers", () => {
       data: "gemini-key",
     });
 
-    await clearAiProvider("stt", "google");
+    await clearAiProvider(AIProviderType.Stt, "google");
 
     expect(mocks.deleteSecret).toHaveBeenCalledWith(
       "ai-provider-api-keys",
@@ -418,7 +433,7 @@ describe("SQLite AI providers", () => {
       .mockResolvedValueOnce([0])
       .mockResolvedValueOnce([1]);
 
-    await setAiProvider("stt", "openai", { api_key: "new-key" });
+    await setAiProvider(AIProviderType.Stt, "openai", { api_key: "new-key" });
 
     const statement = mocks.executeTransaction.mock.calls[1][0][0];
     expect(JSON.parse(String(statement.params[0]))).toEqual({
@@ -442,7 +457,7 @@ describe("SQLite AI providers", () => {
     mocks.executeTransaction.mockResolvedValue([0]);
 
     await expect(
-      setAiProvider("stt", "openai", { api_key: "new-key" }),
+      setAiProvider(AIProviderType.Stt, "openai", { api_key: "new-key" }),
     ).rejects.toThrow("changed too frequently");
 
     expect(mocks.setSecret).toHaveBeenCalledWith(
@@ -462,7 +477,10 @@ describe("SQLite AI providers", () => {
       data: "deepgram-key",
     });
 
-    const apiKeys = await loadSecureAiProviderApiKeys(["stt:deepgram"], "stt");
+    const apiKeys = await loadSecureAiProviderApiKeys(
+      ["stt:deepgram"],
+      AIProviderType.Stt,
+    );
 
     expect(apiKeys).toEqual({ "stt:deepgram": "deepgram-key" });
     expect(mocks.getSecret).toHaveBeenCalledWith(
@@ -489,7 +507,9 @@ describe("SQLite AI providers", () => {
       data: "anthropic-key",
     });
 
-    await expect(getStoredAiProvider("stt", "anthropic")).resolves.toEqual({
+    await expect(
+      getStoredAiProvider(AIProviderType.Stt, "anthropic"),
+    ).resolves.toEqual({
       type: "stt",
       base_url: "https://api.anthropic.com/v1",
       api_key: "anthropic-key",

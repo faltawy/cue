@@ -1,3 +1,9 @@
+export enum RestartKind {
+  Now = "now",
+  Later = "later",
+  Stop = "stop",
+}
+
 export class MissingConversationError extends Error {
   constructor(readonly sessionId: string) {
     super(`Saved conversation ${sessionId} is no longer available.`);
@@ -24,18 +30,18 @@ export const RESTART: RestartPolicy = {
 };
 
 export type Restart =
-  | { kind: "now" }
-  | { kind: "later"; delayMs: number }
-  | { kind: "stop" };
+  | { kind: RestartKind.Now }
+  | { kind: RestartKind.Later; delayMs: number }
+  | { kind: RestartKind.Stop };
 
 export function restartAfter(
   failures: number,
   policy: RestartPolicy = RESTART,
 ): Restart {
-  if (failures >= policy.maxFailures) return { kind: "stop" };
-  if (failures <= 1) return { kind: "now" };
+  if (failures >= policy.maxFailures) return { kind: RestartKind.Stop };
+  if (failures <= 1) return { kind: RestartKind.Now };
   return {
-    kind: "later",
+    kind: RestartKind.Later,
     delayMs: Math.min(policy.capMs, policy.baseMs * 2 ** (failures - 2)),
   };
 }
@@ -150,12 +156,12 @@ export class Supervisor<M> {
     }
     const message = input.failure ?? "The coach runtime exited unexpectedly.";
     const next = restartAfter(this.failures, this.policy);
-    if (next.kind === "stop") {
+    if (next.kind === RestartKind.Stop) {
       this.deps.gaveUp(message);
       return;
     }
     this.deps.failed(message);
-    if (next.kind === "now") {
+    if (next.kind === RestartKind.Now) {
       this.deps.restart();
       return;
     }

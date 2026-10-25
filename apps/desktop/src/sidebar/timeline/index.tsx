@@ -40,11 +40,15 @@ import { useTimelineTables } from "~/calendar/queries";
 import { useDeleteSession } from "~/session/hooks/useDeleteSession";
 import { useConfigValue } from "~/shared/config";
 import { scrollElementByWheel } from "~/shared/dom/scroll-wheel";
+import { EmptyStateSize } from "~/shared/enums";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
 import { EmptyState } from "~/shared/ui/empty-state";
+import { TimelineGroupBy, TimelineNavigationDirection } from "~/sidebar/enums";
 import { useSidebarNotes } from "~/sidebar/note-filter";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { useTimelineSelection } from "~/store/zustand/timeline-selection";
 import { useListener } from "~/stt/contexts";
 
@@ -69,7 +73,7 @@ export const TimelineView = memo(function TimelineView({
   const groupBy = useSidebarNotes((state) => state.groupBy);
   const sortOrder = useSidebarNotes((state) => state.sortOrder);
   const tagFilter = useSidebarNotes((state) => state.tagFilter);
-  const isDateTimeline = groupBy === "date";
+  const isDateTimeline = groupBy === TimelineGroupBy.Date;
   const [uncontrolledShowIgnored, setUncontrolledShowIgnored] = useState(false);
   const showIgnored = showIgnoredEvents ?? uncontrolledShowIgnored;
   const [isScrolledToTop, setIsScrolledToTop] = useState(true);
@@ -117,7 +121,8 @@ export const TimelineView = memo(function TimelineView({
     [],
   );
   const activeSessionId = useListener((state) =>
-    state.live.status === "active" || state.live.status === "finalizing"
+    state.live.status === LiveSessionStatus.Active ||
+    state.live.status === LiveSessionStatus.Finalizing
       ? state.live.sessionId
       : null,
   );
@@ -135,7 +140,7 @@ export const TimelineView = memo(function TimelineView({
   const currentTab = useTabs((state) => state.currentTab);
 
   const selectedSessionId = useMemo(() => {
-    return currentTab?.type === "sessions" ? currentTab.id : undefined;
+    return currentTab?.type === TabType.Sessions ? currentTab.id : undefined;
   }, [currentTab]);
 
   const selectedIds = useTimelineSelection((s) => s.selectedIds);
@@ -261,7 +266,7 @@ export const TimelineView = memo(function TimelineView({
         selectedSessionScrollFrameRef.current = null;
       }
 
-      if (!node || currentTab?.type !== "sessions") {
+      if (!node || currentTab?.type !== TabType.Sessions) {
         return;
       }
 
@@ -519,7 +524,7 @@ export const TimelineView = memo(function TimelineView({
             buckets={buckets}
             emptyTodayLabel={
               <EmptyState
-                size="list"
+                size={EmptyStateSize.List}
                 title={<Trans>No notes or meetings today</Trans>}
                 description={
                   <Trans>Your notes and scheduled meetings appear here.</Trans>
@@ -591,7 +596,7 @@ export const TimelineView = memo(function TimelineView({
             {showTopNowChip && (
               <TimelineNowChip
                 ariaLabel={t`Go back to now`}
-                direction="up"
+                direction={TimelineNavigationDirection.Up}
                 onClick={scrollToToday}
               >
                 <Trans>Now</Trans>
@@ -607,7 +612,7 @@ export const TimelineView = memo(function TimelineView({
             <TimelineNowChip
               ariaLabel={t`Go back to now`}
               onClick={scrollToToday}
-              direction="down"
+              direction={TimelineNavigationDirection.Down}
               className={cn([
                 "absolute bottom-2 left-1/2 -translate-x-1/2 transform",
                 "z-40",

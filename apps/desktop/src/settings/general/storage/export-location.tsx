@@ -9,6 +9,7 @@ import { Button } from "@anlg/ui/components/ui/button";
 
 import { displayPath } from "./path-utils";
 
+import { ExportLocationAction } from "~/settings/enums";
 import {
   setSettingValue,
   useStoredSettingValuesQuery,
@@ -26,8 +27,8 @@ export function ExportLocationRow() {
   });
   const path = directory || downloads.data;
   const changeMutation = useMutation({
-    mutationFn: async (action: "choose" | "reset") => {
-      if (action === "reset") {
+    mutationFn: async (action: ExportLocationAction) => {
+      if (action === ExportLocationAction.Reset) {
         await setSettingValue("export_directory", "");
         return;
       }
@@ -76,7 +77,7 @@ export function ExportLocationRow() {
           variant="outline"
           className="shrink-0"
           disabled={disabled}
-          onClick={() => changeMutation.mutate("choose")}
+          onClick={() => changeMutation.mutate(ExportLocationAction.Choose)}
         >
           {changeMutation.isPending && (
             <CircleNotch className="animate-spin" aria-hidden="true" />
@@ -91,7 +92,7 @@ export function ExportLocationRow() {
           size="sm"
           className="mt-1"
           disabled={disabled}
-          onClick={() => changeMutation.mutate("reset")}
+          onClick={() => changeMutation.mutate(ExportLocationAction.Reset)}
         >
           <Trans>Reset to Downloads</Trans>
         </Button>

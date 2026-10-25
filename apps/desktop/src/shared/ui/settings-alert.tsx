@@ -3,17 +3,19 @@ import type { MouseEvent } from "react";
 import { toast, TOAST_DURATIONS } from "@anlg/ui/components/ui/toast";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
+import { AlertVariant, AlertLifecycle } from "~/sidebar/enums";
+
 export function SettingsAlertToast({
   id,
   description,
-  variant = "default",
+  variant = AlertVariant.Default,
   lifecycle,
   action,
 }: {
   id: string;
   description?: string;
-  variant?: "default" | "error" | "warning";
-  lifecycle: "condition-bound" | "persistent";
+  variant?: AlertVariant;
+  lifecycle: AlertLifecycle;
   action?: {
     label: string;
     onClick: () => void | Promise<void>;
@@ -44,18 +46,19 @@ function SettingsAlertToastLifecycle({
 }: {
   id: string;
   description: string;
-  variant: "default" | "error" | "warning";
-  lifecycle: "condition-bound" | "persistent";
+  variant: AlertVariant;
+  lifecycle: AlertLifecycle;
   action?: {
     label: string;
     onClick: () => void | Promise<void>;
   };
 }) {
   useMountEffect(() => {
-    const dismissible = lifecycle === "persistent";
+    const dismissible = lifecycle === AlertLifecycle.Persistent;
     const options = {
       id,
-      duration: variant === "error" ? TOAST_DURATIONS.error : Infinity,
+      duration:
+        variant === AlertVariant.Error ? TOAST_DURATIONS.error : Infinity,
       dismissible,
       closeButton: dismissible,
       ...(action
@@ -71,9 +74,9 @@ function SettingsAlertToastLifecycle({
         : {}),
     };
 
-    if (variant === "error") {
+    if (variant === AlertVariant.Error) {
       toast.error(description, options);
-    } else if (variant === "warning") {
+    } else if (variant === AlertVariant.Warning) {
       toast.warning(description, options);
     } else {
       toast.message(description, options);

@@ -7,6 +7,7 @@ import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { restoreDeletedSession } from "~/session/queries";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { UNDO_TIMEOUT_MS, useUndoDelete } from "~/store/zustand/undo-delete";
 
 type ToastGroup = {
@@ -109,7 +110,7 @@ function useRestoreGroup() {
               pending.onDeleteConfirm ?? undefined,
               pending.batchId ?? undefined,
             );
-            invalidateResource("sessions", pending.data.session.id);
+            invalidateResource(TabType.Sessions, pending.data.session.id);
           }
         }
       })();

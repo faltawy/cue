@@ -20,11 +20,19 @@ import {
   useState,
 } from "react";
 
+import { ProjectSource } from "../../app-bridge";
 import { admitFiles, IMAGE_TYPES, MAX_IMAGES } from "../../image-limits";
-import type { StatusEvent } from "../../protocol";
+import { type StatusEvent } from "../../protocol";
 import { imageErrorMessage, type PreparedImage, prepareImage } from "../images";
 import { DictationPhase, useDictation } from "../use-dictation";
-import { cx, IconButton, Kbd } from "./primitives";
+import {
+  cx,
+  IconButton,
+  IconButtonTone,
+  Kbd,
+  TooltipAlign,
+  TooltipSide,
+} from "./primitives";
 
 type Attachment = { id: number; image: PreparedImage | null };
 
@@ -40,10 +48,17 @@ function useAttachments() {
     setError(rejected);
     const added = accepted.map((file) => ({ id: (nextId.current += 1), file }));
     count.current += added.length;
-    setEntries((current) => [...current, ...added.map(({ id }) => ({ id, image: null }))]);
+    setEntries((current) => [
+      ...current,
+      ...added.map(({ id }) => ({ id, image: null })),
+    ]);
     for (const { id, file } of added) {
       prepareImage(file)
-        .then((image) => setEntries((current) => current.map((entry) => (entry.id === id ? { id, image } : entry))))
+        .then((image) =>
+          setEntries((current) =>
+            current.map((entry) => (entry.id === id ? { id, image } : entry)),
+          ),
+        )
         .catch((failure: unknown) => {
           setEntries((current) => current.filter((entry) => entry.id !== id));
           setError(imageErrorMessage(failure));
@@ -52,7 +67,9 @@ function useAttachments() {
   }, []);
 
   return useMemo(() => {
-    const ready = entries.flatMap((entry) => (entry.image ? [entry.image] : []));
+    const ready = entries.flatMap((entry) =>
+      entry.image ? [entry.image] : [],
+    );
     return {
       entries,
       error,
@@ -65,35 +82,55 @@ function useAttachments() {
         setEntries((current) => current.filter((entry) => entry.id !== id));
       },
       take: () => {
-        const taken = entries.flatMap((entry) => (entry.image ? [{ id: entry.id, image: entry.image }] : []));
+        const taken = entries.flatMap((entry) =>
+          entry.image ? [{ id: entry.id, image: entry.image }] : [],
+        );
         setEntries([]);
         setError(null);
         return taken;
       },
-      restore: (taken: Array<{ id: number; image: PreparedImage }>) => setEntries((current) => [...taken, ...current]),
+      restore: (taken: Array<{ id: number; image: PreparedImage }>) =>
+        setEntries((current) => [...taken, ...current]),
     };
   }, [add, entries, error]);
 }
 
-function AttachmentStrip({ entries, onRemove }: { entries: readonly Attachment[]; onRemove(id: number): void }) {
+function AttachmentStrip({
+  entries,
+  onRemove,
+}: {
+  entries: readonly Attachment[];
+  onRemove(id: number): void;
+}) {
   return (
-    <ul className="flex flex-wrap gap-2 px-3 pt-2.5" aria-label="Attached images">
+    <ul
+      className="flex flex-wrap gap-2 px-3 pt-2.5"
+      aria-label="Attached images"
+    >
       {entries.map((entry, index) => (
-        <li key={entry.id} className="relative size-14 shrink-0" data-testid="attachment">
+        <li
+          key={entry.id}
+          className="relative size-14 shrink-0"
+          data-testid="attachment"
+        >
           {entry.image ? (
             <img
               src={entry.image.thumb}
               alt={`Attached image ${index + 1}`}
-              className="size-14 rounded-md border border-border object-cover"
+              className="border-border size-14 rounded-md border object-cover"
             />
           ) : (
-            <span role="status" aria-label="Preparing image" className="coach-skeleton block size-14 rounded-md" />
+            <span
+              role="status"
+              aria-label="Preparing image"
+              className="coach-skeleton block size-14 rounded-md"
+            />
           )}
           <button
             type="button"
             aria-label={`Remove image ${index + 1}`}
             onClick={() => onRemove(entry.id)}
-            className="absolute -end-1.5 -top-1.5 grid size-5 place-items-center rounded-full border border-border bg-surface text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground"
+            className="border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground absolute -end-1.5 -top-1.5 grid size-5 place-items-center rounded-full border transition-colors duration-100"
           >
             <X aria-hidden className="size-3" />
           </button>
@@ -205,7 +242,10 @@ export const Composer = forwardRef<
     dictation.cancel();
     const sent = attachments.take();
     setText("");
-    const ok = await onSubmit(trimmed, canAttach ? sent.map((entry) => entry.image) : []);
+    const ok = await onSubmit(
+      trimmed,
+      canAttach ? sent.map((entry) => entry.image) : [],
+    );
     if (!ok) {
       setText(trimmed);
       attachments.restore(sent);
@@ -221,8 +261,11 @@ export const Composer = forwardRef<
     attachments.add(files);
   };
 
-  const filesOf = (transfer: DataTransfer | null) => [...(transfer?.files ?? [])];
-  const carriesFiles = (transfer: DataTransfer | null) => [...(transfer?.types ?? [])].includes("Files");
+  const filesOf = (transfer: DataTransfer | null) => [
+    ...(transfer?.files ?? []),
+  ];
+  const carriesFiles = (transfer: DataTransfer | null) =>
+    [...(transfer?.types ?? [])].includes("Files");
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.nativeEvent.isComposing) return;
@@ -236,23 +279,31 @@ export const Composer = forwardRef<
       if (last) {
         event.preventDefault();
         setText(last);
-        requestAnimationFrame(() => input.current?.setSelectionRange(last.length, last.length));
+        requestAnimationFrame(() =>
+          input.current?.setSelectionRange(last.length, last.length),
+        );
       }
     }
   };
 
-  const showChips = chips.length > 0 && text === "" && attachments.entries.length === 0 && !busy && ready && !above;
+  const showChips =
+    chips.length > 0 &&
+    text === "" &&
+    attachments.entries.length === 0 &&
+    !busy &&
+    ready &&
+    !above;
 
   return (
     <div
       ref={dictation.lifecycle}
-      className="flex min-h-0 flex-col border-t border-border bg-surface px-3 pt-2.5 pb-3"
+      className="border-border bg-surface flex min-h-0 flex-col border-t px-3 pt-2.5 pb-3"
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[720px] flex-col">
         {above}
         {showChips && (
           <div
-            className="coach-fade-x -mx-3 mb-2 flex shrink-0 gap-1.5 overflow-x-auto px-3 [scrollbar-width:none]"
+            className="coach-fade-x -mx-3 mb-2 flex shrink-0 [scrollbar-width:none] gap-1.5 overflow-x-auto px-3"
             role="group"
             aria-label="Suggestions"
           >
@@ -262,7 +313,7 @@ export const Composer = forwardRef<
                 type="button"
                 onClick={() => void send(chip)}
                 dir="auto"
-                className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[12px] whitespace-nowrap text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground"
+                className="border-border text-muted-foreground hover:bg-muted hover:text-foreground shrink-0 rounded-full border px-2.5 py-1 text-[12px] whitespace-nowrap transition-colors duration-100"
               >
                 {chip}
               </button>
@@ -283,7 +334,11 @@ export const Composer = forwardRef<
           </p>
         )}
         {attachments.error && (
-          <p role="alert" dir="auto" className="coach-enter mb-1.5 flex items-start gap-1.5 text-[12px] text-destructive">
+          <p
+            role="alert"
+            dir="auto"
+            className="coach-enter text-destructive mb-1.5 flex items-start gap-1.5 text-[12px]"
+          >
             <AlertCircle aria-hidden className="mt-[2px] size-3.5 shrink-0" />
             <span className="min-w-0">{attachments.error}</span>
           </p>
@@ -300,7 +355,13 @@ export const Composer = forwardRef<
             setDragging(true);
           }}
           onDragLeave={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) {
+            if (
+              !event.currentTarget.contains(
+                event.relatedTarget instanceof Node
+                  ? event.relatedTarget
+                  : null,
+              )
+            ) {
               setDragging(false);
             }
           }}
@@ -312,7 +373,10 @@ export const Composer = forwardRef<
           }}
         >
           {attachments.entries.length > 0 && (
-            <AttachmentStrip entries={attachments.entries} onRemove={attachments.remove} />
+            <AttachmentStrip
+              entries={attachments.entries}
+              onRemove={attachments.remove}
+            />
           )}
           <label className="sr-only" htmlFor="coach-input">
             Ask the coach
@@ -335,7 +399,8 @@ export const Composer = forwardRef<
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             aria-keyshortcuts="Enter"
-            className="coach-scroll block w-full resize-none bg-transparent px-3 pt-2.5 pb-1 text-[14px] leading-[1.5] outline-none placeholder:text-muted-foreground focus-visible:outline-none"          />
+            className="coach-scroll placeholder:text-muted-foreground block w-full resize-none bg-transparent px-3 pt-2.5 pb-1 text-[14px] leading-[1.5] outline-none focus-visible:outline-none"
+          />
           <div className="flex items-center gap-1 px-1.5 pb-1.5">
             <ProjectMenu
               status={status}
@@ -360,7 +425,7 @@ export const Composer = forwardRef<
                 />
                 <IconButton
                   label="Attach images"
-                  tooltipSide="top"
+                  tooltipSide={TooltipSide.Top}
                   disabled={attachments.entries.length >= MAX_IMAGES}
                   onClick={() => picker.current?.click()}
                 >
@@ -371,12 +436,16 @@ export const Composer = forwardRef<
             <IconButton
               label="Hold to dictate"
               title="Hold to dictate. Mute your call first for a private question."
-              tooltipSide="top"
+              tooltipSide={TooltipSide.Top}
               disabled={!status?.appConnected || !!above}
               aria-keyshortcuts="Space Enter"
               aria-pressed={dictation.phase === DictationPhase.Listening}
               className="size-7 touch-none"
-              tone={dictation.phase === DictationPhase.Listening ? "primary" : "ghost"}
+              tone={
+                dictation.phase === DictationPhase.Listening
+                  ? IconButtonTone.Primary
+                  : IconButtonTone.Ghost
+              }
               onPointerDown={(event) => {
                 if (event.button !== 0) return;
                 event.preventDefault();
@@ -408,7 +477,7 @@ export const Composer = forwardRef<
               <Mic aria-hidden className="size-4" />
             </IconButton>
             {focused && !busy && (
-              <span className="mr-1 hidden items-center gap-1 text-[11px] text-muted-foreground min-[400px]:flex">
+              <span className="text-muted-foreground mr-1 hidden items-center gap-1 text-[11px] min-[400px]:flex">
                 <Kbd keys={["enter"]} /> send
               </span>
             )}
@@ -416,10 +485,10 @@ export const Composer = forwardRef<
               <IconButton
                 label="Stop"
                 shortcut={["esc"]}
-                tooltipSide="top"
-                tooltipAlign="end"
+                tooltipSide={TooltipSide.Top}
+                tooltipAlign={TooltipAlign.End}
                 onClick={onStop}
-                tone="primary"
+                tone={IconButtonTone.Primary}
               >
                 <Square aria-hidden className="size-3 fill-current" />
               </IconButton>
@@ -427,11 +496,11 @@ export const Composer = forwardRef<
               <IconButton
                 label={ready ? "Send" : "Waiting for the coach"}
                 shortcut={["enter"]}
-                tooltipSide="top"
-                tooltipAlign="end"
+                tooltipSide={TooltipSide.Top}
+                tooltipAlign={TooltipAlign.End}
                 disabled={!canSend}
                 onClick={() => void send(text)}
-                tone={canSend ? "primary" : "quiet"}
+                tone={canSend ? IconButtonTone.Primary : IconButtonTone.Quiet}
               >
                 <ArrowUp aria-hidden className="size-4" />
               </IconButton>
@@ -461,7 +530,12 @@ function ProjectMenu({
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
-      if (!root.current?.contains(event.target instanceof Node ? event.target : null)) setOpen(false);
+      if (
+        !root.current?.contains(
+          event.target instanceof Node ? event.target : null,
+        )
+      )
+        setOpen(false);
     };
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -472,16 +546,24 @@ function ProjectMenu({
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-      const items = [...(root.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]:not(:disabled)") ?? [])];
+      const items = [
+        ...(root.current?.querySelectorAll<HTMLButtonElement>(
+          "[role=menuitem]:not(:disabled)",
+        ) ?? []),
+      ];
       if (items.length === 0) return;
       event.preventDefault();
-      const current = items.findIndex((element) => element === document.activeElement);
+      const current = items.findIndex(
+        (element) => element === document.activeElement,
+      );
       const step = event.key === "ArrowDown" ? 1 : -1;
       items[(current + step + items.length) % items.length]?.focus();
     };
     document.addEventListener("mousedown", close);
     window.addEventListener("keydown", onKey, { capture: true });
-    root.current?.querySelector<HTMLButtonElement>("[role=menuitem]:not(:disabled)")?.focus();
+    root.current
+      ?.querySelector<HTMLButtonElement>("[role=menuitem]:not(:disabled)")
+      ?.focus();
     return () => {
       document.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", onKey, { capture: true });
@@ -490,13 +572,18 @@ function ProjectMenu({
 
   if (!status) return <span className="coach-skeleton ml-1 h-4 w-20" />;
   const { project } = status;
-  const series = project.source === "series";
+  const series = project.source === ProjectSource.Series;
   const triggerClass =
     "flex max-w-[180px] min-w-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors duration-100 hover:bg-muted hover:text-foreground";
 
   if (project.needsFolder) {
     return (
-      <button type="button" onClick={onChooseProject} title="Choose a project folder for the coach" className={triggerClass}>
+      <button
+        type="button"
+        onClick={onChooseProject}
+        title="Choose a project folder for the coach"
+        className={triggerClass}
+      >
         <Folder aria-hidden className="size-3.5 shrink-0" />
         <span className="truncate">No folder</span>
       </button>
@@ -511,10 +598,10 @@ function ProjectMenu({
         setOpen(false);
         run();
       }}
-      className="flex w-full min-w-0 flex-col rounded-md px-2 py-1.5 text-start hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+      className="hover:bg-muted focus-visible:bg-muted flex w-full min-w-0 flex-col rounded-md px-2 py-1.5 text-start focus-visible:outline-none"
     >
       <span className="text-[13px]">{label}</span>
-      <bdi dir="auto" className="truncate text-[12px] text-muted-foreground">
+      <bdi dir="auto" className="text-muted-foreground truncate text-[12px]">
         {detail}
       </bdi>
     </button>
@@ -542,38 +629,60 @@ function ProjectMenu({
           id={menuId}
           role="menu"
           aria-label="Project folder"
-          className="coach-enter absolute bottom-[calc(100%+6px)] left-0 z-20 w-[min(360px,calc(100vw-24px))] rounded-lg border border-border bg-surface p-1 shadow-lg"
+          className="coach-enter border-border bg-surface absolute bottom-[calc(100%+6px)] left-0 z-20 w-[min(360px,calc(100vw-24px))] rounded-lg border p-1 shadow-lg"
         >
           <div className="px-2 pt-1.5 pb-1">
             <p className="flex min-w-0 items-baseline gap-1 text-[13px]">
-              <span className="shrink-0 text-muted-foreground">Coach reads from</span>
-              <bdi dir="auto" className="min-w-0 truncate font-semibold" data-testid="project-folder">
+              <span className="text-muted-foreground shrink-0">
+                Coach reads from
+              </span>
+              <bdi
+                dir="auto"
+                className="min-w-0 truncate font-semibold"
+                data-testid="project-folder"
+              >
                 {folderName(project.path)}
               </bdi>
             </p>
             <p
-              className="mt-0.5 truncate text-left font-mono text-[11px] text-muted-foreground [direction:rtl]"
+              className="text-muted-foreground mt-0.5 truncate text-left font-mono text-[11px] [direction:rtl]"
               title={project.path}
             >
               <bdi dir="ltr">{project.path}</bdi>
             </p>
             {status.appConnected && project.series && (
-              <p className="mt-1 text-[12px] text-muted-foreground" data-testid="project-source">
+              <p
+                className="text-muted-foreground mt-1 text-[12px]"
+                data-testid="project-source"
+              >
                 {series ? "Set for this series" : "Default folder"}
               </p>
             )}
           </div>
-          <div className="my-1 h-px bg-border" />
+          <div className="bg-border my-1 h-px" />
           {!status.appConnected ? (
-            <p className="px-2 py-1.5 text-[12.5px] text-muted-foreground">Open the coach from Cue to change it.</p>
+            <p className="text-muted-foreground px-2 py-1.5 text-[12.5px]">
+              Open the coach from Cue to change it.
+            </p>
           ) : !project.series ? (
-            <p className="px-2 py-1.5 text-[12.5px] text-muted-foreground">
-              {status.meeting ? "This meeting isn't part of a series." : "You can change it once a meeting starts."}
+            <p className="text-muted-foreground px-2 py-1.5 text-[12.5px]">
+              {status.meeting
+                ? "This meeting isn't part of a series."
+                : "You can change it once a meeting starts."}
             </p>
           ) : (
             <>
-              {item("Choose folder for this series…", project.series, onChooseFolder)}
-              {series && item("Use default folder", folderName(project.defaultProject), onDefaultFolder)}
+              {item(
+                "Choose folder for this series…",
+                project.series,
+                onChooseFolder,
+              )}
+              {series &&
+                item(
+                  "Use default folder",
+                  folderName(project.defaultProject),
+                  onDefaultFolder,
+                )}
             </>
           )}
         </div>

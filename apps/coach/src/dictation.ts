@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-import { type AppBridge, BridgeError } from "./app-bridge";
+import { type AppBridge, BridgeError, DictationAction } from "./app-bridge";
 
 const inputSchema = z.object({
   recording_id: z.uuid(),
-  action: z.enum(["start", "stop", "cancel"]),
+  action: z.enum(DictationAction),
 });
 
 export function dictationHandler(bridge: Pick<AppBridge, "dictation"> | null) {

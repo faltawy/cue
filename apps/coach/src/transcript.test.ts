@@ -6,14 +6,16 @@ import { meetingChange, meetingPointer } from "./meeting-state";
 import {
   foldDeltas,
   type LiveDelta,
+  ParticipantResolutionStatus,
   readLiveTranscript,
   readMeetingInfo,
   readMeetingStatus,
   readSelfName,
   readTranscriptEditContext,
-  resolveMeetingParticipant,
   renderTranscript,
+  resolveMeetingParticipant,
   toLines,
+  TranscriptEditStatus,
   type Word,
 } from "./transcript";
 
@@ -335,7 +337,7 @@ describe("readTranscriptEditContext", () => {
     );
 
     expect(readTranscriptEditContext(db, "s1")).toEqual({
-      status: "ready",
+      status: TranscriptEditStatus.Ready,
       lines: [
         {
           start_ms: 0,
@@ -349,7 +351,7 @@ describe("readTranscriptEditContext", () => {
       ],
     });
     expect(readTranscriptEditContext(db, "s2")).toEqual({
-      status: "live",
+      status: TranscriptEditStatus.Live,
       speakers: [{ channel: 1, speaker_index: 2, speaker: "Speaker 3" }],
     });
   });
@@ -372,15 +374,15 @@ describe("resolveMeetingParticipant", () => {
       readMeetingInfo(db, "s1")?.participants.map((person) => person.name),
     ).toEqual(["Ada", "Sara", "Sara"]);
     expect(resolveMeetingParticipant(db, "s1", " ada ")).toEqual({
-      status: "resolved",
+      status: ParticipantResolutionStatus.Resolved,
       humanId: "ada",
       name: "Ada",
     });
     expect(resolveMeetingParticipant(db, "s1", "Sara")).toEqual({
-      status: "ambiguous",
+      status: ParticipantResolutionStatus.Ambiguous,
     });
     expect(resolveMeetingParticipant(db, "s1", "Omar")).toEqual({
-      status: "not_found",
+      status: ParticipantResolutionStatus.NotFound,
     });
   });
 });

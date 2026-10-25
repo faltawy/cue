@@ -1,10 +1,11 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { type MouseEvent, useRef, useState } from "react";
 
-import { Check, DotsThree } from "@anlg/ui/components/icons";
+import { IconWeight, Check, DotsThree } from "@anlg/ui/components/icons";
 import { Skeleton } from "@anlg/ui/components/ui/skeleton";
 import { cn } from "@anlg/utils";
 
+import { EmptyStateSize } from "~/shared/enums";
 import {
   type MenuItemDef,
   useNativeContextMenu,
@@ -70,7 +71,7 @@ export function CalendarSelection({
           </div>
         ) : (
           <EmptyState
-            size="list"
+            size={EmptyStateSize.List}
             title={<Trans>No calendars found</Trans>}
             description={
               <Trans>
@@ -227,7 +228,10 @@ function CalendarToggleRow({
         }
       >
         {shownEnabled && (
-          <Check className="text-primary-foreground size-3" weight="bold" />
+          <Check
+            className="text-primary-foreground size-3"
+            weight={IconWeight.Bold}
+          />
         )}
       </div>
       <span className="text-body truncate">{calendar.title}</span>

@@ -8,6 +8,7 @@ import {
   type TaskRecord,
   type TaskSource,
 } from "@anlg/editor/tasks";
+import { TaskStatus } from "@anlg/store";
 
 import { executeTransaction, liveQueryClient } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
@@ -411,9 +412,9 @@ function sqliteTaskRowToRecord(row: SqliteTaskRow): TaskRecord | null {
     !row.source_id ||
     !row.source_type ||
     !Number.isFinite(sourceOrder) ||
-    (row.status !== "todo" &&
-      row.status !== "in_progress" &&
-      row.status !== "done")
+    (row.status !== TaskStatus.Todo &&
+      row.status !== TaskStatus.InProgress &&
+      row.status !== TaskStatus.Done)
   ) {
     return null;
   }

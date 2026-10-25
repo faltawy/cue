@@ -2,6 +2,8 @@ import { json2md, parseJsonContent } from "@anlg/editor/markdown";
 import { toast } from "@anlg/ui/components/ui/toast";
 import { cn } from "@anlg/utils";
 
+import { NoteHeaderSize } from "~/session/enums";
+
 export function getStoredNoteMarkdown(content: string | undefined) {
   const trimmed = content?.trim() ?? "";
 
@@ -30,7 +32,7 @@ export function IconHeaderView({
   onClick,
   onContextMenu,
   title,
-  size = "tray",
+  size = NoteHeaderSize.Tray,
   className,
 }: {
   isActive: boolean;
@@ -42,7 +44,7 @@ export function IconHeaderView({
   onClick?: () => void;
   onContextMenu?: React.MouseEventHandler<HTMLButtonElement>;
   title?: string;
-  size?: "tray" | "standalone";
+  size?: NoteHeaderSize;
   className?: string;
 }) {
   return (
@@ -92,10 +94,10 @@ export function IconHeaderView({
 
 export function iconHeaderViewClassName(
   isActive: boolean,
-  size: "tray" | "standalone" = "tray",
+  size: NoteHeaderSize = NoteHeaderSize.Tray,
   className?: string,
 ) {
-  const heightClassName = size === "tray" ? "h-6" : "h-7";
+  const heightClassName = size === NoteHeaderSize.Tray ? "h-6" : "h-7";
 
   return cn([
     "group/header-view flex shrink-0 items-center justify-center rounded-sm transition-[background-color,color] duration-100 select-none [&>svg]:shrink-0",

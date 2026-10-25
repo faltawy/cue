@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "@anlg/ui/components/ui/dialog";
 import { cn } from "@anlg/utils";
 
 import { MagnifyingGlass } from "../icons";
+import { DialogPlacement } from "./dialog";
 import { menuItemClassName, menuSeparatorClassName } from "./floating-content";
 import { Kbd } from "./kbd";
 
@@ -27,7 +28,10 @@ Command.displayName = CommandPrimitive.displayName;
 const CommandDialog = ({ children, ...props }: DialogProps) => {
   return (
     <Dialog {...props}>
-      <DialogContent placement="top" className="max-w-[560px] gap-0 p-0">
+      <DialogContent
+        placement={DialogPlacement.Top}
+        className="max-w-[560px] gap-0 p-0"
+      >
         <Command className="[&_[cmdk-input-wrapper]]:h-11 [&_[cmdk-input-wrapper]_svg]:size-4">
           {children}
         </Command>

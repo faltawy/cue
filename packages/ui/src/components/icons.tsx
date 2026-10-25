@@ -214,7 +214,12 @@ import {
   type RefAttributes,
 } from "react";
 
-export type IconWeight = "thin" | "light" | "regular" | "bold";
+export enum IconWeight {
+  Thin = "thin",
+  Light = "light",
+  Regular = "regular",
+  Bold = "bold",
+}
 
 export type IconProps = Omit<
   HugeiconsIconProps,
@@ -239,7 +244,13 @@ const strokeWidthByWeight: Record<IconWeight, number> = {
 function createIcon(icon: IconSvgElement, displayName: string): Icon {
   const Component = forwardRef<SVGSVGElement, IconProps>(
     (
-      { mirrored = false, strokeWidth, style, weight = "regular", ...props },
+      {
+        mirrored = false,
+        strokeWidth,
+        style,
+        weight = IconWeight.Regular,
+        ...props
+      },
       ref,
     ) => (
       <HugeiconsIcon

@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import { AIProviderType } from "@anlg/provider-validation";
+
+export { AIProviderType } from "@anlg/provider-validation";
+
 import { jsonObject, type ToStorageType } from "./shared";
 
 export const sessionEventSchema = z.object({
@@ -28,14 +32,21 @@ export const templateSectionSchema = z.object({
   description: z.string(),
 });
 
-export const chatMessageStatusSchema = z.enum([
-  "streaming",
-  "ready",
-  "error",
-  "aborted",
-]);
+export enum ChatMessageStatus {
+  Streaming = "streaming",
+  Ready = "ready",
+  Error = "error",
+  Aborted = "aborted",
+}
 
-export const taskStatusSchema = z.enum(["todo", "in_progress", "done"]);
+export enum TaskStatus {
+  Todo = "todo",
+  InProgress = "in_progress",
+  Done = "done",
+}
+
+export const chatMessageStatusSchema = z.enum(ChatMessageStatus);
+export const taskStatusSchema = z.enum(TaskStatus);
 
 export const wordSchema = z.object({
   text: z.string(),
@@ -57,7 +68,7 @@ export const speakerHintSchema = z.object({
 
 export const aiProviderSchema = z
   .object({
-    type: z.enum(["stt", "llm"]),
+    type: z.enum(AIProviderType),
     base_url: z.url().min(1),
     api_key: z.string(),
   })
@@ -72,8 +83,6 @@ export const aiProviderSchema = z
 export type SessionEvent = z.infer<typeof sessionEventSchema>;
 export type EventParticipant = z.infer<typeof eventParticipantSchema>;
 export type TemplateSection = z.infer<typeof templateSectionSchema>;
-export type ChatMessageStatus = z.infer<typeof chatMessageStatusSchema>;
-export type TaskStatus = z.infer<typeof taskStatusSchema>;
 export type AIProvider = z.infer<typeof aiProviderSchema>;
 export type WordStorage = ToStorageType<typeof wordSchema>;
 export type SpeakerHintStorage = ToStorageType<typeof speakerHintSchema>;

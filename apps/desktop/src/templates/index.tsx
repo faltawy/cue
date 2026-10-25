@@ -2,6 +2,7 @@ import { TemplateView } from "./template-body";
 
 import { StandardContentWrapper } from "~/shared/main";
 import { type Tab } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export { BUNDLED_WEB_TEMPLATES } from "./bundled";
 export type { WebTemplate } from "./codec";
@@ -20,7 +21,7 @@ export { TemplatesSidebarContent } from "./template-sidebar";
 export function TabContentTemplate({
   tab,
 }: {
-  tab: Extract<Tab, { type: "templates" }>;
+  tab: Extract<Tab, { type: TabType.Templates }>;
 }) {
   return (
     <StandardContentWrapper>

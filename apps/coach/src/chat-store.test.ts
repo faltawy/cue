@@ -3,31 +3,46 @@ import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { BlockKind } from "./blocks";
 import {
   type ChatStore,
+  clearFeedback,
+  coachingFor,
+  deferCoaching,
   dropResume,
   emptyStore,
+  feedbackPreferences,
   keepWrapUp,
   loadChats,
   MAX_MEETINGS,
   planChat,
+  prioritizeHitsByFeedback,
+  recordFeedback,
   remember,
   resumeFor,
-  recordFeedback,
-  clearFeedback,
-  feedbackPreferences,
-  prioritizeHitsByFeedback,
+  ResumeReason,
   saveChats,
   saveFeedback,
+  setMeetingCoaching,
   type SettledWrapUp,
   wrappedTranscripts,
 } from "./chat-store";
+import { MeetingIntent } from "./coaching-preferences";
+import { HitKind } from "./detect";
 import { meetingChange } from "./meeting-state";
-import type { CoachEvent } from "./protocol";
+import { FeedbackReason, MoveTag, MoveVerb } from "./move";
+import {
+  type CoachEvent,
+  CoachEventType,
+  ResetReason,
+  TurnKind,
+  WrapUpState,
+} from "./protocol";
+import { CoachProvider } from "./provider";
 
 const asked: CoachEvent[] = [
-  { type: "user", kind: "ask", text: "What did Sara ask?" },
-  { type: "text", delta: "About the Bcc option." },
+  { type: CoachEventType.User, kind: TurnKind.Ask, text: "What did Sara ask?" },
+  { type: CoachEventType.Text, delta: "About the Bcc option." },
 ];
 
 function storeWith(
@@ -89,7 +104,7 @@ describe("planChat", () => {
 
   test("after a restart mid-meeting, the coach resumes with its history", () => {
     const plan = planChat({
-      reason: "startup",
+      reason: ResumeReason.Startup,
       store,
       meeting: live,
       project: "/work/northwind",
@@ -101,7 +116,7 @@ describe("planChat", () => {
 
   test("New chat forgets the meeting's chat, so a later restart doesn't bring it back", () => {
     const plan = planChat({
-      reason: "manual",
+      reason: ResetReason.Manual,
       store,
       meeting: live,
       project: "/work/northwind",
@@ -114,7 +129,7 @@ describe("planChat", () => {
     });
     expect(
       planChat({
-        reason: "startup",
+        reason: ResumeReason.Startup,
         store: plan.store,
         meeting: live,
         project: "/work/northwind",
@@ -125,7 +140,7 @@ describe("planChat", () => {
 
   test("recovering without a resumable session starts fresh but keeps what the user already sees", () => {
     const plan = planChat({
-      reason: "recover",
+      reason: ResumeReason.Recover,
       store,
       meeting: live,
       project: "/work/northwind",
@@ -134,7 +149,7 @@ describe("planChat", () => {
     expect(plan.resume).toBeNull();
     expect(plan.history).toBe(asked);
     const moved = planChat({
-      reason: "recover",
+      reason: ResumeReason.Recover,
       store,
       meeting: live,
       project: "/work/elsewhere",
@@ -145,7 +160,7 @@ describe("planChat", () => {
 
   test("recovering from a crash continues the current chat, not the stored one", () => {
     const plan = planChat({
-      reason: "recover",
+      reason: ResumeReason.Recover,
       store,
       meeting: live,
       project: "/work/northwind",
@@ -158,22 +173,32 @@ describe("planChat", () => {
 
 describe("after the app restarts", () => {
   const nudged: CoachEvent[] = [
-    { type: "user", kind: "nudge", text: "Open question · 11:02" },
     {
-      type: "block",
+      type: CoachEventType.User,
+      kind: TurnKind.Nudge,
+      text: "Open question · 11:02",
+    },
+    {
+      type: CoachEventType.Block,
       id: "move-1",
       block: {
-        kind: "move",
-        tag: "open_question",
+        kind: BlockKind.Move,
+        tag: MoveTag.OpenQuestion,
         headline: "Pin the renewal date",
-        verb: "Ask",
+        verb: MoveVerb.Ask,
         line: "When do you renew?",
       },
     },
-    { type: "done", seconds: 4, ok: true, silent: false, interrupted: false },
+    {
+      type: CoachEventType.Done,
+      seconds: 4,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
   ];
   const ready: SettledWrapUp = {
-    state: "ready",
+    state: WrapUpState.Ready,
     title: "Northwind renewal",
     wrapUp: {
       commitments: [
@@ -210,7 +235,13 @@ describe("after the app restarts", () => {
     store: ChatStore,
     meeting: { sessionId: string; live: boolean },
   ) {
-    return planChat({ reason: "startup", store, meeting, project, current });
+    return planChat({
+      reason: ResumeReason.Startup,
+      store,
+      meeting,
+      project,
+      current,
+    });
   }
 
   test("a chat with only nudges, never asked anything, keeps its nudges", () => {
@@ -286,17 +317,72 @@ describe("after the app restarts", () => {
 });
 
 describe("local nudge feedback", () => {
+  test("poor timing changes interruption preferences without penalizing useful subject matter", () => {
+    const seeded = recordFeedback(emptyStore(), {
+      category: MoveTag.Pushback,
+      useful: true,
+    });
+    const updated = recordFeedback(seeded, {
+      category: MoveTag.Pushback,
+      useful: false,
+      reason: FeedbackReason.PoorTiming,
+    });
+    expect(feedbackPreferences(updated).categories.pushback).toBe(1);
+    expect(updated.feedback.carefulTiming).toBe(true);
+    expect(clearFeedback(updated).feedback.carefulTiming).toBe(false);
+  });
+
+  test("meeting intention, quiet mode and deferred observations survive restart without leaking to another meeting", () => {
+    const file = path.join(
+      mkdtempSync(path.join(os.tmpdir(), "cue-coaching-")),
+      "chats.json",
+    );
+    const seeded = setMeetingCoaching(
+      storeWith("meeting-a", "/work/northwind"),
+      "meeting-a",
+      { intent: MeetingIntent.Presenting, quiet: true },
+    );
+    const deferred = deferCoaching(
+      seeded,
+      "meeting-a",
+      "The rollout plan is due Friday.",
+    );
+    saveChats(file, deferred);
+    const loaded = loadChats(file);
+    expect(loaded.meetings["meeting-a"]?.runtimeSessionId).toBe("claude-1");
+    expect(coachingFor(loaded, "meeting-a")).toMatchObject({
+      intent: "presenting",
+      quiet: true,
+      deferred: ["The rollout plan is due Friday."],
+    });
+    expect(coachingFor(loaded, "meeting-b")).toMatchObject({
+      intent: "general",
+      quiet: false,
+      deferred: [],
+    });
+    expect(
+      coachingFor(
+        setMeetingCoaching(loaded, "meeting-a", { quiet: false }),
+        "meeting-a",
+      ),
+    ).toMatchObject({
+      intent: "presenting",
+      quiet: false,
+      deferred: ["The rollout plan is due Friday."],
+    });
+  });
+
   test("positive and negative category signals reorder competing transcript cues locally", () => {
     const seeded = recordFeedback(
       recordFeedback(storeWith("meeting-a", "/work/northwind"), {
-        category: "pushback",
+        category: MoveTag.Pushback,
         useful: true,
       }),
-      { category: "open_question", useful: false },
+      { category: MoveTag.OpenQuestion, useful: false },
     );
     const hits = [
-      { kind: "question" as const, lineIndex: 1, text: "Can you confirm?" },
-      { kind: "objection" as const, lineIndex: 2, text: "Too expensive." },
+      { kind: HitKind.Question, lineIndex: 1, text: "Can you confirm?" },
+      { kind: HitKind.Objection, lineIndex: 2, text: "Too expensive." },
     ];
 
     expect(prioritizeHitsByFeedback(seeded, hits)).toEqual([
@@ -307,16 +393,16 @@ describe("local nudge feedback", () => {
 
   test("places a downvoted cue before an unscored cue so the prompt cap drops it first", () => {
     const seeded = recordFeedback(storeWith("meeting-a", "/work/northwind"), {
-      category: "open_question",
+      category: MoveTag.OpenQuestion,
       useful: false,
     });
     const question = {
-      kind: "question" as const,
+      kind: HitKind.Question,
       lineIndex: 1,
       text: "Can you confirm?",
     };
     const monologue = {
-      kind: "monologue" as const,
+      kind: HitKind.Monologue,
       lineIndex: 2,
       text: "Let me explain.",
     };
@@ -334,13 +420,13 @@ describe("local nudge feedback", () => {
     const file = path.join(directory, "coach-chats.json");
     const seeded = storeWith("meeting-a", "/work/northwind");
     const updated = recordFeedback(seeded, {
-      category: "pushback",
+      category: MoveTag.Pushback,
       useful: true,
     });
     const withHandledMoment = recordFeedback(updated, {
-      category: "open_question",
+      category: MoveTag.OpenQuestion,
       useful: false,
-      reason: "already_handled",
+      reason: FeedbackReason.AlreadyHandled,
       momentId: "meeting-a:65000:open_question",
     });
     saveChats(file, withHandledMoment);
@@ -350,12 +436,13 @@ describe("local nudge feedback", () => {
     expect(feedbackPreferences(reloaded)).toEqual({
       categories: { pushback: 1, open_question: -1 },
       handledMoments: ["meeting-a:65000:open_question"],
+      carefulTiming: false,
     });
   });
 
   test("reset clears feedback signals but keeps saved coach chats", () => {
     const seeded = recordFeedback(storeWith("meeting-a", "/work/northwind"), {
-      category: "pushback",
+      category: MoveTag.Pushback,
       useful: true,
     });
     const reset = clearFeedback(seeded);
@@ -364,6 +451,7 @@ describe("local nudge feedback", () => {
     expect(feedbackPreferences(reset)).toEqual({
       categories: {},
       handledMoments: [],
+      carefulTiming: false,
     });
   });
 });
@@ -385,7 +473,7 @@ describe("remember", () => {
   test("keeps the newest wrap-ups only", () => {
     let store = emptyStore();
     const view = {
-      state: "failed",
+      state: WrapUpState.Failed,
       title: null,
       message: "Claude Code timed out",
     } as const;
@@ -458,25 +546,25 @@ test("provider changes keep existing chats on their original runtime, while New 
   );
   const legacy = loadChats(file);
   const input = {
-    reason: "startup" as const,
+    reason: ResumeReason.Startup,
     store: legacy,
     meeting: { sessionId: "m1", live: true },
     project: "/p",
-    selected: { provider: "codex" as const, model: "" },
+    selected: { provider: CoachProvider.Codex, model: "" },
     current: { runtimeSessionId: null, project: "/p", history: [] },
   };
   const restored = planChat(input);
   expect(restored.resume).toBe("old-claude");
   expect(restored.history).toEqual(asked);
-  expect(restored.provider).toBe("claude");
+  expect(restored.provider).toBe(CoachProvider.Claude);
   expect(restored.model).toBe("sonnet");
-  const fresh = planChat({ ...input, reason: "manual" });
-  expect(fresh.provider).toBe("codex");
+  const fresh = planChat({ ...input, reason: ResetReason.Manual });
+  expect(fresh.provider).toBe(CoachProvider.Codex);
   expect(fresh.model).toBe("");
   expect(fresh.resume).toBeNull();
   const codex = remember(fresh.store, "m1", {
     runtimeSessionId: "codex-thread",
-    provider: "codex",
+    provider: CoachProvider.Codex,
     model: "gpt-test",
     project: "/p",
     history: asked,
@@ -486,10 +574,10 @@ test("provider changes keep existing chats on their original runtime, while New 
   const reloaded = planChat({
     ...input,
     store: loadChats(file),
-    selected: { provider: "claude", model: "opus" },
+    selected: { provider: CoachProvider.Claude, model: "opus" },
   });
   expect(reloaded.resume).toBe("codex-thread");
-  expect(reloaded.provider).toBe("codex");
+  expect(reloaded.provider).toBe(CoachProvider.Codex);
   expect(reloaded.model).toBe("gpt-test");
 });
 
@@ -513,38 +601,37 @@ test("legacy chats and existing provider chats use that provider's current model
   );
   const store = loadChats(file);
   const input = {
-    reason: "startup" as const,
+    reason: ResumeReason.Startup,
     store,
     meeting: { sessionId: "m1", live: true },
     project: "/p",
     selected: {
-      provider: "codex" as const,
+      provider: CoachProvider.Codex,
       model: "",
       models: { claude: "opus", codex: "" },
     },
     current: { runtimeSessionId: null, project: "/p", history: [] },
   };
   expect(planChat(input)).toMatchObject({
-    provider: "claude",
+    provider: CoachProvider.Claude,
     model: "opus",
     resume: "old-claude",
     history: asked,
   });
   const saved = remember(store, "m1", {
     runtimeSessionId: "old-claude",
-    provider: "claude",
+    provider: CoachProvider.Claude,
     model: "sonnet",
     project: "/p",
     history: asked,
     updatedAt: 2,
   });
   expect(planChat({ ...input, store: saved })).toMatchObject({
-    provider: "claude",
+    provider: CoachProvider.Claude,
     model: "opus",
     resume: "old-claude",
   });
 });
-
 
 test("a failed feedback save leaves the previous vote intact and a retry counts it only once", () => {
   const directory = mkdtempSync(
@@ -552,19 +639,22 @@ test("a failed feedback save leaves the previous vote intact and a retry counts 
   );
   const file = path.join(directory, "chats.json");
   let store = saveFeedback(file, emptyStore(), {
-    category: "pushback",
+    category: MoveTag.Pushback,
     useful: true,
   });
   writeFileSync(path.join(directory, "blocked"), "not a directory");
   expect(() => {
     store = saveFeedback(path.join(directory, "blocked", "chats.json"), store, {
-      category: "pushback",
+      category: MoveTag.Pushback,
       useful: true,
     });
   }).toThrow(/EEXIST|ENOTDIR/);
   expect(store.feedback.categories.pushback).toBe(1);
   expect(loadChats(file).feedback.categories.pushback).toBe(1);
-  store = saveFeedback(file, store, { category: "pushback", useful: true });
+  store = saveFeedback(file, store, {
+    category: MoveTag.Pushback,
+    useful: true,
+  });
   expect(store.feedback.categories.pushback).toBe(2);
   expect(loadChats(file).feedback.categories.pushback).toBe(2);
 });

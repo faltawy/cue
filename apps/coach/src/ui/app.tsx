@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { EvidenceTarget } from "../move";
+import { ProjectSource } from "../app-bridge";
+import { BlockKind } from "../blocks";
+import { CoachErrorKind } from "../errors";
+import { type EvidenceTarget } from "../move";
+import { SetupState, TurnKind, WrapUpState } from "../protocol";
 import {
   Composer,
   type ComposerHandle,
@@ -11,6 +15,7 @@ import {
   Header,
   TranscriptStrip,
 } from "./components/header";
+import { MeetingControls } from "./components/meeting-controls";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
 import { SetupFailed, setupLabel } from "./components/setup-notice";
@@ -24,14 +29,17 @@ import {
   isEmptyWrapUp,
   WrapUpCard,
 } from "./components/wrap-up-card";
-import type { PreparedImage } from "./images";
+import { type PreparedImage } from "./images";
 import {
   chipsAllowed,
   type CoachState,
+  Connection,
   isBusy,
+  ItemKind,
   lastAsk,
   latestUndoable,
   meetingPhase,
+  MeetingPhase,
   suggestions,
   type Turn,
 } from "./state";
@@ -83,16 +91,18 @@ export function CoachView({
   const setup = state.status?.setup ?? null;
   const settingUp = setup ? setupLabel(setup, state.status?.provider) : null;
   const ready =
-    state.connection === "open" && state.status !== null && settingUp === null;
+    state.connection === Connection.Open &&
+    state.status !== null &&
+    settingUp === null;
   const phase = meetingPhase(state);
-  const live = phase === "live";
+  const live = phase === MeetingPhase.Live;
   const needsFolder = state.status?.project.needsFolder ?? false;
   const projectName =
     state.status && !needsFolder ? folderName(state.status.project.path) : null;
   const latestAsk = lastAsk(state);
   const chips = suggestions(
     phase,
-    state.wrapUp?.state === "ready" &&
+    state.wrapUp?.state === WrapUpState.Ready &&
       hasFollowUp(state.wrapUp.wrapUp.follow_up_draft),
   );
 
@@ -117,7 +127,7 @@ export function CoachView({
 
   const retry = useCallback(
     (turn: Turn) => {
-      if (turn.ask === "ask") void ask(turn.prompt);
+      if (turn.ask === TurnKind.Ask) void ask(turn.prompt);
       else void api.checkIn();
     },
     [api, ask],
@@ -127,7 +137,8 @@ export function CoachView({
     const last = [...state.items]
       .reverse()
       .find(
-        (item): item is Turn => item.kind === "turn" && item.text.length > 0,
+        (item): item is Turn =>
+          item.kind === ItemKind.Turn && item.text.length > 0,
       );
     if (!last) {
       api.notify("There's no answer to copy yet.");
@@ -150,7 +161,8 @@ export function CoachView({
   const canCatchUp = live && !busy && ready;
   const lastItem = state.items.at(-1);
   const authErrorShowing =
-    lastItem?.kind === "error" && lastItem.error.kind === "auth";
+    lastItem?.kind === ItemKind.Error &&
+    lastItem.error.kind === CoachErrorKind.Auth;
 
   const commands = useMemo<Command[]>(() => {
     const list: Command[] = [];
@@ -207,7 +219,7 @@ export function CoachView({
         hint: state.status.project.series,
         run: () => void api.chooseSeriesFolder(),
       });
-      if (state.status.project.source === "series") {
+      if (state.status.project.source === ProjectSource.Series) {
         list.push({
           id: "default-folder",
           label: "Use the default folder",
@@ -279,14 +291,14 @@ export function CoachView({
   ]);
 
   const placeholder = !ready
-    ? state.connection === "lost"
+    ? state.connection === Connection.Lost
       ? "Reconnecting…"
-      : settingUp && state.connection === "open"
+      : settingUp && state.connection === Connection.Open
         ? settingUp
         : "Connecting to the coach…"
     : state.question
       ? "Type your own answer…"
-      : live || phase === "ended"
+      : live || phase === MeetingPhase.Ended
         ? "Ask about this meeting…"
         : projectName
           ? `Ask about ${projectName}…`
@@ -326,8 +338,8 @@ export function CoachView({
   );
   const lastTurn = state.items.at(-1);
   const repliesShowing =
-    lastTurn?.kind === "turn" &&
-    lastTurn.blocks.some((block) => block.kind === "replies");
+    lastTurn?.kind === ItemKind.Turn &&
+    lastTurn.blocks.some((block) => block.kind === BlockKind.Replies);
   const wrapUpActions = useMemo(
     () => ({
       copy: copyText,
@@ -369,7 +381,17 @@ export function CoachView({
           emphasis={!authErrorShowing}
         />
       )}
+      {live && state.status?.coaching && (
+        <MeetingControls
+          key={`controls-${state.status.coaching.sessionId}`}
+          coaching={state.status.coaching}
+          ready={ready}
+          onChange={api.setCoaching}
+        />
+      )}
       <Timeline
+        key={`${state.status?.coaching?.sessionId ?? "conversation"}:${state.dictationOwner}`}
+        live={live}
         items={state.items}
         sent={sent}
         glance={glance}
@@ -414,7 +436,7 @@ export function CoachView({
             : []
         }
         above={
-          setup?.state === "failed" ? (
+          setup?.state === SetupState.Failed ? (
             <SetupFailed
               message={setup.message}
               onRetry={() => void api.retrySetup()}

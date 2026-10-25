@@ -2,6 +2,7 @@ import { useRef } from "react";
 
 import { commands as calendarCommands } from "@anlg/plugin-calendar";
 
+import { ContactType } from "~/contacts/enums";
 import { liveQueryClient, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 import { DEFAULT_USER_ID, id } from "~/shared/utils";
@@ -570,11 +571,11 @@ export function updateOrganization(
 }
 
 export function updateContactAvatar(
-  type: "human" | "organization",
+  type: ContactType,
   contactId: string,
   avatarDataUrl: string | null,
 ): Promise<void> {
-  const table = type === "human" ? "humans" : "organizations";
+  const table = type === ContactType.Human ? "humans" : "organizations";
   return enqueueDatabaseWrite(`${table}:${contactId}`, async () => {
     const result = await calendarCommands.updateContactAvatar({
       kind: type,
@@ -603,7 +604,7 @@ export function updateHumanContactSummary(
 }
 
 export function toggleContactPin(
-  type: "human" | "organization",
+  type: ContactType,
   contactId: string,
 ): Promise<void> {
   return enqueueDatabaseWrite("contacts:pin-order", async () => {
@@ -618,7 +619,7 @@ export function toggleContactPin(
 }
 
 export function reorderPinnedContacts(
-  contacts: Array<{ type: "human" | "organization"; id: string }>,
+  contacts: Array<{ type: ContactType; id: string }>,
 ): Promise<void> {
   return enqueueDatabaseWrite("contacts:pin-order", async () => {
     const result = await calendarCommands.reorderPinnedContacts({
@@ -783,10 +784,10 @@ function mapOrganizationRow(row: OrganizationSqlRow): OrganizationRecord {
 }
 
 export function deleteContact(
-  type: "human" | "organization",
+  type: ContactType,
   contactId: string,
 ): Promise<string | null> {
-  const table = type === "human" ? "humans" : "organizations";
+  const table = type === ContactType.Human ? "humans" : "organizations";
   return enqueueDatabaseWrite(`${table}:${contactId}`, async () => {
     const result = await calendarCommands.softDeleteContact({
       kind: type,
@@ -800,11 +801,11 @@ export function deleteContact(
 }
 
 export function restoreContact(
-  type: "human" | "organization",
+  type: ContactType,
   contactId: string,
   tombstone: string,
 ): Promise<boolean> {
-  const table = type === "human" ? "humans" : "organizations";
+  const table = type === ContactType.Human ? "humans" : "organizations";
   return enqueueDatabaseWrite(`${table}:${contactId}`, async () => {
     const result = await calendarCommands.restoreContact({
       kind: type,

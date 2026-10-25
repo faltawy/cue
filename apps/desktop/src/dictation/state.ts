@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { DictationPhase } from "./controller";
+import { DictationPhase } from "~/dictation/controller";
 
 export const useDictationStatus = create<{
   capturingShortcut: boolean;

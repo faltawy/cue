@@ -1,3 +1,4 @@
+import { TemplateIconKind } from "~/templates/enums";
 import {
   DEFAULT_TEMPLATE_ICON,
   normalizeTemplateIcon,
@@ -5,7 +6,7 @@ import {
 } from "~/templates/template-icon";
 
 export const DEFAULT_FOLDER_ICON = {
-  type: "icon",
+  type: TemplateIconKind.Icon,
   value: "folder",
   color: DEFAULT_TEMPLATE_ICON.color,
 } as const satisfies TemplateIcon;

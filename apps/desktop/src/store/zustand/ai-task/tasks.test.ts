@@ -13,6 +13,12 @@ import {
   TASK_STREAM_START_TIMEOUT_MS,
 } from "./tasks";
 
+import {
+  TaskStepType,
+  TaskType,
+  TaskStatus,
+} from "~/store/zustand/ai-task/enums";
+
 const mocks = vi.hoisted(() => ({
   getStoredSettingValues: vi.fn(async () => ({
     values: {},
@@ -53,10 +59,10 @@ describe("createTasksSlice", () => {
 
     const taskId = "summary-1-enhance" as const;
     state.syncRemoteTask(taskId, {
-      taskType: "enhance",
-      status: "generating",
+      taskType: TaskType.Enhance,
+      status: TaskStatus.Generating,
       streamedText: "Generated",
-      currentStep: { type: "generating" },
+      currentStep: { type: TaskStepType.Generating },
     });
 
     expect(state.tasks[taskId]).toMatchObject({
@@ -81,8 +87,8 @@ describe("createTasksSlice", () => {
 
     for (let index = 0; index <= MAX_RETAINED_AI_TASKS; index += 1) {
       state.syncRemoteTask(`summary-${index}-enhance`, {
-        taskType: "enhance",
-        status: "success",
+        taskType: TaskType.Enhance,
+        status: TaskStatus.Success,
         streamedText: `summary-${index}`,
       });
     }
@@ -106,8 +112,8 @@ describe("createTasksSlice", () => {
     state = createTasksSlice(set, get);
 
     state.syncRemoteTask("summary-1-enhance", {
-      taskType: "enhance",
-      status: "success",
+      taskType: TaskType.Enhance,
+      status: TaskStatus.Success,
       streamedText: "x".repeat(MAX_AI_TASK_STREAM_CHARACTERS + 1),
     });
 
@@ -146,7 +152,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-1-enhance" as const;
     const promise = state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: {
         sessionId: "session-1",
         enhancedNoteId: "note-1",
@@ -199,7 +205,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-1-enhance" as const;
     const promise = state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: {
         sessionId: "session-1",
         enhancedNoteId: "note-1",
@@ -239,7 +245,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-1-enhance" as const;
     await state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 
@@ -277,7 +283,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-locked-read-enhance" as const;
     const promise = state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 
@@ -317,7 +323,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-locked-write-enhance" as const;
     const promise = state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 
@@ -355,7 +361,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-idle-enhance" as const;
     const promise = state.generate(taskId, {
       model: { provider: "openrouter" } as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 
@@ -395,7 +401,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-cancelled-enhance" as const;
     const promise = state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 
@@ -432,7 +438,7 @@ describe("createTasksSlice", () => {
     const taskId = "session-start-timeout-enhance" as const;
     const promise = state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 
@@ -473,7 +479,7 @@ describe("createTasksSlice", () => {
     const taskId = "oversized-enhance" as const;
     await state.generate(taskId, {
       model: {} as any,
-      taskType: "enhance",
+      taskType: TaskType.Enhance,
       args: { sessionId: "session-1", enhancedNoteId: "note-1" },
     });
 

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 
 import { createAccess, type Handler, withAccess } from "./access";
-import { BridgeError } from "./app-bridge";
+import { BridgeError, DictationAction } from "./app-bridge";
 import { dictationHandler } from "./dictation";
 
 const recordingId = "4dc5a2a6-e74e-40ac-b36b-40741ee77e1c";
@@ -12,7 +12,7 @@ test("dictation requires coach authentication, validates input, and forwards nat
     "/dictation": {
       POST: dictationHandler({
         async dictation(id, action) {
-          if (action === "start")
+          if (action === DictationAction.Start)
             throw new BridgeError(409, "Another recording is active.");
           return {
             text: id === recordingId ? "Recognized words" : "Wrong recording",

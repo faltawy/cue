@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ThemePreference } from "~/shared/enums";
+
 const getStoredSettingValues = vi.hoisted(() => vi.fn());
 
 vi.mock("~/settings/queries", () => ({
@@ -59,7 +61,7 @@ describe("readStoredThemePreference", () => {
       localStorage.setItem(key, "dark");
 
       expect(readStoredThemePreference()).toBe("dark");
-      writeStoredThemePreference("system");
+      writeStoredThemePreference(ThemePreference.System);
       expect(readStoredThemePreference()).toBe("system");
       expect(resolveBootIsDark(readStoredThemePreference(), false)).toBe(false);
     },

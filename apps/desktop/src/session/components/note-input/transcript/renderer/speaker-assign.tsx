@@ -28,13 +28,14 @@ import {
   useSession,
   useSessionParticipants,
 } from "~/session/queries";
+import { AssignmentMode } from "~/stt/enums";
 import type { Segment } from "~/stt/live-segment";
 import {
   assignSessionTranscriptSpeaker,
   assignTranscriptSpeaker,
 } from "~/stt/queries";
 
-export type AssignmentMode = "all" | "segment";
+export { AssignmentMode };
 
 export function SpeakerAssignPopover({
   segment,
@@ -70,7 +71,7 @@ export function SpeakerAssignPopover({
           "[data-transcript-container]",
         ) ?? null;
       const assign = () =>
-        assignmentMode === "all" && sessionId
+        assignmentMode === AssignmentMode.All && sessionId
           ? assignSessionTranscriptSpeaker({
               sessionId,
               transcriptId,
@@ -493,7 +494,9 @@ export function SpeakerParticipantPicker({
         await linkHumanToSession(humanId);
         await onSelect(
           humanId,
-          showAssignmentScope && applyToAllMatching ? "all" : "segment",
+          showAssignmentScope && applyToAllMatching
+            ? AssignmentMode.All
+            : AssignmentMode.Segment,
         );
       })
       .catch((error) => {

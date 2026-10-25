@@ -3,13 +3,14 @@ import { createContext, useCallback, useContext, useMemo } from "react";
 import { commands as tantivy } from "@anlg/plugin-tantivy";
 
 import { buildTantivyFilters } from "./filters";
-import type {
-  NoteSearchHit,
-  SearchEntityType,
-  SearchFilters,
-  SearchHit,
+import {
+  type NoteSearchHit,
+  type SearchFilters,
+  type SearchHit,
 } from "./types";
 import { normalizeQuery } from "./utils";
+
+import { type SearchEntityType } from "~/search/enums";
 
 export type { NoteSearchHit, SearchFilters, SearchHit } from "./types";
 

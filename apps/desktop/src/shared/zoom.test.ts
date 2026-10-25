@@ -1,6 +1,8 @@
 import { cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ZoomAction } from "~/shared/enums";
+
 const mocks = vi.hoisted(() => ({
   emit: vi.fn((_event: string, _payload: unknown) => Promise.resolve()),
   listeners: [] as Array<
@@ -92,17 +94,17 @@ describe("scaleWindowMinSize", () => {
 
 describe("stepZoomFactor", () => {
   it.each([
-    [1, "in", 1.1],
-    [1, "out", 0.9],
+    [1, ZoomAction.In, 1.1],
+    [1, ZoomAction.Out, 0.9],
     [
       ZOOM_STEPS[ZOOM_STEPS.length - 1],
-      "in",
+      ZoomAction.In,
       ZOOM_STEPS[ZOOM_STEPS.length - 1],
     ],
-    [ZOOM_STEPS[0], "out", ZOOM_STEPS[0]],
-    [2, "reset", DEFAULT_ZOOM_FACTOR],
-    [1.05, "in", 1.1],
-    [1.05, "out", 1],
+    [ZOOM_STEPS[0], ZoomAction.Out, ZOOM_STEPS[0]],
+    [2, ZoomAction.Reset, DEFAULT_ZOOM_FACTOR],
+    [1.05, ZoomAction.In, 1.1],
+    [1.05, ZoomAction.Out, 1],
   ] as const)("steps from %s %s to %s", (from, direction, expected) => {
     expect(stepZoomFactor(from, direction)).toBe(expected);
   });

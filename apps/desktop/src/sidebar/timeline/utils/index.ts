@@ -15,9 +15,15 @@ import {
   normalizeFolderPath,
 } from "~/session/folders";
 import { getSessionEvent } from "~/session/utils";
+import {
+  TimelineIndicatorPlacementType,
+  TimelineGroupBy,
+  NoteSortOrder as TimelineSortOrder,
+  TimelinePrecision,
+} from "~/sidebar/enums";
 
-export type TimelineGroupBy = "date" | "folder";
-export type TimelineSortOrder = "newest" | "oldest";
+export { TimelineGroupBy };
+export { TimelineSortOrder };
 
 function toTZ(date: Date, timezone?: string): Date {
   return timezone ? new TZDate(date, timezone) : date;
@@ -77,7 +83,7 @@ export type SessionTimelineItem = {
 };
 export type TimelineItem = EventTimelineItem | SessionTimelineItem;
 
-export type TimelinePrecision = "time" | "date";
+export { TimelinePrecision };
 
 export type TimelineBucket = {
   label: string;
@@ -92,9 +98,13 @@ export type TimelineWindowData = {
 };
 
 export type TimelineIndicatorPlacement =
-  | { type: "inside"; index: number; progress: number }
-  | { type: "before"; index: number }
-  | { type: "after" };
+  | {
+      type: TimelineIndicatorPlacementType.Inside;
+      index: number;
+      progress: number;
+    }
+  | { type: TimelineIndicatorPlacementType.Before; index: number }
+  | { type: TimelineIndicatorPlacementType.After };
 
 export function getBucketInfo(
   date: Date,
@@ -112,20 +122,24 @@ export function getBucketInfo(
   const absDays = Math.abs(daysDiff);
 
   if (daysDiff === 0) {
-    return { label: t`Today`, sortKey, precision: "time" };
+    return { label: t`Today`, sortKey, precision: TimelinePrecision.Time };
   }
 
   if (daysDiff === -1) {
-    return { label: t`Yesterday`, sortKey, precision: "time" };
+    return { label: t`Yesterday`, sortKey, precision: TimelinePrecision.Time };
   }
 
   if (daysDiff === 1) {
-    return { label: t`Tomorrow`, sortKey, precision: "time" };
+    return { label: t`Tomorrow`, sortKey, precision: TimelinePrecision.Time };
   }
 
   if (daysDiff < 0) {
     if (absDays <= 6) {
-      return { label: t`${absDays} days ago`, sortKey, precision: "time" };
+      return {
+        label: t`${absDays} days ago`,
+        sortKey,
+        precision: TimelinePrecision.Time,
+      };
     }
 
     if (absDays <= 27) {
@@ -139,7 +153,7 @@ export function getBucketInfo(
       return {
         label: weeks === 1 ? t`a week ago` : t`${weeks} weeks ago`,
         sortKey: weekSortKey,
-        precision: "date",
+        precision: TimelinePrecision.Date,
       };
     }
 
@@ -158,12 +172,16 @@ export function getBucketInfo(
     return {
       label: months === 1 ? t`a month ago` : t`${months} months ago`,
       sortKey: monthSortKey,
-      precision: "date",
+      precision: TimelinePrecision.Date,
     };
   }
 
   if (absDays <= 6) {
-    return { label: t`in ${absDays} days`, sortKey, precision: "time" };
+    return {
+      label: t`in ${absDays} days`,
+      sortKey,
+      precision: TimelinePrecision.Time,
+    };
   }
 
   if (absDays <= 27) {
@@ -177,7 +195,7 @@ export function getBucketInfo(
     return {
       label: weeks === 1 ? t`next week` : t`in ${weeks} weeks`,
       sortKey: weekSortKey,
-      precision: "date",
+      precision: TimelinePrecision.Date,
     };
   }
 
@@ -196,21 +214,21 @@ export function getBucketInfo(
   return {
     label: months === 1 ? t`next month` : t`in ${months} months`,
     sortKey: monthSortKey,
-    precision: "date",
+    precision: TimelinePrecision.Date,
   };
 }
 
 function calculateIndicatorIndex(
   entries: Array<{ timestamp: Date | null }>,
   current: Date,
-  sortOrder: TimelineSortOrder = "newest",
+  sortOrder: TimelineSortOrder = TimelineSortOrder.Newest,
 ): number {
   const index = entries.findIndex(({ timestamp }) => {
     if (!timestamp) {
       return true;
     }
 
-    return sortOrder === "oldest"
+    return sortOrder === TimelineSortOrder.Oldest
       ? timestamp.getTime() >= current.getTime()
       : timestamp.getTime() < current.getTime();
   });
@@ -243,7 +261,7 @@ export function getItemTimeRange(item: TimelineItem): {
 export function calculateTodayIndicatorPlacement(
   entries: Array<{ item: TimelineItem; timestamp: Date | null }>,
   current: Date,
-  sortOrder: TimelineSortOrder = "newest",
+  sortOrder: TimelineSortOrder = TimelineSortOrder.Newest,
 ): TimelineIndicatorPlacement {
   const currentMs = current.getTime();
 
@@ -266,7 +284,7 @@ export function calculateTodayIndicatorPlacement(
     const progress = (currentMs - startMs) / (endMs - startMs);
 
     return {
-      type: "inside",
+      type: TimelineIndicatorPlacementType.Inside,
       index: insideIndex,
       progress: Math.min(Math.max(progress, 0), 1),
     };
@@ -274,10 +292,10 @@ export function calculateTodayIndicatorPlacement(
 
   const indicatorIndex = calculateIndicatorIndex(entries, current, sortOrder);
   if (indicatorIndex === entries.length) {
-    return { type: "after" };
+    return { type: TimelineIndicatorPlacementType.After };
   }
 
-  return { type: "before", index: indicatorIndex };
+  return { type: TimelineIndicatorPlacementType.Before, index: indicatorIndex };
 }
 
 export function getItemTimestamp(item: TimelineItem): Date | null {
@@ -590,7 +608,7 @@ function compareTimelineItems(
   const timeAValue = getItemTimestamp(left)?.getTime() ?? 0;
   const timeBValue = getItemTimestamp(right)?.getTime() ?? 0;
   if (timeAValue !== timeBValue) {
-    return sortOrder === "newest"
+    return sortOrder === TimelineSortOrder.Newest
       ? timeBValue - timeAValue
       : timeAValue - timeBValue;
   }
@@ -634,7 +652,7 @@ function buildFolderBuckets(items: TimelineItem[]): TimelineBucket[] {
     .map(([key, bucketItems]) => ({
       label: key === "" ? t`No folder` : key,
       items: bucketItems,
-      precision: "date" as const,
+      precision: TimelinePrecision.Date,
     }));
 }
 
@@ -670,7 +688,7 @@ function buildDateBuckets({
 
   return Array.from(bucketMap.entries())
     .sort((left, right) =>
-      sortOrder === "newest"
+      sortOrder === TimelineSortOrder.Newest
         ? right[1].sortKey - left[1].sortKey
         : left[1].sortKey - right[1].sortKey,
     )
@@ -688,8 +706,8 @@ export function buildTimelineBuckets({
   timelineEventsTable,
   timelineSessionsTable,
   timezone,
-  groupBy = "date",
-  sortOrder = "newest",
+  groupBy = TimelineGroupBy.Date,
+  sortOrder = TimelineSortOrder.Newest,
 }: {
   timelineEventsTable: TimelineEventsTable;
   timelineSessionsTable: TimelineSessionsTable;
@@ -704,7 +722,7 @@ export function buildTimelineBuckets({
 
   items.sort((left, right) => compareTimelineItems(left, right, sortOrder));
 
-  if (groupBy === "folder") {
+  if (groupBy === TimelineGroupBy.Folder) {
     return buildFolderBuckets(items);
   }
 

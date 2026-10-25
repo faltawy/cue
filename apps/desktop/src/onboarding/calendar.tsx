@@ -13,6 +13,7 @@ import {
 } from "~/calendar/components/calendar-selection";
 import { SyncProvider, useSync } from "~/calendar/components/context";
 import { useEnabledCalendars } from "~/calendar/hooks";
+import { OnboardingButtonVariant } from "~/onboarding/enums";
 import { usePermission } from "~/shared/hooks/usePermissions";
 
 function getCalendarSelectionKey(groups: CalendarGroup[]) {
@@ -78,7 +79,7 @@ function AppleCalendarProvider({
             onRequest();
           }}
           disabled={isPending}
-          variant="secondary"
+          variant={OnboardingButtonVariant.Secondary}
           className="w-full"
         >
           <img

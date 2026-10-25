@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { forwardRef } from "react";
 
 import {
+  AppLinkProvider,
+  GitHubLinkKind,
   getAppLinkDisplayParts,
   getAppLinkLabel,
   type GitHubAttrs,
@@ -15,7 +17,7 @@ import {
 import { getSafeNodePos } from "@anlg/editor/node-views";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { commands as todoCommands } from "@anlg/plugin-todo";
-import { Check } from "@anlg/ui/components/icons";
+import { IconWeight, Check } from "@anlg/ui/components/icons";
 import { cn } from "@anlg/utils";
 
 import { collectSiblingResources, openTaskTab } from "~/task/open-task-tab";
@@ -177,39 +179,39 @@ function CalendlyIcon({ className }: { className?: string }) {
 
 function BrandIcon({ attrs }: { attrs: AppLinkAttrs }) {
   switch (attrs.provider) {
-    case "slack":
+    case AppLinkProvider.Slack:
       return <SlackIcon className="size-3.5 shrink-0" />;
-    case "discord":
+    case AppLinkProvider.Discord:
       return <DiscordIcon className="size-3.5 shrink-0" />;
-    case "linear":
+    case AppLinkProvider.Linear:
       return <LinearIcon className="text-muted-foreground size-3.5 shrink-0" />;
-    case "notion":
+    case AppLinkProvider.Notion:
       return (
         <Notion className="text-muted-foreground size-3.5 shrink-0" size={14} />
       );
-    case "google":
+    case AppLinkProvider.Google:
       return <Google className="size-3.5 shrink-0" size={14} />;
-    case "figma":
+    case AppLinkProvider.Figma:
       return <Figma className="size-3.5 shrink-0" size={14} />;
-    case "atlassian":
+    case AppLinkProvider.Atlassian:
       return <AtlassianIcon className="size-3.5 shrink-0" />;
-    case "asana":
+    case AppLinkProvider.Asana:
       return <AsanaIcon className="size-3.5 shrink-0" />;
-    case "trello":
+    case AppLinkProvider.Trello:
       return <TrelloIcon className="size-3.5 shrink-0" />;
-    case "airtable":
+    case AppLinkProvider.Airtable:
       return <AirtableIcon className="size-3.5 shrink-0" />;
-    case "miro":
+    case AppLinkProvider.Miro:
       return <MiroIcon className="size-3.5 shrink-0" />;
-    case "loom":
+    case AppLinkProvider.Loom:
       return <LoomIcon className="size-3.5 shrink-0" />;
-    case "dropbox":
+    case AppLinkProvider.Dropbox:
       return <DropboxIcon className="size-3.5 shrink-0" />;
-    case "zoom":
+    case AppLinkProvider.Zoom:
       return <ZoomIcon className="size-3.5 shrink-0" />;
-    case "calendly":
+    case AppLinkProvider.Calendly:
       return <CalendlyIcon className="size-3.5 shrink-0" />;
-    case "github":
+    case AppLinkProvider.Github:
       return (
         <Github className="text-muted-foreground size-3.5 shrink-0" size={14} />
       );
@@ -218,8 +220,9 @@ function BrandIcon({ attrs }: { attrs: AppLinkAttrs }) {
 
 function isGitHubCheckboxKind(attrs: AppLinkAttrs): attrs is GitHubAttrs {
   return (
-    attrs.provider === "github" &&
-    (attrs.kind === "issue" || attrs.kind === "pull_request")
+    attrs.provider === AppLinkProvider.Github &&
+    (attrs.kind === GitHubLinkKind.Issue ||
+      attrs.kind === GitHubLinkKind.PullRequest)
   );
 }
 
@@ -258,7 +261,10 @@ function Checkbox({ checked }: { checked: boolean }) {
       ])}
     >
       {checked && (
-        <Check className="text-primary-foreground size-3.5" weight="bold" />
+        <Check
+          className="text-primary-foreground size-3.5"
+          weight={IconWeight.Bold}
+        />
       )}
     </span>
   );
@@ -279,8 +285,9 @@ export const AppLinkView = forwardRef<HTMLSpanElement, NodeViewComponentProps>(
       }
 
       if (
-        attrs.provider === "github" &&
-        (attrs.kind === "issue" || attrs.kind === "pull_request") &&
+        attrs.provider === AppLinkProvider.Github &&
+        (attrs.kind === GitHubLinkKind.Issue ||
+          attrs.kind === GitHubLinkKind.PullRequest) &&
         attrs.owner &&
         attrs.repo &&
         attrs.number

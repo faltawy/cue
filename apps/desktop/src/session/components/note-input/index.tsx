@@ -13,6 +13,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 
 import type { JSONContent, NoteEditorRef } from "@anlg/editor/note";
 import { cn } from "@anlg/utils";
+import { SessionNoteViewType } from "@anlg/utils/session";
 
 import { Enhanced } from "./enhanced";
 import { Header, SessionViewSwitcher, useEditorTabs } from "./header";
@@ -26,9 +27,15 @@ import {
   registerCanonicalSessionEditor,
   unregisterCanonicalSessionEditor,
 } from "~/session/editor-activity";
+import { TabNavigationDirection } from "~/session/enums";
 import { useScrollPreservation } from "~/shared/hooks/useScrollPreservation";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
 import type { SessionMode } from "~/store/zustand/listener/general";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { type EditorView as TabEditorView } from "~/store/zustand/tabs/schema";
 import { useListener } from "~/stt/contexts";
 import { SavedCaptureAudioPrompt } from "~/stt/saved-capture-audio";
@@ -44,7 +51,7 @@ export interface NoteInputHandle {
 }
 
 type NoteInputProps = {
-  tab: Extract<Tab, { type: "sessions" }>;
+  tab: Extract<Tab, { type: TabType.Sessions }>;
   rawMd: string;
   sessionTitle: string;
   eventTitle?: string;
@@ -61,7 +68,10 @@ type NoteInputProps = {
 };
 
 export function shouldShowTranscriptTabSpinner(sessionMode: SessionMode) {
-  return sessionMode === "finalizing" || sessionMode === "running_batch";
+  return (
+    sessionMode === LiveSessionStatus.Finalizing ||
+    sessionMode === BatchSessionMode.RunningBatch
+  );
 }
 
 export const NoteInput = forwardRef<NoteInputHandle, NoteInputProps>(
@@ -169,14 +179,14 @@ const NoteInputContent = forwardRef<
       : currentTab;
 
     const isMeetingInProgress =
-      sessionMode === "active" ||
-      sessionMode === "finalizing" ||
-      sessionMode === "running_batch";
+      sessionMode === LiveSessionStatus.Active ||
+      sessionMode === LiveSessionStatus.Finalizing ||
+      sessionMode === BatchSessionMode.RunningBatch;
     const shouldShowTranscriptSpinner =
       shouldShowTranscriptTabSpinner(sessionMode);
 
     const { scrollRef, onBeforeTabChange } = useScrollPreservation(
-      renderedCurrentTab.type === "enhanced"
+      renderedCurrentTab.type === SessionNoteViewType.Enhanced
         ? `${renderedCurrentTab.type}-${renderedCurrentTab.id}`
         : renderedCurrentTab.type,
     );
@@ -215,7 +225,7 @@ const NoteInputContent = forwardRef<
     );
 
     const handleAdjacentViewShortcut = useCallback(
-      (direction: "previous" | "next") => {
+      (direction: TabNavigationDirection) => {
         if (editorTabs.length <= 1) {
           return;
         }
@@ -228,7 +238,7 @@ const NoteInputContent = forwardRef<
         }
 
         const nextIndex =
-          direction === "previous"
+          direction === TabNavigationDirection.Previous
             ? (currentIndex - 1 + editorTabs.length) % editorTabs.length
             : (currentIndex + 1) % editorTabs.length;
         const nextView = editorTabs[nextIndex];
@@ -241,7 +251,7 @@ const NoteInputContent = forwardRef<
 
     useHotkeys(
       "mod+alt+left",
-      () => handleAdjacentViewShortcut("previous"),
+      () => handleAdjacentViewShortcut(TabNavigationDirection.Previous),
       {
         preventDefault: true,
         enableOnFormTags: true,
@@ -252,7 +262,7 @@ const NoteInputContent = forwardRef<
 
     useHotkeys(
       "mod+alt+right",
-      () => handleAdjacentViewShortcut("next"),
+      () => handleAdjacentViewShortcut(TabNavigationDirection.Next),
       {
         preventDefault: true,
         enableOnFormTags: true,
@@ -262,7 +272,10 @@ const NoteInputContent = forwardRef<
     );
 
     useEffect(() => {
-      if (renderedCurrentTab.type === "raw" && isMeetingInProgress) {
+      if (
+        renderedCurrentTab.type === SessionNoteViewType.Raw &&
+        isMeetingInProgress
+      ) {
         requestAnimationFrame(() => {
           internalEditorRef.current?.commands.focus();
         });
@@ -272,10 +285,11 @@ const NoteInputContent = forwardRef<
     const search = useSearch();
     const showSearchBar = search?.isVisible ?? false;
     const isEditableTab =
-      renderedCurrentTab.type === "enhanced" ||
-      renderedCurrentTab.type === "raw";
+      renderedCurrentTab.type === SessionNoteViewType.Enhanced ||
+      renderedCurrentTab.type === SessionNoteViewType.Raw;
     const isSearchableTab =
-      isEditableTab || renderedCurrentTab.type === "transcript";
+      isEditableTab ||
+      renderedCurrentTab.type === SessionNoteViewType.Transcript;
 
     useEffect(() => {
       search?.close();
@@ -368,12 +382,12 @@ const NoteInputContent = forwardRef<
             className={cn([
               "h-full px-3",
               "pt-2",
-              renderedCurrentTab.type === "transcript"
+              renderedCurrentTab.type === SessionNoteViewType.Transcript
                 ? "overflow-hidden pb-0"
                 : "scroll-pb-20 overflow-x-hidden overflow-y-auto pb-24",
             ])}
           >
-            {renderedCurrentTab.type === "enhanced" && (
+            {renderedCurrentTab.type === SessionNoteViewType.Enhanced && (
               <Enhanced
                 ref={internalEditorRef}
                 sessionId={sessionId}
@@ -384,7 +398,7 @@ const NoteInputContent = forwardRef<
                 onViewDisposed={handleSessionViewDisposed}
               />
             )}
-            {renderedCurrentTab.type === "raw" && (
+            {renderedCurrentTab.type === SessionNoteViewType.Raw && (
               <RawEditor
                 ref={internalEditorRef}
                 sessionId={sessionId}
@@ -397,7 +411,7 @@ const NoteInputContent = forwardRef<
                 onViewDisposed={handleSessionViewDisposed}
               />
             )}
-            {renderedCurrentTab.type === "transcript" && (
+            {renderedCurrentTab.type === SessionNoteViewType.Transcript && (
               <Transcript
                 sessionId={sessionId}
                 scrollRef={scrollRef}
@@ -417,7 +431,10 @@ function isSameEditorView(left: TabEditorView, right: TabEditorView): boolean {
     return false;
   }
 
-  if (left.type === "enhanced" && right.type === "enhanced") {
+  if (
+    left.type === SessionNoteViewType.Enhanced &&
+    right.type === SessionNoteViewType.Enhanced
+  ) {
     return left.id === right.id;
   }
 

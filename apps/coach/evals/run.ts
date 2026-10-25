@@ -1,20 +1,44 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
-
 import { z } from "zod";
 
 import { isNothing } from "../src/checkin";
 import { claudeCodeFromArgs } from "../src/claude-code";
-import { type LlmTuning, runLlm } from "../src/llm";
-import { moveText } from "../src/move";
-import { NUDGE_MODEL, nudgeMessage, nudgeSystem, parseNudge } from "../src/nudge";
+import { LlmEventType, type LlmTuning, runLlm } from "../src/llm";
+import {
+  NUDGE_MODEL,
+  NudgeDelivery,
+  nudgeMessage,
+  NudgeParseKind,
+  nudgeSystem,
+  parseNudge,
+} from "../src/nudge";
 import { PROACTIVE_DEFAULTS } from "../src/proactive";
 import { coachPrompt, userContextPrompt } from "../src/session";
 import { renderLines } from "../src/transcript";
-import { parseTriage, TRIAGE_MODEL, TRIAGE_SYSTEM, triagePrompt } from "../src/triage";
-import { OLD_TRIAGE_SYSTEM, oldCoachAppend, oldNudgeMessage, oldNudgeSystem } from "./baseline";
-import { MOMENTS, type Moment, momentHits, momentLines, momentWhy } from "./moments";
+import {
+  parseTriage,
+  TRIAGE_MODEL,
+  TRIAGE_SYSTEM,
+  triagePrompt,
+} from "../src/triage";
+import {
+  OLD_TRIAGE_SYSTEM,
+  oldCoachAppend,
+  oldNudgeMessage,
+  oldNudgeSystem,
+} from "./baseline";
+import {
+  EvalKind,
+  EvalTrigger,
+  expectedDelivery,
+  type Moment,
+  momentHits,
+  momentLines,
+  MOMENTS,
+  momentWhy,
+} from "./moments";
 import { JUDGE_SYSTEM } from "./rubric";
 
 // Offline coaching eval: runs each scripted moment through the nudge path (or, for direct asks, a one-shot
@@ -39,8 +63,11 @@ const RAW = path.join(RESULTS, "raw");
 const JUDGE_MODEL = "sonnet";
 const ASK_MODEL = "sonnet";
 const CONCURRENCY = 4;
-const VARIANTS = ["old", "new"] as const;
-type Variant = (typeof VARIANTS)[number];
+enum Variant {
+  Old = "old",
+  New = "new",
+}
+const VARIANTS = Object.values(Variant);
 
 const scoreSchema = z.object({
   specificity: z.number().int().min(1).max(5),
@@ -51,9 +78,21 @@ const scoreSchema = z.object({
   notes: z.string(),
 });
 type Score = z.infer<typeof scoreSchema>;
-const DIMENSIONS = ["coaching", "actionability", "specificity", "correctness", "brevity"] as const;
+const DIMENSIONS = [
+  "coaching",
+  "actionability",
+  "specificity",
+  "correctness",
+  "brevity",
+] as const;
 
-type Prompt = { model: string; system: string; message: string; tuning: LlmTuning; schema?: Record<string, unknown> };
+type Prompt = {
+  model: string;
+  system: string;
+  message: string;
+  tuning: LlmTuning;
+  schema?: Record<string, unknown>;
+};
 type Cached = { hash: string; text: string };
 
 let calls = 0;
@@ -61,7 +100,10 @@ let calls = 0;
 const { executable: claudePath } = claudeCodeFromArgs({});
 
 function hashOf(prompt: Prompt): string {
-  return new Bun.CryptoHasher("sha256").update(JSON.stringify(prompt)).digest("hex").slice(0, 16);
+  return new Bun.CryptoHasher("sha256")
+    .update(JSON.stringify(prompt))
+    .digest("hex")
+    .slice(0, 16);
 }
 
 async function complete(prompt: Prompt, file: string): Promise<string> {
@@ -77,26 +119,34 @@ async function complete(prompt: Prompt, file: string): Promise<string> {
     {
       model: prompt.model,
       system: prompt.system,
-      messages: [{ role: "user", content: [{ type: "text", text: prompt.message }] }],
+      messages: [
+        { role: "user", content: [{ type: "text", text: prompt.message }] },
+      ],
       ...(prompt.schema ? { schema: prompt.schema } : {}),
     },
     AbortSignal.timeout(120_000),
     await claudePath(),
     prompt.tuning,
   )) {
-    if (event.type === "text") text += event.delta;
-    else if (event.type === "error") throw new Error(`${path.basename(file)}: ${event.message}`);
+    if (event.type === LlmEventType.Text) text += event.delta;
+    else if (event.type === LlmEventType.Error)
+      throw new Error(`${path.basename(file)}: ${event.message}`);
   }
   await mkdir(path.dirname(file), { recursive: true });
-  await Bun.write(file, `${JSON.stringify({ hash, text: text.trim() } satisfies Cached, null, 2)}\n`);
+  await Bun.write(
+    file,
+    `${JSON.stringify({ hash, text: text.trim() } satisfies Cached, null, 2)}\n`,
+  );
   return text.trim();
 }
 
 function coachPromptFor(variant: Variant, moment: Moment): Prompt {
   const lines = momentLines(moment);
-  if (moment.kind === "ask") {
+  if (moment.kind === EvalKind.Ask) {
     const system =
-      variant === "old" ? oldCoachAppend(moment.instructions) : coachPrompt() + userContextPrompt([], moment.instructions);
+      variant === Variant.Old
+        ? oldCoachAppend(moment.instructions)
+        : coachPrompt() + userContextPrompt([], moment.instructions);
     return {
       model: ASK_MODEL,
       system,
@@ -104,15 +154,35 @@ function coachPromptFor(variant: Variant, moment: Moment): Prompt {
       tuning: {},
     };
   }
-  const input = { context: moment.context, hits: momentHits(moment, lines), why: momentWhy(moment, lines), lines };
-  return variant === "old"
-    ? { model: NUDGE_MODEL, system: oldNudgeSystem(moment.instructions), message: oldNudgeMessage(input), tuning: { effort: "low", shortCache: true } }
-    : { model: NUDGE_MODEL, system: nudgeSystem(moment.instructions), message: nudgeMessage(input), tuning: { effort: "low", shortCache: true } };
+  const input = {
+    context: moment.context,
+    intent: moment.intent,
+    hits: momentHits(moment, lines),
+    why: momentWhy(moment, lines),
+    lines,
+  };
+  return variant === Variant.Old
+    ? {
+        model: NUDGE_MODEL,
+        system: oldNudgeSystem(moment.instructions),
+        message: oldNudgeMessage(input),
+        tuning: { effort: "low", shortCache: true },
+      }
+    : {
+        model: NUDGE_MODEL,
+        system: nudgeSystem(moment.instructions),
+        message: nudgeMessage(input),
+        tuning: { effort: "low", shortCache: true },
+      };
 }
 
-function judgePrompt(moment: Moment, note: string): Prompt {
+function judgePrompt(
+  moment: Moment,
+  note: string,
+  delivery: NudgeDelivery,
+): Prompt {
   const trigger =
-    moment.kind === "ask"
+    moment.kind === EvalKind.Ask
       ? `The user asked the coach: "${moment.ask}"`
       : "The coach spoke up on its own at this moment; the user did not ask.";
   return {
@@ -120,6 +190,7 @@ function judgePrompt(moment: Moment, note: string): Prompt {
     system: JUDGE_SYSTEM,
     message: `Meeting type: ${moment.type}
 Meeting: ${moment.context}
+Intent: ${moment.intent}; expected delivery: ${expectedDelivery(moment)}; actual delivery: ${delivery}
 The user's own instructions to the coach: ${moment.instructions || "(none)"}
 Transcript, latest last ("You" is the user):
 ${renderLines(momentLines(moment))}
@@ -142,11 +213,14 @@ function triagePromptFor(variant: Variant, moment: Moment): Prompt {
   const kinds = [...new Set(momentHits(moment, lines).map((hit) => hit.kind))];
   return {
     model: TRIAGE_MODEL,
-    system: variant === "old" ? OLD_TRIAGE_SYSTEM : TRIAGE_SYSTEM,
+    system: variant === Variant.Old ? OLD_TRIAGE_SYSTEM : TRIAGE_SYSTEM,
     message: triagePrompt({
       context: moment.context,
+      intent: moment.intent,
       kinds,
-      lines: lines.filter((line) => line.end_ms >= latestEnd - PROACTIVE_DEFAULTS.windowMs),
+      lines: lines.filter(
+        (line) => line.end_ms >= latestEnd - PROACTIVE_DEFAULTS.windowMs,
+      ),
     }),
     tuning: { thinking: { type: "disabled" }, shortCache: true },
   };
@@ -156,72 +230,145 @@ async function pool<T>(items: readonly T[], run: (item: T) => Promise<void>) {
   const queue = [...items];
   await Promise.all(
     Array.from({ length: CONCURRENCY }, async () => {
-      for (let item = queue.shift(); item !== undefined; item = queue.shift()) await run(item);
+      for (let item = queue.shift(); item !== undefined; item = queue.shift())
+        await run(item);
     }),
   );
 }
 
-const file = (variant: Variant, moment: Moment, suffix: string) => path.join(RAW, variant, `${moment.id}.${suffix}.json`);
+const file = (variant: Variant, moment: Moment, suffix: string) =>
+  path.join(RAW, variant, `${moment.id}.${suffix}.json`);
 
 async function readCached(target: string): Promise<string | null> {
   const cached = Bun.file(target);
-  return (await cached.exists()) ? ((await cached.json()) as Cached).text : null;
+  return (await cached.exists())
+    ? ((await cached.json()) as Cached).text
+    : null;
 }
 
-type Shown = { text: string; silent: boolean; malformed: boolean };
+type Shown = {
+  text: string;
+  silent: boolean;
+  malformed: boolean;
+  delivery: NudgeDelivery;
+};
 
-// What the user would see: the new nudge path replies in JSON, rendered back to the old three-line text so
-// the judge scores the same content; a reply that fails the schema is dropped in the app, so it counts as silent.
+// Score the collapsed card's single line; malformed replies never reach the user.
 function shownNote(variant: Variant, moment: Moment, raw: string): Shown {
-  if (variant === "new" && moment.kind === "nudge") {
+  if (variant === Variant.New && moment.kind === EvalKind.Nudge) {
     const parsed = parseNudge(raw);
-    if (parsed.kind === "move") return { text: moveText(parsed.reply), silent: false, malformed: false };
-    return { text: "", silent: true, malformed: parsed.kind === "malformed" };
+    if (parsed.kind === NudgeParseKind.Move)
+      return {
+        text: parsed.reply.line,
+        silent: false,
+        malformed: false,
+        delivery: NudgeDelivery.Now,
+      };
+    if (parsed.kind === NudgeParseKind.Later)
+      return {
+        text: parsed.note,
+        silent: true,
+        malformed: false,
+        delivery: NudgeDelivery.Later,
+      };
+    return {
+      text: "",
+      silent: true,
+      malformed: parsed.kind === NudgeParseKind.Malformed,
+      delivery: NudgeDelivery.Silent,
+    };
   }
-  return { text: raw, silent: isNothing(raw) || raw === "", malformed: false };
+  const silent = isNothing(raw) || raw === "";
+  return {
+    text: raw,
+    silent,
+    malformed: false,
+    delivery: silent ? NudgeDelivery.Silent : NudgeDelivery.Now,
+  };
 }
 
 async function runVariant(variant: Variant, moments: readonly Moment[]) {
   await pool(moments, async (moment) => {
-    const raw = await complete(coachPromptFor(variant, moment), file(variant, moment, "note"));
-    const { text: note, silent, malformed } = shownNote(variant, moment, raw);
-    console.log(`${variant} ${moment.id}: ${malformed ? "(malformed, dropped)" : silent ? "(silent)" : note.replace(/\s+/g, " ").slice(0, 160)}`);
-    if (values.judge && !moment.silent && !silent) {
-      const score = scoreSchema.parse(JSON.parse(await complete(judgePrompt(moment, note), file(variant, moment, "judge"))));
-      console.log(`   judge: ${DIMENSIONS.map((dimension) => `${dimension} ${score[dimension]}`).join(", ")} · ${score.notes}`);
+    const raw = await complete(
+      coachPromptFor(variant, moment),
+      file(variant, moment, "note"),
+    );
+    const { text: note, delivery, malformed } = shownNote(variant, moment, raw);
+    console.log(
+      `${variant} ${moment.id}: ${malformed ? "(malformed, dropped)" : `(${delivery}) ${note.replace(/\s+/g, " ").slice(0, 160)}`}`,
+    );
+    if (values.judge && delivery !== NudgeDelivery.Silent) {
+      const score = scoreSchema.parse(
+        JSON.parse(
+          await complete(
+            judgePrompt(moment, note, delivery),
+            file(variant, moment, "judge"),
+          ),
+        ),
+      );
+      console.log(
+        `   judge: ${DIMENSIONS.map((dimension) => `${dimension} ${score[dimension]}`).join(", ")} · ${score.notes}`,
+      );
     }
-    if (values.triage && moment.kind === "nudge" && moment.trigger === "lines") {
-      const reply = await complete(triagePromptFor(variant, moment), file(variant, moment, "triage"));
+    if (
+      values.triage &&
+      moment.kind === EvalKind.Nudge &&
+      moment.trigger === EvalTrigger.Lines
+    ) {
+      const reply = await complete(
+        triagePromptFor(variant, moment),
+        file(variant, moment, "triage"),
+      );
       const verdict = parseTriage(reply);
-      console.log(`   triage: ${verdict?.nudge === !moment.silent ? "ok" : "MISS"} ${reply.replace(/\s+/g, " ")}`);
+      console.log(
+        `   triage: ${verdict?.nudge === (expectedDelivery(moment) !== NudgeDelivery.Silent) ? "ok" : "MISS"} ${reply.replace(/\s+/g, " ")}`,
+      );
     }
   });
 }
 
-type Row = { moment: Moment; note: Shown | null; score: Score | null; triage: boolean | null };
+type Row = {
+  moment: Moment;
+  note: Shown | null;
+  score: Score | null;
+  triage: boolean | null;
+};
 
 async function rows(variant: Variant): Promise<Row[]> {
   return Promise.all(
     MOMENTS.map(async (moment) => {
       const raw = await readCached(file(variant, moment, "note"));
       const note = raw === null ? null : shownNote(variant, moment, raw);
-      const judged = note && !note.silent ? await readCached(file(variant, moment, "judge")) : null;
+      const judged =
+        note && note.delivery !== NudgeDelivery.Silent
+          ? await readCached(file(variant, moment, "judge"))
+          : null;
       const triaged = await readCached(file(variant, moment, "triage"));
       return {
         moment,
         note,
         score: judged ? scoreSchema.parse(JSON.parse(judged)) : null,
-        triage: triaged === null ? null : (parseTriage(triaged)?.nudge ?? false),
+        triage:
+          triaged === null ? null : (parseTriage(triaged)?.nudge ?? false),
       };
     }),
   );
 }
 
-const mean = (values: readonly number[]) => (values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : "–");
+const mean = (values: readonly number[]) =>
+  values.length
+    ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)
+    : "–";
 
 function aggregate(all: readonly Row[]) {
-  const nudges = all.filter((row) => row.moment.kind === "nudge" && row.note !== null);
-  const silentRight = nudges.filter((row) => row.note?.silent === row.moment.silent).length;
+  const nudges = all.filter(
+    (row) => row.moment.kind === EvalKind.Nudge && row.note !== null,
+  );
+  const silentRight = nudges.filter(
+    (row) =>
+      !row.note?.malformed &&
+      row.note?.delivery === expectedDelivery(row.moment),
+  ).length;
   const spoke = all.filter((row) => !row.moment.silent && row.note !== null);
   const missed = spoke.filter((row) => row.note?.silent).length;
   const judged = all.filter((row) => row.score !== null);
@@ -230,31 +377,60 @@ function aggregate(all: readonly Row[]) {
     silence: `${silentRight}/${nudges.length}`,
     missed,
     malformed: all.filter((row) => row.note?.malformed).length,
-    triage: triaged.length ? `${triaged.filter((row) => row.triage === !row.moment.silent).length}/${triaged.length}` : "–",
+    triage: triaged.length
+      ? `${triaged.filter((row) => row.triage === (expectedDelivery(row.moment) !== NudgeDelivery.Silent)).length}/${triaged.length}`
+      : "–",
     dims: Object.fromEntries(
-      DIMENSIONS.map((dimension) => [dimension, mean(judged.map((row) => row.score?.[dimension] ?? 0))]),
+      DIMENSIONS.map((dimension) => [
+        dimension,
+        mean(judged.map((row) => row.score?.[dimension] ?? 0)),
+      ]),
     ),
-    words: mean(spoke.filter((row) => !row.note?.silent).map((row) => (row.note?.text ?? "").split(/\s+/).length)),
+    words: mean(
+      spoke
+        .filter((row) => !row.note?.silent)
+        .map((row) => (row.note?.text ?? "").split(/\s+/).length),
+    ),
     judged: judged.length,
   };
 }
 
 async function writeSummary() {
-  const byVariant = Object.fromEntries(await Promise.all(VARIANTS.map(async (variant) => [variant, await rows(variant)] as const)));
+  const byVariant = Object.fromEntries(
+    await Promise.all(
+      VARIANTS.map(async (variant) => [variant, await rows(variant)] as const),
+    ),
+  );
   const totalsOf = (kind: Moment["kind"]) =>
     Object.fromEntries(
-      VARIANTS.map((variant) => [variant, aggregate((byVariant[variant] ?? []).filter((row) => row.moment.kind === kind))]),
+      VARIANTS.map((variant) => [
+        variant,
+        aggregate(
+          (byVariant[variant] ?? []).filter((row) => row.moment.kind === kind),
+        ),
+      ]),
     );
-  const nudges = totalsOf("nudge");
-  const asks = totalsOf("ask");
+  const nudges = totalsOf(EvalKind.Nudge);
+  const asks = totalsOf(EvalKind.Ask);
   const header = `| | ${VARIANTS.map((variant) => `${variant} nudges`).join(" | ")} | ${VARIANTS.map((variant) => `${variant} asks`).join(" | ")} |\n|---|${[...VARIANTS, ...VARIANTS].map(() => "---").join("|")}|`;
-  const line = (label: string, pick: (totals: ReturnType<typeof aggregate> | undefined) => string | number) =>
+  const line = (
+    label: string,
+    pick: (totals: ReturnType<typeof aggregate> | undefined) => string | number,
+  ) =>
     `| ${label} | ${[...VARIANTS.map((variant) => pick(nudges[variant])), ...VARIANTS.map((variant) => pick(asks[variant]))].join(" | ")} |`;
   const table = [
     header,
-    ...DIMENSIONS.map((dimension) => line(`${dimension} (1-5)`, (totals) => totals?.dims[dimension] ?? "–")),
-    line("right to speak or stay silent", (totals) => totals?.silence ?? "–"),
-    line("stayed silent when it should have spoken", (totals) => totals?.missed ?? "–"),
+    ...DIMENSIONS.map((dimension) =>
+      line(`${dimension} (1-5)`, (totals) => totals?.dims[dimension] ?? "–"),
+    ),
+    line(
+      "correct now / later / silent delivery",
+      (totals) => totals?.silence ?? "–",
+    ),
+    line(
+      "stayed silent when it should have spoken",
+      (totals) => totals?.missed ?? "–",
+    ),
     line("malformed replies (dropped)", (totals) => totals?.malformed ?? "–"),
     line("triage agrees with the label", (totals) => totals?.triage ?? "–"),
     line("mean words per note", (totals) => totals?.words ?? "–"),
@@ -265,18 +441,22 @@ async function writeSummary() {
       const row = byVariant[variant]?.[index];
       if (!row?.note) return "–";
       if (row.note.malformed) return "malformed ✗";
-      if (row.note.silent) return moment.silent ? "silent ✓" : "silent ✗";
-      if (moment.silent) return "spoke ✗";
-      return row.score ? `${row.score.coaching}/${row.score.actionability}/${row.score.correctness}/${row.score.brevity}` : "spoke";
+      if (row.note.delivery !== expectedDelivery(moment))
+        return `${row.note.delivery} ✗`;
+      if (row.note.delivery !== NudgeDelivery.Now)
+        return `${row.note.delivery} ✓`;
+      return row.score
+        ? `${row.score.coaching}/${row.score.actionability}/${row.score.correctness}/${row.score.brevity}`
+        : "spoke";
     };
     return `| ${moment.id} | ${moment.kind} | ${moment.lang} | ${VARIANTS.map(cell).join(" | ")} |`;
   }).join("\n");
   const summary = `# Coaching eval
 
-Generated by \`bun evals/run.ts --summary\`. Judge: a fixed rubric (evals/rubric.ts), scores 1-5. Silence is
-checked without the judge: a note of exactly NOTHING on a moment labelled silent is right, anything else is wrong.
-New nudges reply in JSON; the judge sees them rendered back to the three-line text (headline, Say/Ask line,
-watch-out), and a reply that fails the schema is dropped as in the app, so it counts as silent.
+Generated by \`bun evals/run.ts --summary\`. Judge: a fixed rubric (evals/rubric.ts), scores 1-5. Delivery is
+checked against now/later/silent labels. Deferred observations count as quiet, but not as discarded; malformed replies fail delivery.
+New nudges reply in JSON; the judge sees the single line visible in the collapsed live card.
+Deferred observations are judged as wrap-up input. A malformed reply is dropped as in the app.
 Direct asks run through a one-shot stand-in for the main coach with the transcript inlined, not the full agent.
 
 ${table}
@@ -299,7 +479,11 @@ if (values.summary) {
   const only = values.only?.split(",");
   await runVariant(
     variant,
-    MOMENTS.filter((moment) => (!only || only.includes(moment.id)) && (!values.kind || moment.kind === values.kind)),
+    MOMENTS.filter(
+      (moment) =>
+        (!only || only.includes(moment.id)) &&
+        (!values.kind || moment.kind === values.kind),
+    ),
   );
   console.log(`\n${calls} live calls`);
 }

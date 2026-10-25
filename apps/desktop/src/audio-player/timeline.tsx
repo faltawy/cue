@@ -12,6 +12,7 @@ import { cn } from "@anlg/utils";
 import { useAudioPlayer, useAudioTime } from "./provider";
 import { TimelineMeta, TimelineShell } from "./timeline-shell";
 
+import { AudioPlayerState } from "~/audio-player/enums";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -37,11 +38,11 @@ export function Timeline({
   const [showRateMenu, setShowRateMenu] = useState(false);
 
   const handleClick = () => {
-    if (state === "playing") {
+    if (state === AudioPlayerState.Playing) {
       pause();
-    } else if (state === "paused") {
+    } else if (state === AudioPlayerState.Paused) {
       resume();
-    } else if (state === "stopped") {
+    } else if (state === AudioPlayerState.Stopped) {
       start();
     }
   };
@@ -53,16 +54,16 @@ export function Timeline({
 
   const contextMenu = useMemo(
     () => [
-      ...(state === "paused"
+      ...(state === AudioPlayerState.Paused
         ? [{ id: "resume", text: "Resume", action: resume }]
         : []),
-      ...(state === "stopped"
+      ...(state === AudioPlayerState.Stopped
         ? [{ id: "play", text: "Play", action: start }]
         : []),
-      ...(state === "playing"
+      ...(state === AudioPlayerState.Playing
         ? [{ id: "pause", text: "Pause", action: pause }]
         : []),
-      ...(state !== "stopped"
+      ...(state !== AudioPlayerState.Stopped
         ? [{ id: "stop", text: "Stop", action: stop }]
         : []),
       { separator: true as const },
@@ -100,7 +101,7 @@ export function Timeline({
             "shrink-0 select-none",
           ])}
         >
-          {state === "playing" ? (
+          {state === AudioPlayerState.Playing ? (
             <Pause className="size-3.5" />
           ) : (
             <Play className="size-3.5" />

@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 
 import { toast } from "@anlg/ui/components/ui/toast";
+import { SummaryEligibilitySkipCode } from "@anlg/utils/summary-eligibility";
 
-import { useAITaskTask } from "~/ai/hooks";
-import { useLanguageModel } from "~/ai/hooks";
+import { useAITaskTask, useLanguageModel } from "~/ai/hooks";
 import {
   isMainAITaskHostWindow,
   requestMainAITaskCancel,
@@ -13,6 +13,7 @@ import { getEnhancerService } from "~/services/enhancer";
 import { getEligibility } from "~/services/enhancer/eligibility";
 import { loadSessionContentSnapshot } from "~/session/content-queries";
 import { useEnhancedNote } from "~/session/queries";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 
 export function useEnhancedNoteActions({
@@ -24,13 +25,13 @@ export function useEnhancedNoteActions({
 }) {
   const model = useLanguageModel();
   const taskId = enhancedNoteId
-    ? createTaskId(enhancedNoteId, "enhance")
+    ? createTaskId(enhancedNoteId, TaskType.Enhance)
     : null;
 
   const note = useEnhancedNote(enhancedNoteId ?? "");
   const noteTemplateId = note?.templateId || undefined;
 
-  const enhanceTask = useAITaskTask(taskId, "enhance");
+  const enhanceTask = useAITaskTask(taskId, TaskType.Enhance);
 
   const onRegenerate = useCallback(
     async (templateId: string | null) => {
@@ -50,7 +51,7 @@ export function useEnhancedNoteActions({
         const eligibility = getEligibility(snapshot.transcripts);
         if (
           !eligibility.eligible &&
-          eligibility.code === "transcript_too_short"
+          eligibility.code === SummaryEligibilitySkipCode.TranscriptTooShort
         ) {
           toast.warning("Summary wasn't generated", {
             id: `auto-summary-too-short-${sessionId}`,

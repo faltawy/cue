@@ -6,7 +6,7 @@ import { cn } from "@anlg/utils";
 
 export { MainShellBodyFrame } from "./body-frame";
 export { MainBodyPanels } from "./body-panels";
-export { MainShellScaffold, type MainSurfaceChrome } from "./shell-scaffold";
+export { MainShellScaffold, MainSurfaceChrome } from "./shell-scaffold";
 
 export function StandardContentWrapper({
   children,

@@ -1,7 +1,7 @@
-import type { RuntimeSpeakerHint, WordLike } from "~/stt/segment";
+import { TranscriptTimingSource } from "~/stt/enums";
+import { type RuntimeSpeakerHint, type WordLike } from "~/stt/segment";
 import {
   createTranscriptTimingMetadata,
-  type TranscriptTimingSource,
   type TranscriptWordMetadata,
 } from "~/stt/timing";
 
@@ -71,7 +71,7 @@ export function transformWordEntries(
       end_ms: Math.round(word.end * 1000),
       channel: typeof word.channel === "number" ? word.channel : channel,
       metadata: createTranscriptTimingMetadata(
-        options.timingSource ?? "provider_word",
+        options.timingSource ?? TranscriptTimingSource.ProviderWord,
         word.metadata,
       ),
     });

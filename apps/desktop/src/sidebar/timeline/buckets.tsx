@@ -4,16 +4,21 @@ import { cn } from "@anlg/utils";
 
 import { TimelineItemComponent } from "./item";
 import { CurrentTimeIndicator, useCurrentTimeMs } from "./realtime";
-import type { SidebarUpcomingMeetingStatus } from "./upcoming-meeting";
+import { type SidebarUpcomingMeetingStatus } from "./upcoming-meeting";
 import {
   calculateTodayIndicatorPlacement,
   getItemTimestamp,
   type TimelineBucket,
   type TimelineIndicatorPlacement,
   type TimelineItem,
-  type TimelinePrecision,
-  type TimelineSortOrder,
 } from "./utils";
+
+import {
+  TimelineIndicatorPlacementType,
+  TimelineDividerVariant,
+  type TimelinePrecision,
+  NoteSortOrder as TimelineSortOrder,
+} from "~/sidebar/enums";
 
 export function TimelineBuckets({
   bucketHeaderTopClassName,
@@ -28,7 +33,7 @@ export function TimelineBuckets({
   selectedNodeRef,
   selectedSessionId,
   showCurrentTimeIndicator = true,
-  sortOrder = "newest",
+  sortOrder = TimelineSortOrder.Newest,
   timezone,
   upcomingMeetingStatus,
   upcomingNodeRef,
@@ -158,11 +163,11 @@ export function TimelineBuckets({
 function CurrentTimeAnchor({
   progress = 0.5,
   registerIndicator,
-  variant = "seam",
+  variant = TimelineDividerVariant.Seam,
 }: {
   progress?: number;
   registerIndicator: (node: HTMLDivElement | null) => void;
-  variant?: "seam" | "inside";
+  variant?: TimelineDividerVariant;
 }) {
   return (
     <div
@@ -171,12 +176,14 @@ function CurrentTimeAnchor({
       data-sidebar-current-time-anchor
       className={cn([
         "pointer-events-none opacity-0",
-        variant === "inside"
+        variant === TimelineDividerVariant.Inside
           ? "absolute inset-x-0 z-20 h-px"
           : "relative z-20 h-px",
       ])}
       style={
-        variant === "inside" ? { top: `${(1 - progress) * 100}%` } : undefined
+        variant === TimelineDividerVariant.Inside
+          ? { top: `${(1 - progress) * 100}%` }
+          : undefined
       }
     />
   );
@@ -251,7 +258,7 @@ function TodayBucket({
 
     entries.forEach((entry, index) => {
       if (
-        indicatorPlacement.type === "before" &&
+        indicatorPlacement.type === TimelineIndicatorPlacementType.Before &&
         index === indicatorPlacement.index
       ) {
         nodes.push(
@@ -298,7 +305,7 @@ function TodayBucket({
       );
 
       if (
-        indicatorPlacement.type === "inside" &&
+        indicatorPlacement.type === TimelineIndicatorPlacementType.Inside &&
         index === indicatorPlacement.index
       ) {
         nodes.push(
@@ -306,7 +313,7 @@ function TodayBucket({
             {suppressCurrentTimeIndicator ? (
               <CurrentTimeAnchor
                 registerIndicator={registerIndicator}
-                variant="inside"
+                variant={TimelineDividerVariant.Inside}
                 progress={indicatorPlacement.progress}
               />
             ) : (
@@ -314,7 +321,7 @@ function TodayBucket({
                 ref={registerIndicator}
                 key="current-time-indicator-inside"
                 timezone={timezone}
-                variant="inside"
+                variant={TimelineDividerVariant.Inside}
                 progress={indicatorPlacement.progress}
               />
             )}
@@ -327,7 +334,7 @@ function TodayBucket({
       nodes.push(itemNode);
     });
 
-    if (indicatorPlacement.type === "after") {
+    if (indicatorPlacement.type === TimelineIndicatorPlacementType.After) {
       nodes.push(
         suppressCurrentTimeIndicator ? (
           <CurrentTimeAnchor

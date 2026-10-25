@@ -3,14 +3,19 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { getAllWebviewWindows } from "@tauri-apps/api/webviewWindow";
 import { useCallback, useEffect } from "react";
 
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 import { toast } from "@anlg/ui/components/ui/toast";
 
 import { useIgnoredEvents } from "~/calendar/ignored-events";
 import { trackPendingSoftDelete } from "~/session/pending-soft-deletes";
 import { finalizeSessionDeletion, softDeleteSession } from "~/session/queries";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import {
   type DeletedSessionData,
   useUndoDelete,
@@ -74,13 +79,13 @@ export function useDeleteSession() {
         return;
       }
       const windowLabel = getCurrentWebviewWindowLabel();
-      const isMainWindow = windowLabel === "main";
+      const isMainWindow = windowLabel === StaticWindowLabel.Main;
       const listenerState = listenerStore.getState();
       const live = listenerState.live;
 
       if (
         live.sessionId === sessionId &&
-        (live.status === "active" || live.loading)
+        (live.status === LiveSessionStatus.Active || live.loading)
       ) {
         listenerState.stop();
       }
@@ -91,9 +96,11 @@ export function useDeleteSession() {
       const wasIgnored = trackingId ? isIgnored(trackingId, null) : false;
       const hadOpenTab = useTabs
         .getState()
-        .tabs.some((tab) => tab.type === "sessions" && tab.id === sessionId);
+        .tabs.some(
+          (tab) => tab.type === TabType.Sessions && tab.id === sessionId,
+        );
       if (trackingId) ignoreEvent(trackingId);
-      invalidateResource("sessions", sessionId);
+      invalidateResource(TabType.Sessions, sessionId);
 
       const commit = softDeleteSession(sessionId, tombstone);
       trackPendingSoftDelete(sessionId, commit);
@@ -196,7 +203,7 @@ export function useRemoteSessionDeletionUndoListener(active: boolean) {
         return;
       }
 
-      invalidateResource("sessions", payload.sessionId);
+      invalidateResource(TabType.Sessions, payload.sessionId);
       addDeletion(payload.data, async () => {
         await finalizeSessionDeletion(payload.sessionId);
       });

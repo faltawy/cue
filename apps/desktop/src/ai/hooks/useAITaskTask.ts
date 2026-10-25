@@ -1,20 +1,16 @@
-import type { LanguageModel } from "ai";
+import { type LanguageModel } from "ai";
 import { useCallback, useEffect, useRef } from "react";
 import { shallow } from "zustand/shallow";
 
 import { useAITask } from "../contexts";
 
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
-import type {
-  TaskArgsMap,
-  TaskId,
-  TaskType,
-} from "~/store/zustand/ai-task/task-configs";
+import { type TaskType, TaskStatus } from "~/store/zustand/ai-task/enums";
 import {
-  getTaskState,
-  type TaskState,
-  type TaskStatus,
-} from "~/store/zustand/ai-task/tasks";
+  type TaskArgsMap,
+  type TaskId,
+} from "~/store/zustand/ai-task/task-configs";
+import { getTaskState, type TaskState } from "~/store/zustand/ai-task/tasks";
 
 type SuccessPayload<T extends TaskType> = {
   text: string;
@@ -57,7 +53,7 @@ export function useAITaskTask<T extends TaskType>(
     shallow,
   );
 
-  const status = taskState?.status ?? "idle";
+  const status = taskState?.status ?? TaskStatus.Idle;
   const streamedText = taskState?.streamedText ?? "";
   const error = taskState?.error;
   const currentStep = taskState?.currentStep;
@@ -67,13 +63,13 @@ export function useAITaskTask<T extends TaskType>(
 
   useEffect(() => {
     const prevStatus = prevStatusRef.current;
-    if (prevStatus === "generating") {
-      if (status === "success" && taskState) {
+    if (prevStatus === TaskStatus.Generating) {
+      if (status === TaskStatus.Success && taskState) {
         callbacksRef.current?.onSuccess?.({
           text: streamedText,
           task: taskState,
         });
-      } else if (status === "error") {
+      } else if (status === TaskStatus.Error) {
         callbacksRef.current?.onError?.({
           error,
           task: taskState,
@@ -107,10 +103,10 @@ export function useAITaskTask<T extends TaskType>(
     error,
     currentStep,
     hasTask: !!taskState,
-    isGenerating: status === "generating",
-    isSuccess: status === "success",
-    isError: status === "error",
-    isIdle: status === "idle",
+    isGenerating: status === TaskStatus.Generating,
+    isSuccess: status === TaskStatus.Success,
+    isError: status === TaskStatus.Error,
+    isIdle: status === TaskStatus.Idle,
     start,
     cancel: cancelTask,
     reset: resetTask,

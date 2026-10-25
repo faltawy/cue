@@ -1,10 +1,5 @@
-export type RemoteMeetingType =
-  | "zoom"
-  | "google-meet"
-  | "webex"
-  | "teams"
-  | "cal-com"
-  | "x-call";
+import { RemoteMeetingType } from "~/session/enums";
+export { RemoteMeetingType };
 
 export type RemoteMeeting = {
   type: RemoteMeetingType;
@@ -44,22 +39,22 @@ export function detectMeetingType(url: string): RemoteMeetingType | null {
     const hostname = parsed.hostname.toLowerCase();
 
     if (hostname.includes("zoom.us")) {
-      return "zoom";
+      return RemoteMeetingType.Zoom;
     }
     if (hostname.includes("meet.google.com")) {
-      return "google-meet";
+      return RemoteMeetingType.GoogleMeet;
     }
     if (hostname.includes("webex.com")) {
-      return "webex";
+      return RemoteMeetingType.Webex;
     }
     if (hostname.includes("teams.microsoft.com")) {
-      return "teams";
+      return RemoteMeetingType.Teams;
     }
     if (hostname === "app.cal.com" && parsed.pathname.startsWith("/video/")) {
-      return "cal-com";
+      return RemoteMeetingType.CalCom;
     }
     if (isXCallUrl(parsed)) {
-      return "x-call";
+      return RemoteMeetingType.XCall;
     }
     return null;
   } catch {

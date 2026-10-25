@@ -4,7 +4,8 @@ import { parseArgs } from "node:util";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { claudeCodeFromArgs } from "./claude-code";
 import { codexCodeFromArgs } from "./codex-code";
-import type { RuntimeMessage } from "./runtime-message";
+import { CoachProvider } from "./provider";
+import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
 import { startCoach } from "./session";
 
 const { values } = parseArgs({
@@ -16,7 +17,7 @@ const options = await coachOptionsFromArgs(values);
 const codex = codexCodeFromArgs(values);
 const coach = startCoach({
   ...options,
-  ...(options.provider === "codex"
+  ...(options.provider === CoachProvider.Codex
     ? { pathToCodexExecutable: await codex.executable(), codexHome: codex.home }
     : {
         pathToClaudeCodeExecutable:
@@ -28,15 +29,15 @@ let askedAt = 0;
 
 function render(message: RuntimeMessage) {
   switch (message.type) {
-    case "text":
+    case RuntimeMessageType.Text:
       process.stdout.write(message.delta);
       return;
-    case "tool_start":
+    case RuntimeMessageType.ToolStart:
       process.stderr.write(
         `\n[tool] ${message.name} ${JSON.stringify(message.input).slice(0, 160)}\n`,
       );
       return;
-    case "result":
+    case RuntimeMessageType.Result:
       console.error(
         `\n[done] ${message.subtype} · ${((Date.now() - askedAt) / 1000).toFixed(1)}s`,
       );

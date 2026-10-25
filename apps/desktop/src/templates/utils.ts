@@ -11,6 +11,8 @@ import {
 } from "./queries";
 
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
+import { TemplateTimestampFormat } from "~/templates/enums";
 
 export const AUTO_TEMPLATE_ID = "__auto__";
 
@@ -79,14 +81,16 @@ export function resolveTemplateTabSelection({
 export function getTemplateCreatorLabel({
   isUserTemplate,
   creatorName,
-  format = "full",
+  format = TemplateTimestampFormat.Full,
 }: {
   isUserTemplate: boolean;
   creatorName?: string | null;
-  format?: "full" | "short";
+  format?: TemplateTimestampFormat;
 }) {
   const name = isUserTemplate ? creatorName?.trim() || "user" : "Cue";
-  return format === "short" ? `by ${name}` : `Created by ${name}`;
+  return format === TemplateTimestampFormat.Short
+    ? `by ${name}`
+    : `Created by ${name}`;
 }
 
 export function filterWebTemplatesAgainstUserTemplates({
@@ -113,7 +117,7 @@ export function filterWebTemplatesAgainstUserTemplates({
   });
 }
 
-export function useTemplateTab(tab: Extract<Tab, { type: "templates" }>) {
+export function useTemplateTab(tab: Extract<Tab, { type: TabType.Templates }>) {
   const updateTabState = useTabs((state) => state.updateTemplatesTabState);
   const userTemplates = useUserTemplates();
   const createTemplate = useCreateTemplate();

@@ -53,6 +53,7 @@ import {
   hasOwnSidebarHeaderTab,
 } from "~/sidebar/use-custom-sidebar";
 import { type Tab, uniqueIdfromTab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 type LeftSidebarSizeStyle = CSSProperties & {
   "--left-sidebar-panel-size": string;
@@ -84,7 +85,7 @@ export function ClassicMainBody() {
   const showWindowControlsGutter = useWindowControlsGutter();
   leftSidebarPanelConstraintsRef.current = leftSidebarPanelConstraints;
 
-  const isOnboarding = currentTab?.type === "onboarding";
+  const isOnboarding = currentTab?.type === TabType.Onboarding;
   const mainContentMinWidth = getMainContentMinWidth(currentTab);
   const hasCustomSidebar = hasCustomSidebarTab(currentTab);
   const hasLeftSurfaceCustomSidebar =
@@ -100,7 +101,7 @@ export function ClassicMainBody() {
     showSidebarTimelineChrome || hasLeftSurfaceCustomSidebar;
   const mainAreaTopDrag = useMainAreaTopWindowDrag(enableMainAreaTopDrag);
   const currentSessionId =
-    currentTab?.type === "sessions" ? currentTab.id : undefined;
+    currentTab?.type === TabType.Sessions ? currentTab.id : undefined;
   const createNewNote = useNewNote();
   const openNoteDialog = useOpenNoteDialog();
   const handleOpenNoteDialog = useCallback(() => {

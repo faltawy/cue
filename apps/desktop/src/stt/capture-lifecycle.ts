@@ -42,6 +42,7 @@ import {
   normalizeAudioRetention,
 } from "~/services/audio-retention";
 import { getEnhancerService } from "~/services/enhancer";
+import { AudioRetentionPolicy, AutoEnhanceMode } from "~/services/enums";
 import { maybeExtractVoiceprintCandidates } from "~/services/voiceprint";
 import {
   catalogLocalSessionAudio,
@@ -73,6 +74,7 @@ import {
   saveCaptureLifecycleMarker,
 } from "~/stt/capture-lifecycle-storage";
 import { requestCaptureRecovery } from "~/stt/capture-recovery-requests";
+import { PostCaptureRepairReason } from "~/stt/enums";
 import {
   appendRecoveredTranscriptWords,
   getTranscriptRecord,
@@ -129,27 +131,23 @@ type PostCaptureDetails = {
   transcriptWriteFailed?: boolean;
 };
 
-export type PostCaptureRepairReason =
-  | "live_transcription_unavailable"
-  | "live_stream_incomplete"
-  | "settled_speaker_diarization"
-  | "transcript_persistence_failed";
+export { PostCaptureRepairReason };
 
 export function getPostCaptureRepairReasons(
   details: PostCaptureDetails,
 ): PostCaptureRepairReason[] {
   const reasons: PostCaptureRepairReason[] = [];
   if (!details.liveTranscriptionActive) {
-    reasons.push("live_transcription_unavailable");
+    reasons.push(PostCaptureRepairReason.LiveTranscriptionUnavailable);
   }
   if (details.needsBatchRepair) {
-    reasons.push("live_stream_incomplete");
+    reasons.push(PostCaptureRepairReason.LiveStreamIncomplete);
   }
   if (details.refineSpeakerDiarization) {
-    reasons.push("settled_speaker_diarization");
+    reasons.push(PostCaptureRepairReason.SettledSpeakerDiarization);
   }
   if (details.transcriptWriteFailed) {
-    reasons.push("transcript_persistence_failed");
+    reasons.push(PostCaptureRepairReason.TranscriptPersistenceFailed);
   }
   return reasons;
 }
@@ -289,7 +287,7 @@ export function useCaptureLifecycle(sessionId: string) {
       const model = recoveredMarker?.model ?? conn?.model;
       const retainAudio =
         recoveredMarker?.retainAudio ??
-        (audioRetention !== "none" ||
+        (audioRetention !== AudioRetentionPolicy.None ||
           requiresRetainedBatchAudio(provider, model));
       // Persisted on the marker so restarts still run the full-file pass
       // instead of the chunks released during the meeting.
@@ -307,7 +305,13 @@ export function useCaptureLifecycle(sessionId: string) {
         hasMultipleRemoteParticipants &&
         localBatchDiarizationAvailableRef.current &&
         isRealtimeLocalModel(model);
-      let pendingSummaryMode = recoveredMarker?.summaryMode;
+      let pendingSummaryMode = recoveredMarker?.summaryMode
+        ? {
+            regenerate: AutoEnhanceMode.Regenerate,
+            refresh: AutoEnhanceMode.Refresh,
+            if_empty: AutoEnhanceMode.IfEmpty,
+          }[recoveredMarker.summaryMode]
+        : undefined;
       const refreshSummaryAfterRepair =
         recoveredMarker?.refreshSummaryAfterRepair ?? false;
       let capturePhase =
@@ -986,10 +990,10 @@ export function useCaptureLifecycle(sessionId: string) {
             (refreshSummaryAfterRepair ||
             (preserveExistingTranscript &&
               (transcriptTouched || batchCompleted))
-              ? "regenerate"
+              ? AutoEnhanceMode.Regenerate
               : batchCompleted
-                ? "refresh"
-                : "if_empty");
+                ? AutoEnhanceMode.Refresh
+                : AutoEnhanceMode.IfEmpty);
           if (!pendingSummaryMode) {
             pendingSummaryMode = summaryMode;
             try {
@@ -1195,8 +1199,13 @@ export function useCaptureLifecycle(sessionId: string) {
           await clearInheritedIncomplete();
           toast.dismiss(`capture-incomplete-${sessionId}`);
           const service = getEnhancerService();
-          if (!service) await requestMainAutoEnhance(sessionId, "regenerate");
-          else await service.requestAutoEnhance(sessionId, "regenerate");
+          if (!service)
+            await requestMainAutoEnhance(sessionId, AutoEnhanceMode.Regenerate);
+          else
+            await service.requestAutoEnhance(
+              sessionId,
+              AutoEnhanceMode.Regenerate,
+            );
           await clearCaptureLifecycleMarker(sessionId, transcriptId);
           return;
         }

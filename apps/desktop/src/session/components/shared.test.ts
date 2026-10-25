@@ -1,7 +1,10 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { computeCurrentNoteTab } from "@anlg/utils/session";
+import {
+  SessionNoteViewType,
+  computeCurrentNoteTab,
+} from "@anlg/utils/session";
 
 import {
   hasStoredNoteContent,
@@ -10,6 +13,7 @@ import {
   useCurrentNoteTab,
 } from "./shared";
 
+import { TabType } from "~/store/zustand/tabs/enums";
 import type { Tab } from "~/store/zustand/tabs/schema";
 
 const hoisted = vi.hoisted(() => ({
@@ -65,10 +69,10 @@ vi.mock("~/session/queries", () => ({
 
 describe("useCurrentNoteTab", () => {
   const tab = {
-    type: "sessions",
+    type: TabType.Sessions,
     id: "session-1",
-    state: { view: { type: "transcript" } },
-  } as Extract<Tab, { type: "sessions" }>;
+    state: { view: { type: SessionNoteViewType.Transcript } },
+  } as Extract<Tab, { type: TabType.Sessions }>;
 
   beforeEach(() => {
     hoisted.batchError = null;
@@ -131,7 +135,7 @@ describe("useCurrentNoteHasContent", () => {
     hoisted.rawMd = "Meeting notes";
 
     const { result } = renderHook(() =>
-      useCurrentNoteHasContent("session-1", { type: "raw" }),
+      useCurrentNoteHasContent("session-1", { type: SessionNoteViewType.Raw }),
     );
 
     expect(result.current).toBe(true);
@@ -142,7 +146,7 @@ describe("useCurrentNoteHasContent", () => {
 
     const { result } = renderHook(() =>
       useCurrentNoteHasContent("session-1", {
-        type: "enhanced",
+        type: SessionNoteViewType.Enhanced,
         id: "note-1",
       }),
     );
@@ -154,7 +158,9 @@ describe("useCurrentNoteHasContent", () => {
     hoisted.hasTranscript = true;
 
     const { result } = renderHook(() =>
-      useCurrentNoteHasContent("session-1", { type: "transcript" }),
+      useCurrentNoteHasContent("session-1", {
+        type: SessionNoteViewType.Transcript,
+      }),
     );
 
     expect(result.current).toBe(true);
@@ -231,9 +237,12 @@ describe("hasStoredNoteContent", () => {
 });
 
 describe("computeCurrentNoteTab", () => {
-  const enhanced = { type: "enhanced", id: "note-1" } as const;
-  const raw = { type: "raw" } as const;
-  const transcript = { type: "transcript" } as const;
+  const enhanced = {
+    type: SessionNoteViewType.Enhanced,
+    id: "note-1",
+  } as const;
+  const raw = { type: SessionNoteViewType.Raw } as const;
+  const transcript = { type: SessionNoteViewType.Transcript } as const;
 
   it.each<
     [
@@ -271,7 +280,7 @@ describe("computeCurrentNoteTab", () => {
     ],
     [
       "normalizes the attachments view",
-      [{ type: "attachments" }, false, ["note-1"], false],
+      [{ type: SessionNoteViewType.Attachments }, false, ["note-1"], false],
       raw,
     ],
     [
@@ -287,8 +296,12 @@ describe("computeCurrentNoteTab", () => {
     ["defaults to raw without summaries", [null, false, []], raw],
     [
       "falls back to the migrated summary for a stale id",
-      [{ type: "enhanced", id: "legacy-summary" }, false, ["sqlite-summary"]],
-      { type: "enhanced", id: "sqlite-summary" },
+      [
+        { type: SessionNoteViewType.Enhanced, id: "legacy-summary" },
+        false,
+        ["sqlite-summary"],
+      ],
+      { type: SessionNoteViewType.Enhanced, id: "sqlite-summary" },
     ],
   ])("%s", (_label, args, expected) => {
     expect(computeCurrentNoteTab(...args)).toEqual(expected);

@@ -11,6 +11,7 @@ import { useActiveFolderPath, useFolderSelection } from "./selection";
 import { createNamedFolder } from "~/session/folder-catalog";
 import { resolvedFolderIcon } from "~/session/folder-icon";
 import { useFolderIcons, useFolderPaths } from "~/session/queries";
+import { EmptyStateSize } from "~/shared/enums";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { FolderPathLabel } from "~/shared/ui/folder-path-label";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
@@ -65,7 +66,7 @@ export function FoldersSidebar() {
         {isEmpty ? (
           search ? (
             <EmptyState
-              size="list"
+              size={EmptyStateSize.List}
               title={<Trans>No folders match “{search.trim()}”</Trans>}
               action={{
                 label: <Trans>Clear search</Trans>,
@@ -74,7 +75,7 @@ export function FoldersSidebar() {
             />
           ) : (
             <EmptyState
-              size="list"
+              size={EmptyStateSize.List}
               title={<Trans>No folders yet</Trans>}
               description={
                 <Trans>Group related notes and files in a folder.</Trans>

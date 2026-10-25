@@ -13,10 +13,11 @@ import { persistGeneratedEnhancedNote } from "~/session/content-mutations";
 import { loadSessionContentSnapshot } from "~/session/content-queries";
 import { requestAppAttention } from "~/shared/app-attention";
 import { playCompletionSound } from "~/shared/completion-sound";
+import { TaskType, TaskStatus } from "~/store/zustand/ai-task/enums";
 import { hasLiveSessionTitleDraft } from "~/store/zustand/live-title";
 
 type EnhanceSuccessParams = Parameters<
-  NonNullable<TaskConfig<"enhance">["onSuccess"]>
+  NonNullable<TaskConfig<TaskType.Enhance>["onSuccess"]>
 >[0];
 
 export const runEnhanceSuccess = async ({
@@ -60,17 +61,17 @@ export const runEnhanceSuccess = async ({
   let shouldPersistGeneratedTitle = false;
 
   if (!trimmedTitle && !hasLiveSessionTitleDraft(args.sessionId)) {
-    const titleTaskId = createTaskId(args.sessionId, "title");
+    const titleTaskId = createTaskId(args.sessionId, TaskType.Title);
     const titleTask = getTaskState(titleTaskId);
 
     // A finished title task belongs to an earlier summary; regenerate so the
     // title reflects the new content.
-    if (titleTask?.status === "generating") {
+    if (titleTask?.status === TaskStatus.Generating) {
       generatedTitle = getPersistableGeneratedTitle(titleTask.streamedText);
     } else {
       await startTask(titleTaskId, {
         model,
-        taskType: "title",
+        taskType: TaskType.Title,
         args: {
           sessionId: args.sessionId,
           enhancedNote: textWithTags,
@@ -159,6 +160,6 @@ export const runEnhanceSuccess = async ({
   }
 };
 
-export const enhanceSuccess: Pick<TaskConfig<"enhance">, "onSuccess"> = {
+export const enhanceSuccess: Pick<TaskConfig<TaskType.Enhance>, "onSuccess"> = {
   onSuccess: runEnhanceSuccess,
 };

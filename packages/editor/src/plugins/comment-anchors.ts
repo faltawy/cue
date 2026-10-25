@@ -1,3 +1,14 @@
+export enum CommentAnchorsMetaType {
+  Set = "set",
+  Active = "active",
+}
+
+export enum CommentAnchorsEventType {
+  Selection = "selection",
+  AnchorClick = "anchor-click",
+  Layout = "layout",
+}
+
 import { Plugin, PluginKey, type EditorState } from "prosemirror-state";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 
@@ -8,9 +19,18 @@ export type CommentAnchorInput = {
 };
 
 export type CommentAnchorsEvent =
-  | { type: "selection"; from: number; to: number; empty: boolean }
-  | { type: "anchor-click"; commentIds: string[]; pos: number }
-  | { type: "layout" };
+  | {
+      type: CommentAnchorsEventType.Selection;
+      from: number;
+      to: number;
+      empty: boolean;
+    }
+  | {
+      type: CommentAnchorsEventType.AnchorClick;
+      commentIds: string[];
+      pos: number;
+    }
+  | { type: CommentAnchorsEventType.Layout };
 
 type CommentAnchorsState = {
   decorations: DecorationSet;
@@ -21,8 +41,8 @@ type CommentAnchorsState = {
 };
 
 type CommentAnchorsMeta =
-  | { type: "set"; anchors: CommentAnchorInput[] }
-  | { type: "active"; commentId: string | null };
+  | { type: CommentAnchorsMetaType.Set; anchors: CommentAnchorInput[] }
+  | { type: CommentAnchorsMetaType.Active; commentId: string | null };
 
 export const commentAnchorsPluginKey = new PluginKey<CommentAnchorsState>(
   "commentAnchors",
@@ -52,7 +72,7 @@ export function commentAnchorsPlugin(options?: {
         const meta = tr.getMeta(commentAnchorsPluginKey) as
           | CommentAnchorsMeta
           | undefined;
-        if (meta?.type === "set") {
+        if (meta?.type === CommentAnchorsMetaType.Set) {
           const anchors = clampAnchors(meta.anchors, tr.doc.content.size);
           return {
             decorations: buildDecorations(
@@ -64,7 +84,7 @@ export function commentAnchorsPlugin(options?: {
             activeId: pluginState.activeId,
           };
         }
-        if (meta?.type === "active") {
+        if (meta?.type === CommentAnchorsMetaType.Active) {
           const anchors = tr.docChanged
             ? mapAnchorsThrough(tr.mapping, pluginState.anchors)
             : pluginState.anchors;
@@ -100,7 +120,7 @@ export function commentAnchorsPlugin(options?: {
           ),
         ];
         if (commentIds.length > 0) {
-          emit({ type: "anchor-click", commentIds, pos });
+          emit({ type: CommentAnchorsEventType.AnchorClick, commentIds, pos });
         }
         return false;
       },
@@ -111,7 +131,7 @@ export function commentAnchorsPlugin(options?: {
           const selection = view.state.selection;
           if (!selection.eq(prevState.selection)) {
             emit({
-              type: "selection",
+              type: CommentAnchorsEventType.Selection,
               from: selection.from,
               to: selection.to,
               empty: selection.empty,
@@ -126,7 +146,7 @@ export function commentAnchorsPlugin(options?: {
             view.state.doc !== prevState.doc ||
             decorations !== previousDecorations
           ) {
-            emit({ type: "layout" });
+            emit({ type: CommentAnchorsEventType.Layout });
           }
         },
       };
@@ -150,14 +170,20 @@ export function setCommentAnchors(
   view: EditorView,
   anchors: CommentAnchorInput[],
 ): void {
-  dispatchCommentAnchorsMeta(view, { type: "set", anchors });
+  dispatchCommentAnchorsMeta(view, {
+    type: CommentAnchorsMetaType.Set,
+    anchors,
+  });
 }
 
 export function setActiveCommentAnchor(
   view: EditorView,
   commentId: string | null,
 ): void {
-  dispatchCommentAnchorsMeta(view, { type: "active", commentId });
+  dispatchCommentAnchorsMeta(view, {
+    type: CommentAnchorsMetaType.Active,
+    commentId,
+  });
 }
 
 /** Current anchor ranges, mapped through any edits since they were set. */

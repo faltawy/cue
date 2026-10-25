@@ -1,10 +1,11 @@
 import React, { useCallback } from "react";
 
-import { Buildings, PushPin } from "@anlg/ui/components/icons";
+import { IconWeight, Buildings, PushPin } from "@anlg/ui/components/icons";
 import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { ContactImage } from "~/contacts/contact-avatar";
+import { ContactType } from "~/contacts/enums";
 import { type OrganizationRecord, toggleContactPin } from "~/contacts/queries";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
 
@@ -22,9 +23,11 @@ export function OrganizationItem({
   const isPinned = Boolean(organization.pinned);
 
   const togglePin = useCallback(() => {
-    void toggleContactPin("organization", organization.id).catch((error) => {
-      console.error("[contacts] failed to toggle organization pin", error);
-    });
+    void toggleContactPin(ContactType.Organization, organization.id).catch(
+      (error) => {
+        console.error("[contacts] failed to toggle organization pin", error);
+      },
+    );
   }, [organization.id]);
 
   const showContextMenu = useNativeContextMenu([
@@ -90,7 +93,10 @@ export function OrganizationItem({
         ])}
         aria-label={isPinned ? "Unpin organization" : "Pin organization"}
       >
-        <PushPin className="size-3.5" weight={isPinned ? "bold" : "regular"} />
+        <PushPin
+          className="size-3.5"
+          weight={isPinned ? IconWeight.Bold : IconWeight.Regular}
+        />
       </button>
     </div>
   );

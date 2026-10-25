@@ -17,10 +17,11 @@ import { titleTransform } from "./title-transform";
 import { titleWorkflow } from "./title-workflow";
 
 import type { SettingValues } from "~/settings/schema";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { StreamTransform } from "~/store/zustand/ai-task/shared/transform_infra";
 import type { TaskState, TaskStepInfo } from "~/store/zustand/ai-task/tasks";
 
-export type TaskType = "enhance" | "title";
+export { TaskType };
 
 export interface TaskArgsMap {
   enhance: {

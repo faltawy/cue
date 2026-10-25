@@ -18,6 +18,7 @@ import { useLanguageModel } from "~/ai/hooks";
 import { executeTransaction, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 import { extractPlainText } from "~/search/contexts/engine/utils";
+import { PastNoteRelationship } from "~/session/enums";
 import { getSessionEvent } from "~/session/utils";
 
 export type PastSessionNote = {
@@ -27,7 +28,7 @@ export type PastSessionNote = {
   occurredAt: string;
   participantNames?: string[];
   sourceSummary: string;
-  relationship: "same_series" | "matching_title" | "shared_participants";
+  relationship: PastNoteRelationship;
   summary: string | null;
   isGenerating: boolean;
   isRegenerateDisabled?: boolean;
@@ -757,7 +758,7 @@ function getPastSessionRelationship({
   candidateTitleKey: string;
 }): PastSessionNote["relationship"] | null {
   if (currentSeriesId && candidateSeriesId === currentSeriesId) {
-    return "same_series";
+    return PastNoteRelationship.SameSeries;
   }
 
   const sharesParticipants = hasSharedParticipants(
@@ -769,11 +770,11 @@ function getPastSessionRelationship({
     currentTitleKey === candidateTitleKey &&
     sharesParticipants
   ) {
-    return "matching_title";
+    return PastNoteRelationship.MatchingTitle;
   }
 
   if (sharesParticipants) {
-    return "shared_participants";
+    return PastNoteRelationship.SharedParticipants;
   }
 
   return null;
@@ -798,11 +799,11 @@ function hasSharedParticipants(
 
 function getRelationshipRank(relationship: PastSessionNote["relationship"]) {
   switch (relationship) {
-    case "same_series":
+    case PastNoteRelationship.SameSeries:
       return 2;
-    case "matching_title":
+    case PastNoteRelationship.MatchingTitle:
       return 1;
-    case "shared_participants":
+    case PastNoteRelationship.SharedParticipants:
       return 0;
   }
 }

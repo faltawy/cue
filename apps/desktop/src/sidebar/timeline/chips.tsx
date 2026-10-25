@@ -5,6 +5,8 @@ import { Button } from "@anlg/ui/components/ui/button";
 import { floatingChipClassName } from "@anlg/ui/components/ui/floating-content";
 import { cn } from "@anlg/utils";
 
+import { TimelineNavigationDirection } from "~/sidebar/enums";
+
 export function UpcomingMeetingChip({
   ariaLabel,
   label,
@@ -90,10 +92,11 @@ export function TimelineNowChip({
   ariaLabel: string;
   children: ReactNode;
   className?: string;
-  direction: "up" | "down";
+  direction: TimelineNavigationDirection;
   onClick: () => void;
 }) {
-  const DirectionIcon = direction === "up" ? ArrowUp : ArrowDown;
+  const DirectionIcon =
+    direction === TimelineNavigationDirection.Up ? ArrowUp : ArrowDown;
 
   return (
     <button
@@ -107,10 +110,14 @@ export function TimelineNowChip({
       ])}
       onClick={onClick}
     >
-      {direction === "up" ? <DirectionIcon className="size-3" /> : null}
+      {direction === TimelineNavigationDirection.Up ? (
+        <DirectionIcon className="size-3" />
+      ) : null}
       <Sun className="text-warm-strong size-3 shrink-0" />
       <span>{children}</span>
-      {direction === "down" ? <DirectionIcon className="size-3" /> : null}
+      {direction === TimelineNavigationDirection.Down ? (
+        <DirectionIcon className="size-3" />
+      ) : null}
     </button>
   );
 }

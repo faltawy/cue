@@ -1,6 +1,7 @@
-import { resolveIsDarkMode, type ThemePreference } from "./resolve";
+import { resolveIsDarkMode } from "./resolve";
 
 import { getStoredSettingValues } from "~/settings/queries";
+import { ThemePreference } from "~/shared/enums";
 
 const THEME_STORAGE_KEY = "cue-theme";
 const LEGACY_THEME_STORAGE_KEY = "hypr-theme";
@@ -19,10 +20,14 @@ export function readStoredThemePreference(): ThemePreference {
 export function normalizeThemePreference(
   stored: string | null,
 ): ThemePreference {
-  if (stored === "light" || stored === "dark" || stored === "system") {
+  if (
+    stored === ThemePreference.Light ||
+    stored === ThemePreference.Dark ||
+    stored === ThemePreference.System
+  ) {
     return stored;
   }
-  return "system";
+  return ThemePreference.System;
 }
 
 export function resolveBootIsDark(

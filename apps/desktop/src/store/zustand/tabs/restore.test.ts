@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, test } from "vitest";
 import { useTabs } from ".";
 import { createSessionTab, resetTabsStore, seedTabsStore } from "./test-utils";
 
+import { TabType } from "~/store/zustand/tabs/enums";
+
 const openTabs = (...tabs: ReturnType<typeof createSessionTab>[]) => {
   tabs.forEach((tab) => useTabs.getState().openNew(tab));
 };
@@ -95,7 +97,7 @@ describe("Restore", () => {
 
       const restoredTab = useTabs
         .getState()
-        .tabs.find((t) => t.type === "sessions" && t.id === "session-1");
+        .tabs.find((t) => t.type === TabType.Sessions && t.id === "session-1");
       expect(restoredTab!.slotId).not.toBe(originalSlotId);
     });
   });

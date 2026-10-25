@@ -15,6 +15,8 @@ import {
 } from "./window-control";
 
 import { useLiveQuery } from "~/db";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
+import { ListenerControlAction } from "~/stt/enums";
 
 const DISMISSED_SAVED_CAPTURE_AUDIO_KEY =
   "cue:dismissed-saved-capture-audio-prompts";
@@ -67,7 +69,7 @@ function rememberDismissedSavedCaptureAudioPrompt(promptKey: string) {
 export function SavedCaptureAudioPrompt({ sessionId }: { sessionId: string }) {
   const savedAt = useSavedCaptureAudioAt(sessionId);
   const inactive = useListener(
-    (state) => state.getSessionMode(sessionId) === "inactive",
+    (state) => state.getSessionMode(sessionId) === LiveSessionStatus.Inactive,
   );
   const startListening = useStartListening(sessionId);
 
@@ -82,7 +84,7 @@ export function SavedCaptureAudioPrompt({ sessionId }: { sessionId: string }) {
     const resumeListening = () => {
       const start = isMainWebviewWindow()
         ? startListening()
-        : requestMainListenerControl("start", sessionId);
+        : requestMainListenerControl(ListenerControlAction.Start, sessionId);
       void start.catch((error) => {
         console.error("[listener] failed to resume listening", error);
       });

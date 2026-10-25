@@ -1,8 +1,9 @@
 import { cn } from "@anlg/utils";
 
 import { SyncProvider } from "~/calendar/components/context";
+import { MainSurfaceChrome } from "~/shared/enums";
 
-export type MainSurfaceChrome = "default" | "top" | "top-borderless" | "left";
+export { MainSurfaceChrome };
 
 export function MainShellScaffold({
   children,
@@ -14,10 +15,11 @@ export function MainShellScaffold({
   mainSurfaceChrome?: MainSurfaceChrome;
 }) {
   const resolvedMainSurfaceChrome =
-    mainSurfaceChrome ?? (edgeToEdge ? "top" : "default");
+    mainSurfaceChrome ??
+    (edgeToEdge ? MainSurfaceChrome.Top : MainSurfaceChrome.Default);
   const hasTopMainSurfaceChrome =
-    resolvedMainSurfaceChrome === "top" ||
-    resolvedMainSurfaceChrome === "top-borderless";
+    resolvedMainSurfaceChrome === MainSurfaceChrome.Top ||
+    resolvedMainSurfaceChrome === MainSurfaceChrome.TopBorderless;
 
   return (
     <SyncProvider>
@@ -29,12 +31,12 @@ export function MainShellScaffold({
             "[&_[data-chat-floating-anchor]]:rounded-t-xl",
             "[&_[data-chat-floating-anchor]]:rounded-b-none",
             "[&_[data-chat-floating-anchor]]:border-x-0",
-            resolvedMainSurfaceChrome === "top"
+            resolvedMainSurfaceChrome === MainSurfaceChrome.Top
               ? "[&_[data-chat-floating-anchor]]:border-t"
               : "[&_[data-chat-floating-anchor]]:!border-t-0",
             "[&_[data-chat-floating-anchor]]:border-b-0",
           ],
-          resolvedMainSurfaceChrome === "left" && [
+          resolvedMainSurfaceChrome === MainSurfaceChrome.Left && [
             "[&_[data-chat-floating-anchor]]:rounded-s-xl",
             "[&_[data-chat-floating-anchor]]:rounded-e-none",
             "[&_[data-chat-floating-anchor]]:border-y-0",

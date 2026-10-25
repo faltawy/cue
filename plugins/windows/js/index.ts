@@ -3,7 +3,13 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 export * from "./bindings.gen";
 import { commands, events } from "./bindings.gen";
 
-export type WindowLabel = "main" | `note-${string}` | "calendar" | "settings";
+export enum StaticWindowLabel {
+  Main = "main",
+  Calendar = "calendar",
+  Settings = "settings",
+}
+
+export type WindowLabel = StaticWindowLabel | `note-${string}`;
 
 export const getCurrentWebviewWindowLabel = () => {
   const window = getCurrentWebviewWindow();
@@ -60,8 +66,7 @@ export async function dismissInstruction() {
   }
 }
 
-const DROP_PREVENTION_CLEANUP_KEY =
-  "__CUE_WINDOWS_DROP_PREVENTION_CLEANUP__";
+const DROP_PREVENTION_CLEANUP_KEY = "__CUE_WINDOWS_DROP_PREVENTION_CLEANUP__";
 const HEALTH_CHECK_CLEANUP_KEY = "__CUE_WINDOWS_HEALTH_CHECK_CLEANUP__";
 
 export const init = () => {

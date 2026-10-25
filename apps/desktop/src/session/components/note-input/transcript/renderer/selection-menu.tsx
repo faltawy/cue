@@ -46,8 +46,8 @@ import {
   getTranscriptRangeRects,
   getTranscriptSelectionFromRange,
   isRangeCoveredBySelection,
+  type TranscriptWordSelection,
 } from "./selection";
-import type { TranscriptWordSelection } from "./selection";
 import { SpeakerParticipantPicker } from "./speaker-assign";
 
 import {
@@ -55,6 +55,7 @@ import {
   subscribeSessionFabSelectionHost,
 } from "~/session/components/floating/selection-slot";
 import { useAutoCloser } from "~/shared/hooks/useAutoCloser";
+import { TranscriptSelectionAction } from "~/stt/enums";
 
 const MENU_CONTAINER_CLASSES = [
   "pointer-events-auto p-1",
@@ -85,7 +86,7 @@ export function SelectionMenu({
   audioExists: boolean;
   onContextClose: () => void;
   onAction?: (
-    action: "copy" | "play",
+    action: TranscriptSelectionAction,
     selection: TranscriptWordSelection,
   ) => void;
   onEdit?: (selection: TranscriptWordSelection) => void;
@@ -256,7 +257,7 @@ function TextSelectionMenu({
   suspended: boolean;
   audioExists: boolean;
   onAction?: (
-    action: "copy" | "play",
+    action: TranscriptSelectionAction,
     selection: TranscriptWordSelection,
   ) => void;
   onEdit?: (selection: TranscriptWordSelection) => void;
@@ -314,7 +315,7 @@ function ContextSelectionMenu({
   audioExists: boolean;
   onClose: () => void;
   onAction?: (
-    action: "copy" | "play",
+    action: TranscriptSelectionAction,
     selection: TranscriptWordSelection,
   ) => void;
   onEdit?: (selection: TranscriptWordSelection) => void;
@@ -390,14 +391,14 @@ function SelectionFloatingMenu({
   audioExists: boolean;
   onClose: () => void;
   onAction?: (
-    action: "copy" | "play",
+    action: TranscriptSelectionAction,
     selection: TranscriptWordSelection,
   ) => void;
   onEdit?: (selection: TranscriptWordSelection) => void;
   onChangeSpeaker?: (selection: TranscriptWordSelection) => void;
 }) {
   const handleAction = useCallback(
-    (action: "copy" | "play") => {
+    (action: TranscriptSelectionAction) => {
       onAction?.(action, selection);
       onClose();
     },
@@ -452,7 +453,7 @@ function SelectionFloatingMenu({
               <button
                 type="button"
                 className={cn(MENU_BUTTON_CLASSES)}
-                onClick={() => handleAction("play")}
+                onClick={() => handleAction(TranscriptSelectionAction.Play)}
               >
                 <Play className="size-3.5" />
                 <Trans>Play from here</Trans>
@@ -461,7 +462,7 @@ function SelectionFloatingMenu({
             <button
               type="button"
               className={cn(MENU_BUTTON_CLASSES)}
-              onClick={() => handleAction("copy")}
+              onClick={() => handleAction(TranscriptSelectionAction.Copy)}
             >
               <Copy className="size-3.5 shrink-0" />
               <Trans>Copy</Trans>

@@ -13,9 +13,15 @@ import {
 import { buttonVariants } from "@anlg/ui/components/ui/button";
 import { cn } from "@anlg/utils";
 
+import {
+  SectionStatus,
+  OnboardingButtonVariant,
+  SetupStepStatus,
+} from "~/onboarding/enums";
+
 const SCROLL_DELAY_MS = 350;
 
-export type SectionStatus = "completed" | "active" | "upcoming";
+export { SectionStatus };
 
 export function OnboardingSection({
   title,
@@ -41,8 +47,8 @@ export function OnboardingSection({
   const { t } = useLingui();
   const sectionRef = useRef<HTMLElement>(null);
 
-  const isActive = status === "active";
-  const isCompleted = status === "completed";
+  const isActive = status === SectionStatus.Active;
+  const isCompleted = status === SectionStatus.Completed;
 
   useEffect(() => {
     if (!isActive) return;
@@ -55,7 +61,7 @@ export function OnboardingSection({
     return () => clearTimeout(timeout);
   }, [isActive]);
 
-  if (!status || status === "upcoming") return null;
+  if (!status || status === SectionStatus.Upcoming) return null;
 
   return (
     <section ref={sectionRef}>
@@ -141,11 +147,11 @@ export function OnboardingSection({
 }
 
 export function OnboardingButton({
-  variant = "primary",
+  variant = OnboardingButtonVariant.Primary,
   className,
   ...props
 }: {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: OnboardingButtonVariant;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
@@ -154,9 +160,9 @@ export function OnboardingButton({
         "w-fit",
         buttonVariants({
           variant:
-            variant === "primary"
+            variant === OnboardingButtonVariant.Primary
               ? "default"
-              : variant === "secondary"
+              : variant === OnboardingButtonVariant.Secondary
                 ? "outline"
                 : "ghost",
         }),
@@ -170,19 +176,25 @@ export function StepRow({
   status,
   label,
 }: {
-  status: "done" | "active" | "failed";
+  status: SetupStepStatus;
   label: ReactNode;
 }) {
   return (
     <div className="text-ui flex items-center gap-1.5">
-      {status === "done" && <CheckCircle className="text-success size-3.5" />}
-      {status === "active" && (
+      {status === SetupStepStatus.Done && (
+        <CheckCircle className="text-success size-3.5" />
+      )}
+      {status === SetupStepStatus.Active && (
         <CircleNotch className="text-muted-foreground size-3.5 animate-spin" />
       )}
-      {status === "failed" && <XCircle className="text-destructive size-3.5" />}
+      {status === SetupStepStatus.Failed && (
+        <XCircle className="text-destructive size-3.5" />
+      )}
       <span
         className={
-          status === "failed" ? "text-destructive" : "text-muted-foreground"
+          status === SetupStepStatus.Failed
+            ? "text-destructive"
+            : "text-muted-foreground"
         }
       >
         {label}

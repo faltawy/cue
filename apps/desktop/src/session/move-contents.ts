@@ -12,11 +12,13 @@ import { loadSessionContentSnapshot } from "./content-queries";
 
 import { liveQueryClient } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
+import { MoveSessionContentsStatus } from "~/session/enums";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 
 export type MoveSessionContentsResult =
   | {
-      status: "moved";
+      status: MoveSessionContentsStatus.Moved;
       sourceMeetingId: string;
       targetMeetingId: string;
       sourceTitle: string;
@@ -30,13 +32,13 @@ export type MoveSessionContentsResult =
       };
     }
   | {
-      status: "error";
+      status: MoveSessionContentsStatus.Error;
       message: string;
       sourceMeetingId?: string;
       targetMeetingId?: string;
     }
   | {
-      status: "nothing_to_move";
+      status: MoveSessionContentsStatus.NothingToMove;
       message: string;
       sourceMeetingId: string;
       targetMeetingId: string;
@@ -57,7 +59,8 @@ function isSessionBusy(sessionId: string): boolean {
   const live = listenerStore.getState().live;
   if (
     live.sessionId === sessionId &&
-    (live.status === "active" || live.status === "finalizing")
+    (live.status === LiveSessionStatus.Active ||
+      live.status === LiveSessionStatus.Finalizing)
   ) {
     return true;
   }
@@ -127,7 +130,7 @@ export async function moveSessionContents({
 }): Promise<MoveSessionContentsResult> {
   if (!sourceSessionId || !targetSessionId) {
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message: "Both the source and target meetings are required.",
       sourceMeetingId: sourceSessionId || undefined,
       targetMeetingId: targetSessionId || undefined,
@@ -136,7 +139,7 @@ export async function moveSessionContents({
 
   if (sourceSessionId === targetSessionId) {
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message: "Choose two different meetings.",
       sourceMeetingId: sourceSessionId,
       targetMeetingId: targetSessionId,
@@ -145,7 +148,7 @@ export async function moveSessionContents({
 
   if (isSessionBusy(sourceSessionId) || isSessionBusy(targetSessionId)) {
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message:
         "Wait until recording and transcription finish on both meetings, then try again.",
       sourceMeetingId: sourceSessionId,
@@ -160,7 +163,7 @@ export async function moveSessionContents({
 
   if (!source) {
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message: "The source meeting could not be loaded.",
       sourceMeetingId: sourceSessionId,
       targetMeetingId: targetSessionId,
@@ -168,7 +171,7 @@ export async function moveSessionContents({
   }
   if (!target) {
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message: "The target meeting could not be loaded.",
       sourceMeetingId: sourceSessionId,
       targetMeetingId: targetSessionId,
@@ -199,7 +202,7 @@ export async function moveSessionContents({
 
   if (!hasAnythingToMove) {
     return {
-      status: "nothing_to_move",
+      status: MoveSessionContentsStatus.NothingToMove,
       message:
         "The source meeting has no recording, transcript, or notes to move.",
       sourceMeetingId: sourceSessionId,
@@ -209,7 +212,7 @@ export async function moveSessionContents({
 
   if (targetHasAudio || target.transcripts.length > 0) {
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message:
         "The target meeting already has a recording or transcript. Move into an empty meeting, or delete the existing recording first.",
       sourceMeetingId: sourceSessionId,
@@ -287,7 +290,7 @@ export async function moveSessionContents({
       await rollbackCopiedAudio(targetSessionId);
     }
     return {
-      status: "error",
+      status: MoveSessionContentsStatus.Error,
       message: "The move could not be completed. Nothing was changed.",
       sourceMeetingId: sourceSessionId,
       targetMeetingId: targetSessionId,
@@ -306,7 +309,7 @@ export async function moveSessionContents({
   }
 
   return {
-    status: "moved",
+    status: MoveSessionContentsStatus.Moved,
     sourceMeetingId: sourceSessionId,
     targetMeetingId: targetSessionId,
     sourceTitle: source.title,

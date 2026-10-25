@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ShellProvider, useShell } from "~/contexts/shell";
 import { CustomSidebarHeader } from "~/sidebar/custom-sidebar-header";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 vi.mock("./body", async () => {
   const { ClassicMainSidebar } = await import("./shell-sidebar");
@@ -28,7 +29,7 @@ vi.mock("~/shared/main", () => ({
 vi.mock("~/sidebar", () => ({
   LeftSidebar: () => {
     const currentTab = useTabs((state) => state.currentTab);
-    return currentTab?.type === "empty" ? (
+    return currentTab?.type === TabType.Empty ? (
       <div>Notes sidebar</div>
     ) : (
       <CustomSidebarHeader />

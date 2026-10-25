@@ -2,6 +2,7 @@ import { cn } from "@anlg/utils";
 
 import { setSessionFabSelectionHost } from "./selection-slot";
 
+import { TabType } from "~/store/zustand/tabs/enums";
 import type { EditorView, Tab } from "~/store/zustand/tabs/schema";
 
 export function FloatingActionButton(_props: {
@@ -9,7 +10,7 @@ export function FloatingActionButton(_props: {
   audioExists?: boolean;
   currentView: EditorView;
   skipReason?: string | null;
-  tab: Extract<Tab, { type: "sessions" }>;
+  tab: Extract<Tab, { type: TabType.Sessions }>;
 }) {
   return (
     <div

@@ -1,8 +1,15 @@
+export enum SessionNoteViewType {
+  Raw = "raw",
+  Enhanced = "enhanced",
+  Transcript = "transcript",
+  Attachments = "attachments",
+}
+
 export type SessionNoteView =
-  | { type: "raw" }
-  | { type: "enhanced"; id: string }
-  | { type: "transcript" }
-  | { type: "attachments" };
+  | { type: SessionNoteViewType.Raw }
+  | { type: SessionNoteViewType.Enhanced; id: string }
+  | { type: SessionNoteViewType.Transcript }
+  | { type: SessionNoteViewType.Attachments };
 
 export function computeCurrentNoteTab(
   tabView: SessionNoteView | null,
@@ -14,41 +21,44 @@ export function computeCurrentNoteTab(
   const hasEnhancedNote = (id: string) => enhancedNoteIds.includes(id);
 
   if (isLiveSessionActive) {
-    if (tabView?.type === "raw") {
+    if (tabView?.type === SessionNoteViewType.Raw) {
       return tabView;
     }
-    if (tabView?.type === "enhanced" && hasEnhancedNote(tabView.id)) {
+    if (
+      tabView?.type === SessionNoteViewType.Enhanced &&
+      hasEnhancedNote(tabView.id)
+    ) {
       return tabView;
     }
-    if (tabView?.type === "transcript" && canShowTranscript) {
+    if (tabView?.type === SessionNoteViewType.Transcript && canShowTranscript) {
       return tabView;
     }
-    return { type: "raw" };
+    return { type: SessionNoteViewType.Raw };
   }
 
   if (tabView) {
-    if (tabView.type === "raw") {
+    if (tabView.type === SessionNoteViewType.Raw) {
       return tabView;
     }
-    if (tabView.type === "enhanced") {
+    if (tabView.type === SessionNoteViewType.Enhanced) {
       return hasEnhancedNote(tabView.id)
         ? tabView
         : firstEnhancedNoteId
-          ? { type: "enhanced", id: firstEnhancedNoteId }
-          : { type: "raw" };
+          ? { type: SessionNoteViewType.Enhanced, id: firstEnhancedNoteId }
+          : { type: SessionNoteViewType.Raw };
     }
-    if (tabView.type === "transcript" && canShowTranscript) {
+    if (tabView.type === SessionNoteViewType.Transcript && canShowTranscript) {
       return tabView;
     }
 
-    return { type: "raw" };
+    return { type: SessionNoteViewType.Raw };
   }
 
   if (firstEnhancedNoteId) {
-    return { type: "enhanced", id: firstEnhancedNoteId };
+    return { type: SessionNoteViewType.Enhanced, id: firstEnhancedNoteId };
   }
 
-  return { type: "raw" };
+  return { type: SessionNoteViewType.Raw };
 }
 
 export function createEditorTabs({
@@ -59,14 +69,16 @@ export function createEditorTabs({
   canShowTranscript: boolean;
 }): SessionNoteView[] {
   const enhancedTabs: SessionNoteView[] = enhancedNoteIds.map((id) => ({
-    type: "enhanced",
+    type: SessionNoteViewType.Enhanced,
     id,
   }));
 
   return [
     ...enhancedTabs,
-    { type: "raw" },
-    ...(canShowTranscript ? [{ type: "transcript" } as const] : []),
+    { type: SessionNoteViewType.Raw },
+    ...(canShowTranscript
+      ? [{ type: SessionNoteViewType.Transcript } as const]
+      : []),
   ];
 }
 

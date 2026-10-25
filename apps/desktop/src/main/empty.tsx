@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useCallback, useMemo } from "react";
 
+import { LinkedItemOpenBehavior } from "@anlg/editor/note";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
 import { Button } from "@anlg/ui/components/ui/button";
 import { Kbd, KbdGroup } from "@anlg/ui/components/ui/kbd";
@@ -22,11 +23,12 @@ import {
   useNewNoteAndListen,
 } from "~/shared/useNewNote";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function TabContentEmpty({
   tab: _tab,
 }: {
-  tab: Extract<Tab, { type: "empty" }>;
+  tab: Extract<Tab, { type: TabType.Empty }>;
 }) {
   return (
     <StandardContentWrapper>
@@ -69,8 +71,10 @@ function useNextMeeting() {
 
 function EmptyView() {
   const { t } = useLingui();
-  const newNote = useNewNote({ behavior: "current" });
-  const newNoteAndListen = useNewNoteAndListen({ behavior: "current" });
+  const newNote = useNewNote({ behavior: LinkedItemOpenBehavior.Current });
+  const newNoteAndListen = useNewNoteAndListen({
+    behavior: LinkedItemOpenBehavior.Current,
+  });
   const coachShortcut = useConfigValue("coach_shortcut");
   const next = useNextMeeting();
   const recentNotes = useHomeRecentNotes();
@@ -86,7 +90,9 @@ function EmptyView() {
     }
     try {
       const sessionId = await getOrCreateSessionForEventId(next.id);
-      openSessionAndListen(sessionId, { behavior: "current" });
+      openSessionAndListen(sessionId, {
+        behavior: LinkedItemOpenBehavior.Current,
+      });
     } catch (error) {
       console.error("[home] failed to record the next meeting", error);
     }

@@ -1,9 +1,9 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 
-import type { AppBridge, CoachEdit } from "./app-bridge";
+import { type AppBridge, type CoachEdit, CoachEditKind } from "./app-bridge";
 import { meetingTools } from "./meeting-server";
-import type { Word } from "./transcript";
+import { type Word } from "./transcript";
 
 const word = (
   id: string,
@@ -77,7 +77,9 @@ describe("transcript edit context tool", () => {
 });
 
 describe("explicit transcript edit tools", () => {
-  function edit(kind: "assign_speaker" | "correct_transcript"): CoachEdit {
+  function edit(
+    kind: CoachEditKind.AssignSpeaker | CoachEditKind.CorrectTranscript,
+  ): CoachEdit {
     return {
       id: "edit-1",
       session_id: "s1",
@@ -92,11 +94,11 @@ describe("explicit transcript edit tools", () => {
     const bridge = {
       assignTranscriptSpeaker: async (...args: unknown[]) => {
         calls.push(["speaker", ...args]);
-        return edit("assign_speaker");
+        return edit(CoachEditKind.AssignSpeaker);
       },
       correctTranscript: async (...args: unknown[]) => {
         calls.push(["correction", ...args]);
-        return edit("correct_transcript");
+        return edit(CoachEditKind.CorrectTranscript);
       },
     } as unknown as AppBridge;
     return { bridge, onEdit: () => {}, onUndo: () => {} };

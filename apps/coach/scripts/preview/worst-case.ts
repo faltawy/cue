@@ -1,8 +1,28 @@
-import type { Move } from "../../src/move";
-import type { CoachEvent, StatusEvent, WrapUpView } from "../../src/protocol";
-import type { TalkStats } from "../../src/talk-time";
+import { CoachEditKind, ProjectSource } from "../../src/app-bridge";
+import { BlockKind } from "../../src/blocks";
+import { CoachErrorKind } from "../../src/errors";
+import { StripState } from "../../src/meeting-state";
+import { type Move, MoveTag, MoveVerb } from "../../src/move";
+import { ProactiveState } from "../../src/proactive";
+import {
+  type CoachEvent,
+  CoachEventType,
+  SetupState,
+  type StatusEvent,
+  TurnKind,
+  WrapUpState,
+  type WrapUpView,
+} from "../../src/protocol";
+import { SourceKind } from "../../src/sources";
+import { type TalkStats } from "../../src/talk-time";
 import { screenshotThumb } from "../../src/ui/fixtures";
-import { type CoachState, initialState, reduce } from "../../src/ui/state";
+import {
+  ActionType,
+  type CoachState,
+  Connection,
+  initialState,
+  reduce,
+} from "../../src/ui/state";
 
 // Dev-only fixtures for the preview's "Demo data / Worst case / Empty / One / Huge" toggle.
 // Every value is something a real meeting, model or project can produce; limits are noted where the
@@ -10,19 +30,31 @@ import { type CoachState, initialState, reduce } from "../../src/ui/state";
 // server.ts keeps the last 6 transcript lines). Meeting titles, speaker names, prompts, answers,
 // question text and wrap-up fields are unbounded.
 
-export type DataSet = "worst" | "empty" | "one" | "huge" | "rich" | "coaching";
-export type Phase = "live" | "ended";
+export enum DataSet {
+  Worst = "worst",
+  Empty = "empty",
+  One = "one",
+  Huge = "huge",
+  Rich = "rich",
+  Coaching = "coaching",
+}
+export enum Phase {
+  Live = "live",
+  Ended = "ended",
+}
 
 const LONG_PATH =
   "/Users/aleksandra.wisniewska-kowalczyk/work/clients/northwind-industries-holdings/customer-success-playbooks";
 
 const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
-  type: "status",
+  type: CoachEventType.Status,
   project: {
     path: LONG_PATH,
-    source: "series",
-    series: "Northwind Industries Holdings × Contoso — Weekly implementation sync (EMEA, rescheduled)",
-    defaultProject: "/Users/aleksandra.wisniewska-kowalczyk/work/contoso-platform-monorepo-main",
+    source: ProjectSource.Series,
+    series:
+      "Northwind Industries Holdings × Contoso — Weekly implementation sync (EMEA, rescheduled)",
+    defaultProject:
+      "/Users/aleksandra.wisniewska-kowalczyk/work/contoso-platform-monorepo-main",
     needsFolder: false,
   },
   model: "sonnet",
@@ -30,24 +62,29 @@ const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
   appConnected: true,
   meeting: true,
   proactive: {
-    state: "capped",
+    state: ProactiveState.Capped,
     nudgesUsd: 100.0042,
     capUsd: 100,
     meetingUsd: 1_234.5678,
     meetingTokens: 125_000_000,
     cachedTokens: 120_000_000,
   },
-  setup: { state: "ready" },
+  setup: { state: SetupState.Ready },
   ...overrides,
 });
 
 const WORST_TITLE =
   "Northwind Industries Holdings × Contoso — Weekly implementation sync: Email Bcc rollout, WhatsApp open sessions & SSO (rescheduled from Tue)";
-const ARABIC_TITLE = "اجتماع المتابعة الأسبوعي مع فريق المبيعات والدعم الفني بخصوص تفعيل النسخة المخفية";
+const ARABIC_TITLE =
+  "اجتماع المتابعة الأسبوعي مع فريق المبيعات والدعم الفني بخصوص تفعيل النسخة المخفية";
 
 const worstTranscript: CoachEvent = {
-  type: "transcript",
-  strip: { state: "live", title: WORST_TITLE, startedAt: Date.now() - 4_512_000 },
+  type: CoachEventType.Transcript,
+  strip: {
+    state: StripState.Live,
+    title: WORST_TITLE,
+    startedAt: Date.now() - 4_512_000,
+  },
   lines: [
     {
       speaker: "Aleksandra Wiśniewska-Kowalczyk",
@@ -60,8 +97,16 @@ const worstTranscript: CoachEvent = {
       you: false,
       text: "Can you send it to bartholomew.fitzgerald@northwind-industries-holdings.example.com instead?",
     },
-    { speaker: "نور الهدى عبد الرحمن", you: false, text: "يعني الـ Bcc بيشتغل على كل الـ replies ولا على الـ tickets بس؟" },
-    { speaker: "Speaker 12", you: false, text: "https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved" },
+    {
+      speaker: "نور الهدى عبد الرحمن",
+      you: false,
+      text: "يعني الـ Bcc بيشتغل على كل الـ replies ولا على الـ tickets بس؟",
+    },
+    {
+      speaker: "Speaker 12",
+      you: false,
+      text: "https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved",
+    },
     { speaker: "You", you: true, text: "Let me check that while we talk." },
   ],
   pending:
@@ -100,31 +145,42 @@ Literal text the model echoed: <script>alert(1)</script> &amp; **unclosed bold
 
 const worstSteps: CoachEvent[] = [
   {
-    type: "tool",
+    type: CoachEventType.Tool,
     id: "w1",
     name: "Read",
-    label: "Read resolve-outbound-bcc-recipients-for-ticketing-integrations.test.ts",
-    activeLabel: "Reading resolve-outbound-bcc-recipients-for-ticketing-integrations.test.ts",
-    detail: "/Users/aleksandra.wisniewska-kowalczyk/work/contoso-platform-monorepo-main/backend/src/email-channel/service/__tests__/resolve-outbound-bcc-recipients-for-ticketing-integrations.test.ts",
+    label:
+      "Read resolve-outbound-bcc-recipients-for-ticketing-integrations.test.ts",
+    activeLabel:
+      "Reading resolve-outbound-bcc-recipients-for-ticketing-integrations.test.ts",
+    detail:
+      "/Users/aleksandra.wisniewska-kowalczyk/work/contoso-platform-monorepo-main/backend/src/email-channel/service/__tests__/resolve-outbound-bcc-recipients-for-ticketing-integrations.test.ts",
   },
   {
-    type: "tool_result",
+    type: CoachEventType.ToolResult,
     id: "w1",
     ok: true,
-    output: `${"{\"recipients\":[\"bartholomew.fitzgerald@northwind-industries-holdings.example.com\",\"first.last+billing-notifications@example.com\"],\"inboxId\":\"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\"organizationId\":\"e788a9ad-1f2b-4c3d-9e8f-7a6b5c4d3e2f\"}".repeat(18).slice(0, 3_999)}…`,
+    output: `${'{"recipients":["bartholomew.fitzgerald@northwind-industries-holdings.example.com","first.last+billing-notifications@example.com"],"inboxId":"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f","organizationId":"e788a9ad-1f2b-4c3d-9e8f-7a6b5c4d3e2f"}'.repeat(18).slice(0, 3_999)}…`,
     durationMs: 120,
   },
   {
-    type: "tool",
+    type: CoachEventType.Tool,
     id: "w2",
     name: "Grep",
     label: "Searched for “outbound_bcc_addresses|bcc_recipients|crmDro…”",
-    activeLabel: "Searching for “outbound_bcc_addresses|bcc_recipients|crmDro…”",
-    detail: "outbound_bcc_addresses|bcc_recipients|crmDropbox|forward_copy in backend/src",
+    activeLabel:
+      "Searching for “outbound_bcc_addresses|bcc_recipients|crmDro…”",
+    detail:
+      "outbound_bcc_addresses|bcc_recipients|crmDropbox|forward_copy in backend/src",
   },
-  { type: "tool_result", id: "w2", ok: true, output: null, durationMs: 900 },
   {
-    type: "tool",
+    type: CoachEventType.ToolResult,
+    id: "w2",
+    ok: true,
+    output: null,
+    durationMs: 900,
+  },
+  {
+    type: CoachEventType.Tool,
     id: "w3",
     name: "mcp__contoso__get_session_structured_field_values",
     label: "contoso · get session structured field values",
@@ -133,7 +189,7 @@ const worstSteps: CoachEvent[] = [
       'session id: 9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\norganization id: e788a9ad-1f2b-4c3d-9e8f-7a6b5c4d3e2f\nfields: ["crm_dropbox_address","bcc_enabled","ticketing_integration","region","partner_desk","renewal_risk","account_executive_email"]',
   },
   {
-    type: "tool_result",
+    type: CoachEventType.ToolResult,
     id: "w3",
     ok: false,
     output:
@@ -141,21 +197,30 @@ const worstSteps: CoachEvent[] = [
     durationMs: 30_000,
   },
   {
-    type: "tool",
+    type: CoachEventType.Tool,
     id: "w4",
     name: "Bash",
     label: "Ran git log --oneline -n 20 -- backend/src/email-channel/se…",
-    activeLabel: "Running git log --oneline -n 20 -- backend/src/email-channel/se…",
-    detail: "git log --oneline -n 20 -- backend/src/email-channel/service/resolve-outbound-bcc-recipients-for-ticketing-integrations.ts",
+    activeLabel:
+      "Running git log --oneline -n 20 -- backend/src/email-channel/se…",
+    detail:
+      "git log --oneline -n 20 -- backend/src/email-channel/service/resolve-outbound-bcc-recipients-for-ticketing-integrations.ts",
   },
-  { type: "tool_result", id: "w4", ok: true, output: "4d2f1a9 fix email threading: emit Message-ID and In-Reply-To headers", durationMs: 300 },
+  {
+    type: CoachEventType.ToolResult,
+    id: "w4",
+    ok: true,
+    output:
+      "4d2f1a9 fix email threading: emit Message-ID and In-Reply-To headers",
+    durationMs: 300,
+  },
 ];
 
 const longPrompt = `Can you check whether they can Bcc every reply to their CRM? Context from Aleksandra: "we lost two renewals because nobody saw the thread", the address is bartholomew.fitzgerald@northwind-industries-holdings.example.com
 Also look at https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved`;
 
 const usage = (contextTokens: number): CoachEvent => ({
-  type: "usage",
+  type: CoachEventType.Usage,
   usage: {
     model: "claude-sonnet",
     inputTokens: 12_840,
@@ -170,17 +235,24 @@ const usage = (contextTokens: number): CoachEvent => ({
 
 // Coaching moves: headline ≤ 100, line ≤ 400, watch_out ≤ 120, quote ≤ 300, speaker ≤ 80 (src/move.ts).
 // Talk time is computed from the transcript, so its speaker count and names are unbounded.
-const LONG_SPEAKER = "Christopher Alexander Montgomery III (Northwind Industries Holdings, Procurement EMEA)";
+const LONG_SPEAKER =
+  "Christopher Alexander Montgomery III (Northwind Industries Holdings, Procurement EMEA)";
 const LONG_QUOTE =
   "So just to be really clear about where we are, if the Bcc copy doesn't include the replies that come back through the ticketing integration then honestly we can't roll this out to the partner desk in Kraków at all, and I'd need to take that back to the steering group before the renewal call in two weeks";
 
 const WORST_MOVE: Move = {
-  tag: "decision_owner",
-  headline: "Name who confirms the integration replies and by when, before the renewal call, so it doesn't drift",
-  verb: "Say",
+  tag: MoveTag.DecisionOwner,
+  headline:
+    "Name who confirms the integration replies and by when, before the renewal call, so it doesn't drift",
+  verb: MoveVerb.Say,
   line: "قبل ما نكمل في الأسعار: أنا هأكدلكم يوم الخميس الساعة ١٢ إذا كانت الردود اللي بتيجي من خلال تكامل التذاكر بتتنسخ في الـ Bcc ولا لأ، وكريستوفر يبعتلنا رقمين الجلسات اللي فضلت مفتوحة من ١٤ سبتمبر عشان نراجعهم مع فريق الدعم قبل مكالمة التجديد مع المشتريات. ينفع كده؟",
-  watch_out: "Don't promise integration replies are copied; the docs say they aren't today, and procurement will hold you to it",
-  moment: { speaker: LONG_SPEAKER.slice(0, 80), quote: LONG_QUOTE.slice(0, 300), at: "125:07" },
+  watch_out:
+    "Don't promise integration replies are copied; the docs say they aren't today, and procurement will hold you to it",
+  moment: {
+    speaker: LONG_SPEAKER.slice(0, 80),
+    quote: LONG_QUOTE.slice(0, 300),
+    at: "125:07",
+  },
 };
 
 const TWELVE_NAMES = [
@@ -197,14 +269,28 @@ const TWELVE_NAMES = [
   "Speaker 7",
 ];
 
-export function talkOf(speakers: TalkStats["speakers"], spanMs: number, youLongestMs: number, youQuestions: number): TalkStats {
-  return { spanMs, totalMs: speakers.reduce((sum, entry) => sum + entry.ms, 0), speakers, youLongestMs, youQuestions };
+export function talkOf(
+  speakers: TalkStats["speakers"],
+  spanMs: number,
+  youLongestMs: number,
+  youQuestions: number,
+): TalkStats {
+  return {
+    spanMs,
+    totalMs: speakers.reduce((sum, entry) => sum + entry.ms, 0),
+    speakers,
+    youLongestMs,
+    youQuestions,
+  };
 }
 
 const TWELVE_SPEAKERS = talkOf(
   [
     { speaker: "You", ms: 2_000 },
-    ...TWELVE_NAMES.map((speaker, index) => ({ speaker, ms: [210_000, 150_000, 90_000][index] ?? 15_000 })),
+    ...TWELVE_NAMES.map((speaker, index) => ({
+      speaker,
+      ms: [210_000, 150_000, 90_000][index] ?? 15_000,
+    })),
   ],
   600_000,
   2_000,
@@ -214,7 +300,10 @@ const TWELVE_SPEAKERS = talkOf(
 const WHOLE_MEETING_TWELVE = talkOf(
   [
     { speaker: "You", ms: 3_212_000 },
-    ...TWELVE_NAMES.map((speaker, index) => ({ speaker, ms: [1_400_000, 900_000, 600_000][index] ?? 41_000 })),
+    ...TWELVE_NAMES.map((speaker, index) => ({
+      speaker,
+      ms: [1_400_000, 900_000, 600_000][index] ?? 41_000,
+    })),
   ],
   7_512_000,
   1_507_000,
@@ -222,19 +311,46 @@ const WHOLE_MEETING_TWELVE = talkOf(
 );
 
 const worstConversation: CoachEvent[] = [
-  { type: "divider", text: "Picked up where you left off after the app restarted during Northwind Industries Holdings weekly sync" },
-  { type: "user", kind: "ask", text: longPrompt },
-  ...worstSteps,
-  { type: "text", delta: ANSWER },
-  usage(191_000),
-  { type: "done", seconds: 41.7, ok: true, silent: false, interrupted: false },
-  { type: "user", kind: "nudge", text: "Question for you · 14:32" },
-  { type: "block", id: "worst-move", block: { kind: "move", ...WORST_MOVE } },
-  { type: "talk", talk: TWELVE_SPEAKERS },
-  { type: "done", seconds: 4.1, ok: true, silent: false, interrupted: false },
-  { type: "user", kind: "ask", text: "اكتب ملاحظة إن العميل محتاج الـ Bcc قبل التجديد" },
   {
-    type: "tool",
+    type: CoachEventType.Divider,
+    text: "Picked up where you left off after the app restarted during Northwind Industries Holdings weekly sync",
+  },
+  { type: CoachEventType.User, kind: TurnKind.Ask, text: longPrompt },
+  ...worstSteps,
+  { type: CoachEventType.Text, delta: ANSWER },
+  usage(191_000),
+  {
+    type: CoachEventType.Done,
+    seconds: 41.7,
+    ok: true,
+    silent: false,
+    interrupted: false,
+  },
+  {
+    type: CoachEventType.User,
+    kind: TurnKind.Nudge,
+    text: "Question for you · 14:32",
+  },
+  {
+    type: CoachEventType.Block,
+    id: "worst-move",
+    block: { kind: BlockKind.Move, ...WORST_MOVE },
+  },
+  { type: CoachEventType.Talk, talk: TWELVE_SPEAKERS },
+  {
+    type: CoachEventType.Done,
+    seconds: 4.1,
+    ok: true,
+    silent: false,
+    interrupted: false,
+  },
+  {
+    type: CoachEventType.User,
+    kind: TurnKind.Ask,
+    text: "اكتب ملاحظة إن العميل محتاج الـ Bcc قبل التجديد",
+  },
+  {
+    type: CoachEventType.Tool,
     id: "e1",
     name: "mcp__meeting__update_note",
     label: "Wrote to the notes",
@@ -242,64 +358,110 @@ const worstConversation: CoachEvent[] = [
     detail: "markdown: - العميل محتاج الـ Bcc قبل التجديد",
   },
   {
-    type: "edit",
+    type: CoachEventType.Edit,
     edit: {
       id: "edit-w1",
       session_id: "m1",
-      kind: "note",
-      summary: "- العميل محتاج الـ Bcc على كل الردود قبل التجديد في الربع الرابع، وإلا مش هيوسّعوا لباقي المناطق",
+      kind: CoachEditKind.Note,
+      summary:
+        "- العميل محتاج الـ Bcc على كل الردود قبل التجديد في الربع الرابع، وإلا مش هيوسّعوا لباقي المناطق",
       task_id: null,
     },
   },
-  { type: "tool_result", id: "e1", ok: true, output: "Added.", durationMs: 140 },
   {
-    type: "tool",
+    type: CoachEventType.ToolResult,
+    id: "e1",
+    ok: true,
+    output: "Added.",
+    durationMs: 140,
+  },
+  {
+    type: CoachEventType.Tool,
     id: "e2",
     name: "mcp__meeting__add_action_item",
     label: "Added an action item",
     activeLabel: "Adding an action item",
-    detail: "text: Send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps and the two session IDs that stayed open on WhatsApp since 14 September",
+    detail:
+      "text: Send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps and the two session IDs that stayed open on WhatsApp since 14 September",
   },
   {
-    type: "edit",
+    type: CoachEventType.Edit,
     edit: {
       id: "edit-w2",
       session_id: "m1",
-      kind: "add_action_item",
-      summary: "Send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps and the two session IDs that stayed open on WhatsApp since 14 September",
+      kind: CoachEditKind.AddActionItem,
+      summary:
+        "Send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps and the two session IDs that stayed open on WhatsApp since 14 September",
       task_id: "task-1",
     },
   },
-  { type: "undone", id: "edit-w1", summary: "" },
-  { type: "tool_result", id: "e2", ok: true, output: "Added.", durationMs: 210 },
-  { type: "text", delta: "تمام، ضفت الملاحظة." },
-  { type: "done", seconds: 3.2, ok: true, silent: false, interrupted: false },
+  { type: CoachEventType.Undone, id: "edit-w1", summary: "" },
   {
-    type: "edit",
+    type: CoachEventType.ToolResult,
+    id: "e2",
+    ok: true,
+    output: "Added.",
+    durationMs: 210,
+  },
+  { type: CoachEventType.Text, delta: "تمام، ضفت الملاحظة." },
+  {
+    type: CoachEventType.Done,
+    seconds: 3.2,
+    ok: true,
+    silent: false,
+    interrupted: false,
+  },
+  {
+    type: CoachEventType.Edit,
     edit: {
       id: "edit-w3",
       session_id: "m1",
-      kind: "complete_action_item",
+      kind: CoachEditKind.CompleteActionItem,
       summary: "Q3 Board Deck — FINAL (revised) v12 [approved by legal].pdf",
       task_id: "task-2",
     },
   },
-  { type: "user", kind: "ask", text: "What did Jo just say?" },
   {
-    type: "error",
+    type: CoachEventType.User,
+    kind: TurnKind.Ask,
+    text: "What did Jo just say?",
+  },
+  {
+    type: CoachEventType.Error,
     error: {
-      kind: "auth",
+      kind: CoachErrorKind.Auth,
       title: "Claude sign-in expired",
-      message: "Open Terminal, run `claude`, and type `/login`. Then try again.",
+      message:
+        "Open Terminal, run `claude`, and type `/login`. Then try again.",
       detail: `Failed to authenticate. API Error: 401 {"type":"error","error":{"type":"authentication_error","message":"OAuth token has expired. Please obtain a new token or refresh your existing token."},"request_id":"req_011CUZ9f8e7d6c5b4a4c3d8e2f1a0b9c8d7e6f"}\n    at /Users/aleksandra.wisniewska-kowalczyk/Library/Caches/com.hyprnote.dev/claude-code/0.3.302/claude:1:28471923`,
     },
   },
-  { type: "done", seconds: 1.2, ok: false, silent: false, interrupted: false },
-  { type: "notice", text: "That edit can no longer be undone here because a new meeting started in a different series folder." },
-  { type: "user", kind: "ask", text: "Draft a reply to Aleksandra" },
-  { type: "tool", id: "q1", name: "AskUserQuestion", label: "Asked you a question", activeLabel: "Waiting for your answer", detail: null },
   {
-    type: "question",
+    type: CoachEventType.Done,
+    seconds: 1.2,
+    ok: false,
+    silent: false,
+    interrupted: false,
+  },
+  {
+    type: CoachEventType.Notice,
+    text: "That edit can no longer be undone here because a new meeting started in a different series folder.",
+  },
+  {
+    type: CoachEventType.User,
+    kind: TurnKind.Ask,
+    text: "Draft a reply to Aleksandra",
+  },
+  {
+    type: CoachEventType.Tool,
+    id: "q1",
+    name: "AskUserQuestion",
+    label: "Asked you a question",
+    activeLabel: "Waiting for your answer",
+    detail: null,
+  },
+  {
+    type: CoachEventType.Question,
     id: "q1",
     questions: [
       {
@@ -308,9 +470,17 @@ const worstConversation: CoachEvent[] = [
         header: "Tone of the reply",
         multiSelect: false,
         options: [
-          { label: "Neutral professional (Recommended)", description: "Polite, plain, no filler. Safe default for a customer or partner who escalated." },
+          {
+            label: "Neutral professional (Recommended)",
+            description:
+              "Polite, plain, no filler. Safe default for a customer or partner who escalated.",
+          },
           { label: "Warm", description: "" },
-          { label: "Benachrichtigungseinstellungen-konform und förmlich", description: "Formal German register, the way their legal team writes" },
+          {
+            label: "Benachrichtigungseinstellungen-konform und förmlich",
+            description:
+              "Formal German register, the way their legal team writes",
+          },
           { label: "بالعربي", description: "شبه رسمي، نفس المحتوى" },
         ],
       },
@@ -319,8 +489,15 @@ const worstConversation: CoachEvent[] = [
         header: "Scope",
         multiSelect: true,
         options: [
-          { label: "Bcc setup", description: "Steps for outbound_bcc_addresses" },
-          { label: "WhatsApp sessions", description: "The two session IDs that stayed open since 14 September" },
+          {
+            label: "Bcc setup",
+            description: "Steps for outbound_bcc_addresses",
+          },
+          {
+            label: "WhatsApp sessions",
+            description:
+              "The two session IDs that stayed open since 14 September",
+          },
         ],
       },
     ],
@@ -328,19 +505,31 @@ const worstConversation: CoachEvent[] = [
 ];
 
 const worstWrapUp = (title: string): WrapUpView => ({
-  state: "ready",
+  state: WrapUpState.Ready,
   title,
   wrapUp: {
     commitments: [
-      { who: "You", what: "send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps", when: "today" },
+      {
+        who: "You",
+        what: "send Aleksandra Wiśniewska-Kowalczyk the Bcc setup steps",
+        when: "today",
+      },
       {
         who: "Christopher Alexander Montgomery III",
         what: "share the two WhatsApp session IDs that stayed open since 14 September, plus screenshots of the agent view showing them as still assigned",
         when: "by end of day Thursday 16 October (Riyadh time), before the renewal call with procurement",
       },
       { who: "Them", what: "confirm the CRM dropbox address", when: null },
-      { who: "Jo", what: "invite bartholomew.fitzgerald@northwind-industries-holdings.example.com", when: "Fri" },
-      { who: "نور الهدى عبد الرحمن", what: "ترسل قائمة بالفرق اللي محتاجة نسخة", when: "الأسبوع الجاي" },
+      {
+        who: "Jo",
+        what: "invite bartholomew.fitzgerald@northwind-industries-holdings.example.com",
+        when: "Fri",
+      },
+      {
+        who: "نور الهدى عبد الرحمن",
+        what: "ترسل قائمة بالفرق اللي محتاجة نسخة",
+        when: "الأسبوع الجاي",
+      },
     ],
     open_questions: [
       "Should the Bcc copy include internal notes?",
@@ -373,20 +562,29 @@ Ahmad`,
       next_time: [
         {
           moment: { speaker: LONG_SPEAKER, at: "14:22", quote: LONG_QUOTE },
-          headline: "Answer the integration question before moving on to pricing, or give a date for the answer",
-          verb: "Ask",
+          headline:
+            "Answer the integration question before moving on to pricing, or give a date for the answer",
+          verb: MoveVerb.Ask,
           line: "Before we move on, can I come back to you by Thursday on whether integration replies get the Bcc too?",
         },
         {
-          moment: { speaker: "نور الهدى عبد الرحمن", at: null, quote: "الأسبوع الجاي" },
+          moment: {
+            speaker: "نور الهدى عبد الرحمن",
+            at: null,
+            quote: "الأسبوع الجاي",
+          },
           headline: "Pin the day",
-          verb: "Ask",
+          verb: MoveVerb.Ask,
           line: "تمام، ينفع نقول يوم الثلاثاء؟ ومين هيبعت القائمة؟",
         },
         {
-          moment: { speaker: "You", at: "27:45", quote: "And the other thing about the reporting layer is" },
+          moment: {
+            speaker: "You",
+            at: "27:45",
+            quote: "And the other thing about the reporting layer is",
+          },
           headline: "Stop and hand the floor back",
-          verb: "Ask",
+          verb: MoveVerb.Ask,
           line: "What do you think?",
         },
       ],
@@ -402,33 +600,50 @@ Ahmad`,
   talk: WHOLE_MEETING_TWELVE,
 });
 
-const waiting = (lastTitle: string | null): CoachEvent => ({ type: "transcript", strip: { state: "waiting", lastTitle, endedAt: lastTitle ? Date.now() - 90_000 : null }, lines: [], pending: "" });
+const waiting = (lastTitle: string | null): CoachEvent => ({
+  type: CoachEventType.Transcript,
+  strip: {
+    state: StripState.Waiting,
+    lastTitle,
+    endedAt: lastTitle ? Date.now() - 90_000 : null,
+  },
+  lines: [],
+  pending: "",
+});
 
 function worst(phase: Phase): CoachEvent[] {
-  if (phase === "ended") {
+  if (phase === Phase.Ended) {
     return [
       status({ busy: false, meeting: false }),
       waiting(ARABIC_TITLE),
       ...worstConversation.slice(0, 26),
-      { type: "wrapup", wrapUp: worstWrapUp(ARABIC_TITLE) },
+      { type: CoachEventType.Wrapup, wrapUp: worstWrapUp(ARABIC_TITLE) },
     ];
   }
   return [status(), worstTranscript, ...worstConversation];
 }
 
 function empty(phase: Phase): CoachEvent[] {
-  if (phase === "ended") {
+  if (phase === Phase.Ended) {
     return [
       status({ busy: false, meeting: false }),
       waiting("Untitled"),
       {
-        type: "wrapup",
+        type: CoachEventType.Wrapup,
         wrapUp: {
-          state: "ready",
+          state: WrapUpState.Ready,
           title: null,
-          wrapUp: { commitments: [], open_questions: [], follow_up_draft: "", coaching: { went_well: [], next_time: [] } },
+          wrapUp: {
+            commitments: [],
+            open_questions: [],
+            follow_up_draft: "",
+            coaching: { went_well: [], next_time: [] },
+          },
           commitments: [],
-          actions: { addActionItems: { enabled: false, hint: null }, logToClients: { enabled: false, hint: null } },
+          actions: {
+            addActionItems: { enabled: false, hint: null },
+            logToClients: { enabled: false, hint: null },
+          },
           added: false,
           logged: false,
           talk: null,
@@ -437,35 +652,104 @@ function empty(phase: Phase): CoachEvent[] {
     ];
   }
   return [
-    status({ busy: false, project: { path: "/", source: "default", series: null, defaultProject: "/", needsFolder: false } }),
-    { type: "transcript", strip: { state: "live", title: "Untitled", startedAt: null }, lines: [], pending: "" },
+    status({
+      busy: false,
+      project: {
+        path: "/",
+        source: ProjectSource.Default,
+        series: null,
+        defaultProject: "/",
+        needsFolder: false,
+      },
+    }),
+    {
+      type: CoachEventType.Transcript,
+      strip: { state: StripState.Live, title: "Untitled", startedAt: null },
+      lines: [],
+      pending: "",
+    },
   ];
 }
 
 function one(phase: Phase): CoachEvent[] {
   const base: CoachEvent[] = [
-    status({ busy: phase === "live", project: { path: "/Users/jo/a", source: "default", series: "J", defaultProject: "/Users/jo/a", needsFolder: false } }),
-    phase === "live"
-      ? { type: "transcript", strip: { state: "live", title: "J", startedAt: Date.now() - 5_000 }, lines: [{ speaker: "Jo", you: false, text: "Ok." }], pending: "" }
+    status({
+      busy: phase === Phase.Live,
+      project: {
+        path: "/Users/jo/a",
+        source: ProjectSource.Default,
+        series: "J",
+        defaultProject: "/Users/jo/a",
+        needsFolder: false,
+      },
+    }),
+    phase === Phase.Live
+      ? {
+          type: CoachEventType.Transcript,
+          strip: {
+            state: StripState.Live,
+            title: "J",
+            startedAt: Date.now() - 5_000,
+          },
+          lines: [{ speaker: "Jo", you: false, text: "Ok." }],
+          pending: "",
+        }
       : waiting("J"),
-    { type: "user", kind: "ask", text: "?" },
-    { type: "tool", id: "o1", name: "Glob", label: "Searched files", activeLabel: "Searching files", detail: "*" },
-    { type: "tool_result", id: "o1", ok: true, output: "a", durationMs: 1 },
-    { type: "text", delta: "1" },
+    { type: CoachEventType.User, kind: TurnKind.Ask, text: "?" },
+    {
+      type: CoachEventType.Tool,
+      id: "o1",
+      name: "Glob",
+      label: "Searched files",
+      activeLabel: "Searching files",
+      detail: "*",
+    },
+    {
+      type: CoachEventType.ToolResult,
+      id: "o1",
+      ok: true,
+      output: "a",
+      durationMs: 1,
+    },
+    { type: CoachEventType.Text, delta: "1" },
     usage(100_000),
-    { type: "done", seconds: 1, ok: true, silent: false, interrupted: false },
+    {
+      type: CoachEventType.Done,
+      seconds: 1,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
   ];
-  if (phase === "ended") {
+  if (phase === Phase.Ended) {
     return [
       ...base,
       {
-        type: "wrapup",
+        type: CoachEventType.Wrapup,
         wrapUp: {
-          state: "ready",
+          state: WrapUpState.Ready,
           title: "J",
-          wrapUp: { commitments: [{ who: "Jo", what: "call", when: null }], open_questions: ["Why?"], follow_up_draft: "Thanks.", coaching: { went_well: ["X"], next_time: [{ moment: { speaker: "Jo", at: "00:01", quote: "Ok." }, headline: "Ask", verb: "Ask", line: "?" }] } },
+          wrapUp: {
+            commitments: [{ who: "Jo", what: "call", when: null }],
+            open_questions: ["Why?"],
+            follow_up_draft: "Thanks.",
+            coaching: {
+              went_well: ["X"],
+              next_time: [
+                {
+                  moment: { speaker: "Jo", at: "00:01", quote: "Ok." },
+                  headline: "Ask",
+                  verb: MoveVerb.Ask,
+                  line: "?",
+                },
+              ],
+            },
+          },
           commitments: [],
-          actions: { addActionItems: { enabled: true, hint: null }, logToClients: { enabled: false, hint: null } },
+          actions: {
+            addActionItems: { enabled: true, hint: null },
+            logToClients: { enabled: false, hint: null },
+          },
           added: false,
           logged: false,
           talk: talkOf([{ speaker: "You", ms: 60_000 }], 60_000, 60_000, 1),
@@ -475,12 +759,26 @@ function one(phase: Phase): CoachEvent[] {
   }
   return [
     ...base,
-    { type: "user", kind: "ask", text: "Reply?" },
-    { type: "tool", id: "oq", name: "AskUserQuestion", label: "Asked you a question", activeLabel: "Waiting for your answer", detail: null },
+    { type: CoachEventType.User, kind: TurnKind.Ask, text: "Reply?" },
     {
-      type: "question",
+      type: CoachEventType.Tool,
       id: "oq",
-      questions: [{ question: "Send it?", header: "Q", multiSelect: false, options: [{ label: "Yes", description: "" }] }],
+      name: "AskUserQuestion",
+      label: "Asked you a question",
+      activeLabel: "Waiting for your answer",
+      detail: null,
+    },
+    {
+      type: CoachEventType.Question,
+      id: "oq",
+      questions: [
+        {
+          question: "Send it?",
+          header: "Q",
+          multiSelect: false,
+          options: [{ label: "Yes", description: "" }],
+        },
+      ],
     },
   ];
 }
@@ -501,28 +799,89 @@ const recipients = resolveOutboundBcc(inbox);
 function huge(phase: Phase): CoachEvent[] {
   const events: CoachEvent[] = [
     status({ busy: false }),
-    phase === "live" ? worstTranscript : waiting(WORST_TITLE),
+    phase === Phase.Live ? worstTranscript : waiting(WORST_TITLE),
   ];
   for (let turn = 0; turn < 199; turn += 1) {
     events.push(
-      { type: "user", kind: turn % 10 === 9 ? "nudge" : "ask", text: turn % 10 === 9 ? `You were mentioned · ${String(9 + Math.floor(turn / 30)).padStart(2, "0")}:${String((turn * 7) % 60).padStart(2, "0")}` : `Question ${turn + 1}: what did they just ask about the Bcc rollout?` },
-      { type: "tool", id: `h${turn}`, name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
-      { type: "tool_result", id: `h${turn}`, ok: true, output: "…", durationMs: 300 },
-      { type: "text", delta: `Answer ${turn + 1}: Aleksandra asked whether every reply is copied to the CRM.` },
-      { type: "done", seconds: 3, ok: true, silent: false, interrupted: false },
+      {
+        type: CoachEventType.User,
+        kind: turn % 10 === 9 ? TurnKind.Nudge : TurnKind.Ask,
+        text:
+          turn % 10 === 9
+            ? `You were mentioned · ${String(9 + Math.floor(turn / 30)).padStart(2, "0")}:${String((turn * 7) % 60).padStart(2, "0")}`
+            : `Question ${turn + 1}: what did they just ask about the Bcc rollout?`,
+      },
+      {
+        type: CoachEventType.Tool,
+        id: `h${turn}`,
+        name: "mcp__meeting__live_transcript",
+        label: "Read the transcript",
+        activeLabel: "Reading the transcript",
+        detail: null,
+      },
+      {
+        type: CoachEventType.ToolResult,
+        id: `h${turn}`,
+        ok: true,
+        output: "…",
+        durationMs: 300,
+      },
+      {
+        type: CoachEventType.Text,
+        delta: `Answer ${turn + 1}: Aleksandra asked whether every reply is copied to the CRM.`,
+      },
+      {
+        type: CoachEventType.Done,
+        seconds: 3,
+        ok: true,
+        silent: false,
+        interrupted: false,
+      },
     );
   }
-  events.push({ type: "user", kind: "ask", text: "Walk me through everything about Bcc, in detail." });
+  events.push({
+    type: CoachEventType.User,
+    kind: TurnKind.Ask,
+    text: "Walk me through everything about Bcc, in detail.",
+  });
   for (let step = 0; step < 50; step += 1) {
     events.push(
-      { type: "tool", id: `s${step}`, name: step % 2 ? "Grep" : "Read", label: step % 2 ? `Searched for “bcc_${step}”` : `Read outbound-${step}.ts`, activeLabel: "Reading", detail: `backend/src/email-channel/service/outbound-${step}.ts` },
-      { type: "tool_result", id: `s${step}`, ok: step % 17 !== 0, output: `line ${step}`, durationMs: 100 },
+      {
+        type: CoachEventType.Tool,
+        id: `s${step}`,
+        name: step % 2 ? "Grep" : "Read",
+        label:
+          step % 2 ? `Searched for “bcc_${step}”` : `Read outbound-${step}.ts`,
+        activeLabel: "Reading",
+        detail: `backend/src/email-channel/service/outbound-${step}.ts`,
+      },
+      {
+        type: CoachEventType.ToolResult,
+        id: `s${step}`,
+        ok: step % 17 !== 0,
+        output: `line ${step}`,
+        durationMs: 100,
+      },
     );
   }
   let answer = "";
   while (answer.length < 30_000) answer += HUGE_SECTION;
-  events.push({ type: "text", delta: answer.slice(0, 30_000) }, usage(150_000), { type: "done", seconds: 88, ok: true, silent: false, interrupted: false });
-  if (phase === "ended") events.push({ type: "wrapup", wrapUp: worstWrapUp(WORST_TITLE) });
+  events.push(
+    { type: CoachEventType.Text, delta: answer.slice(0, 30_000) },
+    usage(150_000),
+    {
+      type: CoachEventType.Done,
+      seconds: 88,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
+  );
+  if (phase === Phase.Ended)
+    events.push({
+      type: CoachEventType.Wrapup,
+      wrapUp: worstWrapUp(WORST_TITLE),
+    });
   return events;
 }
 
@@ -533,9 +892,20 @@ const LONG_ITEM =
   "share the two WhatsApp session IDs that stayed open since 14 September, plus screenshots of the agent view showing them as still assigned to bartholomew.fitzgerald@northwind-industries-holdings.example.com, and confirm with procurement that the renewal call can move to the week after the Bcc rollout lands";
 
 const RICH_ITEMS = [
-  { text: LONG_ITEM, owner: "Christopher Alexander Montgomery III", due: "by end of day Thursday 16 October (Riyadh time)" },
-  { text: "ترسل قائمة بالفرق اللي محتاجة نسخة من كل رد قبل التجديد", owner: "نور الهدى عبد الرحمن", due: "الأسبوع الجاي" },
-  { text: "invite https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved", owner: "Jo" },
+  {
+    text: LONG_ITEM,
+    owner: "Christopher Alexander Montgomery III",
+    due: "by end of day Thursday 16 October (Riyadh time)",
+  },
+  {
+    text: "ترسل قائمة بالفرق اللي محتاجة نسخة من كل رد قبل التجديد",
+    owner: "نور الهدى عبد الرحمن",
+    due: "الأسبوع الجاي",
+  },
+  {
+    text: "invite https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments&filter=unresolved",
+    owner: "Jo",
+  },
   { text: "X", owner: "You" },
   ...Array.from({ length: 26 }, (_, index) => ({
     text: `follow up on open question ${index + 5} about the Bcc rollout`,
@@ -544,28 +914,57 @@ const RICH_ITEMS = [
   })),
 ];
 
-const thumb = (width: number, height: number, label: string) => ({ thumb: screenshotThumb(width, height, label), width, height });
+const thumb = (width: number, height: number, label: string) => ({
+  thumb: screenshotThumb(width, height, label),
+  width,
+  height,
+});
 
 function rich(phase: Phase): CoachEvent[] {
   const edit = (id: string, index: number, summary: string): CoachEvent => ({
-    type: "edit",
-    edit: { id, session_id: "m1", kind: "add_action_item", summary, task_id: id },
+    type: CoachEventType.Edit,
+    edit: {
+      id,
+      session_id: "m1",
+      kind: CoachEditKind.AddActionItem,
+      summary,
+      task_id: id,
+    },
     block: { id: "rich-actions", index },
   });
   return [
-    status({ busy: false, meeting: phase === "live" }),
-    phase === "live" ? worstTranscript : waiting(WORST_TITLE),
+    status({ busy: false, meeting: phase === Phase.Live }),
+    phase === Phase.Live ? worstTranscript : waiting(WORST_TITLE),
     {
-      type: "user",
-      kind: "ask",
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
       text: "Here are the screenshots from Aleksandra Wiśniewska-Kowalczyk's team — what's wrong with the agent view? https://example.com/workspaces/northwind/projects/q3-launch/docs/9f8e7d6c5b4a?tab=comments",
-      images: [thumb(192, 8, "panorama"), thumb(8, 192, "tall"), thumb(1, 1, ""), thumb(192, 144, "Agent view")],
+      images: [
+        thumb(192, 8, "panorama"),
+        thumb(8, 192, "tall"),
+        thumb(1, 1, ""),
+        thumb(192, 144, "Agent view"),
+      ],
     },
-    { type: "text", delta: "Both sessions are still assigned to an agent who went offline on 14 September, so they never auto-close." },
-    { type: "done", seconds: 9.4, ok: true, silent: false, interrupted: false },
-    { type: "user", kind: "ask", text: "Show me every diagram we have for the Bcc rollout" },
     {
-      type: "text",
+      type: CoachEventType.Text,
+      delta:
+        "Both sessions are still assigned to an agent who went offline on 14 September, so they never auto-close.",
+    },
+    {
+      type: CoachEventType.Done,
+      seconds: 9.4,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
+    {
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
+      text: "Show me every diagram we have for the Bcc rollout",
+    },
+    {
+      type: CoachEventType.Text,
       delta: [
         "![Outbound email flow, from the agent's reply through Bcc resolution to the provider, including the ticketing integration branch that skips the copy](docs/email-flow.png)",
         "![](docs/huge-architecture.png)",
@@ -579,51 +978,152 @@ function rich(phase: Phase): CoachEvent[] {
         "![inline](data:image/png;base64,iVBORw0KGgo=)",
       ].join("\n\n"),
     },
-    { type: "done", seconds: 6.3, ok: true, silent: false, interrupted: false },
-    { type: "user", kind: "ask", text: "", images: [thumb(144, 192, "Settings")] },
-    { type: "text", delta: "That's the inbox settings page; Outbound Bcc addresses is the third field." },
-    { type: "done", seconds: 3.1, ok: true, silent: false, interrupted: false },
-    { type: "user", kind: "ask", text: "List every promise from this call as action items" },
-    { type: "tool", id: "rw1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: null },
-    { type: "tool_result", id: "rw1", ok: true, output: "…", durationMs: 380 },
-    { type: "text", delta: "Thirty promises; most are follow-ups on open questions." },
-    { type: "block", id: "rich-actions", block: { kind: "actions", items: RICH_ITEMS } },
-    { type: "block_check", id: "rich-actions", index: 1, checked: true },
-    { type: "block_check", id: "rich-actions", index: 3, checked: true },
+    {
+      type: CoachEventType.Done,
+      seconds: 6.3,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
+    {
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
+      text: "",
+      images: [thumb(144, 192, "Settings")],
+    },
+    {
+      type: CoachEventType.Text,
+      delta:
+        "That's the inbox settings page; Outbound Bcc addresses is the third field.",
+    },
+    {
+      type: CoachEventType.Done,
+      seconds: 3.1,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
+    {
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
+      text: "List every promise from this call as action items",
+    },
+    {
+      type: CoachEventType.Tool,
+      id: "rw1",
+      name: "mcp__meeting__live_transcript",
+      label: "Read the transcript",
+      activeLabel: "Reading the transcript",
+      detail: null,
+    },
+    {
+      type: CoachEventType.ToolResult,
+      id: "rw1",
+      ok: true,
+      output: "…",
+      durationMs: 380,
+    },
+    {
+      type: CoachEventType.Text,
+      delta: "Thirty promises; most are follow-ups on open questions.",
+    },
+    {
+      type: CoachEventType.Block,
+      id: "rich-actions",
+      block: { kind: BlockKind.Actions, items: RICH_ITEMS },
+    },
+    {
+      type: CoachEventType.BlockCheck,
+      id: "rich-actions",
+      index: 1,
+      checked: true,
+    },
+    {
+      type: CoachEventType.BlockCheck,
+      id: "rich-actions",
+      index: 3,
+      checked: true,
+    },
     edit("rich-e1", 0, LONG_ITEM),
     edit("rich-e2", 2, "Jo: invite …"),
-    { type: "undone", id: "rich-e2", summary: "" },
+    { type: CoachEventType.Undone, id: "rich-e2", summary: "" },
     edit("rich-e3", 1, RICH_ITEMS[1]?.text ?? ""),
-    { type: "done", seconds: 12.6, ok: true, silent: false, interrupted: false },
-    { type: "user", kind: "ask", text: "What does their CTO say publicly about Bcc, and did anyone email us?" },
-    { type: "tool", id: "rw2", name: "WebSearch", label: "Searched the web for “Northwind Industries Holdings CTO Bcc C…”", activeLabel: "Searching the web for “Northwind Industries Holdings CTO Bcc C…”", detail: "query: Northwind Industries Holdings CTO Bcc CRM" },
-    { type: "tool_result", id: "rw2", ok: true, output: "…", durationMs: 2_400 },
-    { type: "text", delta: "Their CTO wrote that every customer reply must reach the CRM; nobody emailed about the address yet." },
     {
-      type: "sources",
+      type: CoachEventType.Done,
+      seconds: 12.6,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
+    {
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
+      text: "What does their CTO say publicly about Bcc, and did anyone email us?",
+    },
+    {
+      type: CoachEventType.Tool,
+      id: "rw2",
+      name: "WebSearch",
+      label: "Searched the web for “Northwind Industries Holdings CTO Bcc C…”",
+      activeLabel:
+        "Searching the web for “Northwind Industries Holdings CTO Bcc C…”",
+      detail: "query: Northwind Industries Holdings CTO Bcc CRM",
+    },
+    {
+      type: CoachEventType.ToolResult,
+      id: "rw2",
+      ok: true,
+      output: "…",
+      durationMs: 2_400,
+    },
+    {
+      type: CoachEventType.Text,
+      delta:
+        "Their CTO wrote that every customer reply must reach the CRM; nobody emailed about the address yet.",
+    },
+    {
+      type: CoachEventType.Sources,
       sources: [
         {
-          kind: "web",
+          kind: SourceKind.Web,
           url: "https://docs.northwind-industries-holdings.example.com/engineering/blog/2026/10/why-every-customer-reply-must-land-in-the-crm-before-renewal?utm_source=newsletter&utm_medium=email",
           label: "docs.northwind-industries-holdings.example.com",
-          title: "Why every customer reply must land in the CRM before renewal — Northwind Engineering Blog",
+          title:
+            "Why every customer reply must land in the CRM before renewal — Northwind Engineering Blog",
         },
         {
-          kind: "email",
+          kind: SourceKind.Email,
           url: "https://mail.google.com/mail/u/0/#all/18f2a9c4b7e1d3a0",
-          label: "Re: Fwd: Re: Bcc on every reply before the Q4 renewal (Northwind × Contoso, EMEA)…",
-          title: "Re: Fwd: Re: Bcc on every reply before the Q4 renewal\nAleksandra Wiśniewska-Kowalczyk",
+          label:
+            "Re: Fwd: Re: Bcc on every reply before the Q4 renewal (Northwind × Contoso, EMEA)…",
+          title:
+            "Re: Fwd: Re: Bcc on every reply before the Q4 renewal\nAleksandra Wiśniewska-Kowalczyk",
         },
-        { kind: "email", url: "https://mail.google.com/mail/u/0/#all/18f2b0d1e2f3a4b5", label: "طلب تفعيل النسخة المخفية لكل الردود", title: "طلب تفعيل النسخة المخفية لكل الردود" },
-        { kind: "email", url: "https://mail.google.com/mail/u/0/#all/18f2c1c1c1c1c1c1", label: "(no subject)", title: "(no subject)\nJo" },
-        { kind: "web", url: "https://x.co/a", label: "x.co", title: "https://x.co/a" },
+        {
+          kind: SourceKind.Email,
+          url: "https://mail.google.com/mail/u/0/#all/18f2b0d1e2f3a4b5",
+          label: "طلب تفعيل النسخة المخفية لكل الردود",
+          title: "طلب تفعيل النسخة المخفية لكل الردود",
+        },
+        {
+          kind: SourceKind.Email,
+          url: "https://mail.google.com/mail/u/0/#all/18f2c1c1c1c1c1c1",
+          label: "(no subject)",
+          title: "(no subject)\nJo",
+        },
+        {
+          kind: SourceKind.Web,
+          url: "https://x.co/a",
+          label: "x.co",
+          title: "https://x.co/a",
+        },
       ],
     },
     {
-      type: "block",
+      type: CoachEventType.Block,
       id: "rich-replies",
       block: {
-        kind: "replies",
+        kind: BlockKind.Replies,
         options: [
           "Draft a reply to Aleksandra confirming the Bcc rollout dates",
           "اكتب ملخص للاجتماع عشان أبعته لفريق المبيعات على سلاك",
@@ -631,62 +1131,207 @@ function rich(phase: Phase): CoachEvent[] {
         ],
       },
     },
-    { type: "done", seconds: 14.2, ok: true, silent: false, interrupted: false },
+    {
+      type: CoachEventType.Done,
+      seconds: 14.2,
+      ok: true,
+      silent: false,
+      interrupted: false,
+    },
   ];
 }
 
-const MOVE_DONE: CoachEvent = { type: "done", seconds: 3.4, ok: true, silent: false, interrupted: false };
+const MOVE_DONE: CoachEvent = {
+  type: CoachEventType.Done,
+  seconds: 3.4,
+  ok: true,
+  silent: false,
+  interrupted: false,
+};
 
-const nudgeMove = (id: string, time: string, move: Move, talk?: TalkStats): CoachEvent[] => [
-  { type: "user", kind: "nudge", text: `Question for you · ${time}` },
-  { type: "block", id, block: { kind: "move", ...move } },
-  ...(talk ? [{ type: "talk", talk } satisfies CoachEvent] : []),
+const nudgeMove = (
+  id: string,
+  time: string,
+  move: Move,
+  talk?: TalkStats,
+): CoachEvent[] => [
+  {
+    type: CoachEventType.User,
+    kind: TurnKind.Nudge,
+    text: `Question for you · ${time}`,
+  },
+  { type: CoachEventType.Block, id, block: { kind: BlockKind.Move, ...move } },
+  ...(talk ? [{ type: CoachEventType.Talk, talk } satisfies CoachEvent] : []),
   MOVE_DONE,
 ];
 
 const SHORT_MOVES: Move[] = [
-  { tag: "buying_signal", headline: "Book it", verb: "Ask", line: "Tuesday?" },
-  { tag: "giving_ground", headline: "Trade, don't give", verb: "Say", line: "Happy to, if we can sign this month.", moment: { speaker: "Jo", quote: "Can you throw in onboarding?" } },
-  { tag: "over_promise", headline: "Walk back the date", verb: "Say", line: "Let me confirm the date with the team first.", watch_out: "X" },
-  { tag: "agenda", headline: "Park it", verb: "Say", line: "Let's park SSO and come back at 3.", moment: { speaker: "Them", quote: "Also SSO?", at: "00:07" } },
-  { tag: "risk", headline: "Get ahead of the new VP", verb: "Ask", line: "What will Dana want to see before she signs off?" },
+  {
+    tag: MoveTag.BuyingSignal,
+    headline: "Book it",
+    verb: MoveVerb.Ask,
+    line: "Tuesday?",
+  },
+  {
+    tag: MoveTag.GivingGround,
+    headline: "Trade, don't give",
+    verb: MoveVerb.Say,
+    line: "Happy to, if we can sign this month.",
+    moment: { speaker: "Jo", quote: "Can you throw in onboarding?" },
+  },
+  {
+    tag: MoveTag.OverPromise,
+    headline: "Walk back the date",
+    verb: MoveVerb.Say,
+    line: "Let me confirm the date with the team first.",
+    watch_out: "X",
+  },
+  {
+    tag: MoveTag.Agenda,
+    headline: "Park it",
+    verb: MoveVerb.Say,
+    line: "Let's park SSO and come back at 3.",
+    moment: { speaker: "Them", quote: "Also SSO?", at: "00:07" },
+  },
+  {
+    tag: MoveTag.Risk,
+    headline: "Get ahead of the new VP",
+    verb: MoveVerb.Ask,
+    line: "What will Dana want to see before she signs off?",
+  },
 ];
 
 function coaching(phase: Phase): CoachEvent[] {
-  if (phase === "ended") {
-    return [status({ busy: false, meeting: false }), waiting(ARABIC_TITLE), { type: "wrapup", wrapUp: worstWrapUp(ARABIC_TITLE) }];
+  if (phase === Phase.Ended) {
+    return [
+      status({ busy: false, meeting: false }),
+      waiting(ARABIC_TITLE),
+      { type: CoachEventType.Wrapup, wrapUp: worstWrapUp(ARABIC_TITLE) },
+    ];
   }
   return [
     status({ busy: false }),
     worstTranscript,
     ...nudgeMove("c-worst", "14:32", WORST_MOVE, TWELVE_SPEAKERS),
-    ...nudgeMove("c-all-you", "14:40", { tag: "talk_time", headline: "Stop and hand the floor back", verb: "Ask", line: "Does that match what you're seeing?" }, talkOf([{ speaker: "You", ms: 600_000 }], 600_000, 600_000, 0)),
+    ...nudgeMove(
+      "c-all-you",
+      "14:40",
+      {
+        tag: MoveTag.TalkTime,
+        headline: "Stop and hand the floor back",
+        verb: MoveVerb.Ask,
+        line: "Does that match what you're seeing?",
+      },
+      talkOf([{ speaker: "You", ms: 600_000 }], 600_000, 600_000, 0),
+    ),
     ...nudgeMove(
       "c-tiny",
       "14:48",
-      { tag: "talk_time", headline: "Let them talk", verb: "Ask", line: "What else should I know?" },
-      talkOf([{ speaker: "You", ms: 597_600 }, { speaker: "Aleksandra Wiśniewska-Kowalczyk", ms: 2_400 }], 600_000, 597_600, 1),
+      {
+        tag: MoveTag.TalkTime,
+        headline: "Let them talk",
+        verb: MoveVerb.Ask,
+        line: "What else should I know?",
+      },
+      talkOf(
+        [
+          { speaker: "You", ms: 597_600 },
+          { speaker: "Aleksandra Wiśniewska-Kowalczyk", ms: 2_400 },
+        ],
+        600_000,
+        597_600,
+        1,
+      ),
     ),
-    ...SHORT_MOVES.flatMap((move, index) => nudgeMove(`c-short-${index}`, `15:0${index}`, move)),
-    { type: "user", kind: "catchup", text: "Catch me up · 15:12" },
-    { type: "tool", id: "cu1", name: "mcp__meeting__live_transcript", label: "Read the transcript", activeLabel: "Reading the transcript", detail: "since ms: 0" },
-    { type: "tool_result", id: "cu1", ok: true, output: "…", durationMs: 400 },
+    ...SHORT_MOVES.flatMap((move, index) =>
+      nudgeMove(`c-short-${index}`, `15:0${index}`, move),
+    ),
     {
-      type: "text",
+      type: CoachEventType.User,
+      kind: TurnKind.Catchup,
+      text: "Catch me up · 15:12",
+    },
+    {
+      type: CoachEventType.Tool,
+      id: "cu1",
+      name: "mcp__meeting__live_transcript",
+      label: "Read the transcript",
+      activeLabel: "Reading the transcript",
+      detail: "since ms: 0",
+    },
+    {
+      type: CoachEventType.ToolResult,
+      id: "cu1",
+      ok: true,
+      output: "…",
+      durationMs: 400,
+    },
+    {
+      type: CoachEventType.Text,
       delta:
         "- **Now:** Aleksandra is weighing whether the partner desk in Kraków can go live without integration replies in the Bcc.\n- **Open for you:** نور الهدى asked whether Bcc covers every reply or only tickets.\n- **Promised:** you send the setup steps today; Christopher shares the session IDs, no date yet.",
     },
-    { type: "block", id: "c-catchup-move", block: { kind: "move", tag: "vague_promise", headline: "Pin Christopher's date", verb: "Ask", line: "Christopher, can you send the two session IDs by Thursday?", moment: { speaker: "Christopher Alexander Montgomery III", quote: "I'll dig those out.", at: "48:10" } } },
-    { type: "talk", talk: talkOf([{ speaker: "Aleksandra Wiśniewska-Kowalczyk", ms: 420_000 }, { speaker: "Jo", ms: 180_000 }], 600_000, 0, 0) },
+    {
+      type: CoachEventType.Block,
+      id: "c-catchup-move",
+      block: {
+        kind: BlockKind.Move,
+        tag: MoveTag.VaguePromise,
+        headline: "Pin Christopher's date",
+        verb: MoveVerb.Ask,
+        line: "Christopher, can you send the two session IDs by Thursday?",
+        moment: {
+          speaker: "Christopher Alexander Montgomery III",
+          quote: "I'll dig those out.",
+          at: "48:10",
+        },
+      },
+    },
+    {
+      type: CoachEventType.Talk,
+      talk: talkOf(
+        [
+          { speaker: "Aleksandra Wiśniewska-Kowalczyk", ms: 420_000 },
+          { speaker: "Jo", ms: 180_000 },
+        ],
+        600_000,
+        0,
+        0,
+      ),
+    },
     MOVE_DONE,
-    { type: "user", kind: "ask", text: "What's our list price for 40 seats, and how do I answer?" },
-    { type: "text", delta: "**€38,400 a year** (40 × €80/month, `pricing/2026.md:12`)." },
-    { type: "block", id: "c-ask-move", block: { kind: "move", tag: "pushback", headline: "Anchor on value before price", verb: "Ask", line: "Before I share numbers, what would solving the CRM gap be worth to the team?" } },
+    {
+      type: CoachEventType.User,
+      kind: TurnKind.Ask,
+      text: "What's our list price for 40 seats, and how do I answer?",
+    },
+    {
+      type: CoachEventType.Text,
+      delta: "**€38,400 a year** (40 × €80/month, `pricing/2026.md:12`).",
+    },
+    {
+      type: CoachEventType.Block,
+      id: "c-ask-move",
+      block: {
+        kind: BlockKind.Move,
+        tag: MoveTag.Pushback,
+        headline: "Anchor on value before price",
+        verb: MoveVerb.Ask,
+        line: "Before I share numbers, what would solving the CRM gap be worth to the team?",
+      },
+    },
     MOVE_DONE,
   ];
 }
 
-const BUILDERS: Record<DataSet, (phase: Phase) => CoachEvent[]> = { worst, empty, one, huge, rich, coaching };
+const BUILDERS: Record<DataSet, (phase: Phase) => CoachEvent[]> = {
+  worst,
+  empty,
+  one,
+  huge,
+  rich,
+  coaching,
+};
 
 export function isDataSet(name: string | null): name is DataSet {
   return name !== null && name in BUILDERS;
@@ -694,7 +1339,10 @@ export function isDataSet(name: string | null): name is DataSet {
 
 export function dataSetState(name: DataSet, phase: Phase): CoachState {
   return BUILDERS[name](phase).reduce(
-    (state, event) => reduce(state, { type: "event", event }),
-    reduce(initialState, { type: "connection", connection: "open" }),
+    (state, event) => reduce(state, { type: ActionType.Event, event }),
+    reduce(initialState, {
+      type: ActionType.Connection,
+      connection: Connection.Open,
+    }),
   );
 }

@@ -6,19 +6,24 @@ import { format } from "date-fns";
 import { forwardRef, type ReactNode, useCallback, useMemo } from "react";
 
 import { getSafeNodePos, TaskCheckbox } from "@anlg/editor/node-views";
-import { useLinkedItemOpenBehavior } from "@anlg/editor/note";
+import {
+  LinkedItemOpenBehavior,
+  useLinkedItemOpenBehavior,
+} from "@anlg/editor/note";
 import {
   createTaskStatusAttrs,
   getNextTaskStatus,
   getOptionalTaskStatus,
   normalizeTaskStatus,
 } from "@anlg/editor/tasks";
+import { TaskStatus } from "@anlg/store";
 import { cn, safeParseDate } from "@anlg/utils";
 
 import { toTz, useTimezone } from "~/calendar/hooks";
 import { useSession } from "~/session/queries";
 import { getSessionEvent } from "~/session/utils";
 import { useTimeFormat } from "~/shared/hooks/useTimeFormat";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { useTabs } from "~/store/zustand/tabs";
 import { useListener } from "~/stt/contexts";
 
@@ -36,7 +41,8 @@ export const SessionNodeView = forwardRef<
   const liveStatus = useListener((state) => state.live.status);
   const isRecording =
     liveSessionId === sessionId &&
-    (liveStatus === "active" || liveStatus === "finalizing");
+    (liveStatus === LiveSessionStatus.Active ||
+      liveStatus === LiveSessionStatus.Finalizing);
   const event = useMemo(() => getSessionEvent(session ?? {}), [session]);
   const displayTime = useMemo(() => {
     if (event?.is_all_day) {
@@ -67,7 +73,7 @@ export const SessionNodeView = forwardRef<
 
   const openSession = useCallback(() => {
     const tab = { id: sessionId, type: "sessions" as const };
-    if (linkedItemOpenBehavior === "new") {
+    if (linkedItemOpenBehavior === LinkedItemOpenBehavior.New) {
       openNew(tab);
       return;
     }
@@ -116,7 +122,7 @@ export const SessionNodeView = forwardRef<
       {...htmlAttrs}
       data-status={explicitStatus ?? undefined}
       data-checked={
-        explicitStatus ? String(explicitStatus === "done") : undefined
+        explicitStatus ? String(explicitStatus === TaskStatus.Done) : undefined
       }
     >
       <div
@@ -146,7 +152,8 @@ export const SessionNodeView = forwardRef<
             className={cn([
               "text-foreground text-body min-w-0",
               "[&>p]:m-0 [&>p]:min-w-0 [&>p]:truncate",
-              status === "done" && "[&>p]:line-through [&>p]:opacity-60",
+              status === TaskStatus.Done &&
+                "[&>p]:line-through [&>p]:opacity-60",
             ])}
           >
             {children}

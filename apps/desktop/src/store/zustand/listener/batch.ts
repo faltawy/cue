@@ -1,23 +1,25 @@
-import type { StoreApi } from "zustand";
+import { type StoreApi } from "zustand";
 
-import type {
-  BatchErrorCode,
-  BatchResponse,
-  BatchStreamEvent,
+import {
+  type BatchErrorCode,
+  type BatchResponse,
+  type BatchStreamEvent,
 } from "@anlg/plugin-transcription";
 
-import type { BatchPersistCallback } from "./transcript";
+import { type BatchPersistCallback } from "./transcript";
 import { transformWordEntries, type WordEntry } from "./utils";
 
+import { BatchTerminalReason } from "~/store/zustand/listener/enums";
+import {
+  TranscriptWriteMode,
+  BatchPhase,
+  TranscriptTimingSource,
+} from "~/stt/enums";
 import { type RuntimeSpeakerHint, type WordLike } from "~/stt/segment";
 import {
   createTranscriptTimingMetadata,
   getValidTimingSource,
-  type TranscriptTimingSource,
 } from "~/stt/timing";
-
-type BatchPhase = "importing" | "transcribing";
-type BatchTerminalReason = "failed" | "timed_out" | "stopped";
 
 export type BatchState = {
   batch: Record<
@@ -54,7 +56,7 @@ export type BatchActions = {
   handleBatchFailed: (
     sessionId: string,
     error: string,
-    terminalReason?: Exclude<BatchTerminalReason, "stopped">,
+    terminalReason?: Exclude<BatchTerminalReason, BatchTerminalReason.Stopped>,
     errorCode?: BatchErrorCode,
   ) => void;
   handleBatchStopped: (sessionId: string) => void;
@@ -85,7 +87,7 @@ export const createBatchSlice = <T extends BatchState>(
         [sessionId]: {
           percentage: 0,
           isComplete: false,
-          phase: phase ?? "transcribing",
+          phase: phase ?? BatchPhase.Transcribing,
           terminalReason: undefined,
           error: undefined,
           errorCode: undefined,
@@ -109,7 +111,7 @@ export const createBatchSlice = <T extends BatchState>(
         [sessionId]: {
           percentage: 0,
           isComplete: false,
-          phase: "transcribing",
+          phase: BatchPhase.Transcribing,
           recovered: true,
         },
       },
@@ -125,7 +127,7 @@ export const createBatchSlice = <T extends BatchState>(
           ...(state.batch[sessionId] ?? { percentage: 1 }),
           percentage: 1,
           isComplete: true,
-          phase: "transcribing",
+          phase: BatchPhase.Transcribing,
           terminalReason: undefined,
           error: undefined,
           errorCode: undefined,
@@ -142,7 +144,7 @@ export const createBatchSlice = <T extends BatchState>(
       return false;
     }
 
-    persist?.(words, hints, { mode: "replace" });
+    persist?.(words, hints, { mode: TranscriptWriteMode.Replace });
 
     set((state) => {
       if (!state.batch[sessionId]) {
@@ -162,7 +164,9 @@ export const createBatchSlice = <T extends BatchState>(
   },
 
   handleBatchResponseStreamed: (sessionId, event) => {
-    if (get().batch[sessionId]?.terminalReason === "stopped") {
+    if (
+      get().batch[sessionId]?.terminalReason === BatchTerminalReason.Stopped
+    ) {
       return;
     }
 
@@ -177,7 +181,7 @@ export const createBatchSlice = <T extends BatchState>(
     const { nextPreview, words, hints } = result;
 
     if (result.shouldPersist && words.length > 0) {
-      persist?.(words, hints, { mode: "replace" });
+      persist?.(words, hints, { mode: TranscriptWriteMode.Replace });
     }
 
     set((state) => ({
@@ -187,7 +191,7 @@ export const createBatchSlice = <T extends BatchState>(
         [sessionId]: {
           percentage,
           isComplete: isComplete || false,
-          phase: "transcribing",
+          phase: BatchPhase.Transcribing,
           terminalReason: undefined,
           error: undefined,
           errorCode: undefined,
@@ -220,7 +224,7 @@ export const createBatchSlice = <T extends BatchState>(
   handleBatchFailed: (
     sessionId,
     error,
-    terminalReason = "failed",
+    terminalReason = BatchTerminalReason.Failed,
     errorCode,
   ) => {
     set((state) => ({
@@ -254,7 +258,7 @@ export const createBatchSlice = <T extends BatchState>(
           ...(state.batch[sessionId] ?? { percentage: 0 }),
           error: "Transcription stopped.",
           isComplete: false,
-          terminalReason: "stopped",
+          terminalReason: BatchTerminalReason.Stopped,
           errorCode: undefined,
         },
       },
@@ -364,7 +368,7 @@ function transformBatch(
       getWordTimingSourceForBatchResponse(
         response,
         Boolean(alternative.words?.length),
-        "synthetic_text",
+        TranscriptTimingSource.SyntheticText,
       );
     const wordEntries = attachSyntheticChunkStarts(
       markUnalignedDiarizedWordsSynthetic(
@@ -424,14 +428,15 @@ function markUnalignedDiarizedWordsSynthetic(
 ): WordEntry[] {
   // Soniqo supplies per-channel provenance for its unaligned fallback words.
   // Other providers' segment timestamps remain useful without speaker labels.
-  if (timingSource !== "provider_segment_interpolated") return entries;
+  if (timingSource !== TranscriptTimingSource.ProviderSegmentInterpolated)
+    return entries;
   return entries.map((entry) =>
     typeof entry.speaker === "number"
       ? entry
       : {
           ...entry,
           metadata: createTranscriptTimingMetadata(
-            "synthetic_text",
+            TranscriptTimingSource.SyntheticText,
             entry.metadata,
           ),
         },
@@ -502,7 +507,7 @@ function attachSyntheticChunkStarts(
     const chunk = findChunk(entry.start);
     if (!chunk) return entry;
     const metadata = createTranscriptTimingMetadata(
-      "synthetic_text",
+      TranscriptTimingSource.SyntheticText,
       entry.metadata,
     );
     return {
@@ -614,7 +619,7 @@ function mergeBatchPreview(
   const timingSource = getWordTimingSourceForBatchResponse(
     response,
     Boolean(alternative.words?.length),
-    "provider_segment_interpolated",
+    TranscriptTimingSource.ProviderSegmentInterpolated,
   );
   const wordEntries = wordEntriesFromTranscript(
     alternative.words,
@@ -744,7 +749,7 @@ function wordEntriesFromTranscript(
   }
 
   const duration =
-    timingSource === "synthetic_text"
+    timingSource === TranscriptTimingSource.SyntheticText
       ? tokens.length * SYNTHETIC_TEXT_WORD_SECONDS
       : Math.max(
           durationSeconds && Number.isFinite(durationSeconds)
@@ -778,7 +783,7 @@ function getWordTimingSourceForBatchResponse(
     return explicitSource;
   }
 
-  return "provider_word";
+  return TranscriptTimingSource.ProviderWord;
 }
 
 function getBatchResponseTimingSource(response: {

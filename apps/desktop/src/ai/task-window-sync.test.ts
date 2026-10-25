@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AutoEnhanceMode } from "~/services/enums";
+
 const mocks = vi.hoisted(() => ({
   callbacks: new Map<string, (event: { payload: unknown }) => void>(),
   emit: vi.fn().mockResolvedValue(undefined),
@@ -38,7 +40,7 @@ const autoEnhanceRequest = {
   requestId: "request-id",
   sourceLabel: "note-window",
   sessionId: "session-1",
-  mode: "regenerate" as const,
+  mode: AutoEnhanceMode.Regenerate,
 };
 const RESULT_EVENT = "anlg:ai-task-auto-enhance-result";
 
@@ -63,7 +65,7 @@ afterEach(() => {
 });
 
 describe("handleMainEnhanceRequest", () => {
-  it.each(["if_empty", "regenerate"] as const)(
+  it.each([AutoEnhanceMode.IfEmpty, AutoEnhanceMode.Regenerate])(
     "routes %s through the retry-aware auto-enhance entrypoint",
     async (mode) => {
       const requestAutoEnhance = vi.fn().mockResolvedValue(undefined);
@@ -173,7 +175,7 @@ describe("requestMainAutoEnhance", () => {
   it("rejects a main-window scheduling error", async () => {
     const request = requestMainAutoEnhance(
       autoEnhanceRequest.sessionId,
-      "if_empty",
+      AutoEnhanceMode.IfEmpty,
     );
     await vi.waitFor(() =>
       expect(mocks.callbacks.has(RESULT_EVENT)).toBe(true),
@@ -306,7 +308,7 @@ describe("handleMainAutoEnhanceRequest", () => {
     "reports $name to the requesting window",
     async ({ deps, expectedError }) => {
       const request = deps
-        ? { ...autoEnhanceRequest, mode: "if_empty" as const }
+        ? { ...autoEnhanceRequest, mode: AutoEnhanceMode.IfEmpty as const }
         : autoEnhanceRequest;
       await handleMainAutoEnhanceRequest(deps, request);
 

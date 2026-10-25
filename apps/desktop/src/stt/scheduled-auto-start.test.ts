@@ -13,7 +13,9 @@ import {
   startScheduledMeeting,
 } from "./scheduled-auto-start";
 
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import type { Tab } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 const mocks = vi.hoisted(() => ({
   canStart: true,
@@ -36,7 +38,8 @@ vi.mock("@anlg/plugin-detect", () => ({
   events: { detectEvent: { listen: mocks.listenDetectEvent } },
 }));
 
-vi.mock("@anlg/plugin-windows", () => ({
+vi.mock("@anlg/plugin-windows", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@anlg/plugin-windows")>()),
   getCurrentWebviewWindowLabel: () => "main",
 }));
 
@@ -254,8 +257,8 @@ describe("hasPendingAutoStart", () => {
   const sessionTab = (
     id: string,
     autoStart: boolean | null,
-  ): Extract<Tab, { type: "sessions" }> => ({
-    type: "sessions",
+  ): Extract<Tab, { type: TabType.Sessions }> => ({
+    type: TabType.Sessions,
     id,
     active: true,
     slotId: id,
@@ -506,7 +509,7 @@ describe("startScheduledMeeting", () => {
     mocks.liveStatus = "active";
     mocks.tabs = [
       {
-        type: "sessions",
+        type: TabType.Sessions,
         id: "pending",
         slotId: "pending",
         active: true,
@@ -802,9 +805,9 @@ describe("isPreviousCallOnMic", () => {
 
 describe("getScheduledAutoStartAction", () => {
   test.each([
-    { status: "inactive" as const, expected: "start" },
-    { status: "finalizing" as const, expected: "retry" },
-    { status: "active" as const, expected: "skip" },
+    { status: LiveSessionStatus.Inactive, expected: "start" },
+    { status: LiveSessionStatus.Finalizing, expected: "retry" },
+    { status: LiveSessionStatus.Active, expected: "skip" },
   ])("returns $expected for a $status live session", ({ status, expected }) => {
     expect(getScheduledAutoStartAction(status)).toBe(expected);
   });

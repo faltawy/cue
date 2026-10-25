@@ -23,6 +23,7 @@ import {
 } from "~/session/insights/pre-meeting";
 import { useSession, useSessionParticipants } from "~/session/queries";
 import { useConfigValue } from "~/shared/config";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import type { SessionMode } from "~/store/zustand/listener/general";
 
 export type { MemoBriefEditor };
@@ -44,7 +45,7 @@ export function useCreatePreMeetingBrief({
   const now = useNow();
   const language = useConfigValue("ai_language") || "en";
   const model = useLanguageModel();
-  const enabled = sessionMode === "inactive";
+  const enabled = sessionMode === LiveSessionStatus.Inactive;
   const event = useSessionCalendarEvent(sessionId, { enabled });
   const upcoming = shouldShowPreMeetingBrief(event, now.getTime());
   const session = useSession(sessionId);

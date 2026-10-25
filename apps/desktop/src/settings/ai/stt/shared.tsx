@@ -28,6 +28,7 @@ import { Cpu, Shuffle, Waveform } from "@anlg/ui/components/icons";
 import { ProviderBrandImage, ProviderLobeIcon } from "~/settings/ai/shared";
 import { type ProviderRequirement } from "~/settings/ai/shared/eligibility";
 import { sortProviders } from "~/settings/ai/shared/sort-providers";
+import { ProviderRequirementKind } from "~/settings/enums";
 import { localSttQueries } from "~/stt/useLocalSttModel";
 
 export { localSttQueries as sttModelQueries };
@@ -422,7 +423,9 @@ const _PROVIDERS = [
       "nova-3-general",
       "nova-3-medical",
     ],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -442,7 +445,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={AssemblyAI} />,
     baseUrl: "https://api.assemblyai.com",
     models: ["universal-3-5-pro", "universal-3-5-pro-realtime"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -467,7 +472,9 @@ const _PROVIDERS = [
       "gpt-4o-transcribe-diarize",
       "whisper-1",
     ],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -506,7 +513,9 @@ const _PROVIDERS = [
       "google/chirp-3",
       "openai/whisper-1",
     ],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -530,7 +539,9 @@ const _PROVIDERS = [
       "qwen3-asr-flash-realtime",
       "qwen3-asr-flash-realtime-2026-02-10",
     ],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -550,7 +561,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={ZAI} />,
     baseUrl: "https://api.z.ai/api/paas/v4",
     models: ["glm-asr-2512"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -570,7 +583,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={SiliconCloud} />,
     baseUrl: "https://api.siliconflow.com/v1",
     models: ["FunAudioLLM/SenseVoiceSmall", "TeleAI/TeleSpeechASR"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -590,7 +605,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={Groq} />,
     baseUrl: "https://api.groq.com/openai/v1",
     models: ["whisper-large-v3-turbo", "whisper-large-v3"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -610,7 +627,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={XAI} />,
     baseUrl: "https://api.x.ai/v1",
     models: ["xai-stt"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -636,7 +655,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.inworld.ai",
     models: ["inworld/inworld-stt-1"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "API documentation",
@@ -653,7 +674,9 @@ const _PROVIDERS = [
     icon: <ProviderBrandImage src="/assets/gradium-icon.svg" alt="Gradium" />,
     baseUrl: "https://api.gradium.ai",
     models: ["default"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "API documentation",
@@ -682,7 +705,9 @@ const _PROVIDERS = [
       "velma-2-stt-streaming-multilingual-vfast",
       "velma-2-stt-streaming-english-v2",
     ],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "API documentation",
@@ -705,7 +730,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://asr.alebex.ai",
     models: ["alebex-asr"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "API documentation",
@@ -725,7 +752,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={Nvidia} />,
     baseUrl: undefined,
     models: ["nemotron-asr-streaming"],
-    requirements: [{ kind: "requires_config", fields: ["base_url"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["base_url"] },
+    ],
     links: {
       models: {
         label: "API documentation",
@@ -746,7 +775,10 @@ const _PROVIDERS = [
     baseUrl: undefined,
     models: ["amazon.nova-2-sonic-v1:0"],
     requirements: [
-      { kind: "requires_config", fields: ["base_url", "api_key"] },
+      {
+        kind: ProviderRequirementKind.RequiresConfig,
+        fields: ["base_url", "api_key"],
+      },
     ],
     links: {
       models: {
@@ -773,7 +805,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.narilabs.com",
     models: ["qwen3-asr-fast", "qwen3-asr"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Models & Pricing",
@@ -796,7 +830,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://platform-api.wisprflow.ai",
     models: ["flow"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "API documentation",
@@ -815,7 +851,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.smallest.ai",
     models: ["pulse", "pulse-pro"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -840,7 +878,9 @@ const _PROVIDERS = [
       "nvidia/nemotron-3.5-asr-streaming-0.6b",
       "nvidia/nemotron-3-asr-streaming-0.6b",
     ],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -865,7 +905,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://eu1.asr.api.speechmatics.com/v2",
     models: ["enhanced", "standard"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -886,7 +928,10 @@ const _PROVIDERS = [
     baseUrl: undefined,
     models: ["fast-transcription"],
     requirements: [
-      { kind: "requires_config", fields: ["base_url", "api_key"] },
+      {
+        kind: ProviderRequirementKind.RequiresConfig,
+        fields: ["base_url", "api_key"],
+      },
     ],
     links: {
       models: {
@@ -907,7 +952,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={GoogleCloud} />,
     baseUrl: "https://speech.googleapis.com/v1",
     models: ["latest_long"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -927,7 +974,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={Gemini} />,
     baseUrl: "https://generativelanguage.googleapis.com/v1beta",
     models: ["gemini-3.5-transcribe-live", "gemini-3.5-transcribe"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -948,7 +997,10 @@ const _PROVIDERS = [
     baseUrl: undefined,
     models: ["amazon-transcribe"],
     requirements: [
-      { kind: "requires_config", fields: ["base_url", "api_key"] },
+      {
+        kind: ProviderRequirementKind.RequiresConfig,
+        fields: ["base_url", "api_key"],
+      },
     ],
     links: {
       models: {
@@ -969,7 +1021,9 @@ const _PROVIDERS = [
     icon: <ProviderBrandImage src="/assets/revai-mark.svg" alt="Rev AI" />,
     baseUrl: "https://api.rev.ai/speechtotext/v1",
     models: ["machine"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -989,7 +1043,9 @@ const _PROVIDERS = [
     icon: <ProviderBrandImage src="/assets/cartesia-mark.svg" alt="Cartesia" />,
     baseUrl: "https://api.cartesia.ai",
     models: ["ink-2"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1010,7 +1066,10 @@ const _PROVIDERS = [
     baseUrl: undefined,
     models: ["nova-3"],
     requirements: [
-      { kind: "requires_config", fields: ["base_url", "api_key"] },
+      {
+        kind: ProviderRequirementKind.RequiresConfig,
+        fields: ["base_url", "api_key"],
+      },
     ],
     links: {
       models: {
@@ -1031,7 +1090,9 @@ const _PROVIDERS = [
     icon: <ProviderBrandImage src="/assets/gladia-mark.svg" alt="Gladia" />,
     baseUrl: "https://api.gladia.io",
     models: ["solaria-3", "solaria-1"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1057,7 +1118,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.soniox.com",
     models: ["stt-rt-v5"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1084,7 +1147,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.meta.ai/v1",
     models: ["muse-voice-transcribe-1.0"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1104,7 +1169,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={ElevenLabs} />,
     baseUrl: "https://api.elevenlabs.io",
     models: ["scribe_v2", "scribe_v2_realtime"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1124,7 +1191,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={Mistral} />,
     baseUrl: "https://api.mistral.ai/v1",
     models: ["voxtral-mini-2602", "voxtral-mini-transcribe-realtime-2602"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1149,7 +1218,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.pyannote.ai",
     models: ["parakeet-tdt-0.6b-v3", "faster-whisper-large-v3-turbo"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1175,7 +1246,9 @@ const _PROVIDERS = [
     ),
     baseUrl: "https://api.aquavoice.com/v1",
     models: ["avalon-v1.5"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1195,7 +1268,9 @@ const _PROVIDERS = [
     icon: <ProviderLobeIcon icon={Cohere} />,
     baseUrl: "https://api.cohere.com/v2",
     models: ["cohere-transcribe-03-2026", "cohere-transcribe-arabic-07-2026"],
-    requirements: [{ kind: "requires_config", fields: ["api_key"] }],
+    requirements: [
+      { kind: ProviderRequirementKind.RequiresConfig, fields: ["api_key"] },
+    ],
     links: {
       models: {
         label: "Available models",
@@ -1217,7 +1292,10 @@ const _PROVIDERS = [
     baseUrl: undefined,
     models: [],
     requirements: [
-      { kind: "requires_config", fields: ["base_url", "api_key"] },
+      {
+        kind: ProviderRequirementKind.RequiresConfig,
+        fields: ["base_url", "api_key"],
+      },
     ],
   },
 ] as const satisfies readonly Provider[];

@@ -6,7 +6,10 @@ import type {
   CaptureConfigUpdate,
   IdentityAssignment,
 } from "@anlg/plugin-transcription";
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import {
@@ -18,6 +21,7 @@ import { createSession, getOrCreateSessionForEventId } from "~/session/queries";
 import { setSettingValue } from "~/settings/queries";
 import { useConfigValue, useConfigValues } from "~/shared/config";
 import { useLatestRef } from "~/shared/hooks/useLatestRef";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import { useTabs } from "~/store/zustand/tabs";
 import {
@@ -202,7 +206,7 @@ function handleAutoStopEndedNotification(
 
   const listenerState = listenerStore.getState();
   if (
-    listenerState.live.status === "active" &&
+    listenerState.live.status === LiveSessionStatus.Active &&
     listenerState.live.sessionId === sessionId
   ) {
     listenerState.stop();
@@ -396,7 +400,7 @@ function LiveCaptureConfigSyncReady({
       }
 
       const live = listenerStore.getState().live;
-      if (live.status !== "active" || !live.sessionId) {
+      if (live.status !== LiveSessionStatus.Active || !live.sessionId) {
         return;
       }
 
@@ -471,7 +475,8 @@ function LiveCaptureConfigSyncReady({
     // being captured instead of watching every transcript in the database.
     const syncTranscriptSubscription = () => {
       const live = listenerStore.getState().live;
-      const sessionId = live.status === "active" ? live.sessionId : null;
+      const sessionId =
+        live.status === LiveSessionStatus.Active ? live.sessionId : null;
       if (sessionId === transcriptSessionId) {
         return;
       }
@@ -589,7 +594,7 @@ function useNotificationEvents() {
   const openNewRef = useLatestRef(openNew);
 
   useMountEffect(() => {
-    if (getCurrentWebviewWindowLabel() !== "main") {
+    if (getCurrentWebviewWindowLabel() !== StaticWindowLabel.Main) {
       return;
     }
 

@@ -1,7 +1,12 @@
 import { sha256 } from "js-sha256";
 
+export enum AIProviderType {
+  Stt = "stt",
+  Llm = "llm",
+}
+
 export type ProviderCredential = {
-  type?: "stt" | "llm";
+  type?: AIProviderType;
   provider: string;
   baseUrl: string;
   apiKey: string;
@@ -24,11 +29,11 @@ export function providerCredentialIdentity(credential: ProviderCredential) {
 }
 
 export function usesDeferredProviderAuthentication(
-  type: "stt" | "llm" | undefined,
+  type: AIProviderType | undefined,
   provider: string,
 ) {
   return (
-    type === "stt" &&
+    type === AIProviderType.Stt &&
     [
       "custom",
       "inworld",
@@ -49,7 +54,10 @@ export async function verifyProviderCredentials(
   const apiKey = credential.apiKey.trim();
   if (
     (!apiKey &&
-      !(credential.type === "stt" && credential.provider === "nvidia")) ||
+      !(
+        credential.type === AIProviderType.Stt &&
+        credential.provider === "nvidia"
+      )) ||
     apiKey.length > 8192 ||
     /[\r\n]/.test(apiKey)
   )

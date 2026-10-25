@@ -14,6 +14,8 @@ import {
   trimPreMeetingBrief,
 } from "./pre-meeting";
 
+import { PastNoteRelationship } from "~/session/enums";
+
 const hoisted = vi.hoisted(() => ({
   renderCustom: vi.fn(async (_template: string, ctx: unknown) => ({
     status: "ok" as const,
@@ -41,7 +43,7 @@ function makeNote(
     dateLabel: "Aug 14, 2026",
     occurredAt: "2026-08-14T09:00:00.000Z",
     sourceSummary: "The source summary remains available.",
-    relationship: "same_series",
+    relationship: PastNoteRelationship.SameSeries,
     summary: "- Confirm launch timing.\n- Ada owns the prototype.",
     isGenerating: false,
     ...overrides,

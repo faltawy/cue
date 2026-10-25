@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { cn } from "@anlg/utils";
 
+import { IconWeight } from "../icons";
 import { Check, Minus } from "../icons";
 
 const Checkbox = React.forwardRef<
@@ -23,9 +24,9 @@ const Checkbox = React.forwardRef<
   >
     <CheckboxPrimitive.Indicator className="grid place-items-center text-current">
       {props.checked === "indeterminate" ? (
-        <Minus className="size-2.5" weight="bold" />
+        <Minus className="size-2.5" weight={IconWeight.Bold} />
       ) : (
-        <Check className="size-2.5" weight="bold" />
+        <Check className="size-2.5" weight={IconWeight.Bold} />
       )}
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>

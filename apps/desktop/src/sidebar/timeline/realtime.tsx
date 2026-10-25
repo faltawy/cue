@@ -7,15 +7,16 @@ import type { TimelineEventsTable, TimelineSessionsTable } from "./utils";
 
 import { getSessionEvent } from "~/session/utils";
 import { useTimeFormat } from "~/shared/hooks/useTimeFormat";
+import { TimelineDividerVariant } from "~/sidebar/enums";
 
 const MINUTE_MS = 60_000;
 const CURRENT_TIME_TICK_OFFSET_MS = 100;
 
 export const CurrentTimeIndicator = forwardRef<
   HTMLDivElement,
-  { timezone?: string; variant?: "seam" | "inside"; progress?: number }
+  { timezone?: string; variant?: TimelineDividerVariant; progress?: number }
 >(function CurrentTimeIndicator(
-  { timezone, variant = "seam", progress = 0.5 },
+  { timezone, variant = TimelineDividerVariant.Seam, progress = 0.5 },
   ref,
 ) {
   const currentTimeMs = useCurrentTimeMs();
@@ -33,11 +34,15 @@ export const CurrentTimeIndicator = forwardRef<
       ref={ref}
       aria-hidden
       className={
-        variant === "inside"
+        variant === TimelineDividerVariant.Inside
           ? "group absolute inset-x-0 z-30 h-px"
           : "group relative z-30 h-px"
       }
-      style={variant === "inside" ? { top: insideOffset } : undefined}
+      style={
+        variant === TimelineDividerVariant.Inside
+          ? { top: insideOffset }
+          : undefined
+      }
     >
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
         <div

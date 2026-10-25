@@ -39,6 +39,7 @@ import {
 } from "~/session/components/shared";
 import { VersionHistoryDialog } from "~/session/components/version-history-dialog";
 import { openStandaloneNoteWindow } from "~/session/window";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import type { EditorView } from "~/store/zustand/tabs/schema";
 import { useListener } from "~/stt/contexts";
 import { useUploadFile } from "~/stt/useUploadFile";
@@ -69,10 +70,13 @@ export function OverflowButton({
   const regenerateTranscript = useRegenerateTranscript(sessionId);
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
   const isMeetingInProgress =
-    sessionMode === "active" || sessionMode === "finalizing";
+    sessionMode === LiveSessionStatus.Active ||
+    sessionMode === LiveSessionStatus.Finalizing;
   const showListeningAction = allowListening;
   const showRetranscribeAction =
-    audioExistsResolved && sessionMode === "inactive" && audioExists;
+    audioExistsResolved &&
+    sessionMode === LiveSessionStatus.Inactive &&
+    audioExists;
   const showUploadActions =
     audioExistsResolved &&
     !audioExists &&

@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 
-import { computeCurrentNoteTab } from "@anlg/utils/session";
+import {
+  SessionNoteViewType,
+  computeCurrentNoteTab,
+} from "@anlg/utils/session";
 
 import { extractPlainText } from "~/search/contexts/engine/utils";
 import { useEnhancedNotes } from "~/session/hooks/useEnhancedNotes";
@@ -9,9 +12,13 @@ import {
   useSession,
   useSessionHasTranscript,
 } from "~/session/queries";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
 import type { SessionMode } from "~/store/zustand/listener/general";
-import type { Tab } from "~/store/zustand/tabs/schema";
-import { type EditorView } from "~/store/zustand/tabs/schema";
+import { TabType } from "~/store/zustand/tabs/enums";
+import { type Tab, type EditorView } from "~/store/zustand/tabs/schema";
 import { useListener } from "~/stt/contexts";
 
 export function useHasTranscript(sessionId: string): boolean {
@@ -28,14 +35,15 @@ export function useCurrentNoteHasContent(
 ): boolean {
   const hasTranscript = useHasTranscript(sessionId);
   const rawMd = useSession(sessionId)?.raw_md;
-  const enhancedNoteId = currentView.type === "enhanced" ? currentView.id : "";
+  const enhancedNoteId =
+    currentView.type === SessionNoteViewType.Enhanced ? currentView.id : "";
   const enhancedContent = useEnhancedNote(enhancedNoteId)?.content;
 
-  if (currentView.type === "enhanced") {
+  if (currentView.type === SessionNoteViewType.Enhanced) {
     return hasStoredNoteContent(enhancedContent);
   }
 
-  if (currentView.type === "transcript") {
+  if (currentView.type === SessionNoteViewType.Transcript) {
     return hasTranscript;
   }
 
@@ -43,17 +51,17 @@ export function useCurrentNoteHasContent(
 }
 
 export function useCurrentNoteTab(
-  tab: Extract<Tab, { type: "sessions" }>,
+  tab: Extract<Tab, { type: TabType.Sessions }>,
   { audioExists = false }: { audioExists?: boolean } = {},
 ): EditorView {
   const sessionMode = useListener((state) => state.getSessionMode(tab.id));
-  const isLiveSessionActive = sessionMode === "active";
+  const isLiveSessionActive = sessionMode === LiveSessionStatus.Active;
   const canShowTranscript = useCanShowTranscript(tab.id, { audioExists });
 
   const hasTranscript = useHasTranscript(tab.id);
   const enhancedNoteIds = useEnhancedNotes(
     tab.id,
-    hasTranscript && sessionMode === "inactive",
+    hasTranscript && sessionMode === LiveSessionStatus.Inactive,
   );
 
   return useMemo(() => {
@@ -101,14 +109,15 @@ export function getCanShowTranscript({
   sessionMode: SessionMode;
 }): boolean {
   const isLiveCapture =
-    sessionMode === "active" || sessionMode === "finalizing";
+    sessionMode === LiveSessionStatus.Active ||
+    sessionMode === LiveSessionStatus.Finalizing;
 
   return (
     hasTranscript ||
     (audioExists && !isLiveCapture) ||
     isLiveCapture ||
     hasLiveSegments ||
-    sessionMode === "running_batch" ||
+    sessionMode === BatchSessionMode.RunningBatch ||
     Boolean(batchError)
   );
 }

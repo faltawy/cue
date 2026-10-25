@@ -1,6 +1,5 @@
-import type { SidebarNotesGroupBy } from "./note-filter";
-
 import { normalizeFolderPath } from "~/session/folders";
+import { TimelineGroupBy as SidebarNotesGroupBy } from "~/sidebar/enums";
 
 export function parseSessionTagNames(
   value: string | null | undefined,
@@ -47,7 +46,7 @@ export function resolveSidebarItemMeta({
 }): { folder: string; tags: string[] } {
   return {
     folder:
-      showFolder && groupBy !== "folder"
+      showFolder && groupBy !== SidebarNotesGroupBy.Folder
         ? (normalizeFolderPath(folderId ?? "") ?? "")
         : "",
     tags: showTags

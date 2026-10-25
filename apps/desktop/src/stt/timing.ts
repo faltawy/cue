@@ -1,7 +1,5 @@
-export type TranscriptTimingSource =
-  | "provider_word"
-  | "provider_segment_interpolated"
-  | "synthetic_text";
+import { TranscriptTimingSource } from "~/stt/enums";
+export { TranscriptTimingSource };
 
 export type TranscriptWordMetadata = Record<string, unknown>;
 
@@ -26,31 +24,36 @@ export function getTranscriptTimingSource(word: {
 }): TranscriptTimingSource {
   const metadata = word.metadata;
   if (!isRecord(metadata)) {
-    return "provider_word";
+    return TranscriptTimingSource.ProviderWord;
   }
 
   const timing = metadata.timing;
   if (!isRecord(timing)) {
-    return getValidTimingSource(metadata.timing_source) ?? "provider_word";
+    return (
+      getValidTimingSource(metadata.timing_source) ??
+      TranscriptTimingSource.ProviderWord
+    );
   }
 
   return (
     getValidTimingSource(timing.source) ??
     getValidTimingSource(metadata.timing_source) ??
-    "provider_word"
+    TranscriptTimingSource.ProviderWord
   );
 }
 
 export function isTranscriptWordSeekable(word: { metadata?: unknown }) {
-  return getTranscriptTimingSource(word) !== "synthetic_text";
+  return (
+    getTranscriptTimingSource(word) !== TranscriptTimingSource.SyntheticText
+  );
 }
 
 export function getValidTimingSource(
   source: unknown,
 ): TranscriptTimingSource | undefined {
-  return source === "provider_word" ||
-    source === "provider_segment_interpolated" ||
-    source === "synthetic_text"
+  return source === TranscriptTimingSource.ProviderWord ||
+    source === TranscriptTimingSource.ProviderSegmentInterpolated ||
+    source === TranscriptTimingSource.SyntheticText
     ? source
     : undefined;
 }

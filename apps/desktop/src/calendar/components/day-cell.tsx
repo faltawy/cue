@@ -12,8 +12,7 @@ import { cn } from "@anlg/utils";
 import { EventChip } from "./event-chip";
 import { SessionChip } from "./session-chip";
 
-import type { CalendarData } from "~/calendar/hooks";
-import { useNow } from "~/calendar/hooks";
+import { type CalendarData, useNow } from "~/calendar/hooks";
 
 function useVisibleItemCount(
   ref: React.RefObject<HTMLDivElement | null>,

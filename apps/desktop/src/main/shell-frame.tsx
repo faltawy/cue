@@ -13,13 +13,14 @@ import {
   useCustomSidebarEffect,
 } from "~/sidebar/use-custom-sidebar";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function ClassicMainShellFrame() {
   const { leftsidebar } = useShell();
   const currentTab = useTabs((state) => state.currentTab);
 
-  const isOnboarding = currentTab?.type === "onboarding";
-  const isChangelog = currentTab?.type === "changelog";
+  const isOnboarding = currentTab?.type === TabType.Onboarding;
+  const isChangelog = currentTab?.type === TabType.Changelog;
   const hasCustomSidebar = hasCustomSidebarTab(currentTab);
   useCustomSidebarEffect(hasCustomSidebar, leftsidebar);
 

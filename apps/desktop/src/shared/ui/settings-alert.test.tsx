@@ -1,6 +1,8 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AlertVariant, AlertLifecycle } from "~/sidebar/enums";
+
 const mocks = vi.hoisted(() => ({
   message: vi.fn(),
   error: vi.fn(),
@@ -43,8 +45,8 @@ describe("SettingsAlertToast", () => {
       <SettingsAlertToast
         id="settings-alert"
         description="Provider not configured."
-        variant="error"
-        lifecycle="persistent"
+        variant={AlertVariant.Error}
+        lifecycle={AlertLifecycle.Persistent}
       />,
     );
 
@@ -61,7 +63,7 @@ describe("SettingsAlertToast", () => {
       <SettingsAlertToast
         id="settings-alert"
         description="Provider not configured."
-        lifecycle="condition-bound"
+        lifecycle={AlertLifecycle.ConditionBound}
       />,
     );
 
@@ -77,8 +79,8 @@ describe("SettingsAlertToast", () => {
       <SettingsAlertToast
         id="keychain-alert"
         description="Repair Keychain access."
-        variant="error"
-        lifecycle="condition-bound"
+        variant={AlertVariant.Error}
+        lifecycle={AlertLifecycle.ConditionBound}
         action={{ label: "Repair", onClick }}
       />,
     );

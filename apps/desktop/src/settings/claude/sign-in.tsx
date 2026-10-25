@@ -1,11 +1,15 @@
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { commands as coachCommands } from "@anlg/plugin-coach";
+import {
+  type CoachProvider,
+  commands as coachCommands,
+} from "@anlg/plugin-coach";
 import { Button } from "@anlg/ui/components/ui/button";
 
 import { ClaudeSetupLabel } from "~/ai/claude-setup-label";
 import { useClaudeSetup } from "~/ai/hooks";
+import { SettingControlWidth } from "~/settings/enums";
 import { SettingRow } from "~/settings/setting-row";
 
 const CLAUDE_SIGN_IN_QUERY_KEY = ["claude-signed-in"] as const;
@@ -28,7 +32,7 @@ export function useClaudeSignIn() {
   return useProviderSignIn("claude");
 }
 
-export function useProviderSignIn(provider: "claude" | "codex") {
+export function useProviderSignIn(provider: CoachProvider) {
   const setup = useClaudeSetup(provider);
   const queryClient = useQueryClient();
   const queryKey =
@@ -74,7 +78,7 @@ export function useProviderSignIn(provider: "claude" | "codex") {
 export function ClaudeSignInRow({
   provider = "claude",
 }: {
-  provider?: "claude" | "codex";
+  provider?: CoachProvider;
 }) {
   const { setup, signedIn, email, error, signingIn, signIn } =
     useProviderSignIn(provider);
@@ -114,7 +118,7 @@ export function ClaudeSignInRow({
           <Trans>Not signed in</Trans>
         )
       }
-      controlWidth="content"
+      controlWidth={SettingControlWidth.Content}
     >
       {({ "aria-describedby": describedBy }) =>
         failed ? (

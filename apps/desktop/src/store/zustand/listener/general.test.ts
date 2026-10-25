@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { toast } from "@anlg/ui/components/ui/toast";
 
+import {
+  BatchTerminalReason,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
+
 const {
   acknowledgeStoppedCaptureMock,
   getIdentifierMock,
@@ -1089,7 +1094,7 @@ describe("General Listener Slice", () => {
       handleBatchFailed(
         sessionId,
         "batch start failed: connection refused",
-        "failed",
+        BatchTerminalReason.Failed,
       );
 
       expect(store.getState().batch[sessionId]).toEqual({
@@ -2305,7 +2310,7 @@ describe("General Listener Slice", () => {
     test("start returns false while another session is active", async () => {
       store.setState((state) =>
         mutate(state, (draft) => {
-          draft.live.status = "active";
+          draft.live.status = LiveSessionStatus.Active;
           draft.live.loading = true;
           draft.live.sessionId = "session-a";
         }),
@@ -2751,7 +2756,7 @@ describe("General Listener Slice", () => {
     test("canStartLiveSession allows new sessions while another session is finalizing", () => {
       store.setState((state) =>
         mutate(state, (draft) => {
-          draft.live.status = "finalizing";
+          draft.live.status = LiveSessionStatus.Finalizing;
           draft.live.loading = true;
           draft.live.sessionId = "session-a";
           draft.live.finalizingBySession["session-a"] = {
@@ -2769,7 +2774,7 @@ describe("General Listener Slice", () => {
     test("canStartLiveSession blocks new sessions while another session is active", () => {
       store.setState((state) =>
         mutate(state, (draft) => {
-          draft.live.status = "active";
+          draft.live.status = LiveSessionStatus.Active;
           draft.live.sessionId = "session-a";
         }),
       );

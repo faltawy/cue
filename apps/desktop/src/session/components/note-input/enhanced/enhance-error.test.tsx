@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AIErrorSourceKind } from "~/store/zustand/ai-task/enums";
+
 const mocks = vi.hoisted(() => ({
   generate: vi.fn(),
   model: { modelId: "test-model" } as any,
@@ -41,7 +43,7 @@ function renderError() {
         enhancedNoteId="note-1"
         error={withAIErrorSource(
           new Error("AI generation did not return any text."),
-          { kind: "provider", provider: "Anthropic" },
+          { kind: AIErrorSourceKind.Provider, provider: "Anthropic" },
         )}
       />
     </QueryClientProvider>,

@@ -1,9 +1,11 @@
 import type { LanguageModel } from "ai";
 
+import { AIErrorSourceKind } from "~/store/zustand/ai-task/enums";
+
 export type AIErrorSource =
-  | { kind: "provider"; provider?: string }
-  | { kind: "openrouter" }
-  | { kind: "upstream" };
+  | { kind: AIErrorSourceKind.Provider; provider?: string }
+  | { kind: AIErrorSourceKind.Openrouter }
+  | { kind: AIErrorSourceKind.Upstream };
 
 const SOURCE_KEY = "aiErrorSource";
 
@@ -50,7 +52,9 @@ export function withAIErrorSource<E extends Error>(
 export function streamStallSource(
   providerId: string,
 ): AIErrorSource | undefined {
-  return providerId === "openrouter" ? { kind: "upstream" } : undefined;
+  return providerId === "openrouter"
+    ? { kind: AIErrorSourceKind.Upstream }
+    : undefined;
 }
 
 export function attributeAIError(
@@ -72,7 +76,9 @@ export function attributeAIError(
 
   if (providerId !== "openrouter") {
     const provider = providerFromUrl(apiError?.url);
-    return provider ? { kind: "provider", provider } : undefined;
+    return provider
+      ? { kind: AIErrorSourceKind.Provider, provider }
+      : undefined;
   }
 
   const payload = apiError
@@ -80,10 +86,10 @@ export function attributeAIError(
     : error;
   const providerName = openRouterProviderName(payload);
   if (providerName) {
-    return { kind: "provider", provider: providerName };
+    return { kind: AIErrorSourceKind.Provider, provider: providerName };
   }
 
-  return { kind: "openrouter" };
+  return { kind: AIErrorSourceKind.Openrouter };
 }
 
 type APICallErrorLike = {

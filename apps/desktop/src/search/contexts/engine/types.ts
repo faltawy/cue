@@ -2,8 +2,10 @@ import { z } from "zod";
 
 import type { SearchSectionKind, SnippetSegment } from "@anlg/plugin-tantivy";
 
-const searchEntityTypeSchema = z.enum(["session", "human", "organization"]);
-export type SearchEntityType = z.infer<typeof searchEntityTypeSchema>;
+import { SearchEntityType } from "~/search/enums";
+
+const searchEntityTypeSchema = z.enum(SearchEntityType);
+export { SearchEntityType };
 
 const searchDocumentSchema = z.object({
   id: z.string(),

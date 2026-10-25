@@ -1,9 +1,12 @@
 import { useCallback } from "react";
 import { useShallow } from "zustand/shallow";
 
+import { LinkedItemOpenBehavior } from "@anlg/editor/note";
+
 import { createSession } from "~/session/queries";
 import { addSessionTag } from "~/session/tags";
 import { useSidebarNotes } from "~/sidebar/note-filter";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import { useTabs } from "~/store/zustand/tabs";
 
@@ -21,9 +24,9 @@ async function createNoteSession() {
 }
 
 export function useNewNote({
-  behavior = "new",
+  behavior = LinkedItemOpenBehavior.New,
 }: {
-  behavior?: "new" | "current";
+  behavior?: LinkedItemOpenBehavior;
 } = {}) {
   const { openNew, openCurrent } = useTabs(
     useShallow((state) => ({
@@ -33,7 +36,7 @@ export function useNewNote({
   );
 
   const handler = useCallback(() => {
-    const ff = behavior === "new" ? openNew : openCurrent;
+    const ff = behavior === LinkedItemOpenBehavior.New ? openNew : openCurrent;
     void createNoteSession()
       .then((sessionId) => {
         ff({ type: "sessions", id: sessionId });
@@ -47,9 +50,9 @@ export function useNewNote({
 }
 
 export function useNewNoteAndListen({
-  behavior = "new",
+  behavior = LinkedItemOpenBehavior.New,
 }: {
-  behavior?: "new" | "current";
+  behavior?: LinkedItemOpenBehavior;
 } = {}) {
   const handler = useCallback(
     () => openNewNoteAndListen({ behavior }),
@@ -60,15 +63,16 @@ export function useNewNoteAndListen({
 }
 
 export function openNewNoteAndListen({
-  behavior = "new",
+  behavior = LinkedItemOpenBehavior.New,
 }: {
-  behavior?: "new" | "current";
+  behavior?: LinkedItemOpenBehavior;
 } = {}) {
   const { status, sessionId: liveSessionId } = listenerStore.getState().live;
 
-  if (status === "active" && liveSessionId) {
+  if (status === LiveSessionStatus.Active && liveSessionId) {
     const { openNew, openCurrent } = useTabs.getState();
-    const open = behavior === "new" ? openNew : openCurrent;
+    const open =
+      behavior === LinkedItemOpenBehavior.New ? openNew : openCurrent;
     open({ type: "sessions", id: liveSessionId });
     return;
   }
@@ -85,16 +89,16 @@ export function openNewNoteAndListen({
 export function openSessionAndListen(
   sessionId: string,
   {
-    behavior = "new",
+    behavior = LinkedItemOpenBehavior.New,
   }: {
-    behavior?: "new" | "current";
+    behavior?: LinkedItemOpenBehavior;
   } = {},
 ) {
   const { openNew, openCurrent } = useTabs.getState();
   const { status } = listenerStore.getState().live;
-  const open = behavior === "new" ? openNew : openCurrent;
+  const open = behavior === LinkedItemOpenBehavior.New ? openNew : openCurrent;
 
-  if (status === "active") {
+  if (status === LiveSessionStatus.Active) {
     open({ type: "sessions", id: sessionId });
     return;
   }

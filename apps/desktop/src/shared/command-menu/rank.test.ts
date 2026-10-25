@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { rankCommands, type RankableCommand } from "./rank";
 
+import { CommandGroupId } from "~/shared/enums";
+
 const note = (id: string, label: string, boost?: number): RankableCommand => ({
   id,
-  group: "notes",
+  group: CommandGroupId.Notes,
   label,
   boost,
 });
@@ -38,11 +40,11 @@ describe("rankCommands", () => {
       [
         {
           id: "sara",
-          group: "people",
+          group: CommandGroupId.People,
           label: "Sara Ahmed",
           keywords: ["sara@northwind.com", "Northwind"],
         },
-        { id: "omar", group: "people", label: "Omar Ali" },
+        { id: "omar", group: CommandGroupId.People, label: "Omar Ali" },
       ],
       "northwind.com",
     );
@@ -56,7 +58,7 @@ describe("rankCommands", () => {
     const groups = rankCommands(
       [
         note("weekly", "Weekly settings review"),
-        { id: "settings", group: "pages", label: "Settings" },
+        { id: "settings", group: CommandGroupId.Pages, label: "Settings" },
       ],
       "settings",
     );

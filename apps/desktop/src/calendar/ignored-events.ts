@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 import { commands as calendarCommands } from "@anlg/plugin-calendar";
 
+import { IgnoredEventKind } from "~/calendar/enums";
 import { liveQueryClient, useLiveQuery } from "~/db";
 import { enqueueDatabaseWrite } from "~/db/write-queue";
 import {
@@ -33,12 +34,8 @@ const OVERRIDE_SETTLE_GRACE_MS = 1000;
 const useIgnoredOverrides = create<{
   events: Record<string, IgnoredOverride>;
   series: Record<string, IgnoredOverride>;
-  set: (
-    kind: "events" | "series",
-    id: string,
-    override: IgnoredOverride,
-  ) => void;
-  clear: (kind: "events" | "series", id: string) => void;
+  set: (kind: IgnoredEventKind, id: string, override: IgnoredOverride) => void;
+  clear: (kind: IgnoredEventKind, id: string) => void;
 }>((set) => ({
   events: {},
   series: {},
@@ -69,7 +66,7 @@ function applyOverrides(
 }
 
 function runWithIgnoredOverride(
-  kind: "events" | "series",
+  kind: IgnoredEventKind,
   id: string,
   ignored: boolean,
   write: () => Promise<void>,
@@ -129,12 +126,12 @@ export function useIgnoredEvents() {
   );
   const ignoreEvent = useCallback((trackingId: string) => {
     runWithIgnoredOverride(
-      "events",
+      IgnoredEventKind.Events,
       trackingId,
       true,
       () =>
         updateIgnoredCalendarItem(
-          "events",
+          IgnoredEventKind.Events,
           IGNORED_EVENTS_ID,
           trackingId,
           true,
@@ -144,12 +141,12 @@ export function useIgnoredEvents() {
   }, []);
   const unignoreEvent = useCallback((trackingId: string) => {
     runWithIgnoredOverride(
-      "events",
+      IgnoredEventKind.Events,
       trackingId,
       false,
       () =>
         updateIgnoredCalendarItem(
-          "events",
+          IgnoredEventKind.Events,
           IGNORED_EVENTS_ID,
           trackingId,
           false,
@@ -159,21 +156,31 @@ export function useIgnoredEvents() {
   }, []);
   const ignoreSeries = useCallback((seriesId: string) => {
     runWithIgnoredOverride(
-      "series",
+      IgnoredEventKind.Series,
       seriesId,
       true,
       () =>
-        updateIgnoredCalendarItem("series", IGNORED_SERIES_ID, seriesId, true),
+        updateIgnoredCalendarItem(
+          IgnoredEventKind.Series,
+          IGNORED_SERIES_ID,
+          seriesId,
+          true,
+        ),
       "[calendar] failed to ignore series",
     );
   }, []);
   const unignoreSeries = useCallback((seriesId: string) => {
     runWithIgnoredOverride(
-      "series",
+      IgnoredEventKind.Series,
       seriesId,
       false,
       () =>
-        updateIgnoredCalendarItem("series", IGNORED_SERIES_ID, seriesId, false),
+        updateIgnoredCalendarItem(
+          IgnoredEventKind.Series,
+          IGNORED_SERIES_ID,
+          seriesId,
+          false,
+        ),
       "[calendar] failed to unignore series",
     );
   }, []);
@@ -249,7 +256,7 @@ function useSettingList<T>(id: string): T[] {
 }
 
 async function updateIgnoredCalendarItem(
-  kind: "events" | "series",
+  kind: IgnoredEventKind,
   id: string,
   itemId: string,
   ignored: boolean,

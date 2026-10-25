@@ -7,7 +7,7 @@ import {
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { useSession } from "~/session/queries";
-import { type LiveSessionStatus } from "~/store/zustand/listener/general-shared";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
 import {
   resolveLiveSessionTitle,
@@ -46,7 +46,7 @@ export function TrayRecordingSync() {
     void trayEvents.trayStopRecording
       .listen(() => {
         const state = listenerStore.getState();
-        if (state.live.status === "active") state.stop();
+        if (state.live.status === LiveSessionStatus.Active) state.stop();
       })
       .then((nextUnlisten) => {
         if (cancelled) nextUnlisten();
@@ -73,7 +73,8 @@ export function getTrayRecordingSessionId(
   status: LiveSessionStatus,
   sessionId: string | null,
 ): string {
-  return status === "active" || status === "finalizing"
+  return status === LiveSessionStatus.Active ||
+    status === LiveSessionStatus.Finalizing
     ? (sessionId ?? "")
     : "";
 }

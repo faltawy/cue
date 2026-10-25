@@ -9,8 +9,15 @@ import { z } from "zod";
 
 import { startCodexSession } from "./codex-session";
 import { sessionEnv } from "./env";
-import { providerSchema, type CoachProvider } from "./provider";
+import { CoachProvider, providerSchema } from "./provider";
+import { RuntimeMessageType } from "./runtime-message";
 import { cacheWrite5m } from "./usage";
+
+export enum LlmEventType {
+  Text = "text",
+  Done = "done",
+  Error = "error",
+}
 
 const imagePart = z.object({
   type: z.literal("image"),
@@ -21,7 +28,7 @@ const textPart = z.object({ type: z.literal("text"), text: z.string() });
 
 export const llmRequestSchema = z
   .object({
-    provider: providerSchema.default("claude"),
+    provider: providerSchema.default(CoachProvider.Claude),
     model: z.string().optional(),
     system: z.string().optional(),
     messages: z
@@ -36,7 +43,9 @@ export const llmRequestSchema = z
   })
   .transform((request) => ({
     ...request,
-    model: request.model ?? (request.provider === "codex" ? "" : "sonnet"),
+    model:
+      request.model ??
+      (request.provider === CoachProvider.Codex ? "" : "sonnet"),
   }));
 
 export type LlmRequest = Omit<z.infer<typeof llmRequestSchema>, "provider"> & {
@@ -44,9 +53,9 @@ export type LlmRequest = Omit<z.infer<typeof llmRequestSchema>, "provider"> & {
 };
 
 export type LlmEvent =
-  | { type: "text"; delta: string }
+  | { type: LlmEventType.Text; delta: string }
   | {
-      type: "done";
+      type: LlmEventType.Done;
       model?: string;
       inputTokens: number;
       outputTokens: number;
@@ -54,7 +63,7 @@ export type LlmEvent =
       cacheCreationTokens: number;
       cacheWrite5mTokens: number;
     }
-  | { type: "error"; message: string };
+  | { type: LlmEventType.Error; message: string };
 
 type ContentBlock =
   | { type: "text"; text: string }
@@ -186,12 +195,15 @@ export function eventsFromMessage(
     message.event.type === "content_block_delta" &&
     message.event.delta.type === "text_delta"
   ) {
-    return [{ type: "text", delta: message.event.delta.text }];
+    return [{ type: LlmEventType.Text, delta: message.event.delta.text }];
   }
   if (message.type !== "result") return [];
   if (message.subtype !== "success") {
     return [
-      { type: "error", message: `the model run ended with ${message.subtype}` },
+      {
+        type: LlmEventType.Error,
+        message: `the model run ended with ${message.subtype}`,
+      },
     ];
   }
   const usage = {
@@ -201,15 +213,21 @@ export function eventsFromMessage(
     cacheCreationTokens: message.usage.cache_creation_input_tokens ?? 0,
     cacheWrite5mTokens: cacheWrite5m(message.usage),
   };
-  if (!structured) return [{ type: "done", ...usage }];
+  if (!structured) return [{ type: LlmEventType.Done, ...usage }];
   if (message.structured_output === undefined) {
     return [
-      { type: "error", message: "the model returned no structured output" },
+      {
+        type: LlmEventType.Error,
+        message: "the model returned no structured output",
+      },
     ];
   }
   return [
-    { type: "text", delta: JSON.stringify(message.structured_output) },
-    { type: "done", ...usage },
+    {
+      type: LlmEventType.Text,
+      delta: JSON.stringify(message.structured_output),
+    },
+    { type: LlmEventType.Done, ...usage },
   ];
 }
 
@@ -219,7 +237,7 @@ export async function* runLlm(
   claudePath: string,
   tuning?: LlmTuning,
 ): AsyncIterable<LlmEvent> {
-  if ((tuning?.provider ?? request.provider) === "codex") {
+  if ((tuning?.provider ?? request.provider) === CoachProvider.Codex) {
     yield* runCodexLlm(request, signal, claudePath, tuning?.codexHome);
     return;
   }
@@ -238,10 +256,13 @@ export async function* runLlm(
         request.schema !== undefined,
       )) {
         yield event;
-        if (event.type !== "text") return;
+        if (event.type !== LlmEventType.Text) return;
       }
     }
-    yield { type: "error", message: "the model run ended without a result" };
+    yield {
+      type: LlmEventType.Error,
+      message: "the model run ended without a result",
+    };
   } finally {
     signal.removeEventListener("abort", abort);
     run.close();
@@ -260,7 +281,7 @@ export function llmResponse(
           const body = llmRequestSchema.safeParse(await request.json());
           if (!body.success) {
             controller.enqueue(
-              `${JSON.stringify({ type: "error", message: body.error.message })}\n`,
+              `${JSON.stringify({ type: LlmEventType.Error, message: body.error.message })}\n`,
             );
             return;
           }
@@ -275,7 +296,7 @@ export function llmResponse(
         } catch (error) {
           console.error("[llm] request failed", { _e: String(error) });
           controller.enqueue(
-            `${JSON.stringify({ type: "error", message: String(error) })}\n`,
+            `${JSON.stringify({ type: LlmEventType.Error, message: String(error) })}\n`,
           );
         } finally {
           controller.close();
@@ -311,14 +332,15 @@ async function* runCodexLlm(
     if (signal.aborted) return;
     session.ask(toPromptContent(request.messages));
     for await (const message of session.messages) {
-      if (message.type === "text") {
+      if (message.type === RuntimeMessageType.Text) {
         answer += message.delta;
-        if (!request.schema) yield message;
+        if (!request.schema)
+          yield { type: LlmEventType.Text, delta: message.delta };
       }
-      if (message.type !== "result") continue;
+      if (message.type !== RuntimeMessageType.Result) continue;
       if (message.is_error) {
         yield {
-          type: "error",
+          type: LlmEventType.Error,
           message: message.result || "Codex could not finish the request.",
         };
         return;
@@ -327,12 +349,12 @@ async function* runCodexLlm(
         const parsed = jsonOf(answer);
         if (!parsed.ok) {
           yield {
-            type: "error",
+            type: LlmEventType.Error,
             message: "Codex returned invalid structured output.",
           };
           return;
         }
-        yield { type: "text", delta: JSON.stringify(parsed.value) };
+        yield { type: LlmEventType.Text, delta: JSON.stringify(parsed.value) };
       }
       const usage =
         message.usage && typeof message.usage === "object"
@@ -340,7 +362,7 @@ async function* runCodexLlm(
           : {};
       const model = Object.keys(message.modelUsage ?? {})[0];
       yield {
-        type: "done",
+        type: LlmEventType.Done,
         ...(model ? { model } : {}),
         inputTokens: Number(usage.input_tokens) || 0,
         outputTokens: Number(usage.output_tokens) || 0,
@@ -351,7 +373,10 @@ async function* runCodexLlm(
       return;
     }
     if (!signal.aborted)
-      yield { type: "error", message: "Codex ended without a result." };
+      yield {
+        type: LlmEventType.Error,
+        message: "Codex ended without a result.",
+      };
   } finally {
     session.close();
   }

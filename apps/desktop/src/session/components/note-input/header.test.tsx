@@ -8,6 +8,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import type { EditorView } from "~/store/zustand/tabs/schema";
 
 type CapturedMenuItem =
@@ -324,9 +326,9 @@ import { SessionViewSwitcher, useEditorTabs } from "./header";
 let clipboardDescriptor: PropertyDescriptor | undefined;
 
 const ALL_TABS: EditorView[] = [
-  { type: "enhanced", id: "note-1" },
-  { type: "raw" },
-  { type: "transcript" },
+  { type: SessionNoteViewType.Enhanced, id: "note-1" },
+  { type: SessionNoteViewType.Raw },
+  { type: SessionNoteViewType.Transcript },
 ];
 
 function renderSwitcher(
@@ -337,7 +339,7 @@ function renderSwitcher(
     <SessionViewSwitcher
       sessionId="session-1"
       editorTabs={ALL_TABS}
-      currentTab={{ type: "raw" }}
+      currentTab={{ type: SessionNoteViewType.Raw }}
       handleTabChange={handleTabChange}
       {...props}
     />,
@@ -431,13 +433,15 @@ describe("SessionViewSwitcher", () => {
       type: "enhanced",
       id: "note-1",
     });
-    expect(handleTabChange).toHaveBeenNthCalledWith(2, { type: "transcript" });
+    expect(handleTabChange).toHaveBeenNthCalledWith(2, {
+      type: SessionNoteViewType.Transcript,
+    });
 
     rerender(
       <SessionViewSwitcher
         sessionId="session-1"
         editorTabs={ALL_TABS}
-        currentTab={{ type: "enhanced", id: "note-1" }}
+        currentTab={{ type: SessionNoteViewType.Enhanced, id: "note-1" }}
         handleTabChange={handleTabChange}
       />,
     );
@@ -453,7 +457,9 @@ describe("SessionViewSwitcher", () => {
       value: "milestone",
       color: "#16a34a",
     };
-    renderSwitcher({ currentTab: { type: "enhanced", id: "note-1" } });
+    renderSwitcher({
+      currentTab: { type: SessionNoteViewType.Enhanced, id: "note-1" },
+    });
 
     const pill = screen.getByRole("button", { name: "Scrum" });
     const icon = pill.querySelector("svg");
@@ -461,7 +467,7 @@ describe("SessionViewSwitcher", () => {
   });
 
   it("hides the view switcher when the memo is the only view", () => {
-    renderSwitcher({ editorTabs: [{ type: "raw" }] });
+    renderSwitcher({ editorTabs: [{ type: SessionNoteViewType.Raw }] });
 
     expect(
       screen.queryByRole("group", { name: "Session note views" }),
@@ -489,8 +495,11 @@ describe("SessionViewSwitcher", () => {
       ];
       hoisted.enhance.mockResolvedValue({ type: "started", noteId: "note-1" });
       const { handleTabChange } = renderSwitcher({
-        editorTabs: [{ type: "enhanced", id: "note-1" }, { type: "raw" }],
-        currentTab: { type: "enhanced", id: "note-1" },
+        editorTabs: [
+          { type: SessionNoteViewType.Enhanced, id: "note-1" },
+          { type: SessionNoteViewType.Raw },
+        ],
+        currentTab: { type: SessionNoteViewType.Enhanced, id: "note-1" },
       });
 
       fireEvent.click(screen.getByRole("button", { name: "Customer Call" }));
@@ -516,7 +525,7 @@ describe("SessionViewSwitcher", () => {
       value: { writeText },
     });
 
-    renderSwitcher({ currentTab: { type: "transcript" } });
+    renderSwitcher({ currentTab: { type: SessionNoteViewType.Transcript } });
 
     expect(hoisted.getSessionTranscriptRenderRequest).not.toHaveBeenCalled();
 
@@ -569,7 +578,7 @@ describe("SessionViewSwitcher", () => {
       hoisted.sessionMode = mode;
       hoisted.audioExists = audio;
       hoisted.audioExistsResolved = resolved;
-      renderSwitcher({ currentTab: { type: "transcript" } });
+      renderSwitcher({ currentTab: { type: SessionNoteViewType.Transcript } });
 
       expect(transcriptMenu().map((item) => item.text)).toEqual(expected);
     },
@@ -585,7 +594,7 @@ describe("SessionViewSwitcher", () => {
         hasWords: false,
       },
     ];
-    renderSwitcher({ currentTab: { type: "transcript" } });
+    renderSwitcher({ currentTab: { type: SessionNoteViewType.Transcript } });
 
     expect(
       transcriptMenu().find((item) => item.text === "Copy")?.disabled,
@@ -602,7 +611,7 @@ describe("SessionViewSwitcher", () => {
         hasWords: true,
       },
     ];
-    renderSwitcher({ currentTab: { type: "transcript" } });
+    renderSwitcher({ currentTab: { type: SessionNoteViewType.Transcript } });
 
     expect(
       transcriptMenu().find((item) => item.text === "Copy")?.disabled,
@@ -614,7 +623,7 @@ describe("SessionViewSwitcher", () => {
     ["standalone window", false],
   ])("resumes listening from the transcript menu in the %s", (_label, main) => {
     hoisted.isMainWebviewWindow = main;
-    renderSwitcher({ currentTab: { type: "transcript" } });
+    renderSwitcher({ currentTab: { type: SessionNoteViewType.Transcript } });
 
     transcriptMenu()
       .find((item) => item.id === "resume-listening-session-1")
@@ -635,7 +644,7 @@ describe("SessionViewSwitcher", () => {
   it("toggles transcript editing from the selected transcript tab's menu", async () => {
     const onTranscriptEditModeChange = vi.fn();
     const { handleTabChange, rerender } = renderSwitcher({
-      currentTab: { type: "transcript" },
+      currentTab: { type: SessionNoteViewType.Transcript },
       onTranscriptEditModeChange,
     });
     const openMenu = () =>
@@ -657,7 +666,7 @@ describe("SessionViewSwitcher", () => {
       <SessionViewSwitcher
         sessionId="session-1"
         editorTabs={ALL_TABS}
-        currentTab={{ type: "transcript" }}
+        currentTab={{ type: SessionNoteViewType.Transcript }}
         handleTabChange={handleTabChange}
         transcriptEditMode
         onTranscriptEditModeChange={onTranscriptEditModeChange}
@@ -673,16 +682,36 @@ describe("SessionViewSwitcher", () => {
   });
 
   it.each([
-    ["listening on the memo tab", "active", { type: "raw" }, false],
+    [
+      "listening on the memo tab",
+      "active",
+      { type: SessionNoteViewType.Raw },
+      false,
+    ],
     [
       "listening on the transcript tab",
       "active",
-      { type: "transcript" },
+      { type: SessionNoteViewType.Transcript },
       false,
     ],
-    ["finalizing", "finalizing", { type: "transcript" }, true],
-    ["batch transcribing", "running_batch", { type: "transcript" }, true],
-    ["inactive on the memo tab", "inactive", { type: "raw" }, false],
+    [
+      "finalizing",
+      "finalizing",
+      { type: SessionNoteViewType.Transcript },
+      true,
+    ],
+    [
+      "batch transcribing",
+      "running_batch",
+      { type: SessionNoteViewType.Transcript },
+      true,
+    ],
+    [
+      "inactive on the memo tab",
+      "inactive",
+      { type: SessionNoteViewType.Raw },
+      false,
+    ],
   ] as const)(
     "only navigates from the transcript tab while %s",
     (_label, mode, currentTab, isTranscribing) => {
@@ -696,7 +725,9 @@ describe("SessionViewSwitcher", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Transcript" }));
 
-      expect(handleTabChange).toHaveBeenCalledWith({ type: "transcript" });
+      expect(handleTabChange).toHaveBeenCalledWith({
+        type: SessionNoteViewType.Transcript,
+      });
       expect(onTranscriptEditModeChange).not.toHaveBeenCalled();
       expect(hoisted.stopListening).not.toHaveBeenCalled();
       expect(hoisted.stopTranscription).not.toHaveBeenCalled();
@@ -709,7 +740,10 @@ describe("SessionViewSwitcher", () => {
 describe("useEditorTabs", () => {
   it.each([
     [true, ALL_TABS],
-    [false, [{ type: "enhanced", id: "note-1" }, { type: "raw" }]],
+    [
+      false,
+      [{ type: "enhanced", id: "note-1" }, { type: SessionNoteViewType.Raw }],
+    ],
   ])(
     "includes the transcript tab only when it can be shown (%s)",
     (canShowTranscript, expected) => {
@@ -724,8 +758,10 @@ describe("useEditorTabs", () => {
 
       expect(result.current).toEqual([
         { type: "enhanced", id: "summary:session-1" },
-        { type: "raw" },
-        ...(canShowTranscript ? [{ type: "transcript" }] : []),
+        { type: SessionNoteViewType.Raw },
+        ...(canShowTranscript
+          ? [{ type: SessionNoteViewType.Transcript }]
+          : []),
       ]);
       hoisted.enhancedNotes = [{ id: "note-1" }];
       rerender();

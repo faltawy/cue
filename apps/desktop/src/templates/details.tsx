@@ -21,6 +21,7 @@ import { getTemplateCreatorLabel } from "./utils";
 
 import { EmptyState } from "~/shared/ui/empty-state";
 import { ResourcePreviewHeader } from "~/shared/ui/resource-list";
+import { TemplateTimestampFormat } from "~/templates/enums";
 
 export function TemplateDetailsColumn({
   isAutoSelected,
@@ -129,7 +130,7 @@ function WebTemplatePreview({
           <span className="text-muted-foreground text-label shrink-0 font-normal whitespace-nowrap">
             {getTemplateCreatorLabel({
               isUserTemplate: false,
-              format: "short",
+              format: TemplateTimestampFormat.Short,
             })}
           </span>
         }

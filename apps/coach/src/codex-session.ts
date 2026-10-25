@@ -11,21 +11,21 @@ import {
 import { loadCodexMcpTools } from "./codex-mcp";
 import { codexFileTools } from "./codex-tools";
 import { decide } from "./guard";
-import type { AskContent } from "./images";
+import { type AskContent } from "./images";
 import { meetingTools } from "./meeting-server";
 import { answerInput, parseQuestions } from "./questions";
-import type { RuntimeMessage } from "./runtime-message";
-import type { RuntimeTool } from "./runtime-tool";
+import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
+import { type RuntimeTool } from "./runtime-tool";
 import {
+  type CoachOptions,
   coachPrompt,
+  type CoachSession,
   readRoots,
   userContextPrompt,
   WEB_PROMPT,
-  type CoachOptions,
-  type CoachSession,
 } from "./session";
 import { MissingConversationError } from "./supervisor";
-import { text, failed } from "./tool-result";
+import { failed, text } from "./tool-result";
 
 export const DEFAULT_CODEX_HOME = path.join(
   os.homedir(),
@@ -118,7 +118,7 @@ export function startCodexSession(options: {
     if (!active) return;
     active = false;
     messages.push({
-      type: "result",
+      type: RuntimeMessageType.Result,
       subtype: ok ? "success" : interrupted ? "interrupted" : "error",
       is_error: !ok,
       session_id: threadId || undefined,
@@ -179,7 +179,7 @@ export function startCodexSession(options: {
             success: false,
           };
         const name = entry.name;
-        messages.push({ type: "tool_start", id, name, input });
+        messages.push({ type: RuntimeMessageType.ToolStart, id, name, input });
         let response;
         try {
           options.authorize?.(name, input);
@@ -195,7 +195,7 @@ export function startCodexSession(options: {
         }
         options.onToolResult?.(id, response, name);
         messages.push({
-          type: "tool_result",
+          type: RuntimeMessageType.ToolResult,
           id,
           content: response.content,
           isError: response.isError === true,
@@ -213,7 +213,10 @@ export function startCodexSession(options: {
         if (method === "turn/started")
           turnId = String(record(params.turn).id ?? "");
         if (method === "item/agentMessage/delta" && active)
-          messages.push({ type: "text", delta: String(params.delta ?? "") });
+          messages.push({
+            type: RuntimeMessageType.Text,
+            delta: String(params.delta ?? ""),
+          });
         if (method === "error" && params.willRetry !== true)
           lastError = String(record(params.error).message ?? "Codex failed.");
         if (method === "thread/tokenUsage/updated" && active) {
@@ -230,7 +233,7 @@ export function startCodexSession(options: {
           outputTokens += count("outputTokens");
           contextWindow = Number(usage.modelContextWindow) || 0;
           messages.push({
-            type: "assistant_usage",
+            type: RuntimeMessageType.AssistantUsage,
             usage: { input_tokens: count("inputTokens") },
           });
         }

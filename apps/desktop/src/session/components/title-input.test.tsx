@@ -10,8 +10,11 @@ import { type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@anlg/ui/components/ui/tooltip";
+import { SessionNoteViewType } from "@anlg/utils/session";
 
 import { TitleInput } from "./title-input";
+
+import { TabType } from "~/store/zustand/tabs/enums";
 
 const hoisted = vi.hoisted(() => ({
   clearLiveTitle: vi.fn(),
@@ -62,7 +65,7 @@ const renderTitleInput = (
           pinned: false,
           slotId: "slot-1",
           state: { autoStart: null, view: null },
-          type: "sessions",
+          type: TabType.Sessions,
         }}
         {...props}
       />
@@ -271,8 +274,11 @@ describe("TitleInput", () => {
               id: "session-1",
               pinned: false,
               slotId: "slot-1",
-              state: { autoStart: null, view: { type: "raw" } },
-              type: "sessions",
+              state: {
+                autoStart: null,
+                view: { type: SessionNoteViewType.Raw },
+              },
+              type: TabType.Sessions,
             }}
           />
         </TooltipProvider>,
@@ -314,8 +320,8 @@ describe("TitleInput", () => {
             id: "session-2",
             pinned: false,
             slotId: "slot-1",
-            state: { autoStart: null, view: { type: "raw" } },
-            type: "sessions",
+            state: { autoStart: null, view: { type: SessionNoteViewType.Raw } },
+            type: TabType.Sessions,
           }}
         />
       </TooltipProvider>,

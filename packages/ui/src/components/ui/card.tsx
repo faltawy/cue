@@ -2,19 +2,40 @@ import { forwardRef } from "react";
 
 import { cn } from "@anlg/utils";
 
+export enum CardVariant {
+  Default = "default",
+  OutlineSolid = "outline-solid",
+  Ghost = "ghost",
+}
+
+export enum CardSpacing {
+  Default = "default",
+  Compact = "compact",
+  Loose = "loose",
+}
+
+export enum CardAlign {
+  Start = "start",
+  Center = "center",
+  End = "end",
+  Between = "between",
+  Around = "around",
+  Evenly = "evenly",
+}
+
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "outline-solid" | "ghost";
+  variant?: CardVariant;
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = "default", ...props }, ref) => (
+  ({ className, variant = CardVariant.Default, ...props }, ref) => (
     <div
       ref={ref}
       className={cn([
         "rounded-lg",
-        variant === "default" && "bg-background border-border border",
-        variant === "outline-solid" && "border-border border",
-        variant === "ghost" && "border-none",
+        variant === CardVariant.Default && "bg-background border-border border",
+        variant === CardVariant.OutlineSolid && "border-border border",
+        variant === CardVariant.Ghost && "border-none",
         className,
       ])}
       {...props}
@@ -24,18 +45,18 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
 Card.displayName = "Card";
 
 interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  spacing?: "default" | "compact" | "loose";
+  spacing?: CardSpacing;
 }
 
 export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ className, spacing = "default", ...props }, ref) => (
+  ({ className, spacing = CardSpacing.Default, ...props }, ref) => (
     <div
       ref={ref}
       className={cn([
         "flex flex-col",
-        spacing === "default" && "gap-1.5 p-6",
-        spacing === "compact" && "gap-1 p-4",
-        spacing === "loose" && "gap-2 p-8",
+        spacing === CardSpacing.Default && "gap-1.5 p-6",
+        spacing === CardSpacing.Compact && "gap-1 p-4",
+        spacing === CardSpacing.Loose && "gap-2 p-8",
         className,
       ])}
       {...props}
@@ -74,17 +95,17 @@ export const CardDescription = forwardRef<
 CardDescription.displayName = "CardDescription";
 
 interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
-  spacing?: "default" | "compact" | "loose";
+  spacing?: CardSpacing;
 }
 
 export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
-  ({ className, spacing = "default", ...props }, ref) => (
+  ({ className, spacing = CardSpacing.Default, ...props }, ref) => (
     <div
       ref={ref}
       className={cn([
-        spacing === "default" && "p-6 pt-0",
-        spacing === "compact" && "p-4 pt-0",
-        spacing === "loose" && "p-8 pt-0",
+        spacing === CardSpacing.Default && "p-6 pt-0",
+        spacing === CardSpacing.Compact && "p-4 pt-0",
+        spacing === CardSpacing.Loose && "p-8 pt-0",
         className,
       ])}
       {...props}
@@ -94,25 +115,33 @@ export const CardContent = forwardRef<HTMLDivElement, CardContentProps>(
 CardContent.displayName = "CardContent";
 
 interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
-  spacing?: "default" | "compact" | "loose";
-  align?: "start" | "center" | "end" | "between" | "around" | "evenly";
+  spacing?: CardSpacing;
+  align?: CardAlign;
 }
 
 export const CardFooter = forwardRef<HTMLDivElement, CardFooterProps>(
-  ({ className, spacing = "default", align = "between", ...props }, ref) => (
+  (
+    {
+      className,
+      spacing = CardSpacing.Default,
+      align = CardAlign.Between,
+      ...props
+    },
+    ref,
+  ) => (
     <div
       ref={ref}
       className={cn([
         "flex",
-        spacing === "default" && "p-6 pt-0",
-        spacing === "compact" && "p-4 pt-0",
-        spacing === "loose" && "p-8 pt-0",
-        align === "start" && "justify-start",
-        align === "center" && "justify-center",
-        align === "end" && "justify-end",
-        align === "between" && "justify-between",
-        align === "around" && "justify-around",
-        align === "evenly" && "justify-evenly",
+        spacing === CardSpacing.Default && "p-6 pt-0",
+        spacing === CardSpacing.Compact && "p-4 pt-0",
+        spacing === CardSpacing.Loose && "p-8 pt-0",
+        align === CardAlign.Start && "justify-start",
+        align === CardAlign.Center && "justify-center",
+        align === CardAlign.End && "justify-end",
+        align === CardAlign.Between && "justify-between",
+        align === CardAlign.Around && "justify-around",
+        align === CardAlign.Evenly && "justify-evenly",
         className,
       ])}
       {...props}

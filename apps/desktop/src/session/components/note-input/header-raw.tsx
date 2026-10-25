@@ -9,6 +9,7 @@ import {
   getStoredNoteMarkdown,
 } from "./header-shared";
 
+import { NoteHeaderSize } from "~/session/enums";
 import { useSession } from "~/session/queries";
 import {
   type MenuItemDef,
@@ -74,7 +75,7 @@ function HeaderViewRawButton({
       icon={<TextAlignLeft className="size-3.5" />}
       onClick={onClick}
       onContextMenu={onContextMenu}
-      size={standalone ? "standalone" : "tray"}
+      size={standalone ? NoteHeaderSize.Standalone : NoteHeaderSize.Tray}
       title={label}
       className={standalone ? "border-0 shadow-none" : undefined}
     />

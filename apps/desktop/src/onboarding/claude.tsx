@@ -1,7 +1,10 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { commands as coachCommands } from "@anlg/plugin-coach";
+import {
+  type CoachProvider,
+  commands as coachCommands,
+} from "@anlg/plugin-coach";
 import {
   Select,
   SelectContent,
@@ -22,7 +25,7 @@ export function ClaudeSection({ onContinue }: { onContinue: () => void }) {
   const settings = useCoachSettings();
   const client = useQueryClient();
   const save = useMutation({
-    mutationFn: async (provider: "claude" | "codex") => {
+    mutationFn: async (provider: CoachProvider) => {
       if (!settings.data) throw new Error("AI settings are unavailable.");
       const next = { ...settings.data, provider };
       const result = await coachCommands.setSettings(next);
@@ -68,7 +71,7 @@ function ProviderSignIn({
   provider,
   onContinue,
 }: {
-  provider: "claude" | "codex";
+  provider: CoachProvider;
   onContinue: () => void;
 }) {
   const { setup, signedIn, error, signingIn, signIn } =

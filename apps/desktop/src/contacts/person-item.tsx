@@ -1,10 +1,11 @@
 import React, { useCallback } from "react";
 
-import { PushPin } from "@anlg/ui/components/icons";
+import { IconWeight, PushPin } from "@anlg/ui/components/icons";
 import { ROW_HOVER, ROW_SELECTED } from "@anlg/ui/components/ui/row";
 import { cn } from "@anlg/utils";
 
 import { ContactImage } from "~/contacts/contact-avatar";
+import { ContactType } from "~/contacts/enums";
 import { type HumanRecord, toggleContactPin } from "~/contacts/queries";
 import { ContactFacehash } from "~/contacts/shared";
 import { useNativeContextMenu } from "~/shared/hooks/useNativeContextMenu";
@@ -28,7 +29,7 @@ export function PersonItem({
   const facehashName = personName || personEmail || person.id;
 
   const togglePin = useCallback(() => {
-    void toggleContactPin("human", person.id).catch((error) => {
+    void toggleContactPin(ContactType.Human, person.id).catch((error) => {
       console.error("[contacts] failed to toggle contact pin", error);
     });
   }, [person.id]);
@@ -98,7 +99,7 @@ export function PersonItem({
           aria-label="Pinned contact"
           className="text-warm shrink-0 p-1"
         >
-          <PushPin className="size-3.5" weight="bold" />
+          <PushPin className="size-3.5" weight={IconWeight.Bold} />
         </span>
       ) : (
         <button
@@ -113,7 +114,7 @@ export function PersonItem({
         >
           <PushPin
             className="size-3.5"
-            weight={isPinned ? "bold" : "regular"}
+            weight={isPinned ? IconWeight.Bold : IconWeight.Regular}
           />
         </button>
       )}

@@ -1,6 +1,8 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import { resetTabsStore } from "~/store/zustand/tabs/test-utils";
 
 const mocks = vi.hoisted(() => ({
@@ -90,7 +92,7 @@ describe("standalone note window route", () => {
     act(() => {
       useTabs.getState().updateSessionTabState(tab, {
         autoStart: null,
-        view: { type: "raw" },
+        view: { type: SessionNoteViewType.Raw },
       });
     });
 

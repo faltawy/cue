@@ -1,30 +1,32 @@
 import { z } from "zod";
 
-export const MOVE_TAGS = [
-  "open_question",
-  "pushback",
-  "buying_signal",
-  "risk",
-  "vague_promise",
-  "over_promise",
-  "giving_ground",
-  "talk_time",
-  "decision_owner",
-  "agenda",
-] as const;
+export enum MoveVerb {
+  Say = "Say",
+  Ask = "Ask",
+}
 
-export type MoveTag = (typeof MOVE_TAGS)[number];
-export type FeedbackReason =
-  | "already_handled"
-  | "poor_timing"
-  | "irrelevant"
-  | "wrong_language";
-export const FEEDBACK_REASONS = [
-  "already_handled",
-  "poor_timing",
-  "irrelevant",
-  "wrong_language",
-] as const satisfies readonly FeedbackReason[];
+export enum MoveTag {
+  OpenQuestion = "open_question",
+  Pushback = "pushback",
+  BuyingSignal = "buying_signal",
+  Risk = "risk",
+  VaguePromise = "vague_promise",
+  OverPromise = "over_promise",
+  GivingGround = "giving_ground",
+  TalkTime = "talk_time",
+  DecisionOwner = "decision_owner",
+  Agenda = "agenda",
+}
+
+export const MOVE_TAGS = Object.values(MoveTag);
+
+export enum FeedbackReason {
+  AlreadyHandled = "already_handled",
+  PoorTiming = "poor_timing",
+  Irrelevant = "irrelevant",
+  WrongLanguage = "wrong_language",
+}
+export const FEEDBACK_REASONS = Object.values(FeedbackReason);
 export type CoachFeedback = {
   category: MoveTag;
   useful: boolean;
@@ -42,8 +44,7 @@ export function evidenceMomentId(target: EvidenceTarget): string {
   return `${target.sessionId}:${target.timestampMs}`;
 }
 
-
-export const MOVE_VERBS = ["Say", "Ask"] as const;
+export const MOVE_VERBS = Object.values(MoveVerb);
 export const HEADLINE_MAX = 100;
 export const LINE_MAX = 400;
 export const WATCH_OUT_MAX = 120;
@@ -62,9 +63,9 @@ export const momentSchema = z.strictObject({
 });
 
 export const moveFields = {
-  tag: z.enum(MOVE_TAGS),
+  tag: z.enum(MoveTag),
   headline: text(HEADLINE_MAX),
-  verb: z.enum(MOVE_VERBS),
+  verb: z.enum(MoveVerb),
   line: text(LINE_MAX),
   watch_out: text(WATCH_OUT_MAX).optional(),
 };
@@ -77,8 +78,13 @@ export const moveSchema = z.strictObject({
 
 export type Moment = z.infer<typeof momentSchema>;
 export type Move = z.infer<typeof moveSchema>;
-export type MoveVerb = Move["verb"];
 
-export function moveText(move: Pick<Move, "headline" | "verb" | "line" | "watch_out">): string {
-  return [move.headline, `${move.verb}: "${move.line}"`, ...(move.watch_out ? [move.watch_out] : [])].join("\n");
+export function moveText(
+  move: Pick<Move, "headline" | "verb" | "line" | "watch_out">,
+): string {
+  return [
+    move.headline,
+    `${move.verb}: "${move.line}"`,
+    ...(move.watch_out ? [move.watch_out] : []),
+  ].join("\n");
 }

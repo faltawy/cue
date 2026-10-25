@@ -1,10 +1,11 @@
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { TemplatesSidebarContent } from "~/templates";
 
 export function TemplatesNav() {
   const currentTab = useTabs((state) => state.currentTab);
 
-  if (currentTab?.type !== "templates") {
+  if (currentTab?.type !== TabType.Templates) {
     return null;
   }
 

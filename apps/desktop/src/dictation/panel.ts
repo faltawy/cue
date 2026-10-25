@@ -1,8 +1,9 @@
 import { commands as dictation, type Phase } from "@anlg/plugin-dictation";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-import { DictationPhase } from "./controller";
 import { useDictationStatus } from "./state";
+
+import { DictationPhase } from "~/dictation/controller";
 
 type DictationOverlayState = {
   owner: string;

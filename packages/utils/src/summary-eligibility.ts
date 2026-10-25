@@ -1,9 +1,10 @@
 export const MIN_WORDS_FOR_SUMMARY = 5;
 export const MIN_TRANSCRIPT_CHARACTERS_FOR_SUMMARY = 160;
 
-export type SummaryEligibilitySkipCode =
-  | "no_transcript"
-  | "transcript_too_short";
+export enum SummaryEligibilitySkipCode {
+  NoTranscript = "no_transcript",
+  TranscriptTooShort = "transcript_too_short",
+}
 
 export type SummaryEligibility =
   | { eligible: true; characterCount: number; wordCount: number }
@@ -27,7 +28,7 @@ export function getSummaryEligibility({
   if (transcriptCount === 0) {
     return {
       eligible: false,
-      code: "no_transcript",
+      code: SummaryEligibilitySkipCode.NoTranscript,
       reason: "No transcript recorded",
       characterCount: 0,
       wordCount: 0,
@@ -37,7 +38,7 @@ export function getSummaryEligibility({
   if (wordCount < MIN_WORDS_FOR_SUMMARY) {
     return {
       eligible: false,
-      code: "transcript_too_short",
+      code: SummaryEligibilitySkipCode.TranscriptTooShort,
       reason: `Not enough words recorded (${wordCount}/${MIN_WORDS_FOR_SUMMARY} minimum)`,
       characterCount,
       wordCount,
@@ -47,7 +48,7 @@ export function getSummaryEligibility({
   if (characterCount < MIN_TRANSCRIPT_CHARACTERS_FOR_SUMMARY) {
     return {
       eligible: false,
-      code: "transcript_too_short",
+      code: SummaryEligibilitySkipCode.TranscriptTooShort,
       reason: `Transcript too short to summarize (${characterCount}/${MIN_TRANSCRIPT_CHARACTERS_FOR_SUMMARY} characters minimum)`,
       characterCount,
       wordCount,

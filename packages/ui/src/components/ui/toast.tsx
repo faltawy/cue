@@ -2,14 +2,24 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { CircleNotch } from "@anlg/ui/components/icons";
 
+import { AppToastDismissReason } from "./app-toast";
+import { AppToastAlign } from "./app-toast";
+import { AppToastPosition } from "./app-toast";
 import {
   AppToaster,
   dismissAppToast,
   dismissAppToasts,
   showAppToast,
   type AppToastAction,
-  type AppToastTone,
+  AppToastTone,
 } from "./app-toast";
+
+export enum ToastPosition {
+  BottomRight = "bottom-right",
+  BottomCenter = "bottom-center",
+  TopRight = "top-right",
+  TopCenter = "top-center",
+}
 
 export const TOAST_DURATIONS = {
   success: 3_000,
@@ -36,17 +46,17 @@ let nextToastId = 0;
 function showToast(
   message: ReactNode,
   options: ToastOptions = {},
-  tone: AppToastTone | "loading" = "info",
+  tone: AppToastTone = AppToastTone.Info,
 ) {
   const id = options.id ?? `notification-${++nextToastId}`;
   const requestedDuration = options.duration;
   const durationMs =
-    tone === "error" && requestedDuration !== Infinity
+    tone === AppToastTone.Error && requestedDuration !== Infinity
       ? requestedDuration === undefined || !Number.isFinite(requestedDuration)
         ? TOAST_DURATIONS.error
         : Math.min(requestedDuration, TOAST_DURATIONS.error)
       : (requestedDuration ??
-        (tone === "loading" ? Infinity : TOAST_DURATIONS[tone]));
+        (tone === AppToastTone.Loading ? Infinity : TOAST_DURATIONS[tone]));
 
   showAppToast({
     id: String(id),
@@ -56,10 +66,10 @@ function showToast(
     ) : (
       options.description
     ),
-    tone: tone === "loading" ? "info" : tone,
+    tone: tone === AppToastTone.Loading ? AppToastTone.Info : tone,
     leading:
       options.icon ??
-      (tone === "loading" ? (
+      (tone === AppToastTone.Loading ? (
         <CircleNotch className="animate-spin" />
       ) : undefined),
     durationMs,
@@ -68,7 +78,7 @@ function showToast(
     action: options.action,
     secondaryAction: options.secondaryAction,
     onDismiss: (reason) => {
-      if (reason === "user") options.onDismiss?.();
+      if (reason === AppToastDismissReason.User) options.onDismiss?.();
     },
   });
   return id;
@@ -80,15 +90,15 @@ export const toast = Object.assign(
     message: (message: ReactNode, options?: ToastOptions) =>
       showToast(message, options),
     success: (message: ReactNode, options?: ToastOptions) =>
-      showToast(message, options, "success"),
+      showToast(message, options, AppToastTone.Success),
     info: (message: ReactNode, options?: ToastOptions) =>
-      showToast(message, options, "info"),
+      showToast(message, options, AppToastTone.Info),
     warning: (message: ReactNode, options?: ToastOptions) =>
-      showToast(message, options, "warning"),
+      showToast(message, options, AppToastTone.Warning),
     error: (message: ReactNode, options?: ToastOptions) =>
-      showToast(message, options, "error"),
+      showToast(message, options, AppToastTone.Error),
     loading: (message: ReactNode, options?: ToastOptions) =>
-      showToast(message, options, "loading"),
+      showToast(message, options, AppToastTone.Loading),
     dismiss: (id?: string | number) => {
       if (id === undefined) dismissAppToasts();
       else dismissAppToast(String(id));
@@ -97,15 +107,21 @@ export const toast = Object.assign(
 );
 
 export function Toaster({
-  position = "bottom-right",
+  position = ToastPosition.BottomRight,
   ...props
 }: Omit<ComponentProps<typeof AppToaster>, "position"> & {
-  position?: "bottom-right" | "bottom-center" | "top-right" | "top-center";
+  position?: ToastPosition;
 }) {
   return (
     <AppToaster
-      align={position.endsWith("right") ? "end" : "center"}
-      position={position.startsWith("top") ? "top" : "bottom"}
+      align={
+        position.endsWith("right") ? AppToastAlign.End : AppToastAlign.Center
+      }
+      position={
+        position.startsWith("top")
+          ? AppToastPosition.Top
+          : AppToastPosition.Bottom
+      }
       {...props}
     />
   );

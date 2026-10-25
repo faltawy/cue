@@ -2,20 +2,23 @@ import { emitTo, listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { commands as listenerCommands } from "@anlg/plugin-transcription";
-import { getCurrentWebviewWindowLabel } from "@anlg/plugin-windows";
+import {
+  StaticWindowLabel,
+  getCurrentWebviewWindowLabel,
+} from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { useListener } from "./contexts";
 import { useStartListeningWithBatchOverride } from "./useStartListeningWithBatchOverride";
 
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
+import { ListenerControlAction } from "~/stt/enums";
 
 const LISTENER_CONTROL_EVENT = "anlg:listener-control";
 // The main webview may be dead or reloading; if it hasn't stopped the
 // capture by then, stop it natively.
 const MAIN_STOP_FALLBACK_DELAY_MS = 1_500;
-
-type ListenerControlAction = "start" | "stop";
 
 type ListenerControlRequest = {
   action: ListenerControlAction;
@@ -24,7 +27,7 @@ type ListenerControlRequest = {
 };
 
 export function isMainWebviewWindow() {
-  return getCurrentWebviewWindowLabel() === "main";
+  return getCurrentWebviewWindowLabel() === StaticWindowLabel.Main;
 }
 
 export async function requestMainListenerControl(
@@ -37,7 +40,7 @@ export async function requestMainListenerControl(
     sessionId,
   } satisfies ListenerControlRequest);
 
-  if (action !== "stop") {
+  if (action !== ListenerControlAction.Stop) {
     await request;
     return;
   }
@@ -130,9 +133,10 @@ function MainListenerControlRequestRunner({
 
     const run = async () => {
       const live = listenerStore.getState().live;
-      const isStartingOrActive = live.loading || live.status === "active";
+      const isStartingOrActive =
+        live.loading || live.status === LiveSessionStatus.Active;
 
-      if (request.action === "start") {
+      if (request.action === ListenerControlAction.Start) {
         // Non-main windows cannot see this window's state, so they can send
         // duplicate start requests for a session that is already starting.
         if (live.sessionId !== request.sessionId || !isStartingOrActive) {

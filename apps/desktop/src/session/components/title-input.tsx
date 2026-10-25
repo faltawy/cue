@@ -16,9 +16,11 @@ import { useResizeObserver } from "usehooks-ts";
 import { cn } from "@anlg/utils";
 
 import { useTitleGenerating } from "~/ai/hooks";
+import { TitleInputVariant } from "~/session/enums";
 import { useSession, useUpdateSession } from "~/session/queries";
 import { useLiveTitle } from "~/store/zustand/live-title";
 import { type Tab } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export interface TitleInputHandle {
   focus: () => void;
@@ -29,11 +31,11 @@ export interface TitleInputHandle {
 export const TitleInput = forwardRef<
   TitleInputHandle,
   {
-    tab: Extract<Tab, { type: "sessions" }>;
+    tab: Extract<Tab, { type: TabType.Sessions }>;
     onTransferContentToEditor?: (content: string) => void;
     onFocusEditorAtStart?: () => void;
     onFocusEditorAtPixelWidth?: (pixelWidth: number) => void;
-    variant?: "title" | "breadcrumb";
+    variant?: TitleInputVariant;
   }
 >(
   (
@@ -42,7 +44,7 @@ export const TitleInput = forwardRef<
       onTransferContentToEditor,
       onFocusEditorAtStart,
       onFocusEditorAtPixelWidth,
-      variant = "title",
+      variant = TitleInputVariant.Title,
     },
     ref,
   ) => {
@@ -78,13 +80,13 @@ export const TitleInput = forwardRef<
           data-tauri-drag-region="false"
           className={cn([
             "flex w-full items-center justify-start",
-            variant === "breadcrumb" ? "h-5" : "h-8",
+            variant === TitleInputVariant.Breadcrumb ? "h-5" : "h-8",
           ])}
         >
           <span
             className={cn([
               "text-muted-foreground animate-pulse",
-              variant === "breadcrumb"
+              variant === TitleInputVariant.Breadcrumb
                 ? "text-body leading-5"
                 : "text-page-title",
             ])}
@@ -101,13 +103,13 @@ export const TitleInput = forwardRef<
           data-tauri-drag-region="false"
           className={cn([
             "flex w-full items-center justify-start overflow-hidden",
-            variant === "breadcrumb" ? "h-5" : "h-8",
+            variant === TitleInputVariant.Breadcrumb ? "h-5" : "h-8",
           ])}
         >
           <span
             className={cn([
               "animate-reveal-left whitespace-nowrap",
-              variant === "breadcrumb"
+              variant === TitleInputVariant.Breadcrumb
                 ? "text-body leading-5"
                 : "text-page-title",
             ])}
@@ -143,7 +145,7 @@ const TitleInputInner = memo(
       onTransferContentToEditor?: (content: string) => void;
       onFocusEditorAtStart?: () => void;
       onFocusEditorAtPixelWidth?: (pixelWidth: number) => void;
-      variant: "title" | "breadcrumb";
+      variant: TitleInputVariant;
     }
   >(
     (
@@ -394,7 +396,7 @@ const TitleInputInner = memo(
           style={titleFadeStyle}
           className={cn([
             "group/title-input relative grid w-fit max-w-full grid-cols-[minmax(0,1fr)] items-center overflow-hidden",
-            variant === "breadcrumb"
+            variant === TitleInputVariant.Breadcrumb
               ? "text-body h-5 leading-5"
               : "text-page-title h-8",
           ])}
@@ -449,10 +451,10 @@ const TitleInputInner = memo(
               "col-start-1 row-start-1 w-0 min-w-full transition-opacity duration-200",
               "border-none bg-transparent focus:outline-hidden",
               "placeholder:text-tertiary-foreground text-start",
-              variant === "breadcrumb"
+              variant === TitleInputVariant.Breadcrumb
                 ? "text-foreground text-ui h-5 appearance-none p-0 focus:underline"
                 : "text-page-title",
-              variant === "breadcrumb" &&
+              variant === TitleInputVariant.Breadcrumb &&
                 (isTitleFocused
                   ? "overflow-x-auto whitespace-nowrap"
                   : "truncate"),
@@ -468,7 +470,7 @@ const TitleInputInner = memo(
                 style={titleHoverScrollStyle}
                 className={cn([
                   "group-hover/title-input:animate-title-hover-scroll whitespace-nowrap group-hover/title-input:will-change-transform",
-                  variant === "breadcrumb"
+                  variant === TitleInputVariant.Breadcrumb
                     ? "text-body leading-5"
                     : "text-page-title",
                 ])}

@@ -9,6 +9,7 @@ import { streamdownComponents } from "../../streamdown";
 
 import { ClaudeSetupLabel } from "~/ai/claude-setup-label";
 import { useAITaskTask, useClaudeSetup } from "~/ai/hooks";
+import { TaskStepType, TaskType } from "~/store/zustand/ai-task/enums";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 import { getPersistableGeneratedTitle } from "~/store/zustand/ai-task/task-configs/title-success";
 
@@ -43,15 +44,15 @@ export function StreamingView({
   sessionTitle: string;
   enhancedNoteId: string;
 }) {
-  const taskId = createTaskId(enhancedNoteId, "enhance");
+  const taskId = createTaskId(enhancedNoteId, TaskType.Enhance);
   const { streamedText, isGenerating, currentStep } = useAITaskTask(
     taskId,
-    "enhance",
+    TaskType.Enhance,
   );
-  const isReasoning = currentStep?.type === "reasoning";
-  const titleTaskId = createTaskId(sessionId, "title");
+  const isReasoning = currentStep?.type === TaskStepType.Reasoning;
+  const titleTaskId = createTaskId(sessionId, TaskType.Title);
   const { streamedText: streamedTitle, isGenerating: isGeneratingTitle } =
-    useAITaskTask(titleTaskId, "title");
+    useAITaskTask(titleTaskId, TaskType.Title);
   const title = sessionTitle.trim();
   const generatedTitle = isGeneratingTitle
     ? ""

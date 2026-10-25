@@ -1,12 +1,12 @@
 import type { TranscriptSpeakerHint } from "@anlg/plugin-fs-sync";
-import { commands as listenerCommands } from "@anlg/plugin-transcription";
-import type {
-  IdentityAssignment,
-  SpeakerContext,
-  RenderTranscriptHuman,
-  RenderTranscriptInput,
-  RenderTranscriptRequest,
-  RenderedTranscriptSegment,
+import {
+  commands as listenerCommands,
+  type IdentityAssignment,
+  type SpeakerContext,
+  type RenderTranscriptHuman,
+  type RenderTranscriptInput,
+  type RenderTranscriptRequest,
+  type RenderedTranscriptSegment,
 } from "@anlg/plugin-transcription";
 
 import type { SegmentWord } from "~/stt/live-segment";

@@ -11,6 +11,7 @@ import {
 } from "~/shared/useMainShortcuts";
 import { StandaloneWindowShell } from "~/shared/window-shell";
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 import { useListener } from "~/stt/contexts";
 
 const STANDALONE_NOTE_SURFACE_MIN_WIDTH_PX = 420;
@@ -72,23 +73,23 @@ export function useStandaloneNoteTab(sessionId: string) {
         pinned: false,
         slotId: `note-window-${sessionId}`,
         state: { view: null, autoStart: null, scheduledAutoStart: null },
-        type: "sessions",
-      }) satisfies Extract<Tab, { type: "sessions" }>,
+        type: TabType.Sessions,
+      }) satisfies Extract<Tab, { type: TabType.Sessions }>,
     [sessionId],
   );
 
   const storeTab = useTabs((state) =>
     state.tabs.find(
-      (candidate): candidate is Extract<Tab, { type: "sessions" }> =>
-        candidate.type === "sessions" && candidate.id === sessionId,
+      (candidate): candidate is Extract<Tab, { type: TabType.Sessions }> =>
+        candidate.type === TabType.Sessions && candidate.id === sessionId,
     ),
   );
 
   useLayoutEffect(() => {
     const state = useTabs.getState();
     const existingTab = state.tabs.find(
-      (candidate): candidate is Extract<Tab, { type: "sessions" }> =>
-        candidate.type === "sessions" && candidate.id === sessionId,
+      (candidate): candidate is Extract<Tab, { type: TabType.Sessions }> =>
+        candidate.type === TabType.Sessions && candidate.id === sessionId,
     );
 
     if (existingTab) {

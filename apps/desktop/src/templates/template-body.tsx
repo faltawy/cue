@@ -7,11 +7,12 @@ import { AUTO_TEMPLATE_ID, useTemplateTab } from "./utils";
 
 import { setSettingValue } from "~/settings/queries";
 import { type Tab } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function TemplateView({
   tab,
 }: {
-  tab: Extract<Tab, { type: "templates" }>;
+  tab: Extract<Tab, { type: TabType.Templates }>;
 }) {
   const {
     userTemplates,

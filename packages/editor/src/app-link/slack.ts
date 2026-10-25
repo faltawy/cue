@@ -1,7 +1,13 @@
-export type SlackLinkKind = "channel" | "message" | "thread";
+import { AppLinkProvider } from "./provider";
+
+export enum SlackLinkKind {
+  Channel = "channel",
+  Message = "message",
+  Thread = "thread",
+}
 
 export interface SlackAttrs {
-  provider: "slack";
+  provider: AppLinkProvider.Slack;
   kind: SlackLinkKind;
   url: string;
   workspace: string;
@@ -15,14 +21,14 @@ export function getSlackDisplayParts(attrs: SlackAttrs): {
   subline: string;
 } {
   switch (attrs.kind) {
-    case "channel":
+    case SlackLinkKind.Channel:
       return { header: attrs.workspace, subline: `#${attrs.channelId}` };
-    case "message":
+    case SlackLinkKind.Message:
       return {
         header: attrs.workspace,
         subline: `Message in #${attrs.channelId}`,
       };
-    case "thread":
+    case SlackLinkKind.Thread:
       return {
         header: attrs.workspace,
         subline: `Thread in #${attrs.channelId}`,

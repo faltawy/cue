@@ -17,12 +17,15 @@ import {
 
 import { useAITaskTask } from "~/ai/hooks";
 import { getEnhancerService } from "~/services/enhancer";
+import { EnhanceResultType } from "~/services/enums";
 import { useEnhancedNoteActions } from "~/session/components/note-input/enhanced-actions";
+import { NoteHeaderSize } from "~/session/enums";
 import { useEnhancedNote } from "~/session/queries";
 import {
   type MenuItemDef,
   useNativeContextMenu,
 } from "~/shared/hooks/useNativeContextMenu";
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { createTaskId } from "~/store/zustand/ai-task/task-configs";
 import {
   TemplateIconGlyph,
@@ -91,8 +94,8 @@ function useEnhancedViewTitle(enhancedNoteId: string) {
 }
 
 function useEnhancedViewGenerating(enhancedNoteId: string) {
-  const taskId = createTaskId(enhancedNoteId, "enhance");
-  const enhanceTask = useAITaskTask(taskId, "enhance");
+  const taskId = createTaskId(enhancedNoteId, TaskType.Enhance);
+  const enhanceTask = useAITaskTask(taskId, TaskType.Enhance);
 
   return enhanceTask.isGenerating;
 }
@@ -116,7 +119,7 @@ function HeaderViewEnhancedInactive({
       aria-label={viewTitle}
       onClick={onClick}
       title={templateTooltip}
-      className={iconHeaderViewClassName(false, "tray", "px-2")}
+      className={iconHeaderViewClassName(false, NoteHeaderSize.Tray, "px-2")}
     >
       {isGenerating ? (
         <Spinner size={16} className="shrink-0" />
@@ -184,7 +187,8 @@ function HeaderViewEnhancedActive({
       )
         .then((result) => {
           if (
-            (result.type === "started" || result.type === "already_active") &&
+            (result.type === EnhanceResultType.Started ||
+              result.type === EnhanceResultType.AlreadyActive) &&
             result.noteId !== enhancedNoteId
           ) {
             onSelectNote?.(result.noteId);
@@ -252,7 +256,7 @@ function HeaderViewEnhancedActive({
       title={templateTooltip}
       className={iconHeaderViewClassName(
         true,
-        "tray",
+        NoteHeaderSize.Tray,
         cn([
           "max-w-56 min-w-[62px] gap-1.5 px-2 @max-[480px]:max-w-12 @max-[480px]:min-w-12 @max-[480px]:gap-0 @max-[480px]:px-1.5",
           isGenerating ? "cursor-not-allowed opacity-70" : "cursor-pointer",

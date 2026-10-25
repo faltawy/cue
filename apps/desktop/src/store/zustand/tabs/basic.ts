@@ -1,8 +1,12 @@
 import type { StoreApi } from "zustand";
 
 import type { LifecycleState } from "./lifecycle";
-import type { NavigationState, TabHistory } from "./navigation";
-import { pushHistory, updateHistoryCurrent } from "./navigation";
+import {
+  type NavigationState,
+  type TabHistory,
+  pushHistory,
+  updateHistoryCurrent,
+} from "./navigation";
 import type {
   RecentlyOpenedActions,
   RecentlyOpenedState,
@@ -16,14 +20,16 @@ import {
 } from "./schema";
 
 import { id } from "~/shared/utils";
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { listenerStore } from "~/store/zustand/listener/instance";
+import { TabType, TabInsertionPosition } from "~/store/zustand/tabs/enums";
 
 export const RETURN_ORIGIN_TAB_TYPES: Tab["type"][] = [
-  "calendar",
-  "contacts",
-  "folders",
-  "settings",
-  "templates",
+  TabType.Calendar,
+  TabType.Contacts,
+  TabType.Folders,
+  TabType.Settings,
+  TabType.Templates,
 ];
 
 export type BasicState = {
@@ -33,7 +39,10 @@ export type BasicState = {
 
 export type BasicActions = {
   openCurrent: (tab: TabInput) => void;
-  openNew: (tab: TabInput, options?: { position?: "start" | "end" }) => void;
+  openNew: (
+    tab: TabInput,
+    options?: { position?: TabInsertionPosition },
+  ) => void;
   select: (tab: Tab) => void;
   clearSelection: () => void;
   selectNext: () => void;
@@ -63,10 +72,10 @@ export const createBasicSlice = <
     const currentActiveTab = tabs.find((t) => t.active);
 
     const isCurrentTabListening =
-      currentActiveTab?.type === "sessions" &&
+      currentActiveTab?.type === TabType.Sessions &&
       currentActiveTab.id === listenerStore.getState().live.sessionId &&
-      (listenerStore.getState().live.status === "active" ||
-        listenerStore.getState().live.status === "finalizing");
+      (listenerStore.getState().live.status === LiveSessionStatus.Active ||
+        listenerStore.getState().live.status === LiveSessionStatus.Finalizing);
 
     set(
       openTab(
@@ -96,7 +105,7 @@ export const createBasicSlice = <
     const currentTab = nextTabs.find((t) => t.active) || null;
     set({ tabs: nextTabs, currentTab } as Partial<T>);
 
-    if (tab.type === "sessions") {
+    if (tab.type === TabType.Sessions) {
       addRecentlyOpened(tab.id);
     }
   },
@@ -273,7 +282,7 @@ const openTab = <T extends BasicState & NavigationState>(
   newTab: TabInput,
   history: Map<string, TabHistory>,
   forceNewTab: boolean,
-  position?: "start" | "end",
+  position?: TabInsertionPosition,
 ): Partial<T> => {
   const tabWithDefaults: Tab = {
     ...getDefaultState(newTab),
@@ -350,7 +359,7 @@ const openTab = <T extends BasicState & NavigationState>(
     activeTab = { ...tabWithOrigin, active: true, slotId: id() };
     const deactivated = deactivateAll(tabs);
 
-    if (position === "start") {
+    if (position === TabInsertionPosition.Start) {
       const pinnedCount = deactivated.filter((t) => t.pinned).length;
       nextTabs = [
         ...deactivated.slice(0, pinnedCount),
@@ -374,20 +383,10 @@ const reuseExistingTab = (
     preserveReturnOrigin: boolean;
   },
 ): Tab => {
-  if (existingTab.type === "settings" && requestedTab.type === "settings") {
-    const nextTab = applyReturnOriginForReuse(
-      existingTab,
-      requestedTab,
-      preserveReturnOrigin,
-    );
-
-    return {
-      ...nextTab,
-      state: requestedTab.state,
-    };
-  }
-
-  if (existingTab.type === "contacts" && requestedTab.type === "contacts") {
+  if (
+    existingTab.type === TabType.Settings &&
+    requestedTab.type === TabType.Settings
+  ) {
     const nextTab = applyReturnOriginForReuse(
       existingTab,
       requestedTab,
@@ -401,8 +400,24 @@ const reuseExistingTab = (
   }
 
   if (
-    existingTab.type === "sessions" &&
-    requestedTab.type === "sessions" &&
+    existingTab.type === TabType.Contacts &&
+    requestedTab.type === TabType.Contacts
+  ) {
+    const nextTab = applyReturnOriginForReuse(
+      existingTab,
+      requestedTab,
+      preserveReturnOrigin,
+    );
+
+    return {
+      ...nextTab,
+      state: requestedTab.state,
+    };
+  }
+
+  if (
+    existingTab.type === TabType.Sessions &&
+    requestedTab.type === TabType.Sessions &&
     requestedTab.state.autoStart
   ) {
     const nextTab = applyReturnOriginForReuse(

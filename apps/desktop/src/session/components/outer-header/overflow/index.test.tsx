@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SessionNoteViewType } from "@anlg/utils/session";
+
 import { OverflowButton } from "./index";
 
 import type { EditorView } from "~/store/zustand/tabs/schema";
@@ -183,7 +185,9 @@ function renderOverflow(
   return render(
     <OverflowButton
       sessionId="session-1"
-      currentView={{ type: "enhanced", id: "note-1" } as EditorView}
+      currentView={
+        { type: SessionNoteViewType.Enhanced, id: "note-1" } as EditorView
+      }
       {...props}
     />,
   );

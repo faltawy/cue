@@ -1,10 +1,16 @@
 import { type Node as PMNode } from "prosemirror-model";
 
+enum SegmentKind {
+  Text = "text",
+  Leaf = "leaf",
+  Separator = "separator",
+}
+
 export const ANCHOR_BLOCK_SEPARATOR = "\n";
 export const ANCHOR_LEAF_TEXT = "￼";
 
 type Segment = {
-  kind: "text" | "leaf" | "separator";
+  kind: SegmentKind;
   textStart: number;
   textEnd: number;
   posStart: number;
@@ -45,7 +51,7 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
         first = false;
       } else {
         segments.push({
-          kind: "separator",
+          kind: SegmentKind.Separator,
           textStart: text.length,
           textEnd: text.length + ANCHOR_BLOCK_SEPARATOR.length,
           posStart: pos,
@@ -56,7 +62,7 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
     }
     if (node.isText) {
       segments.push({
-        kind: "text",
+        kind: SegmentKind.Text,
         textStart: text.length,
         textEnd: text.length + nodeText.length,
         posStart: pos,
@@ -65,7 +71,7 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
       text += nodeText;
     } else if (node.isLeaf && nodeText !== "") {
       segments.push({
-        kind: "leaf",
+        kind: SegmentKind.Leaf,
         textStart: text.length,
         textEnd: text.length + nodeText.length,
         posStart: pos,
@@ -77,11 +83,11 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
   });
 
   const contentSegments = segments.filter(
-    (segment) => segment.kind !== "separator",
+    (segment) => segment.kind !== SegmentKind.Separator,
   );
   const separatorOffsets = new Set<number>();
   for (const segment of segments) {
-    if (segment.kind !== "separator") continue;
+    if (segment.kind !== SegmentKind.Separator) continue;
     for (
       let offset = segment.textStart;
       offset < segment.textEnd;
@@ -95,7 +101,7 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
     for (const segment of contentSegments) {
       if (index >= segment.textEnd) continue;
       if (index < segment.textStart) return segment.posStart;
-      return segment.kind === "text"
+      return segment.kind === SegmentKind.Text
         ? segment.posStart + (index - segment.textStart)
         : segment.posStart;
     }
@@ -108,7 +114,7 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
       const segment = contentSegments[i];
       if (index <= segment.textStart) continue;
       if (index > segment.textEnd) return segment.posEnd;
-      return segment.kind === "text"
+      return segment.kind === SegmentKind.Text
         ? segment.posStart + (index - segment.textStart)
         : segment.posEnd;
     }
@@ -120,7 +126,7 @@ export function buildDocTextIndex(doc: PMNode): DocTextIndex {
     for (const segment of contentSegments) {
       if (pos < segment.posStart) return segment.textStart;
       if (pos <= segment.posEnd) {
-        return segment.kind === "text"
+        return segment.kind === SegmentKind.Text
           ? segment.textStart + (pos - segment.posStart)
           : pos === segment.posStart
             ? segment.textStart

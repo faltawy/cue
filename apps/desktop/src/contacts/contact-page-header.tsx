@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { type ReactNode } from "react";
 
 import {
+  IconWeight,
   DotsThree,
   MinusCircle,
   PushPin,
@@ -68,7 +69,9 @@ export function ContactPageHeader({
                 onClick={onTogglePin}
                 className="cursor-pointer"
               >
-                <PushPin weight={pinned ? "bold" : "regular"} />
+                <PushPin
+                  weight={pinned ? IconWeight.Bold : IconWeight.Regular}
+                />
                 <span>
                   {pinned ? <Trans>Unpin</Trans> : <Trans>Pin</Trans>}
                 </span>

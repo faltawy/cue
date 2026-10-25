@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { TaskStatus } from "@anlg/store";
+
 import { createInMemoryTaskStorage } from "./task-storage";
 import {
   createTaskItemNode,
@@ -11,9 +13,9 @@ import {
 
 describe("task content", () => {
   it("toggles task status through the simple checked state", () => {
-    expect(getNextTaskStatus("todo")).toBe("done");
-    expect(getNextTaskStatus("in_progress")).toBe("done");
-    expect(getNextTaskStatus("done")).toBe("todo");
+    expect(getNextTaskStatus(TaskStatus.Todo)).toBe("done");
+    expect(getNextTaskStatus(TaskStatus.InProgress)).toBe("done");
+    expect(getNextTaskStatus(TaskStatus.Done)).toBe("todo");
   });
 
   it("assigns unique task ids and task item ids to missing and duplicated task items", () => {
@@ -278,7 +280,7 @@ describe("in-memory task storage", () => {
         sourceId: dailySource.id,
         sourceType: dailySource.type,
         sourceOrder: 0,
-        status: "todo",
+        status: TaskStatus.Todo,
         textPreview: "Daily task",
         body: [{ type: "paragraph" }],
       },
@@ -289,7 +291,7 @@ describe("in-memory task storage", () => {
         sourceId: enhancedSource.id,
         sourceType: enhancedSource.type,
         sourceOrder: 0,
-        status: "todo",
+        status: TaskStatus.Todo,
         textPreview: "Enhanced task",
         body: [{ type: "paragraph" }],
       },
@@ -300,7 +302,7 @@ describe("in-memory task storage", () => {
         sourceId: dailySource.id,
         sourceType: dailySource.type,
         sourceOrder: 0,
-        status: "done",
+        status: TaskStatus.Done,
         textPreview: "Daily task updated",
         body: [{ type: "paragraph" }],
         dueDate: "2026-04-12",
@@ -334,7 +336,7 @@ describe("in-memory task storage", () => {
         sourceId: previousSource.id,
         sourceType: previousSource.type,
         sourceOrder: 0,
-        status: "todo",
+        status: TaskStatus.Todo,
         textPreview: "Carry me",
         body: [{ type: "paragraph" }],
       },

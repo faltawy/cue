@@ -8,13 +8,22 @@ import {
   useState,
 } from "react";
 
+import { StripState } from "../../meeting-state";
 import { approxUsd, formatUsd } from "../../pricing";
-import type { ProactiveView } from "../../proactive";
-import type { TranscriptLineView } from "../../protocol";
+import { ProactiveState, type ProactiveView } from "../../proactive";
+import { type TranscriptLineView } from "../../protocol";
 import { type CoachProvider, providerName } from "../../provider";
 import { formatTokens, type TurnUsage } from "../../usage";
-import type { Connection, TranscriptView } from "../state";
-import { ariaShortcut, Button, cx, Kbd, Tooltip } from "./primitives";
+import { Connection, TranscriptView } from "../state";
+import {
+  ariaShortcut,
+  Button,
+  cx,
+  Kbd,
+  Tone,
+  Tooltip,
+  TooltipAlign,
+} from "./primitives";
 
 function useNow(intervalMs: number, active: boolean): number {
   const [now, setNow] = useState(() => Date.now());
@@ -63,19 +72,23 @@ export function isLongChat(usage: TurnUsage | null): boolean {
 export function spendTooltip(view: ProactiveView): string {
   const tokens = `${formatTokens(view.meetingTokens)} tokens this meeting, ${formatTokens(view.cachedTokens)} of them re-read from cache.`;
   const limit = formatUsd(view.capUsd);
-  if (view.state === "unpriced")
+  if (view.state === ProactiveState.Unpriced)
     return `Nudges paused because model pricing is unavailable. Asking still works. ${tokens}`;
-  if (view.state === "capped")
+  if (view.state === ProactiveState.Capped)
     return `Nudges reached the ${limit} limit for this meeting. Asking still works. ${tokens}`;
-  if (view.state === "off") return `Nudges are off. ${tokens}`;
+  if (view.state === ProactiveState.Quiet)
+    return `Quiet for this meeting. Asking still works. ${tokens}`;
+  if (view.state === ProactiveState.Off) return `Nudges are off. ${tokens}`;
   return `Nudges ${approxUsd(view.nudgesUsd)} of the ${limit} limit. ${tokens}`;
 }
 
 function ProactiveBudget({ view }: { view: ProactiveView }) {
-  const capped = view.state === "capped" || view.state === "unpriced";
+  const capped =
+    view.state === ProactiveState.Capped ||
+    view.state === ProactiveState.Unpriced;
   if (!capped && view.meetingUsd !== null && view.meetingUsd <= 0) return null;
   return (
-    <Tooltip label={spendTooltip(view)} align="end">
+    <Tooltip label={spendTooltip(view)} align={TooltipAlign.End}>
       <span
         data-testid="proactive-budget"
         className="text-muted-foreground shrink-0 text-[11.5px] tabular-nums max-[399px]:hidden"
@@ -110,19 +123,21 @@ export function Header({
   onPalette(): void;
 }) {
   const strip = transcript?.strip;
-  const settled = connection === "open";
-  const live = settled && strip?.state === "live";
-  const endedTitle = strip?.state === "waiting" ? strip.lastTitle : null;
+  const settled = connection === Connection.Open;
+  const live = settled && strip?.state === StripState.Live;
+  const endedTitle =
+    strip?.state === StripState.Waiting ? strip.lastTitle : null;
   const now = useNow(
     live ? 1_000 : 60_000,
     live || (settled && endedTitle !== null),
   );
-  const title = strip?.state === "live" ? strip.title : (endedTitle ?? "Coach");
+  const title =
+    strip?.state === StripState.Live ? strip.title : (endedTitle ?? "Coach");
   const longChat = isLongChat(usage);
   let subtitle: ReactNode = null;
   if (!settled) {
-    subtitle = connection === "lost" ? "Reconnecting…" : "Connecting…";
-  } else if (strip?.state === "live" && live) {
+    subtitle = connection === Connection.Lost ? "Reconnecting…" : "Connecting…";
+  } else if (strip?.state === StripState.Live && live) {
     subtitle =
       strip.startedAt === null ? (
         "Recording"
@@ -132,7 +147,7 @@ export function Header({
           {formatElapsed(now - strip.startedAt)}
         </>
       );
-  } else if (strip?.state === "waiting" && endedTitle !== null) {
+  } else if (strip?.state === StripState.Waiting && endedTitle !== null) {
     subtitle =
       strip.endedAt === null ? "Ended" : formatEndedAgo(now - strip.endedAt);
   }
@@ -181,10 +196,10 @@ export function Header({
           longChat ? "Long chat. The coach may forget the start" : "New chat"
         }
         shortcut={["mod", "shift", "o"]}
-        align="end"
+        align={TooltipAlign.End}
       >
         <Button
-          tone="ghost"
+          tone={Tone.Ghost}
           onClick={onNewChat}
           disabled={newChatDisabled}
           aria-label={
@@ -204,7 +219,7 @@ export function Header({
           )}
         </Button>
       </Tooltip>
-      <Tooltip label="Actions" shortcut={["mod", "k"]} align="end">
+      <Tooltip label="Actions" shortcut={["mod", "k"]} align={TooltipAlign.End}>
         <button
           type="button"
           onClick={onPalette}
@@ -306,10 +321,12 @@ export function TranscriptStrip({
         <Tooltip
           label={unavailable ?? "Catch me up"}
           shortcut={unavailable ? undefined : CATCH_UP_SHORTCUT}
-          align="end"
+          align={TooltipAlign.End}
         >
           <Button
-            tone={unavailable ? "ghost" : emphasis ? "primary" : "outline"}
+            tone={
+              unavailable ? Tone.Ghost : emphasis ? Tone.Primary : Tone.Outline
+            }
             onClick={onCheckIn}
             disabled={unavailable !== null}
             aria-keyshortcuts={ariaShortcut(CATCH_UP_SHORTCUT)}

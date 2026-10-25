@@ -6,7 +6,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "node --test --experimental-strip-types",
+    "test": "node --test --experimental-transform-types",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

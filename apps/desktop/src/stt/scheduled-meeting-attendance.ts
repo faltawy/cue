@@ -1,21 +1,18 @@
+import { AttendanceRosterStatus, AttendanceSelfStatus } from "~/services/enums";
+import { AutomaticMeetingBlockReason } from "~/stt/enums";
+
+type AttendanceEligibilityBasis =
+  | AttendanceSelfStatus.Organizer
+  | AttendanceSelfStatus.Accepted;
 import { parseAttendanceSnapshot } from "~/services/calendar/attendance";
 
 export const ATTENDANCE_MAX_AGE_MS = 3 * 60_000;
 export const ATTENDANCE_FUTURE_TOLERANCE_MS = 30_000;
 
-export type AutomaticMeetingBlockReason =
-  | "missing_attendance"
-  | "invalid_attendance"
-  | "stale_attendance"
-  | "future_attendance"
-  | "self_declined"
-  | "self_tentative"
-  | "self_pending"
-  | "self_unknown"
-  | "all_others_declined";
+export { AutomaticMeetingBlockReason };
 
 export type AutomaticMeetingDecision =
-  | { eligible: true; basis: "organizer" | "accepted" }
+  | { eligible: true; basis: AttendanceEligibilityBasis }
   | { eligible: false; reasons: AutomaticMeetingBlockReason[] };
 
 export function decideAutomaticMeetingAttendance({
@@ -29,39 +26,52 @@ export function decideAutomaticMeetingAttendance({
   if (!attendance) {
     return {
       eligible: false,
-      reasons: [attendanceJson ? "invalid_attendance" : "missing_attendance"],
+      reasons: [
+        attendanceJson
+          ? AutomaticMeetingBlockReason.InvalidAttendance
+          : AutomaticMeetingBlockReason.MissingAttendance,
+      ],
     };
   }
 
   const observedAtMs = Date.parse(attendance.observed_at);
   if (!Number.isFinite(observedAtMs)) {
-    return { eligible: false, reasons: ["invalid_attendance"] };
+    return {
+      eligible: false,
+      reasons: [AutomaticMeetingBlockReason.InvalidAttendance],
+    };
   }
   if (observedAtMs - nowMs > ATTENDANCE_FUTURE_TOLERANCE_MS) {
-    return { eligible: false, reasons: ["future_attendance"] };
+    return {
+      eligible: false,
+      reasons: [AutomaticMeetingBlockReason.FutureAttendance],
+    };
   }
   if (nowMs - observedAtMs > ATTENDANCE_MAX_AGE_MS) {
-    return { eligible: false, reasons: ["stale_attendance"] };
+    return {
+      eligible: false,
+      reasons: [AutomaticMeetingBlockReason.StaleAttendance],
+    };
   }
 
   const reasons: AutomaticMeetingBlockReason[] = [];
-  let basis: "organizer" | "accepted" | null = null;
+  let basis: AttendanceEligibilityBasis | null = null;
   switch (attendance.self_status) {
-    case "organizer":
-    case "accepted":
+    case AttendanceSelfStatus.Organizer:
+    case AttendanceSelfStatus.Accepted:
       basis = attendance.self_status;
       break;
-    case "declined":
-      reasons.push("self_declined");
+    case AttendanceSelfStatus.Declined:
+      reasons.push(AutomaticMeetingBlockReason.SelfDeclined);
       break;
-    case "tentative":
-      reasons.push("self_tentative");
+    case AttendanceSelfStatus.Tentative:
+      reasons.push(AutomaticMeetingBlockReason.SelfTentative);
       break;
-    case "pending":
-      reasons.push("self_pending");
+    case AttendanceSelfStatus.Pending:
+      reasons.push(AutomaticMeetingBlockReason.SelfPending);
       break;
-    case "unknown":
-      reasons.push("self_unknown");
+    case AttendanceSelfStatus.Unknown:
+      reasons.push(AutomaticMeetingBlockReason.SelfUnknown);
       break;
   }
 
@@ -73,11 +83,11 @@ export function decideAutomaticMeetingAttendance({
     others.declined +
     others.unknown;
   if (
-    attendance.roster_status === "complete" &&
+    attendance.roster_status === AttendanceRosterStatus.Complete &&
     otherCount > 0 &&
     others.declined === otherCount
   ) {
-    reasons.push("all_others_declined");
+    reasons.push(AutomaticMeetingBlockReason.AllOthersDeclined);
   }
 
   if (reasons.length > 0 || !basis) {

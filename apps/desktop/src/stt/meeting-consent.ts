@@ -1,15 +1,14 @@
+import {
+  DisclosureDelivery,
+  DisclosurePlatform,
+  ParticipantConsentStatus,
+  ParticipantConsentSource,
+  SessionListeningPolicy,
+} from "~/stt/enums";
+
 export const MEETING_DISCLOSURE_MESSAGE_VERSION = "cue-disclosure-v2";
 
-type DisclosureDelivery = "sent" | "not_sent" | "cancelled";
-
-export type DisclosurePlatform =
-  | "slack_huddle"
-  | "zoom"
-  | "google_meet"
-  | "teams"
-  | "webex"
-  | "browser"
-  | "unknown";
+export { DisclosurePlatform };
 
 export type DisclosureAttempt = {
   id: string;
@@ -23,12 +22,7 @@ export type DisclosureAttempt = {
   failureReason: string;
 };
 
-export type ParticipantConsentStatus = "unknown" | "consented" | "declined";
-
-type ParticipantConsentSource =
-  | "explicit_chat_reply"
-  | "explicit_ui"
-  | "unseen";
+export { ParticipantConsentStatus };
 
 export type ParticipantConsent = {
   sessionId: string;
@@ -38,7 +32,7 @@ export type ParticipantConsent = {
   updatedAt: string;
 };
 
-export type SessionListeningPolicy = "continue" | "stop_declined";
+export { SessionListeningPolicy };
 
 const DECLINE_PATTERN =
   /\b((i\s+)?(do\s+not|don't|does\s+not|doesn't)\s+consent|stop\s+recording)\b/i;
@@ -71,8 +65,8 @@ export function applyLateJoiner(
     {
       sessionId,
       participantKey,
-      status: "unknown",
-      source: "unseen",
+      status: ParticipantConsentStatus.Unknown,
+      source: ParticipantConsentSource.Unseen,
       updatedAt,
     },
   ];
@@ -82,7 +76,7 @@ export function applyExplicitConsentResponse(
   consents: readonly ParticipantConsent[],
   next: ParticipantConsent,
 ): ParticipantConsent[] {
-  if (next.source === "unseen") {
+  if (next.source === ParticipantConsentSource.Unseen) {
     throw new Error("explicit consent cannot use the unseen source");
   }
   const without = consents.filter(
@@ -107,10 +101,10 @@ export function interpretChatAsConsentResponse(
     return null;
   }
   if (DECLINE_PATTERN.test(normalized)) {
-    return "declined";
+    return ParticipantConsentStatus.Declined;
   }
   if (CONSENT_PATTERN.test(normalized)) {
-    return "consented";
+    return ParticipantConsentStatus.Consented;
   }
   return null;
 }
@@ -118,9 +112,11 @@ export function interpretChatAsConsentResponse(
 export function sessionListeningPolicy(
   consents: readonly ParticipantConsent[],
 ): SessionListeningPolicy {
-  return consents.some((consent) => consent.status === "declined")
-    ? "stop_declined"
-    : "continue";
+  return consents.some(
+    (consent) => consent.status === ParticipantConsentStatus.Declined,
+  )
+    ? SessionListeningPolicy.StopDeclined
+    : SessionListeningPolicy.Continue;
 }
 
 export function sessionHasLegalConsent(

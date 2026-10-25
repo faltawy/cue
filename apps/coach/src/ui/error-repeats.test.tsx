@@ -1,14 +1,20 @@
+import { fireEvent, render, within } from "@testing-library/react";
 import { describe, expect, mock, test } from "bun:test";
 
-import { fireEvent, render, within } from "@testing-library/react";
-
 import { coachError, GAVE_UP, withSignIn } from "../errors";
-import type { CoachEvent } from "../protocol";
+import { type CoachEvent, CoachEventType } from "../protocol";
 import { CoachView } from "./app";
 import { useDom } from "./dom-setup";
 import { status } from "./fixtures";
-import { type CoachState, initialState, reduce } from "./state";
-import type { ActionResult, CoachApi } from "./use-coach";
+import {
+  ActionType,
+  type CoachState,
+  Connection,
+  initialState,
+  ItemKind,
+  reduce,
+} from "./state";
+import { type ActionResult, type CoachApi } from "./use-coach";
 
 useDom();
 
@@ -16,8 +22,11 @@ const ok = (): Promise<ActionResult> => Promise.resolve({ ok: true });
 
 function stateFrom(events: readonly CoachEvent[]): CoachState {
   return events.reduce(
-    (state, event) => reduce(state, { type: "event", event }),
-    reduce(initialState, { type: "connection", connection: "open" }),
+    (state, event) => reduce(state, { type: ActionType.Event, event }),
+    reduce(initialState, {
+      type: ActionType.Connection,
+      connection: Connection.Open,
+    }),
   );
 }
 
@@ -30,6 +39,7 @@ function setup(state: CoachState) {
     openEvidence: mock(ok),
     feedback: mock(ok),
     resetFeedback: mock(ok),
+    setCoaching: mock(ok),
     stop: mock(ok),
     checkIn: mock(ok),
     newChat: mock(ok),
@@ -48,7 +58,10 @@ function setup(state: CoachState) {
   return { api, view: render(<CoachView state={state} api={api} />) };
 }
 
-const stopped = (message: string): CoachEvent => ({ type: "error", error: coachError({ message }) });
+const stopped = (message: string): CoachEvent => ({
+  type: CoachEventType.Error,
+  error: coachError({ message }),
+});
 
 describe("repeated errors", () => {
   test("identical errors in a row collapse into one card with a count; a different one starts a new card", () => {
@@ -57,9 +70,18 @@ describe("repeated errors", () => {
       stopped("Claude Code exited unexpectedly."),
       stopped("Claude Code exited unexpectedly."),
       stopped("Claude Code exited unexpectedly."),
-      { type: "error", error: coachError({ message: "429 Too Many Requests" }) },
+      {
+        type: CoachEventType.Error,
+        error: coachError({ message: "429 Too Many Requests" }),
+      },
     ]);
-    expect(state.items.map((item) => (item.kind === "error" ? [item.error.title, item.count] : item.kind))).toEqual([
+    expect(
+      state.items.map((item) =>
+        item.kind === ItemKind.Error
+          ? [item.error.title, item.count]
+          : item.kind,
+      ),
+    ).toEqual([
       ["The coach hit an error", 3],
       ["Usage limit reached", 1],
     ]);
@@ -72,7 +94,16 @@ describe("repeated errors", () => {
 
   test("the card shown when the coach gives up offers a new chat", () => {
     const { api, view } = setup(
-      stateFrom([status(), { type: "error", error: { ...coachError({ message: "Claude Code exited unexpectedly." }), ...GAVE_UP } }]),
+      stateFrom([
+        status(),
+        {
+          type: CoachEventType.Error,
+          error: {
+            ...coachError({ message: "Claude Code exited unexpectedly." }),
+            ...GAVE_UP,
+          },
+        },
+      ]),
     );
     const card = view.getByTestId("error-card");
     expect(within(card).getByText("The coach stopped")).toBeTruthy();
@@ -82,11 +113,22 @@ describe("repeated errors", () => {
 
   test("someone who never signed in is asked to sign in, not to sign in again", () => {
     const { api, view } = setup(
-      stateFrom([status(), { type: "error", error: withSignIn(coachError({ message: "Not logged in · Please run /login" }), false) }]),
+      stateFrom([
+        status(),
+        {
+          type: CoachEventType.Error,
+          error: withSignIn(
+            coachError({ message: "Not logged in · Please run /login" }),
+            false,
+          ),
+        },
+      ]),
     );
     const card = view.getByTestId("error-card");
     expect(within(card).getByText("Sign in to Claude")).toBeTruthy();
-    expect(within(card).queryByRole("button", { name: "Sign in again" })).toBeNull();
+    expect(
+      within(card).queryByRole("button", { name: "Sign in again" }),
+    ).toBeNull();
     fireEvent.click(within(card).getByRole("button", { name: "Sign in" }));
     expect(api.signIn).toHaveBeenCalledTimes(1);
   });

@@ -8,18 +8,30 @@ import {
 
 import { createCoachModel } from "../claude-code-model";
 
+import {
+  LLMConnectionState,
+  ManagedProviderUnavailableReason,
+  ManagedProviderId,
+} from "~/ai/enums";
 import { useSettingsReady } from "~/settings/queries";
 import { useConfigValues } from "~/shared/config";
 
 export const COACH_SETTINGS_QUERY_KEY = ["coach", "settings"] as const;
 
 export type LLMConnectionStatus =
-  | { status: "pending"; reason: "managed_disabled" | "settings_loading" }
-  | { status: "error"; reason: "settings_unavailable"; message: string }
-  | { status: "success"; providerId: "claude_code" | "codex" };
+  | {
+      status: LLMConnectionState.Pending;
+      reason: ManagedProviderUnavailableReason;
+    }
+  | {
+      status: LLMConnectionState.Error;
+      reason: "settings_unavailable";
+      message: string;
+    }
+  | { status: LLMConnectionState.Success; providerId: ManagedProviderId };
 
 type LLMConnectionResult = {
-  conn: { providerId: "claude_code" | "codex"; modelId: string } | null;
+  conn: { providerId: ManagedProviderId; modelId: string } | null;
   status: LLMConnectionStatus;
 };
 
@@ -46,7 +58,10 @@ export const useLLMConnection = (): LLMConnectionResult => {
   ] as const);
   const coachSettings = useCoachSettings();
   const provider = coachSettings.data?.provider ?? "claude";
-  const providerId = provider === "codex" ? "codex" : "claude_code";
+  const providerId =
+    provider === "codex"
+      ? ManagedProviderId.Codex
+      : ManagedProviderId.ClaudeCode;
   const modelId =
     provider === "codex"
       ? coachSettings.data?.codex_model
@@ -57,14 +72,17 @@ export const useLLMConnection = (): LLMConnectionResult => {
     if (settingsReady && intelligence_disabled) {
       return {
         conn: null,
-        status: { status: "pending", reason: "managed_disabled" },
+        status: {
+          status: LLMConnectionState.Pending,
+          reason: ManagedProviderUnavailableReason.ManagedDisabled,
+        },
       };
     }
     if (error) {
       return {
         conn: null,
         status: {
-          status: "error",
+          status: LLMConnectionState.Error,
           reason: "settings_unavailable",
           message: error.message,
         },
@@ -73,12 +91,15 @@ export const useLLMConnection = (): LLMConnectionResult => {
     if (!settingsReady || modelId === undefined) {
       return {
         conn: null,
-        status: { status: "pending", reason: "settings_loading" },
+        status: {
+          status: LLMConnectionState.Pending,
+          reason: ManagedProviderUnavailableReason.SettingsLoading,
+        },
       };
     }
     return {
       conn: { providerId, modelId },
-      status: { status: "success", providerId },
+      status: { status: LLMConnectionState.Success, providerId },
     };
   }, [settingsReady, intelligence_disabled, modelId, providerId, error]);
 };
@@ -89,7 +110,8 @@ export const useLLMConnectionStatus = (): LLMConnectionStatus =>
 export const useLanguageModel = () => {
   const { conn } = useLLMConnection();
   const modelId = conn?.modelId;
-  const provider = conn?.providerId === "codex" ? "codex" : "claude";
+  const provider =
+    conn?.providerId === ManagedProviderId.Codex ? "codex" : "claude";
   return useMemo(
     () => (modelId !== undefined ? createCoachModel(provider, modelId) : null),
     [modelId, provider],

@@ -5,8 +5,10 @@ import { cn } from "@anlg/utils";
 
 import { updateContactAvatar } from "./queries";
 
+import { ContactType } from "~/contacts/enums";
+
 export function persistContactAvatar(
-  type: "human" | "organization",
+  type: ContactType,
   contactId: string,
   avatarDataUrl: string | null,
 ): void {

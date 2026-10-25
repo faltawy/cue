@@ -3,6 +3,8 @@ import type { StateCreator, StoreApi, StoreMutatorIdentifier } from "zustand";
 import type { BasicState } from "./basic";
 import type { Tab } from "./schema";
 
+import { TabType } from "~/store/zustand/tabs/enums";
+
 export type NavigationState = {
   history: HistoryMap;
   canGoBack: boolean;
@@ -11,7 +13,7 @@ export type NavigationState = {
 
 type InvalidatableResourceType = Extract<
   Tab["type"],
-  "sessions" | "humans" | "organizations"
+  TabType.Sessions | TabType.Humans | TabType.Organizations
 >;
 
 export type NavigationActions = {
@@ -106,9 +108,9 @@ export const createNavigationSlice = <T extends NavigationState & BasicState>(
       const historyFallback = slotHistory?.stack[slotHistory.currentIndex];
       const otherFallback = nextTabs.find((tab) => tab.active) ?? nextTabs[0];
       const fallback: Tab | undefined =
-        type === "sessions"
+        type === TabType.Sessions
           ? {
-              type: "empty",
+              type: TabType.Empty,
               active: true,
               slotId: currentTab.slotId,
               pinned: false,
@@ -116,7 +118,7 @@ export const createNavigationSlice = <T extends NavigationState & BasicState>(
           : (historyFallback ?? otherFallback);
 
       nextTabs = nextTabs.map((tab) => ({ ...tab, active: false }));
-      if (fallback && (type === "sessions" || historyFallback)) {
+      if (fallback && (type === TabType.Sessions || historyFallback)) {
         const removedIndex = tabs.findIndex((tab) =>
           isResourceMatch(tab, type, id),
         );
@@ -170,7 +172,7 @@ export const pushHistory = (
   history: Map<string, TabHistory>,
   tab: Tab,
 ): Map<string, TabHistory> => {
-  if (tab.type === "empty") {
+  if (tab.type === TabType.Empty) {
     return history;
   }
 

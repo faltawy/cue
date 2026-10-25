@@ -13,6 +13,8 @@ import {
   type TimelineSessionsTable,
 } from ".";
 
+import { NoteSortOrder, TimelineGroupBy } from "~/sidebar/enums";
+
 process.env.TZ = "UTC";
 
 const SYSTEM_TIME = new Date("2024-01-15T12:00:00.000Z");
@@ -745,7 +747,7 @@ describe("timeline utils", () => {
     };
 
     const buckets = buildTimelineBuckets({
-      sortOrder: "oldest",
+      sortOrder: NoteSortOrder.Oldest,
       timelineEventsTable: null,
       timelineSessionsTable,
     });
@@ -759,7 +761,7 @@ describe("timeline utils", () => {
 
   test("buildTimelineBuckets groups notes by folder", () => {
     const buckets = buildTimelineBuckets({
-      groupBy: "folder",
+      groupBy: TimelineGroupBy.Folder,
       timelineEventsTable: null,
       timelineSessionsTable: {
         "session-work": {
@@ -793,8 +795,8 @@ describe("timeline utils", () => {
 
   test("buildTimelineBuckets keeps folder groups and sorts notes oldest first", () => {
     const buckets = buildTimelineBuckets({
-      groupBy: "folder",
-      sortOrder: "oldest",
+      groupBy: TimelineGroupBy.Folder,
+      sortOrder: NoteSortOrder.Oldest,
       timelineEventsTable: null,
       timelineSessionsTable: {
         "session-newer": {

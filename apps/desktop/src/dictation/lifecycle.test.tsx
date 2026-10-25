@@ -87,12 +87,13 @@ vi.mock("@anlg/ui/components/ui/toast", () => ({
   toast: { error: vi.fn() },
 }));
 
-import { DictationPhase } from "./controller";
 import {
   DictationLifecycle,
   useDictationStatus,
   waitForDictationCleanup,
 } from "./lifecycle";
+
+import { DictationPhase } from "~/dictation/controller";
 
 describe("dictation access and lifecycle", () => {
   afterEach(async () => {

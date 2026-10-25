@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import { type Tab, useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function useOpenTemplatesTab() {
   const openNew = useTabs((state) => state.openNew);
@@ -10,12 +11,12 @@ export function useOpenTemplatesTab() {
   );
 
   return useCallback(
-    (state: Extract<Tab, { type: "templates" }>["state"]) => {
+    (state: Extract<Tab, { type: TabType.Templates }>["state"]) => {
       const existingTemplatesTab = useTabs
         .getState()
         .tabs.find(
-          (tab): tab is Extract<Tab, { type: "templates" }> =>
-            tab.type === "templates",
+          (tab): tab is Extract<Tab, { type: TabType.Templates }> =>
+            tab.type === TabType.Templates,
         );
 
       if (!existingTemplatesTab) {

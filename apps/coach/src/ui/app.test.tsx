@@ -9,9 +9,18 @@ import {
 import userEvent from "@testing-library/user-event";
 import { describe, expect, mock, test } from "bun:test";
 
-import type { ProactiveView } from "../proactive";
-import type { CoachEvent } from "../protocol";
-import type { WrapUp } from "../wrapup";
+import { CoachEditKind, ProjectSource } from "../app-bridge";
+import { StripState } from "../meeting-state";
+import { MoveVerb } from "../move";
+import { ProactiveState, type ProactiveView } from "../proactive";
+import {
+  type CoachEvent,
+  CoachEventType,
+  SetupState,
+  TurnKind,
+  WrapUpState,
+} from "../protocol";
+import { type WrapUp } from "../wrapup";
 import { CoachView } from "./app";
 import { speakerTurns, spendTooltip } from "./components/header";
 import { completeMarkdown, splitBlocks } from "./components/markdown";
@@ -19,7 +28,13 @@ import { filterCommands } from "./components/palette";
 import { orderKeys } from "./components/primitives";
 import { useDom } from "./dom-setup";
 import { fixtureState, type Scenario, status } from "./fixtures";
-import { type CoachState, initialState, reduce } from "./state";
+import {
+  ActionType,
+  type CoachState,
+  Connection,
+  initialState,
+  reduce,
+} from "./state";
 import { type ActionResult, type CoachApi, eventQueue } from "./use-coach";
 
 useDom();
@@ -28,8 +43,11 @@ const ok = (): Promise<ActionResult> => Promise.resolve({ ok: true });
 
 function stateFrom(events: CoachEvent[]): CoachState {
   return events.reduce(
-    (state, event) => reduce(state, { type: "event", event }),
-    reduce(initialState, { type: "connection", connection: "open" }),
+    (state, event) => reduce(state, { type: ActionType.Event, event }),
+    reduce(initialState, {
+      type: ActionType.Connection,
+      connection: Connection.Open,
+    }),
   );
 }
 
@@ -42,6 +60,7 @@ function setup(scenario: Scenario | CoachState) {
     openEvidence: mock(ok),
     feedback: mock(ok),
     resetFeedback: mock(ok),
+    setCoaching: mock(ok),
     stop: mock(ok),
     checkIn: mock(ok),
     newChat: mock(ok),
@@ -188,10 +207,10 @@ describe("coach edits", () => {
   test("transcript edits show distinct receipts and keep Undo on the latest one", () => {
     const change = (
       id: string,
-      kind: "assign_speaker" | "correct_transcript",
+      kind: CoachEditKind.AssignSpeaker | CoachEditKind.CorrectTranscript,
       summary: string,
     ): CoachEvent => ({
-      type: "edit",
+      type: CoachEventType.Edit,
       edit: {
         id,
         session_id: "m1",
@@ -204,14 +223,14 @@ describe("coach edits", () => {
     const api = setup(
       stateFrom([
         status(),
-        change("e1", "assign_speaker", "Assigned Speaker 2 to Sara"),
+        change("e1", CoachEditKind.AssignSpeaker, "Assigned Speaker 2 to Sara"),
         change(
           "e2",
-          "correct_transcript",
+          CoachEditKind.CorrectTranscript,
           "Corrected transcript: We ship Friday",
         ),
         {
-          type: "undone",
+          type: CoachEventType.Undone,
           id: "e2",
           summary: "Corrected transcript: We ship Friday",
         },
@@ -235,10 +254,10 @@ describe("coach edits", () => {
   test("library changes get the same row: newest has Undo, an undone one says what was reverted", () => {
     const change = (
       id: string,
-      kind: "create_note" | "update_note",
+      kind: CoachEditKind.CreateNote | CoachEditKind.UpdateNote,
       summary: string,
     ): CoachEvent => ({
-      type: "edit",
+      type: CoachEventType.Edit,
       edit: {
         id,
         session_id: "m1",
@@ -253,16 +272,16 @@ describe("coach edits", () => {
         status(),
         change(
           "e1",
-          "create_note",
+          CoachEditKind.CreateNote,
           "Created note “Pricing follow-up” in Clients/Lumen",
         ),
         change(
           "e2",
-          "update_note",
+          CoachEditKind.UpdateNote,
           "Tags on “Pricing follow-up”: +pricing −draft",
         ),
         {
-          type: "undone",
+          type: CoachEventType.Undone,
           id: "e2",
           summary: "Tags on “Pricing follow-up”: +pricing −draft",
         },
@@ -369,7 +388,9 @@ describe("empty and offline states", () => {
 
   test("while Claude Code downloads, the composer shows the progress and waits", () => {
     setup(
-      stateFrom([status({ setup: { state: "downloading", percent: 45 } })]),
+      stateFrom([
+        status({ setup: { state: SetupState.Downloading, percent: 45 } }),
+      ]),
     );
     const box = view.getByRole("textbox", { name: "Ask the coach" });
     expect(box.getAttribute("placeholder")).toBe("Setting up Claude… 45%");
@@ -391,7 +412,7 @@ describe("empty and offline states", () => {
     const message =
       "The coach needs a one-time download of Claude Code. Fetch failed. Check your internet connection and try again.";
     const api = setup(
-      stateFrom([status({ setup: { state: "failed", message } })]),
+      stateFrom([status({ setup: { state: SetupState.Failed, message } })]),
     );
     const alert = view.getByRole("alert");
     expect(within(alert).getByText(message)).toBeTruthy();
@@ -441,8 +462,8 @@ describe("live transcript", () => {
 
 const ARABIC_TITLE = "اجتماع المتابعة الأسبوعي مع فريق المبيعات";
 const waitingAfter = (lastTitle: string): CoachEvent => ({
-  type: "transcript",
-  strip: { state: "waiting", lastTitle, endedAt: null },
+  type: CoachEventType.Transcript,
+  strip: { state: StripState.Waiting, lastTitle, endedAt: null },
   lines: [],
   pending: "",
 });
@@ -450,9 +471,9 @@ const NO_COACHING: WrapUp["coaching"] = { went_well: [], next_time: [] };
 const readyWrapUp = (
   wrapUp: Omit<WrapUp, "coaching"> & { coaching?: WrapUp["coaching"] },
 ): CoachEvent => ({
-  type: "wrapup",
+  type: CoachEventType.Wrapup,
   wrapUp: {
-    state: "ready",
+    state: WrapUpState.Ready,
     title: ARABIC_TITLE,
     wrapUp: { coaching: NO_COACHING, ...wrapUp },
     commitments: [],
@@ -552,7 +573,7 @@ describe("worst-case data", () => {
         status({
           project: {
             path,
-            source: "series",
+            source: ProjectSource.Series,
             series: "Northwind weekly",
             defaultProject: "/Users/a/northwind",
             needsFolder: false,
@@ -591,7 +612,7 @@ describe("worst-case data", () => {
           meeting: false,
           project: {
             path,
-            source: "default",
+            source: ProjectSource.Default,
             series: null,
             defaultProject: path,
             needsFolder: true,
@@ -611,9 +632,13 @@ describe("worst-case data", () => {
     setup(
       stateFrom([
         status({ busy: true }),
-        { type: "user", kind: "ask", text: "Draft a reply" },
         {
-          type: "question",
+          type: CoachEventType.User,
+          kind: TurnKind.Ask,
+          text: "Draft a reply",
+        },
+        {
+          type: CoachEventType.Question,
           id: "q2",
           questions: [
             {
@@ -729,17 +754,17 @@ describe("design review", () => {
       ...live,
       status: status({ proactive }),
     });
-    setup(withProactive({ state: "on", ...spent }));
+    setup(withProactive({ state: ProactiveState.On, ...spent }));
     expect(view.getByTestId("proactive-budget").textContent).toBe(
       "≈$0.04 this meeting",
     );
-    expect(spendTooltip({ state: "on", ...spent })).toBe(
+    expect(spendTooltip({ state: ProactiveState.On, ...spent })).toBe(
       "Nudges ≈$0.01 of the $0.50 limit. 182k tokens this meeting, 160k of them re-read from cache.",
     );
     cleanup();
     setup(
       withProactive({
-        state: "off",
+        state: ProactiveState.Off,
         ...spent,
         nudgesUsd: 0,
         meetingUsd: 0.004,
@@ -751,7 +776,7 @@ describe("design review", () => {
     cleanup();
     setup(
       withProactive({
-        state: "capped",
+        state: ProactiveState.Capped,
         ...spent,
         nudgesUsd: 0.5,
         meetingUsd: 0.71,
@@ -760,13 +785,15 @@ describe("design review", () => {
     expect(view.getByTestId("proactive-budget").textContent).toBe(
       "Nudges paused",
     );
-    expect(spendTooltip({ state: "capped", ...spent })).toStartWith(
+    expect(
+      spendTooltip({ state: ProactiveState.Capped, ...spent }),
+    ).toStartWith(
       "Nudges reached the $0.50 limit for this meeting. Asking still works.",
     );
     cleanup();
     setup(
       withProactive({
-        state: "on",
+        state: ProactiveState.On,
         ...spent,
         nudgesUsd: 0,
         meetingUsd: 0,
@@ -782,7 +809,7 @@ describe("design review", () => {
 
   test("a long chat marks New chat instead of showing a bar or a second button", () => {
     const usage = (contextTokens: number): CoachEvent => ({
-      type: "usage",
+      type: CoachEventType.Usage,
       usage: {
         model: "m",
         inputTokens: 1,
@@ -859,7 +886,7 @@ describe("second design review", () => {
             quote: "That's more than we budgeted",
           },
           headline: "Ask what's behind it",
-          verb: "Ask" as const,
+          verb: MoveVerb.Ask,
           line: "Price aside, is this the solution you want?",
         },
       ],
@@ -925,7 +952,7 @@ describe("second design review", () => {
   });
 
   test("reconnecting keeps the meeting title and locks Undo and Ask again", () => {
-    setup(fixtureState("conversation", "lost"));
+    setup(fixtureState("conversation", Connection.Lost));
     const [header = document.body] = view.getAllByRole("banner");
     expect(within(header).getByText("Wafeq weekly sync")).toBeTruthy();
     expect(within(header).getByTestId("header-subtitle").textContent).toBe(
@@ -966,9 +993,9 @@ describe("second design review", () => {
         status({ meeting: false }),
         waitingAfter("Weekly"),
         {
-          type: "wrapup",
+          type: CoachEventType.Wrapup,
           wrapUp: {
-            state: "ready",
+            state: WrapUpState.Ready,
             title: "Weekly",
             wrapUp: {
               commitments: [{ who: "You", what: "send steps", when: null }],
@@ -1009,13 +1036,17 @@ describe("catch me up", () => {
     setup(
       stateFrom([
         status(),
-        { type: "user", kind: "catchup", text: "Catch me up · 22:21" },
         {
-          type: "text",
+          type: CoachEventType.User,
+          kind: TurnKind.Catchup,
+          text: "Catch me up · 22:21",
+        },
+        {
+          type: CoachEventType.Text,
           delta: "They're discussing WhatsApp sessions that stayed open.",
         },
         {
-          type: "done",
+          type: CoachEventType.Done,
           seconds: 4,
           ok: true,
           silent: false,
@@ -1074,7 +1105,7 @@ describe("helpers", () => {
       (events) =>
         delivered.push(
           events.map((event) =>
-            event.type === "text" ? event.delta : event.type,
+            event.type === CoachEventType.Text ? event.delta : event.type,
           ),
         ),
       (next) => {
@@ -1082,12 +1113,12 @@ describe("helpers", () => {
         return () => {};
       },
     );
-    queue.push({ type: "text", delta: "a" });
-    queue.push({ type: "text", delta: "b" });
+    queue.push({ type: CoachEventType.Text, delta: "a" });
+    queue.push({ type: CoachEventType.Text, delta: "b" });
     expect(delivered).toEqual([]);
     expect(frames).toHaveLength(1);
     frames[0]?.();
-    queue.push({ type: "text", delta: "c" });
+    queue.push({ type: CoachEventType.Text, delta: "c" });
     queue.flush();
     expect(delivered).toEqual([["a", "b"], ["c"]]);
   });

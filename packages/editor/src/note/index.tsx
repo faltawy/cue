@@ -95,7 +95,7 @@ import {
 import { buildInputRules, buildKeymap } from "./keymap";
 import {
   LinkedItemOpenBehaviorContext,
-  type LinkedItemOpenBehavior,
+  LinkedItemOpenBehavior,
   useLinkedItemOpenBehavior,
 } from "./linked-item-open-behavior";
 import { schema } from "./schema";
@@ -123,7 +123,7 @@ export {
   setActiveCommentAnchor,
   setCommentAnchors,
 } from "../plugins/comment-anchors";
-export { useLinkedItemOpenBehavior };
+export { useLinkedItemOpenBehavior, LinkedItemOpenBehavior };
 export {
   isFragmentEmpty,
   NOTE_FRAGMENT_NAME,
@@ -617,7 +617,7 @@ export const NoteEditor = forwardRef<NoteEditorRef, NoteEditorProps>(
       fileHandlerConfig,
       onNavigateToTitle,
       onLinkOpen,
-      linkedItemOpenBehavior = "current",
+      linkedItemOpenBehavior = LinkedItemOpenBehavior.Current,
       taskSource,
       extraNodeViews,
       sessionMentionDropConfig,

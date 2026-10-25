@@ -18,6 +18,8 @@ import { cn } from "@anlg/utils";
 
 import type { HumanSessionRecord } from "./queries";
 
+import { NoteSortOrder } from "~/sidebar/enums";
+
 export function RelatedNotesSection({
   sessions,
   onSessionClick,
@@ -27,7 +29,9 @@ export function RelatedNotesSection({
 }) {
   const { t } = useLingui();
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [sortOrder, setSortOrder] = useState<NoteSortOrder>(
+    NoteSortOrder.Newest,
+  );
   const visibleSessions = sortAndFilterRelatedNotes(
     sessions,
     search,
@@ -55,9 +59,7 @@ export function RelatedNotesSection({
             <DropdownMenuContent align="start">
               <DropdownMenuRadioGroup
                 value={sortOrder}
-                onValueChange={(value) =>
-                  setSortOrder(value as "newest" | "oldest")
-                }
+                onValueChange={(value) => setSortOrder(value as NoteSortOrder)}
               >
                 <DropdownMenuRadioItem value="newest">
                   <Trans>Newest</Trans>
@@ -133,10 +135,10 @@ export function RelatedNotesSection({
 function sortAndFilterRelatedNotes(
   sessions: HumanSessionRecord[],
   search: string,
-  sortOrder: "newest" | "oldest",
+  sortOrder: NoteSortOrder,
 ): HumanSessionRecord[] {
   const normalizedSearch = search.trim().toLocaleLowerCase();
-  const direction = sortOrder === "newest" ? -1 : 1;
+  const direction = sortOrder === NoteSortOrder.Newest ? -1 : 1;
 
   return sessions
     .filter(

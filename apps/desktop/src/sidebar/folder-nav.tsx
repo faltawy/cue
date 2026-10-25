@@ -52,15 +52,16 @@ import {
 } from "~/session/queries";
 import { DestructiveConfirmationDialog } from "~/shared/ui/destructive-confirmation-dialog";
 import { FolderPathLabel } from "~/shared/ui/folder-path-label";
+import { FolderDialogKind, SidebarSectionId } from "~/sidebar/enums";
 import {
   type TemplateIcon,
   TemplateIconGlyph,
 } from "~/templates/template-icon";
 
 type FolderDialog =
-  | { kind: "create"; parent: string }
-  | { kind: "rename"; path: string; name: string }
-  | { kind: "delete"; path: string };
+  | { kind: FolderDialogKind.Create; parent: string }
+  | { kind: FolderDialogKind.Rename; path: string; name: string }
+  | { kind: FolderDialogKind.Delete; path: string };
 
 const INDENT_PX = 12;
 
@@ -83,7 +84,7 @@ export function SidebarFolderNav() {
   const folderFilter = useSidebarNotes((state) => state.folderFilter);
   const setFolderFilter = useSidebarNotes((state) => state.setFolderFilter);
   const expanded = useSidebarNotes(
-    (state) => !state.collapsedSections.includes("folders"),
+    (state) => !state.collapsedSections.includes(SidebarSectionId.Folders),
   );
   const setSectionExpanded = useSidebarNotes(
     (state) => state.setSectionExpanded,
@@ -126,12 +127,16 @@ export function SidebarFolderNav() {
     <SidebarSection
       title={t`Folders`}
       expanded={expanded}
-      onExpandedChange={(next) => setSectionExpanded("folders", next)}
+      onExpandedChange={(next) =>
+        setSectionExpanded(SidebarSectionId.Folders, next)
+      }
       action={
         <button
           type="button"
           aria-label={t`New folder`}
-          onClick={() => setDialog({ kind: "create", parent: "" })}
+          onClick={() =>
+            setDialog({ kind: FolderDialogKind.Create, parent: "" })
+          }
           className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-6 shrink-0 items-center justify-center rounded-md"
         >
           <Plus size={14} />
@@ -186,40 +191,53 @@ export function SidebarFolderNav() {
             }}
             onExpandedChange={(next) => setFolderExpanded(node.path, next)}
             onNewSubfolder={() =>
-              setDialog({ kind: "create", parent: node.path })
+              setDialog({ kind: FolderDialogKind.Create, parent: node.path })
             }
             onRename={() =>
-              setDialog({ kind: "rename", path: node.path, name: node.name })
+              setDialog({
+                kind: FolderDialogKind.Rename,
+                path: node.path,
+                name: node.name,
+              })
             }
             onMove={(parent) => {
               void moveFolder(node.path, parent).catch((error: unknown) => {
                 console.error("[sidebar] failed to move folder", error);
               });
             }}
-            onDelete={() => setDialog({ kind: "delete", path: node.path })}
+            onDelete={() =>
+              setDialog({ kind: FolderDialogKind.Delete, path: node.path })
+            }
           />
         ))}
       </ul>
 
       <FolderNameDialog
-        open={dialog?.kind === "create" || dialog?.kind === "rename"}
+        open={
+          dialog?.kind === FolderDialogKind.Create ||
+          dialog?.kind === FolderDialogKind.Rename
+        }
         title={
-          dialog?.kind === "rename"
+          dialog?.kind === FolderDialogKind.Rename
             ? t`Rename folder`
-            : dialog?.kind === "create" && dialog.parent
+            : dialog?.kind === FolderDialogKind.Create && dialog.parent
               ? t`New subfolder in ${dialog.parent}`
               : t`New folder`
         }
-        confirmLabel={dialog?.kind === "rename" ? t`Rename` : t`Create`}
-        initialValue={dialog?.kind === "rename" ? dialog.name : ""}
+        confirmLabel={
+          dialog?.kind === FolderDialogKind.Rename ? t`Rename` : t`Create`
+        }
+        initialValue={
+          dialog?.kind === FolderDialogKind.Rename ? dialog.name : ""
+        }
         onOpenChange={(open) => {
           if (!open) setDialog(null);
         }}
         onSubmit={async (name) => {
-          if (dialog?.kind === "create") {
+          if (dialog?.kind === FolderDialogKind.Create) {
             await createNamedFolder(joinFolderPath(dialog.parent, name));
             if (dialog.parent) setFolderExpanded(dialog.parent, true);
-          } else if (dialog?.kind === "rename") {
+          } else if (dialog?.kind === FolderDialogKind.Rename) {
             const renamed = await renameNamedFolder(
               dialog.path,
               joinFolderPath(parentFolderPath(dialog.path), name),
@@ -229,7 +247,7 @@ export function SidebarFolderNav() {
         }}
       />
       <DestructiveConfirmationDialog
-        open={dialog?.kind === "delete"}
+        open={dialog?.kind === FolderDialogKind.Delete}
         onOpenChange={(open) => {
           if (!open) setDialog(null);
         }}
@@ -243,7 +261,7 @@ export function SidebarFolderNav() {
         confirmLabel={<Trans>Delete folder</Trans>}
         isPending={deleting}
         onConfirm={() => {
-          if (dialog?.kind !== "delete") return;
+          if (dialog?.kind !== FolderDialogKind.Delete) return;
           const path = dialog.path;
           setDeleting(true);
           void deleteNamedFolder(path)

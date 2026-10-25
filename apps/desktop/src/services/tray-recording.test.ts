@@ -6,6 +6,7 @@ import {
   getTrayRecordingTitle,
 } from "./tray-recording";
 
+import { LiveSessionStatus } from "~/store/zustand/listener/enums";
 import { resolveLiveSessionTitle } from "~/store/zustand/live-title";
 
 describe("createTrayRecordingTitlePublisher", () => {
@@ -39,9 +40,9 @@ describe("createTrayRecordingTitlePublisher", () => {
 
 describe("getTrayRecordingSessionId", () => {
   test.each([
-    ["active", "session-1"],
-    ["finalizing", "session-1"],
-    ["inactive", ""],
+    [LiveSessionStatus.Active, "session-1"],
+    [LiveSessionStatus.Finalizing, "session-1"],
+    [LiveSessionStatus.Inactive, ""],
   ] as const)("while %s returns %j", (status, expected) => {
     expect(getTrayRecordingSessionId(status, "session-1")).toBe(expected);
   });

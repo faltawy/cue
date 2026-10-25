@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { LiveTranscriptDelta } from "@anlg/plugin-transcription";
 
+import { AssignmentMode } from "~/stt/enums";
+
 const mocks = vi.hoisted(() => ({
   execute: vi.fn(),
   executeTransaction: vi.fn(
@@ -799,7 +801,7 @@ describe("transcript SQLite queries", () => {
       },
       humanId: "human-1",
       anchorWordId: "word-1",
-      mode: "all",
+      mode: AssignmentMode.All,
       wordIds: ["word-1"],
     });
 
@@ -823,7 +825,7 @@ describe("transcript SQLite queries", () => {
       },
       humanId: "human-1",
       anchorWordId: "word-2",
-      mode: "segment",
+      mode: AssignmentMode.Segment,
       wordIds: ["word-2"],
       extendToAdjacent: false,
     });

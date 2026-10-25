@@ -13,7 +13,11 @@ import {
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
-import type { SearchSectionKind, SnippetSegment } from "@anlg/plugin-tantivy";
+import { LinkedItemOpenBehavior } from "@anlg/editor/note";
+import {
+  type SearchSectionKind,
+  type SnippetSegment,
+} from "@anlg/plugin-tantivy";
 import {
   FileText,
   Gear,
@@ -25,6 +29,7 @@ import {
   type Icon,
 } from "@anlg/ui/components/icons";
 import {
+  DialogPlacement,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -36,13 +41,14 @@ import { openWhatsNew } from "~/changelog/whats-new";
 import { useHumans } from "~/contacts/queries";
 import { type NoteSearchHit, useSearchEngine } from "~/search/contexts/engine";
 import { useSessionSummaries } from "~/session/queries";
+import { type RankableCommand, rankCommands } from "~/shared/command-menu/rank";
 import {
-  type CommandGroupId,
-  type RankableCommand,
-  rankCommands,
-} from "~/shared/command-menu/rank";
+  RecentCommandGroupId,
+  EmptyStateSize,
+  CommandGroupId,
+} from "~/shared/enums";
 import { useMainContentCenterOffset } from "~/shared/main/content-offset";
-import type { ShortcutKey } from "~/shared/shortcut-keys";
+import { type ShortcutKey } from "~/shared/shortcut-keys";
 import { EmptyState } from "~/shared/ui/empty-state";
 import { ShortcutKeys } from "~/shared/ui/shortcut-hint";
 import { useNewNote, useNewNoteAndListen } from "~/shared/useNewNote";
@@ -73,7 +79,7 @@ type MenuCommand = RankableCommand & {
   icon: Icon;
   meta?: string;
   shortcut?: readonly ShortcutKey[];
-  run: (target: "current" | "new") => void;
+  run: (target: LinkedItemOpenBehavior) => void;
   opensTab: boolean;
   match?: { section: SearchSectionKind | null; snippet: SnippetSegment[] };
 };
@@ -167,8 +173,10 @@ export function OpenNoteDialog({
   const newNoteAndListen = useNewNoteAndListen();
 
   const openDestination = useCallback(
-    (destination: TabInput, target: "current" | "new") =>
-      target === "current" ? openCurrent(destination) : openNew(destination),
+    (destination: TabInput, target: LinkedItemOpenBehavior) =>
+      target === LinkedItemOpenBehavior.Current
+        ? openCurrent(destination)
+        : openNew(destination),
     [openCurrent, openNew],
   );
 
@@ -176,7 +184,7 @@ export function OpenNoteDialog({
     () => [
       {
         id: "action-new-note",
-        group: "actions",
+        group: CommandGroupId.Actions,
         label: t`New note`,
         keywords: [t`create`, t`blank`],
         icon: NotePencil,
@@ -186,7 +194,7 @@ export function OpenNoteDialog({
       },
       {
         id: "action-record",
-        group: "actions",
+        group: CommandGroupId.Actions,
         label: t`Record a meeting`,
         keywords: [t`start recording`, t`listen`, t`transcribe`],
         icon: Microphone,
@@ -208,7 +216,7 @@ export function OpenNoteDialog({
               : { type: "settings", state: { tab: item.id } };
           return {
             id: `page-${item.id}`,
-            group: "pages" as const,
+            group: CommandGroupId.Pages,
             label: item.label,
             keywords: [group.label],
             meta: "destination" in item ? undefined : t`Settings`,
@@ -221,7 +229,7 @@ export function OpenNoteDialog({
       ),
       {
         id: "page-settings",
-        group: "pages" as const,
+        group: CommandGroupId.Pages as const,
         label: t`Settings`,
         keywords: [t`preferences`],
         icon: Gear,
@@ -232,7 +240,7 @@ export function OpenNoteDialog({
       },
       {
         id: "page-whats-new",
-        group: "pages" as const,
+        group: CommandGroupId.Pages as const,
         label: t`What's new`,
         keywords: [t`changelog`, t`release notes`, t`updates`],
         icon: Megaphone,
@@ -263,7 +271,7 @@ export function OpenNoteDialog({
       )
       .map((session) => ({
         id: `note-${session.id}`,
-        group: "notes" as const,
+        group: CommandGroupId.Notes,
         label: session.title || t`Untitled`,
         meta: session.created_at
           ? formatNoteDate(session.created_at)
@@ -271,7 +279,7 @@ export function OpenNoteDialog({
         boost: recent.has(session.id) ? RECENT_BOOST : 0,
         icon: FileText,
         opensTab: true,
-        run: (target: "current" | "new") =>
+        run: (target: LinkedItemOpenBehavior) =>
           openDestination({ type: "sessions", id: session.id }, target),
       }));
   }, [sessions, recentIds, openDestination, t]);
@@ -284,7 +292,7 @@ export function OpenNoteDialog({
         return [
           {
             id: `person-${human.id}`,
-            group: "people" as const,
+            group: CommandGroupId.People,
             label,
             keywords: [human.email, human.jobTitle, ...human.additionalEmails],
             meta: human.name.trim() ? human.email || undefined : undefined,
@@ -319,7 +327,7 @@ export function OpenNoteDialog({
   });
 
   const groups = useMemo<
-    { id: CommandGroupId | "recent"; items: MenuCommand[] }[]
+    { id: CommandGroupId | RecentCommandGroupId; items: MenuCommand[] }[]
   >(() => {
     if (!isQueryEmpty) {
       const ranked = rankCommands(
@@ -334,9 +342,14 @@ export function OpenNoteDialog({
       if (contentMatches.length === 0) {
         return ranked;
       }
-      const titleNotes = ranked.find((group) => group.id === "notes");
+      const titleNotes = ranked.find(
+        (group) => group.id === CommandGroupId.Notes,
+      );
       if (!titleNotes) {
-        return [...ranked, { id: "notes" as const, items: contentMatches }];
+        return [
+          ...ranked,
+          { id: CommandGroupId.Notes as const, items: contentMatches },
+        ];
       }
       return ranked.map((group) =>
         group === titleNotes
@@ -348,11 +361,14 @@ export function OpenNoteDialog({
     const recent = recentIds.flatMap((id) => byId.get(`note-${id}`) ?? []);
     return [
       {
-        id: "recent" as const,
+        id: RecentCommandGroupId.Recent,
         items: recent.length > 0 ? recent : notes.slice(0, MAX_RECENT_DISPLAY),
       },
-      { id: "actions" as const, items: actions },
-      { id: "pages" as const, items: pages.filter((page) => page.topLevel) },
+      { id: CommandGroupId.Actions, items: actions },
+      {
+        id: CommandGroupId.Pages,
+        items: pages.filter((page) => page.topLevel),
+      },
     ].filter((group) => group.items.length > 0);
   }, [
     isQueryEmpty,
@@ -375,7 +391,7 @@ export function OpenNoteDialog({
   );
   const selectedCommand = commandsById.get(selected);
 
-  const headings: Record<CommandGroupId | "recent", string> = {
+  const headings: Record<CommandGroupId | RecentCommandGroupId, string> = {
     recent: t`Recent`,
     actions: t`Actions`,
     notes: t`Notes`,
@@ -395,7 +411,7 @@ export function OpenNoteDialog({
   );
 
   const runCommand = useCallback(
-    (command: MenuCommand, target: "current" | "new") => {
+    (command: MenuCommand, target: LinkedItemOpenBehavior) => {
       handleOpenChange(false);
       command.run(target);
     },
@@ -406,7 +422,7 @@ export function OpenNoteDialog({
     if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
     if (!selectedCommand) return;
     event.preventDefault();
-    runCommand(selectedCommand, "new");
+    runCommand(selectedCommand, LinkedItemOpenBehavior.New);
   };
 
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -425,7 +441,7 @@ export function OpenNoteDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         aria-describedby={undefined}
-        placement="top"
+        placement={DialogPlacement.Top}
         overlayChildren={
           <div
             data-open-note-dialog-drag-region
@@ -488,7 +504,7 @@ export function OpenNoteDialog({
                 ) : noteSearchFailed ? (
                   <div role="alert">
                     <EmptyState
-                      size="list"
+                      size={EmptyStateSize.List}
                       title={<Trans>Couldn't search your notes</Trans>}
                       description={
                         <Trans>
@@ -503,7 +519,7 @@ export function OpenNoteDialog({
                   </div>
                 ) : (
                   <EmptyState
-                    size="list"
+                    size={EmptyStateSize.List}
                     title={<Trans>No results for “{rankedQuery.trim()}”</Trans>}
                     description={
                       <Trans>
@@ -530,7 +546,9 @@ export function OpenNoteDialog({
                     <CommandRow
                       key={`${group.id}-${command.id}`}
                       command={command}
-                      onSelect={() => runCommand(command, "current")}
+                      onSelect={() =>
+                        runCommand(command, LinkedItemOpenBehavior.Current)
+                      }
                     />
                   ))}
                 </CommandPrimitive.Group>

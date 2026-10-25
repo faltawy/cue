@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TaskConfig } from ".";
 import { enhanceSuccess, runEnhanceSuccess } from "./enhance-success";
 
+import { TaskType } from "~/store/zustand/ai-task/enums";
 import { useLiveTitle } from "~/store/zustand/live-title";
 
 const mocks = vi.hoisted(() => ({
@@ -44,7 +45,7 @@ vi.mock("./title-success", async (importOriginal) => ({
 }));
 
 type EnhanceSuccessParams = Parameters<
-  NonNullable<TaskConfig<"enhance">["onSuccess"]>
+  NonNullable<TaskConfig<TaskType.Enhance>["onSuccess"]>
 >[0];
 
 function createSnapshot(title = "") {

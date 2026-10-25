@@ -11,7 +11,8 @@
   },
   "types": "./src/index.ts",
   "dependencies": {
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "@anlg/provider-validation": "workspace:*"
   },
   "devDependencies": {
     "typescript": "~5.8.3"

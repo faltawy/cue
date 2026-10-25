@@ -1,20 +1,19 @@
 import { useMemo, useRef, useState } from "react";
 
+import { DictationAction } from "../app-bridge";
+
 export enum DictationPhase {
   Idle = "idle",
   Listening = "listening",
   Transcribing = "transcribing",
 }
 
-async function request(
-  recordingId: string,
-  action: "start" | "stop" | "cancel",
-) {
+async function request(recordingId: string, action: DictationAction) {
   const response = await fetch("/dictation", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ recording_id: recordingId, action }),
-    keepalive: action === "cancel",
+    keepalive: action === DictationAction.Cancel,
   });
   if (!response.ok)
     throw new Error(
@@ -47,14 +46,11 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       started: Promise<string | null>;
       timer: ReturnType<typeof setTimeout>;
     } | null = null;
-    const publish = (
-      phase: DictationPhase,
-      error: string | null = null,
-    ) => {
+    const publish = (phase: DictationPhase, error: string | null = null) => {
       if (mounted) setState({ phase, error });
     };
     const discard = (id: string) => {
-      void request(id, "cancel").catch(() => {});
+      void request(id, DictationAction.Cancel).catch(() => {});
     };
     const cancel = () => {
       const current = active;
@@ -83,7 +79,7 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       try {
         await current.started;
         if (active !== current) return;
-        const text = (await request(current.id, "stop"))?.trim();
+        const text = (await request(current.id, DictationAction.Stop))?.trim();
         if (active !== current) return;
         active = null;
         publish(
@@ -110,7 +106,7 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       const current = {
         id,
         source,
-        started: request(id, "start"),
+        started: request(id, DictationAction.Start),
         timer: setTimeout(() => {
           void stop();
         }, 60_000),

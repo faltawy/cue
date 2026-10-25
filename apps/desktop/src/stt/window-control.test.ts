@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { ListenerControlAction } from "~/stt/enums";
+
 const hoisted = vi.hoisted(() => ({
   emitTo: vi.fn(async () => {}),
   stopCaptureForSession: vi.fn(async () => ({ status: "ok", data: true })),
@@ -42,7 +44,10 @@ describe("requestMainListenerControl", () => {
   });
 
   test("asks the main webview first, then stops that session natively", async () => {
-    const request = requestMainListenerControl("stop", "session-1");
+    const request = requestMainListenerControl(
+      ListenerControlAction.Stop,
+      "session-1",
+    );
 
     expect(hoisted.emitTo).toHaveBeenCalledWith(
       "main",
@@ -61,7 +66,10 @@ describe("requestMainListenerControl", () => {
   test("stops natively when the main window cannot be reached", async () => {
     hoisted.emitTo.mockRejectedValueOnce(new Error("window not found"));
 
-    const request = requestMainListenerControl("stop", "session-1");
+    const request = requestMainListenerControl(
+      ListenerControlAction.Stop,
+      "session-1",
+    );
     await vi.runAllTimersAsync();
     await request;
 
@@ -69,7 +77,7 @@ describe("requestMainListenerControl", () => {
   });
 
   test("still routes start requests to the main webview", async () => {
-    await requestMainListenerControl("start", "session-1");
+    await requestMainListenerControl(ListenerControlAction.Start, "session-1");
 
     expect(hoisted.emitTo).toHaveBeenCalledWith(
       "main",

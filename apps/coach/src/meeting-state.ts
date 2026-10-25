@@ -1,4 +1,9 @@
-import type { WrapUpView } from "./protocol";
+import { WrapUpState, type WrapUpView } from "./protocol";
+
+export enum StripState {
+  Waiting = "waiting",
+  Live = "live",
+}
 
 export type MeetingPointer = {
   sessionId: string;
@@ -38,8 +43,12 @@ export function meetingChange(
 }
 
 export type StripView =
-  | { state: "waiting"; lastTitle: string | null; endedAt: number | null }
-  | { state: "live"; title: string; startedAt: number | null };
+  | {
+      state: StripState.Waiting;
+      lastTitle: string | null;
+      endedAt: number | null;
+    }
+  | { state: StripState.Live; title: string; startedAt: number | null };
 
 export function stripView(
   transcript: {
@@ -49,15 +58,16 @@ export function stripView(
     endedAtMs: number | null;
   } | null,
 ): StripView {
-  if (!transcript) return { state: "waiting", lastTitle: null, endedAt: null };
+  if (!transcript)
+    return { state: StripState.Waiting, lastTitle: null, endedAt: null };
   if (!transcript.live)
     return {
-      state: "waiting",
+      state: StripState.Waiting,
       lastTitle: transcript.title || "Untitled",
       endedAt: transcript.endedAtMs,
     };
   return {
-    state: "live",
+    state: StripState.Live,
     title: transcript.title || "Untitled",
     startedAt: transcript.startedAtMs,
   };
@@ -103,6 +113,10 @@ export function wrapUpActions(options: {
   return { addActionItems, logToClients };
 }
 
-export function isAnswering(busy: boolean, wrapUp: WrapUpView | null): boolean {
-  return busy || wrapUp?.state === "running";
+export function isAnswering(
+  busy: boolean,
+  wrapUp: WrapUpView | null,
+  suggesting = false,
+): boolean {
+  return busy || suggesting || wrapUp?.state === WrapUpState.Running;
 }

@@ -4,18 +4,12 @@ import {
 } from "@anlg/plugin-permissions";
 import { toast } from "@anlg/ui/components/ui/toast";
 
-import type { SettingsTab } from "~/store/zustand/tabs/schema";
+import { SettingsTab } from "~/store/zustand/tabs/enums";
+import { StartFailureStage, StartFailureKind } from "~/stt/enums";
 
-export type StartFailureStage =
-  | "recovery_marker"
-  | "capture_start"
-  | "capture_rejected";
+export { StartFailureStage };
 
-export type StartFailureKind =
-  | "already_running"
-  | "storage"
-  | "microphone_permission"
-  | "recorder";
+export { StartFailureKind };
 
 const START_FAILURE_TOAST_ID = "capture-start-failed";
 
@@ -28,19 +22,19 @@ export function classifyStartFailure({
   error: string | null;
   microphonePermission: PermissionStatus | null;
 }): StartFailureKind {
-  if (stage === "recovery_marker") {
-    return "storage";
+  if (stage === StartFailureStage.RecoveryMarker) {
+    return StartFailureKind.Storage;
   }
   if (error?.includes("session already running")) {
-    return "already_running";
+    return StartFailureKind.AlreadyRunning;
   }
   if (error?.includes("session storage unavailable")) {
-    return "storage";
+    return StartFailureKind.Storage;
   }
   if (microphonePermission && microphonePermission !== "authorized") {
-    return "microphone_permission";
+    return StartFailureKind.MicrophonePermission;
   }
-  return "recorder";
+  return StartFailureKind.Recorder;
 }
 
 export function describeStartFailure(kind: StartFailureKind): {
@@ -49,30 +43,30 @@ export function describeStartFailure(kind: StartFailureKind): {
   action?: { label: string; tab: SettingsTab };
 } {
   switch (kind) {
-    case "already_running":
+    case StartFailureKind.AlreadyRunning:
       return {
         title: "Another recording is still running",
         description:
           "Stop the current recording, or wait for it to finish saving, then try again.",
       };
-    case "storage":
+    case StartFailureKind.Storage:
       return {
         title: "Cue couldn't prepare storage for this recording",
         description:
           "Check that your vault folder is available and your disk has free space, then try again.",
       };
-    case "microphone_permission":
+    case StartFailureKind.MicrophonePermission:
       return {
         title: "Cue doesn't have microphone access",
         description: "Allow microphone access for Cue, then try again.",
-        action: { label: "Open permissions", tab: "permissions" },
+        action: { label: "Open permissions", tab: SettingsTab.Permissions },
       };
-    case "recorder":
+    case StartFailureKind.Recorder:
       return {
         title: "Recording couldn't start",
         description:
           "Cue couldn't open your audio input. Check your microphone selection, then try again.",
-        action: { label: "Audio settings", tab: "meetings" },
+        action: { label: "Audio settings", tab: SettingsTab.Meetings },
       };
   }
 }

@@ -33,11 +33,17 @@ import {
 } from "~/session/components/note-input/transcript/export-data";
 import { getSessionTranscriptRenderRequest } from "~/session/components/note-input/transcript/render-request-hooks";
 import { useHasTranscript } from "~/session/components/shared";
+import { NoteHeaderSize } from "~/session/enums";
 import {
   type MenuItemDef,
   useNativeContextMenu,
 } from "~/shared/hooks/useNativeContextMenu";
+import {
+  BatchSessionMode,
+  LiveSessionStatus,
+} from "~/store/zustand/listener/enums";
 import { useListener } from "~/stt/contexts";
+import { ListenerControlAction } from "~/stt/enums";
 import { useSessionTranscriptMetadata } from "~/stt/queries";
 import { useStartListeningWithBatchOverride } from "~/stt/useStartListeningWithBatchOverride";
 import {
@@ -127,7 +133,7 @@ function HeaderViewTranscriptLiveIcon({
 
 function useTranscriptLiveViewState(sessionId: string) {
   const { amplitude, muted } = useListener((state) => {
-    const active = state.getSessionMode(sessionId) === "active";
+    const active = state.getSessionMode(sessionId) === LiveSessionStatus.Active;
     return {
       amplitude: active ? state.live.amplitude : null,
       muted: active && state.live.muted,
@@ -169,7 +175,9 @@ function HeaderViewTranscriptActive({
   const { t } = useLingui();
   const sessionMode = useListener((state) => state.getSessionMode(sessionId));
   const canEdit =
-    sessionMode === "inactive" && hasTranscript && Boolean(onEditModeChange);
+    sessionMode === LiveSessionStatus.Inactive &&
+    hasTranscript &&
+    Boolean(onEditModeChange);
   const handleToggleEdit = useCallback(() => {
     onEditModeChange?.(!editMode);
   }, [editMode, onEditModeChange]);
@@ -206,7 +214,7 @@ function HeaderViewTranscriptActive({
   }, [deleteRecording]);
   const handleResumeListening = useCallback(() => {
     if (!isMainWebviewWindow()) {
-      void requestMainListenerControl("start", sessionId);
+      void requestMainListenerControl(ListenerControlAction.Start, sessionId);
       return;
     }
 
@@ -224,7 +232,10 @@ function HeaderViewTranscriptActive({
       },
     ];
 
-    if (sessionMode === "inactive" || sessionMode === "running_batch") {
+    if (
+      sessionMode === LiveSessionStatus.Inactive ||
+      sessionMode === BatchSessionMode.RunningBatch
+    ) {
       items.push({
         id: `resume-listening-${sessionId}`,
         text: t`Resume listening`,
@@ -232,7 +243,11 @@ function HeaderViewTranscriptActive({
       });
     }
 
-    if (audioExistsResolved && sessionMode === "inactive" && audioExists) {
+    if (
+      audioExistsResolved &&
+      sessionMode === LiveSessionStatus.Inactive &&
+      audioExists
+    ) {
       items.push({
         id: `regenerate-transcript-${sessionId}`,
         text: t`Re-transcribe`,
@@ -282,7 +297,7 @@ function HeaderViewTranscriptActive({
           onContextMenu={showContextMenu}
           className={iconHeaderViewClassName(
             true,
-            "tray",
+            NoteHeaderSize.Tray,
             cn([
               "max-w-40 min-w-10 cursor-pointer gap-1.5 px-2 @max-[480px]:max-w-12 @max-[480px]:min-w-12 @max-[480px]:gap-0 @max-[480px]:px-1.5",
               "focus-visible:bg-muted focus-visible:text-foreground",

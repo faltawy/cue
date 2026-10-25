@@ -82,12 +82,14 @@ import {
 } from "@anlg/ui/components/icons";
 import { cn } from "@anlg/utils";
 
+import { TemplateIconKind } from "~/templates/enums";
+
 export type TemplateIcon =
-  | { type: "icon"; value: string; color: string }
-  | { type: "emoji"; value: string };
+  | { type: TemplateIconKind.Icon; value: string; color: string }
+  | { type: TemplateIconKind.Emoji; value: string };
 
 export const DEFAULT_TEMPLATE_ICON = {
-  type: "icon",
+  type: TemplateIconKind.Icon,
   value: "notebook-tabs",
   color: "#9ca3af",
 } as const satisfies TemplateIcon;
@@ -206,7 +208,7 @@ export function normalizeTemplateIcon(value: unknown): TemplateIcon {
     typeof icon.value === "string" &&
     icon.value.trim()
   ) {
-    return { type: "emoji", value: icon.value };
+    return { type: TemplateIconKind.Emoji, value: icon.value };
   }
 
   if (
@@ -215,7 +217,11 @@ export function normalizeTemplateIcon(value: unknown): TemplateIcon {
     TEMPLATE_ICON_COMPONENTS[icon.value] &&
     isHexColor(icon.color)
   ) {
-    return { type: "icon", value: icon.value, color: icon.color };
+    return {
+      type: TemplateIconKind.Icon,
+      value: icon.value,
+      color: icon.color,
+    };
   }
 
   return DEFAULT_TEMPLATE_ICON;
@@ -229,7 +235,7 @@ export function TemplateIconGlyph({
   className?: string;
 }) {
   const normalized = normalizeTemplateIcon(icon);
-  if (normalized.type === "emoji") {
+  if (normalized.type === TemplateIconKind.Emoji) {
     return (
       <span
         aria-hidden

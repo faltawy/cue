@@ -1,16 +1,20 @@
 import { useHotkeys } from "react-hotkeys-hook";
 
+import { LinkedItemOpenBehavior } from "@anlg/editor/note";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
 import { leaveOverlayTab } from "~/shared/leave-overlay-tab";
 import { useNewNote, useNewNoteAndListen } from "~/shared/useNewNote";
 import { useTabs } from "~/store/zustand/tabs";
+import { TabType } from "~/store/zustand/tabs/enums";
 
 export function useMainShortcuts() {
   const currentTab = useTabs((state) => state.currentTab);
 
   const newNote = useNewNote();
-  const newNoteCurrent = useNewNote({ behavior: "current" });
+  const newNoteCurrent = useNewNote({
+    behavior: LinkedItemOpenBehavior.Current,
+  });
 
   useMountEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -38,7 +42,7 @@ export function useMainShortcuts() {
   useHotkeys(
     "mod+n",
     () => {
-      if (currentTab?.type === "empty") {
+      if (currentTab?.type === TabType.Empty) {
         newNoteCurrent();
       } else {
         newNote();

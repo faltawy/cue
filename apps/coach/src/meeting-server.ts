@@ -2,10 +2,10 @@ import {
   createSdkMcpServer,
   tool as sdkTool,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { Database } from "bun:sqlite";
+import { type Database } from "bun:sqlite";
 import { z } from "zod";
 
-import type { AppBridge, CoachEdit } from "./app-bridge";
+import { type AppBridge, type CoachEdit, NoteStyle } from "./app-bridge";
 import { type Block, showInputShape } from "./blocks";
 import { libraryTools } from "./library-tools";
 import { MOVE_TAGS } from "./move";
@@ -13,11 +13,13 @@ import { readMeetingNote } from "./notes";
 import { tool } from "./runtime-tool";
 import { failed, text } from "./tool-result";
 import {
+  ParticipantResolutionStatus,
   readLiveTranscript,
   readMeetingInfo,
   readTranscriptEditContext,
-  resolveMeetingParticipant,
   renderTranscript,
+  resolveMeetingParticipant,
+  TranscriptEditStatus,
 } from "./transcript";
 
 export type MeetingEdits = {
@@ -76,13 +78,13 @@ export function meetingTools(
             const session = current();
             const context = readTranscriptEditContext(db, session);
             const speakerExists =
-              context.status === "live"
+              context.status === TranscriptEditStatus.Live
                 ? context.speakers.some(
                     (speaker) =>
                       speaker.channel === channel &&
                       speaker.speaker_index === speaker_index,
                   )
-                : context.status === "ready" &&
+                : context.status === TranscriptEditStatus.Ready &&
                   context.lines.some(
                     (line) =>
                       line.channel === channel &&
@@ -99,13 +101,13 @@ export function meetingTools(
               session,
               person_name,
             );
-            if (participant.status === "ambiguous")
+            if (participant.status === ParticipantResolutionStatus.Ambiguous)
               return failed(
                 new Error(
                   `More than one meeting participant is named ${person_name}. Ask the user which person they mean.`,
                 ),
               );
-            if (participant.status === "not_found")
+            if (participant.status === ParticipantResolutionStatus.NotFound)
               return failed(
                 new Error(
                   `${person_name} is not a current participant in this meeting. Do not create or use another contact.`,
@@ -135,13 +137,13 @@ export function meetingTools(
           async ({ word_ids, expected_text, replacement }) => {
             const session = current();
             const context = readTranscriptEditContext(db, session);
-            if (context.status === "live")
+            if (context.status === TranscriptEditStatus.Live)
               return failed(
                 new Error(
                   "Transcript corrections are available after the meeting ends. Speaker names can still be assigned during the call.",
                 ),
               );
-            if (context.status !== "ready")
+            if (context.status !== TranscriptEditStatus.Ready)
               return failed(
                 new Error("No finalized transcript is available to correct."),
               );
@@ -172,7 +174,7 @@ export function meetingTools(
           "Add lines to the end of this meeting's notes in the app, as paragraphs or as a bullet list. Use only when the user asks you to write something into the notes. The user sees the edit marked as by coach, with Undo.",
           {
             lines: z.array(z.string().min(1)).min(1),
-            style: z.enum(["paragraphs", "bullets"]).default("bullets"),
+            style: z.enum(NoteStyle).default(NoteStyle.Bullets),
           },
           async ({ lines, style }) => {
             try {
