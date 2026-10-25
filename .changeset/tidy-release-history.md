@@ -1,5 +1,0 @@
----
-"@anlg/desktop": patch
----
-
-Browse release notes in a scrollable history with clear version headings and an installed-version label, without a version switcher.

@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.11.1
+
+### Patch Changes
+
+- Browse release notes in a scrollable history with clear version headings and an installed-version label, without a version switcher.
+
 ## 0.11.0
 
 ### Minor Changes
