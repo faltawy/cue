@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.12.2
+
+### Patch Changes
+
+- Fix a crash when changing a transcript speaker merges adjacent turns. Restore account connector discovery in the production app, and make release timeline icons blend into the page background.
+
 ## 0.12.1
 
 ### Patch Changes
