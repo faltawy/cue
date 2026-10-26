@@ -2,6 +2,8 @@ import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 
+import { answerInput, parseQuestions } from "@anlg/assistant/questions";
+
 import {
   CodexClient,
   EventQueue,
@@ -13,7 +15,6 @@ import { codexFileTools } from "./codex-tools";
 import { decide } from "./guard";
 import { type AskContent } from "./images";
 import { meetingTools } from "./meeting-server";
-import { answerInput, parseQuestions } from "./questions";
 import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
 import { type RuntimeTool } from "./runtime-tool";
 import {
@@ -419,6 +420,7 @@ export function startCodexCoach(options: CoachOptions): CoachSession {
         !!options.askUser,
         [],
         !!options.show,
+        options.scope,
       ) +
         (web ? `\n${WEB_PROMPT}` : "") +
         userContextPrompt(options.knowledge, options.instructions),

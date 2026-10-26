@@ -1,10 +1,11 @@
 import os from "node:os";
 import path from "node:path";
 
+import { CoachProvider, parseProvider } from "@anlg/assistant/provider";
+
 import { CLAUDE_ARGS } from "./claude-code";
 import { expandProtectedRoots } from "./guard";
 import { loadMcpConfig } from "./mcp-config";
-import { CoachProvider, parseProvider } from "./provider";
 import { type CoachOptions } from "./session";
 import { openAppDb } from "./transcript";
 

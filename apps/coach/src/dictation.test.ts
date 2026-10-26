@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 
+import { BridgeError, DictationAction } from "@anlg/assistant/app-bridge";
+
 import { createAccess, type Handler, withAccess } from "./access";
-import { BridgeError, DictationAction } from "./app-bridge";
 import { dictationHandler } from "./dictation";
 
 const recordingId = "4dc5a2a6-e74e-40ac-b36b-40741ee77e1c";

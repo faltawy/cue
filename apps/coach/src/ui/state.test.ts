@@ -1,14 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { CoachEditKind } from "../app-bridge";
+import { CoachEditKind } from "@anlg/assistant/app-bridge";
 import {
   type CoachEvent,
   CoachEventType,
   ResetReason,
   TurnKind,
   WrapUpState,
-} from "../protocol";
-import { fixtureState } from "./fixtures";
+} from "@anlg/assistant/protocol";
 import {
   ActionType,
   type CoachState,
@@ -20,7 +19,9 @@ import {
   reduce,
   suggestions,
   type Turn,
-} from "./state";
+} from "@anlg/assistant/ui/state";
+
+import { fixtureState } from "./fixtures";
 
 function feed(
   events: CoachEvent[],

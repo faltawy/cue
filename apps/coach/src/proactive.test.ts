@@ -9,9 +9,10 @@ import {
   test,
 } from "bun:test";
 
-import { MeetingIntent } from "./coaching-preferences";
+import { MeetingIntent } from "@anlg/assistant/coaching-preferences";
+import { type Spend, spendOf } from "@anlg/assistant/pricing";
+
 import { HitKind } from "./detect";
-import { type Spend, spendOf } from "./pricing";
 import {
   SpendSource,
   NudgePath,

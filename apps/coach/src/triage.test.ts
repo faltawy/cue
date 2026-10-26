@@ -8,8 +8,9 @@ import {
   test,
 } from "bun:test";
 
+import { estimateTokens } from "@anlg/assistant/pricing";
+
 import { HitKind } from "./detect";
-import { estimateTokens } from "./pricing";
 import {
   parseTriage,
   TRIAGE_SYSTEM,

@@ -23,14 +23,25 @@ export function parseQuestions(input: unknown): Question[] {
       ? question.options.flatMap((option): QuestionOption[] => {
           const parsed = asRecord(option);
           return typeof parsed?.label === "string"
-            ? [{ label: parsed.label, description: typeof parsed.description === "string" ? parsed.description : "" }]
+            ? [
+                {
+                  label: parsed.label,
+                  description:
+                    typeof parsed.description === "string"
+                      ? parsed.description
+                      : "",
+                },
+              ]
             : [];
         })
       : [];
     return [
       {
         question: question.question,
-        header: typeof question.header === "string" && question.header.length > 0 ? question.header : "Question",
+        header:
+          typeof question.header === "string" && question.header.length > 0
+            ? question.header
+            : "Question",
         multiSelect: question.multiSelect === true,
         options,
       },
@@ -38,7 +49,10 @@ export function parseQuestions(input: unknown): Question[] {
   });
 }
 
-export function answerInput(toolInput: Record<string, unknown>, answers: readonly string[]): Record<string, unknown> {
+export function answerInput(
+  toolInput: Record<string, unknown>,
+  answers: readonly string[],
+): Record<string, unknown> {
   const texts = parseQuestions(toolInput).map((question) => question.question);
   const byQuestion: Record<string, string> = {};
   for (const [index, text] of texts.entries()) {
@@ -47,12 +61,21 @@ export function answerInput(toolInput: Record<string, unknown>, answers: readonl
   }
   const unmatched = Object.keys(byQuestion).length < texts.length;
   const response = answers.join("\n\n").trim();
-  return { ...toolInput, answers: byQuestion, ...(unmatched && response ? { response } : {}) };
+  return {
+    ...toolInput,
+    answers: byQuestion,
+    ...(unmatched && response ? { response } : {}),
+  };
 }
 
-export type QuestionOutcome = { answered: true; answers: string[] } | { answered: false; reason: string };
+export type QuestionOutcome =
+  | { answered: true; answers: string[] }
+  | { answered: false; reason: string };
 
-type Pending = { questions: Question[]; settle: (outcome: QuestionOutcome) => void };
+type Pending = {
+  questions: Question[];
+  settle: (outcome: QuestionOutcome) => void;
+};
 
 export type QuestionListener = {
   opened(id: string, questions: Question[]): void;
@@ -64,7 +87,11 @@ export class QuestionBroker {
 
   constructor(private readonly listener: QuestionListener) {}
 
-  ask(id: string, questions: Question[], signal?: AbortSignal): Promise<QuestionOutcome> {
+  ask(
+    id: string,
+    questions: Question[],
+    signal?: AbortSignal,
+  ): Promise<QuestionOutcome> {
     return new Promise((resolve) => {
       const settle = (outcome: QuestionOutcome) => {
         if (!this.pending.delete(id)) return;
@@ -72,7 +99,11 @@ export class QuestionBroker {
         this.listener.closed(id, outcome.answered ? outcome.answers : null);
         resolve(outcome);
       };
-      const onAbort = () => settle({ answered: false, reason: "The turn stopped before the question was answered." });
+      const onAbort = () =>
+        settle({
+          answered: false,
+          reason: "The turn stopped before the question was answered.",
+        });
       this.pending.set(id, { questions, settle });
       this.listener.opened(id, questions);
       if (signal?.aborted) onAbort();
@@ -90,15 +121,22 @@ export class QuestionBroker {
   dismiss(id: string): boolean {
     const pending = this.pending.get(id);
     if (!pending) return false;
-    pending.settle({ answered: false, reason: "The user dismissed the question." });
+    pending.settle({
+      answered: false,
+      reason: "The user dismissed the question.",
+    });
     return true;
   }
 
   dismissAll(reason: string) {
-    for (const pending of [...this.pending.values()]) pending.settle({ answered: false, reason });
+    for (const pending of [...this.pending.values()])
+      pending.settle({ answered: false, reason });
   }
 
   open(): Array<{ id: string; questions: Question[] }> {
-    return [...this.pending.entries()].map(([id, { questions }]) => ({ id, questions }));
+    return [...this.pending.entries()].map(([id, { questions }]) => ({
+      id,
+      questions,
+    }));
   }
 }

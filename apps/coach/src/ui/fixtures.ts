@@ -1,9 +1,8 @@
-import { CoachEditKind, ProjectSource } from "../app-bridge";
-import { BlockKind } from "../blocks";
-import { CoachErrorKind, SIGN_IN_STEPS } from "../errors";
-import { StripState } from "../meeting-state";
-import { MoveTag, MoveVerb } from "../move";
-import { ProactiveState } from "../proactive";
+import { CoachEditKind, ProjectSource } from "@anlg/assistant/app-bridge";
+import { BlockKind } from "@anlg/assistant/blocks";
+import { CoachErrorKind, SIGN_IN_STEPS } from "@anlg/assistant/errors";
+import { StripState } from "@anlg/assistant/meeting-state";
+import { MoveTag, MoveVerb } from "@anlg/assistant/move";
 import {
   type CoachEvent,
   CoachEventType,
@@ -11,15 +10,17 @@ import {
   type StatusEvent,
   TurnKind,
   WrapUpState,
-} from "../protocol";
-import { SourceKind } from "../sources";
+} from "@anlg/assistant/protocol";
 import {
   ActionType,
   type CoachState,
   Connection,
   initialState,
   reduce,
-} from "./state";
+} from "@anlg/assistant/ui/state";
+
+import { ProactiveState } from "../proactive";
+import { SourceKind } from "../sources";
 
 export const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
   type: CoachEventType.Status,

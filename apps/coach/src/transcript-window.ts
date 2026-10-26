@@ -1,4 +1,5 @@
-import { charTokens, estimateTokens } from "./pricing";
+import { charTokens, estimateTokens } from "@anlg/assistant/pricing";
+
 import { renderLines, type TranscriptLine } from "./transcript";
 
 export function headWithin(text: string, maxTokens: number): string {
@@ -18,7 +19,10 @@ function tailWithin(text: string, maxTokens: number): string {
   for (let index = chars.length - 1; index >= 0; index -= 1) {
     used += charTokens(chars[index] ?? "");
     if (used > maxTokens)
-      return `…${chars.slice(index + 1).join("").trimStart()}`;
+      return `…${chars
+        .slice(index + 1)
+        .join("")
+        .trimStart()}`;
   }
   return text;
 }

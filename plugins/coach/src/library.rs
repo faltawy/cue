@@ -3,7 +3,8 @@ use serde_json::{Map, Value};
 use sqlx::{Row, SqliteConnection, SqlitePool};
 
 use crate::edits::{
-    Change, CoachEdit, EditError, EditKind, EditResult, Edits, UndoEntry, new_edit, now, preview,
+    Change, CoachEdit, EditError, EditKind, EditOwner, EditResult, Edits, UndoEntry, new_edit, now,
+    preview,
 };
 
 const MANUAL_SOURCE: &str = "manual";
@@ -399,6 +400,13 @@ async fn note_fingerprint(
     .await?)
 }
 
+async fn library_owner(conn: &mut SqliteConnection, owner: EditOwner<'_>) -> EditResult<String> {
+    match owner {
+        EditOwner::Meeting(id) => owner_of(conn, id).await,
+        EditOwner::Library => Ok(anlg_db_app::current_owner_user_id(conn).await?),
+    }
+}
+
 async fn owner_of(conn: &mut SqliteConnection, session_id: &str) -> EditResult<String> {
     sqlx::query_scalar("SELECT owner_user_id FROM sessions WHERE id = ? AND deleted_at IS NULL")
         .bind(session_id)
@@ -780,13 +788,13 @@ fn unchanged(id: Option<String>, message: String) -> LibraryChange {
 impl Edits {
     fn push(
         log: &mut Vec<UndoEntry>,
-        session_id: &str,
+        owner: EditOwner<'_>,
         kind: EditKind,
         summary: String,
         target: &str,
         undo: Undo,
     ) -> CoachEdit {
-        let mut edit = new_edit(session_id, kind, summary, None);
+        let mut edit = new_edit(owner, kind, summary, None);
         edit.target_id = Some(target.to_string());
         log.push(UndoEntry {
             edit: edit.clone(),
@@ -795,12 +803,13 @@ impl Edits {
         edit
     }
 
-    pub async fn create_note(
+    pub async fn create_note<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         input: NewNote,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let title = clean(Some(&input.title))
             .ok_or_else(|| EditError::Invalid("a note needs a title".into()))?;
         let body = match clean(input.content_markdown.as_deref()) {
@@ -810,13 +819,13 @@ impl Edits {
             None => String::new(),
         };
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let folder = resolve_folder(&mut tx, input.folder.as_deref().unwrap_or_default()).await?;
-        let owner = owner_of(&mut tx, session_id).await?;
+        let user_id = library_owner(&mut tx, owner).await?;
         let note_id = uuid::Uuid::new_v4().to_string();
         let now = now(&mut tx).await?;
-        anlg_db_app::insert_session(&mut tx, &note_id, &title, &owner, "", &folder, &now).await?;
+        anlg_db_app::insert_session(&mut tx, &note_id, &title, &user_id, "", &folder, &now).await?;
         anlg_db_app::insert_empty_session_note(&mut tx, &note_id, &body, &now).await?;
         anlg_db_app::upsert_session_owner_human(&mut tx, &note_id, &now).await?;
         anlg_db_app::insert_owner_session_participant(
@@ -837,7 +846,7 @@ impl Edits {
         };
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::CreateNote,
             summary,
             &note_id,
@@ -850,15 +859,16 @@ impl Edits {
         Ok(done(edit, note_id))
     }
 
-    pub async fn update_note(
+    pub async fn update_note<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         note_id: &str,
         changes: NoteChanges,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let before = open_note(&mut tx, note_id).await?;
         let old_title = text_of(&before, "title");
@@ -990,15 +1000,15 @@ impl Edits {
             });
         }
 
-        let owner = owner_of(&mut tx, note_id).await?;
+        let user_id = owner_of(&mut tx, note_id).await?;
         let mut links = Vec::new();
         let mut tags = Vec::new();
         for tag in &added {
             let link_id = format!("{note_id}:{tag}");
             let link_before = snapshot(&mut tx, &SESSION_TAGS, &link_id).await?;
             let tag_before = snapshot(&mut tx, &TAGS, tag).await?;
-            anlg_db_app::upsert_tag(&mut tx, &owner, tag, &now).await?;
-            anlg_db_app::upsert_session_tag(&mut tx, note_id, &owner, tag, &now).await?;
+            anlg_db_app::upsert_tag(&mut tx, &user_id, tag, &now).await?;
+            anlg_db_app::upsert_session_tag(&mut tx, note_id, &user_id, tag, &now).await?;
             if tag_before
                 .as_ref()
                 .is_none_or(|row| !row["deleted_at"].is_null())
@@ -1053,7 +1063,7 @@ impl Edits {
         tx.commit().await?;
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::UpdateNote,
             parts.join("; "),
             note_id,
@@ -1062,19 +1072,20 @@ impl Edits {
         Ok(done(edit, note_id.to_string()))
     }
 
-    pub async fn create_folder(
+    pub async fn create_folder<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         path: &str,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let path = normalize_folder_path(path)
             .filter(|path| !path.is_empty())
             .ok_or_else(|| {
                 EditError::Invalid(format!("{} is not a valid folder path", quoted(path)))
             })?;
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let mut folders = Vec::new();
         for ancestor in ancestors(&path) {
@@ -1113,7 +1124,7 @@ impl Edits {
         let id = id.ok_or_else(|| EditError::Unknown("folder", path.clone()))?;
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::CreateFolder,
             format!("Created folder {path}"),
             &id,
@@ -1122,17 +1133,18 @@ impl Edits {
         Ok(done(edit, id))
     }
 
-    pub async fn create_person(
+    pub async fn create_person<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         fields: PersonFields,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let name = clean(fields.name.as_deref())
             .ok_or_else(|| EditError::Invalid("a contact needs a name".into()))?;
         let email = clean(fields.email.as_deref());
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         if let Some(existing) = find_person(&mut tx, &name, email.as_deref()).await? {
             return Ok(unchanged(
@@ -1143,7 +1155,7 @@ impl Edits {
                 ),
             ));
         }
-        let owner = owner_of(&mut tx, session_id).await?;
+        let user_id = library_owner(&mut tx, owner).await?;
         let now = now(&mut tx).await?;
         let mut undos = Vec::new();
         let id = uuid::Uuid::new_v4().to_string();
@@ -1151,7 +1163,7 @@ impl Edits {
         if let Some(organization) = clean(fields.organization.as_deref()) {
             let (organization_id, created) = organization_for(
                 &mut tx,
-                &owner,
+                &user_id,
                 &organization,
                 fields.create_organization,
                 &now,
@@ -1163,7 +1175,7 @@ impl Edits {
         anlg_db_app::create_human(
             &mut tx,
             &id,
-            &owner,
+            &user_id,
             &name,
             email.as_deref().unwrap_or_default(),
             &now,
@@ -1195,7 +1207,7 @@ impl Edits {
         tx.commit().await?;
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::CreatePerson,
             format!("Created contact {label}"),
             &id,
@@ -1204,15 +1216,16 @@ impl Edits {
         Ok(done(edit, id))
     }
 
-    pub async fn update_person(
+    pub async fn update_person<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         person_id: &str,
         fields: PersonFields,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let before = snapshot(&mut tx, &HUMANS, person_id)
             .await?
@@ -1230,15 +1243,20 @@ impl Edits {
                 text_of(&before, column.trim_end_matches(" = ?")) != *value
             })
             .collect();
-        let owner = owner_of(&mut tx, session_id).await?;
+        let user_id = library_owner(&mut tx, owner).await?;
         let now = now(&mut tx).await?;
         let mut undos = Vec::new();
         if let Some(organization) = fields.organization.as_deref() {
             let organization_id = match clean(Some(organization)) {
                 Some(name) => {
-                    let (id, created) =
-                        organization_for(&mut tx, &owner, &name, fields.create_organization, &now)
-                            .await?;
+                    let (id, created) = organization_for(
+                        &mut tx,
+                        &user_id,
+                        &name,
+                        fields.create_organization,
+                        &now,
+                    )
+                    .await?;
                     undos.extend(created);
                     id
                 }
@@ -1283,7 +1301,7 @@ impl Edits {
             .join(", ");
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::UpdatePerson,
             format!("Updated {}: {fields}", preview(&name)),
             person_id,
@@ -1292,16 +1310,17 @@ impl Edits {
         Ok(done(edit, person_id.to_string()))
     }
 
-    pub async fn create_organization(
+    pub async fn create_organization<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         fields: OrganizationFields,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let name = clean(fields.name.as_deref())
             .ok_or_else(|| EditError::Invalid("an organization needs a name".into()))?;
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         if let Some(id) = find_organization(&mut tx, &name).await? {
             return Ok(unchanged(
@@ -1309,15 +1328,15 @@ impl Edits {
                 format!("Already in contacts: {name}; nothing was created"),
             ));
         }
-        let owner = owner_of(&mut tx, session_id).await?;
+        let user_id = library_owner(&mut tx, owner).await?;
         let now = now(&mut tx).await?;
         let memo = clean(fields.memo.as_deref());
         let (id, undo) =
-            create_organization_row(&mut tx, &owner, &name, memo.as_deref(), &now).await?;
+            create_organization_row(&mut tx, &user_id, &name, memo.as_deref(), &now).await?;
         tx.commit().await?;
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::CreateOrganization,
             format!("Created organization {}", preview(&name)),
             &id,
@@ -1326,15 +1345,16 @@ impl Edits {
         Ok(done(edit, id))
     }
 
-    pub async fn update_organization(
+    pub async fn update_organization<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         organization_id: &str,
         fields: OrganizationFields,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let before = snapshot(&mut tx, &ORGANIZATIONS, organization_id)
             .await?
@@ -1390,7 +1410,7 @@ impl Edits {
             .join(", ");
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::UpdateOrganization,
             format!("Updated {}: {fields}", preview(&name)),
             organization_id,
@@ -1405,26 +1425,28 @@ impl Edits {
         Ok(done(edit, organization_id.to_string()))
     }
 
-    pub async fn add_participant(
+    pub async fn add_participant<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         note_id: Option<&str>,
         person_id: &str,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let note_id = note_id
             .map(str::trim)
             .filter(|id| !id.is_empty())
-            .unwrap_or(session_id);
+            .or(owner.session_id())
+            .ok_or_else(|| EditError::Invalid("Choose a note for this participant.".into()))?;
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let note = open_note(&mut tx, note_id).await?;
         let person = snapshot(&mut tx, &HUMANS, person_id)
             .await?
             .ok_or_else(|| EditError::Unknown("person", person_id.to_string()))?;
         let label = person_label(&text_of(&person, "name"), &text_of(&person, "email"));
-        let place = if note_id == session_id {
+        let place = if Some(note_id) == owner.session_id() {
             "this meeting".to_string()
         } else {
             quoted(&text_of(&note, "title"))
@@ -1509,7 +1531,7 @@ impl Edits {
         tx.commit().await?;
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::AddParticipant,
             format!("Added {label} to {place}"),
             &undo.0,
@@ -1518,17 +1540,18 @@ impl Edits {
         Ok(done(edit, undo.0))
     }
 
-    pub async fn create_template(
+    pub async fn create_template<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         fields: TemplateFields,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let title = clean(fields.title.as_deref())
             .ok_or_else(|| EditError::Invalid("a template needs a title".into()))?;
         let sections = template_sections(fields.sections.unwrap_or_default())?;
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let id = uuid::Uuid::new_v4().to_string();
         sqlx::query(
@@ -1547,7 +1570,7 @@ impl Edits {
         tx.commit().await?;
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::CreateTemplate,
             format!("Created template {}", quoted(&title)),
             &id,
@@ -1561,15 +1584,16 @@ impl Edits {
         Ok(done(edit, id))
     }
 
-    pub async fn update_template(
+    pub async fn update_template<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         template_id: &str,
         fields: TemplateFields,
     ) -> EditResult<LibraryChange> {
+        let owner = owner.into();
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let mut tx = pool.begin().await?;
         let before = snapshot(&mut tx, &TEMPLATES, template_id)
             .await?
@@ -1634,7 +1658,7 @@ impl Edits {
             .join(", ");
         let edit = Self::push(
             &mut log,
-            session_id,
+            owner,
             EditKind::UpdateTemplate,
             format!("Updated template {}: {fields}", quoted(&title)),
             template_id,

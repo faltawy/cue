@@ -1,16 +1,6 @@
+import { SourceKind, type Source } from "@anlg/assistant/sources";
+export { SourceKind, type Source } from "@anlg/assistant/sources";
 import { GMAIL_SERVER } from "./guard";
-
-export enum SourceKind {
-  Web = "web",
-  Email = "email",
-}
-
-export type Source = {
-  kind: SourceKind;
-  url: string;
-  label: string;
-  title: string;
-};
 
 export const SOURCES_MAX = 5;
 const LABEL_MAX = 80;

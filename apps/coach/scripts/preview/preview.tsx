@@ -1,10 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import { CoachView } from "../../src/ui/app";
+import { CoachView } from "@anlg/assistant/ui/app";
+import { Connection } from "@anlg/assistant/ui/state";
+import { type CoachApi } from "@anlg/assistant/ui/use-coach";
+
 import { fixtureState, isScenario } from "../../src/ui/fixtures";
-import { Connection } from "../../src/ui/state";
-import { type CoachApi } from "../../src/ui/use-coach";
 import { DataSet, dataSetState, isDataSet, Phase } from "./worst-case";
 
 enum PreviewTab {

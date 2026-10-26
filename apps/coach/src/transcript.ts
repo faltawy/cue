@@ -1,12 +1,13 @@
 import { Database } from "bun:sqlite";
 
+import { formatTimestamp } from "@anlg/assistant/timestamp";
+
 import {
   assignmentsFrom,
   type SpeakerHint,
   speakerLabels,
   withProviderSpeakers,
 } from "./speakers";
-import { formatTimestamp } from "./timestamp";
 
 export enum ParticipantResolutionStatus {
   Resolved = "resolved",

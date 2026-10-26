@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { type AppBridge, BridgeError, DictationAction } from "./app-bridge";
+import {
+  type AppBridge,
+  BridgeError,
+  DictationAction,
+} from "@anlg/assistant/app-bridge";
 
 const inputSchema = z.object({
   recording_id: z.uuid(),

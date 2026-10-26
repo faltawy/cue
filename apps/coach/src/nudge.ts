@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { isNothing, NOTHING } from "./checkin";
-import { intentGuidance, MeetingIntent } from "./coaching-preferences";
-import { Hit, HitKind } from "./detect";
-import { jsonOf, LlmEventType, runLlm } from "./llm";
+import {
+  intentGuidance,
+  MeetingIntent,
+} from "@anlg/assistant/coaching-preferences";
 import {
   type EvidenceTarget,
   type Moment,
@@ -12,12 +12,16 @@ import {
   moveFields,
   MoveTag,
   QUOTE_MAX,
-} from "./move";
-import { NO_SPEND, type Spend, spendOf } from "./pricing";
-import { CoachProvider } from "./provider";
+} from "@anlg/assistant/move";
+import { NO_SPEND, type Spend, spendOf } from "@anlg/assistant/pricing";
+import { CoachProvider } from "@anlg/assistant/provider";
+import { formatTimestamp } from "@anlg/assistant/timestamp";
+
+import { isNothing, NOTHING } from "./checkin";
+import { Hit, HitKind } from "./detect";
+import { jsonOf, LlmEventType, runLlm } from "./llm";
 import { INSTRUCTIONS_HEADING } from "./session";
 import { talkStats, type TalkStats, talkSummary } from "./talk-time";
-import { formatTimestamp } from "./timestamp";
 import { type TranscriptLine } from "./transcript";
 import { headWithin, renderRecentLines } from "./transcript-window";
 import { TRIAGE_MODEL } from "./triage";

@@ -1,4 +1,9 @@
-export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
+export const IMAGE_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+] as const;
 export type ImageType = (typeof IMAGE_TYPES)[number];
 
 export const MAX_IMAGES = 4;
@@ -20,11 +25,18 @@ export function isImageType(type: string): type is ImageType {
   return IMAGE_TYPES.some((allowed) => allowed === type);
 }
 
-export function fitWithin(width: number, height: number, edge: number): { width: number; height: number } {
+export function fitWithin(
+  width: number,
+  height: number,
+  edge: number,
+): { width: number; height: number } {
   const longest = Math.max(width, height);
   if (longest <= edge) return { width, height };
   const scale = edge / longest;
-  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
 }
 
 export function admitFiles<T extends { type: string }>(
@@ -35,6 +47,10 @@ export function admitFiles<T extends { type: string }>(
   const room = Math.max(0, MAX_IMAGES - attached);
   const accepted = images.slice(0, room);
   const error =
-    images.length < files.length ? IMAGE_ERRORS.type : images.length > room ? IMAGE_ERRORS.count : null;
+    images.length < files.length
+      ? IMAGE_ERRORS.type
+      : images.length > room
+        ? IMAGE_ERRORS.count
+        : null;
   return { accepted, error };
 }

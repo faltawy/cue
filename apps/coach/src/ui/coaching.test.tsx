@@ -10,11 +10,13 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { BlockKind } from "../blocks";
-import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
-import { type MeetingCoaching, MeetingIntent } from "../coaching-preferences";
-import { StripState } from "../meeting-state";
-import { type Move, MoveTag, MoveVerb } from "../move";
+import { BlockKind } from "@anlg/assistant/blocks";
+import {
+  type MeetingCoaching,
+  MeetingIntent,
+} from "@anlg/assistant/coaching-preferences";
+import { StripState } from "@anlg/assistant/meeting-state";
+import { type Move, MoveTag, MoveVerb } from "@anlg/assistant/move";
 import {
   appendHistory,
   type CoachEvent,
@@ -23,20 +25,22 @@ import {
   TurnKind,
   WrapUpState,
   type WrapUpView,
-} from "../protocol";
-import { type TalkStats } from "../talk-time";
-import { type WrapUp } from "../wrapup";
-import { CoachView } from "./app";
-import { useDom } from "./dom-setup";
-import { status } from "./fixtures";
+} from "@anlg/assistant/protocol";
+import { CoachView } from "@anlg/assistant/ui/app";
 import {
   ActionType,
   type CoachState,
   Connection,
   initialState,
   reduce,
-} from "./state";
-import { type ActionResult, type CoachApi } from "./use-coach";
+} from "@anlg/assistant/ui/state";
+import { type ActionResult, type CoachApi } from "@anlg/assistant/ui/use-coach";
+
+import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
+import { type TalkStats } from "../talk-time";
+import { type WrapUp } from "../wrapup";
+import { useDom } from "./dom-setup";
+import { status } from "./fixtures";
 
 useDom();
 

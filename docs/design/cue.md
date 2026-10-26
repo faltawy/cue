@@ -1,6 +1,6 @@
 # Cue design spec
 
-The coach panel (`apps/coach/src/ui`) is the reference. Values taken from it cite their source. Rules marked **(ext)** are extrapolated in the coach's spirit for patterns the coach doesn't have, and the owner should review them. Exact fixes are listed in `cue-audit.md`.
+The shared assistant panel (`packages/assistant/src/ui`) is the reference. Values taken from it cite their source. Rules marked **(ext)** are extrapolated in the coach's spirit for patterns the coach doesn't have, and the owner should review them. Exact fixes are listed in `cue-audit.md`.
 
 ## 1. Corners
 

@@ -1,5 +1,3 @@
-import { type SDKAssistantMessageError } from "@anthropic-ai/claude-agent-sdk";
-
 import { CoachProvider, providerName } from "./provider";
 
 export enum CoachErrorAction {
@@ -68,10 +66,7 @@ const KIND_SIGNATURES: Array<{ kind: CoachErrorKind; pattern: RegExp }> = [
   { kind: CoachErrorKind.Network, pattern: /\bconnection error\b/i },
 ];
 
-const SDK_ERROR_KINDS: Partial<
-  Record<SDKAssistantMessageError, CoachErrorKind>
-> &
-  Record<string, CoachErrorKind | undefined> = {
+const SDK_ERROR_KINDS: Record<string, CoachErrorKind | undefined> = {
   authentication_failed: CoachErrorKind.Auth,
   oauth_org_not_allowed: CoachErrorKind.Auth,
   rate_limit: CoachErrorKind.RateLimit,

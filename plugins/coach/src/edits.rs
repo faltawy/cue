@@ -65,7 +65,7 @@ pub enum EditKind {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct CoachEdit {
     pub id: String,
-    pub session_id: String,
+    pub session_id: Option<String>,
     pub kind: EditKind,
     pub summary: String,
     pub task_id: Option<String>,
@@ -99,6 +99,7 @@ struct ItemRow {
 }
 
 pub(crate) struct NoteUndo {
+    session_id: String,
     note_before: Option<NoteRow>,
     note_after: Value,
     item_id: Option<String>,
@@ -119,6 +120,7 @@ enum TranscriptField {
 }
 
 pub(crate) struct TranscriptUndo {
+    session_id: String,
     transcript_id: String,
     field: TranscriptField,
     before: String,
@@ -133,6 +135,30 @@ pub(crate) struct UndoEntry {
 pub(crate) type RecordingSource =
     std::sync::Arc<dyn Fn() -> crate::bridge::RecordingFuture + Send + Sync>;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) enum EditOwner<'a> {
+    Meeting(&'a str),
+    Library,
+}
+impl<'a> EditOwner<'a> {
+    pub(crate) fn session_id(self) -> Option<&'a str> {
+        match self {
+            Self::Meeting(id) => Some(id),
+            Self::Library => None,
+        }
+    }
+}
+impl<'a> From<&'a str> for EditOwner<'a> {
+    fn from(id: &'a str) -> Self {
+        Self::Meeting(id)
+    }
+}
+impl<'a> From<&'a String> for EditOwner<'a> {
+    fn from(id: &'a String) -> Self {
+        Self::Meeting(id)
+    }
+}
+
 #[derive(Default)]
 pub struct Edits {
     pub(crate) log: Mutex<Vec<UndoEntry>>,
@@ -140,6 +166,34 @@ pub struct Edits {
 }
 
 impl Edits {
+    pub(crate) async fn ensure_target(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+        owner: EditOwner<'_>,
+    ) -> EditResult<()> {
+        self.ensure_owner(pool, owner).await?;
+        let locked: Option<i64> =
+            sqlx::query_scalar("SELECT locked FROM sessions WHERE id = ? AND deleted_at IS NULL")
+                .bind(session_id)
+                .fetch_optional(pool)
+                .await?;
+        match locked {
+            Some(0) => Ok(()),
+            Some(_) => Err(EditError::Locked),
+            None => Err(EditError::NoMeeting),
+        }
+    }
+    pub(crate) async fn ensure_owner(
+        &self,
+        pool: &SqlitePool,
+        owner: EditOwner<'_>,
+    ) -> EditResult<()> {
+        match owner {
+            EditOwner::Meeting(id) => self.ensure_current(pool, id).await,
+            EditOwner::Library => Ok(()),
+        }
+    }
     pub(crate) fn following(recording: RecordingSource) -> Self {
         Self {
             log: Mutex::default(),
@@ -451,15 +505,15 @@ async fn write_note(
     Ok(())
 }
 
-pub(crate) fn new_edit(
-    session_id: &str,
+pub(crate) fn new_edit<'a>(
+    owner: impl Into<EditOwner<'a>>,
     kind: EditKind,
     summary: String,
     task_id: Option<String>,
 ) -> CoachEdit {
     CoachEdit {
         id: uuid::Uuid::new_v4().to_string(),
-        session_id: session_id.to_string(),
+        session_id: owner.into().session_id().map(str::to_string),
         kind,
         summary,
         task_id,
@@ -477,6 +531,7 @@ pub(crate) fn preview(text: &str) -> String {
 }
 
 impl Edits {
+    #[cfg(test)]
     pub async fn append_note(
         &self,
         pool: &SqlitePool,
@@ -484,8 +539,26 @@ impl Edits {
         lines: &[String],
         style: NoteStyle,
     ) -> EditResult<CoachEdit> {
+        self.append_note_owned(
+            pool,
+            session_id,
+            lines,
+            style,
+            EditOwner::Meeting(session_id),
+        )
+        .await
+    }
+
+    pub(crate) async fn append_note_owned(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+        lines: &[String],
+        style: NoteStyle,
+        owner: EditOwner<'_>,
+    ) -> EditResult<CoachEdit> {
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_target(pool, session_id, owner).await?;
         let mut tx = pool.begin().await?;
         let before = read_note(&mut tx, session_id).await?;
         let mut doc = parse_doc(before.as_ref())?;
@@ -495,13 +568,14 @@ impl Edits {
             [only] => format!("Added to the notes: {}", preview(only)),
             many => format!("Added {} lines to the notes", many.len()),
         };
-        let edit = new_edit(session_id, EditKind::Note, summary, None);
+        let edit = new_edit(owner, EditKind::Note, summary, None);
         let now = now(&mut tx).await?;
         write_note(&mut tx, session_id, before.as_ref(), &doc, &edit.id, &now).await?;
         tx.commit().await?;
         log.push(UndoEntry {
             edit: edit.clone(),
             change: Change::Note(NoteUndo {
+                session_id: session_id.to_string(),
                 note_before: before,
                 note_after: doc,
                 item_id: None,
@@ -512,21 +586,33 @@ impl Edits {
         Ok(edit)
     }
 
+    #[cfg(test)]
     pub async fn add_action_item(
         &self,
         pool: &SqlitePool,
         session_id: &str,
         text: &str,
     ) -> EditResult<CoachEdit> {
+        self.add_action_item_owned(pool, session_id, text, EditOwner::Meeting(session_id))
+            .await
+    }
+
+    pub(crate) async fn add_action_item_owned(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+        text: &str,
+        owner: EditOwner<'_>,
+    ) -> EditResult<CoachEdit> {
         let text = text.trim();
         if text.is_empty() {
             return Err(EditError::Invalid("an action item needs text".into()));
         }
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_target(pool, session_id, owner).await?;
         let task_id = uuid::Uuid::new_v4().to_string();
         let edit = new_edit(
-            session_id,
+            owner,
             EditKind::AddActionItem,
             format!("Added action item: {}", preview(text)),
             Some(task_id.clone()),
@@ -570,6 +656,7 @@ impl Edits {
         log.push(UndoEntry {
             edit: edit.clone(),
             change: Change::Note(NoteUndo {
+                session_id: session_id.to_string(),
                 note_before: before,
                 note_after: doc,
                 item_id: Some(task_id),
@@ -580,14 +667,26 @@ impl Edits {
         Ok(edit)
     }
 
+    #[cfg(test)]
     pub async fn complete_action_item(
         &self,
         pool: &SqlitePool,
         session_id: &str,
         task_id: &str,
     ) -> EditResult<CoachEdit> {
+        self.complete_action_item_owned(pool, session_id, task_id, EditOwner::Meeting(session_id))
+            .await
+    }
+
+    pub(crate) async fn complete_action_item_owned(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+        task_id: &str,
+        owner: EditOwner<'_>,
+    ) -> EditResult<CoachEdit> {
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_target(pool, session_id, owner).await?;
         let mut tx = pool.begin().await?;
         let before = read_note(&mut tx, session_id).await?;
         let mut doc = parse_doc(before.as_ref())?;
@@ -595,7 +694,7 @@ impl Edits {
             .ok_or_else(|| EditError::UnknownTask(task_id.into()))?;
         let item_before = read_item(&mut tx, session_id, task_id).await?;
         let edit = new_edit(
-            session_id,
+            owner,
             EditKind::CompleteActionItem,
             format!("Marked done: {}", preview(&text)),
             Some(task_id.to_string()),
@@ -626,6 +725,7 @@ impl Edits {
         log.push(UndoEntry {
             edit: edit.clone(),
             change: Change::Note(NoteUndo {
+                session_id: session_id.to_string(),
                 note_before: before,
                 note_after: doc,
                 item_id: Some(task_id.to_string()),
@@ -636,6 +736,7 @@ impl Edits {
         Ok(edit)
     }
 
+    #[cfg(test)]
     pub async fn assign_transcript_speaker(
         &self,
         pool: &SqlitePool,
@@ -644,13 +745,33 @@ impl Edits {
         speaker_index: i64,
         human_id: &str,
     ) -> EditResult<CoachEdit> {
+        self.assign_transcript_speaker_owned(
+            pool,
+            session_id,
+            channel,
+            speaker_index,
+            human_id,
+            EditOwner::Meeting(session_id),
+        )
+        .await
+    }
+
+    pub(crate) async fn assign_transcript_speaker_owned(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+        channel: i64,
+        speaker_index: i64,
+        human_id: &str,
+        owner: EditOwner<'_>,
+    ) -> EditResult<CoachEdit> {
         if channel < 0 || speaker_index < 0 {
             return Err(EditError::Invalid(
                 "speaker coordinates must be non-negative".into(),
             ));
         }
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_target(pool, session_id, owner).await?;
         let mut tx = pool.begin().await?;
         let row = sqlx::query(
             "SELECT id, words_json, speaker_hints_json FROM transcripts
@@ -773,12 +894,13 @@ impl Edits {
             .bind(human_id)
             .fetch_one(&mut *tx)
             .await?;
-        let edit = new_edit(
-            session_id,
+        let mut edit = new_edit(
+            owner,
             EditKind::AssignSpeaker,
             format!("Assigned Speaker {} to {}", speaker_index + 1, name),
             None,
         );
+        edit.target_id = Some(session_id.to_string());
         let result = sqlx::query(
             "UPDATE transcripts SET speaker_hints_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
              WHERE id = ? AND session_id = ? AND speaker_hints_json = ? AND deleted_at IS NULL",
@@ -790,6 +912,7 @@ impl Edits {
         log.push(UndoEntry {
             edit: edit.clone(),
             change: Change::Transcript(TranscriptUndo {
+                session_id: session_id.to_string(),
                 transcript_id,
                 field: TranscriptField::SpeakerHints,
                 before: hints_before,
@@ -799,6 +922,7 @@ impl Edits {
         Ok(edit)
     }
 
+    #[cfg(test)]
     pub async fn correct_transcript_words(
         &self,
         pool: &SqlitePool,
@@ -806,6 +930,26 @@ impl Edits {
         word_ids: &[String],
         expected_text: &str,
         replacement: &str,
+    ) -> EditResult<CoachEdit> {
+        self.correct_transcript_words_owned(
+            pool,
+            session_id,
+            word_ids,
+            expected_text,
+            replacement,
+            EditOwner::Meeting(session_id),
+        )
+        .await
+    }
+
+    pub(crate) async fn correct_transcript_words_owned(
+        &self,
+        pool: &SqlitePool,
+        session_id: &str,
+        word_ids: &[String],
+        expected_text: &str,
+        replacement: &str,
+        owner: EditOwner<'_>,
     ) -> EditResult<CoachEdit> {
         let expected = expected_text.trim();
         let replacement = replacement.trim();
@@ -824,7 +968,7 @@ impl Edits {
             ));
         }
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_target(pool, session_id, owner).await?;
         let mut tx = pool.begin().await?;
         let row = sqlx::query(
             "SELECT id, words_json, ended_at_ms FROM transcripts
@@ -873,7 +1017,7 @@ impl Edits {
         }
         let words_after = serde_json::to_string(&words)?;
         let edit = new_edit(
-            session_id,
+            owner,
             EditKind::CorrectTranscript,
             format!("Corrected transcript: {}", preview(expected)),
             None,
@@ -889,6 +1033,7 @@ impl Edits {
         log.push(UndoEntry {
             edit: edit.clone(),
             change: Change::Transcript(TranscriptUndo {
+                session_id: session_id.to_string(),
                 transcript_id,
                 field: TranscriptField::Words,
                 before: words_before,
@@ -898,25 +1043,35 @@ impl Edits {
         Ok(edit)
     }
 
-    pub async fn undo_last(
+    pub async fn undo_last<'a>(
         &self,
         pool: &SqlitePool,
-        session_id: &str,
+        owner: impl Into<EditOwner<'a>>,
         edit_id: Option<&str>,
     ) -> EditResult<CoachEdit> {
+        let owner = owner.into();
         let mut log = self.log.lock().await;
-        self.ensure_current(pool, session_id).await?;
+        self.ensure_owner(pool, owner).await?;
         let index = log
             .iter()
-            .rposition(|entry| entry.edit.session_id == session_id)
+            .rposition(|entry| entry.edit.session_id.as_deref() == owner.session_id())
             .ok_or(EditError::NothingToUndo)?;
         if edit_id.is_some_and(|id| id != log[index].edit.id) {
             return Err(EditError::NotLatest);
         }
         let entry = &log[index];
+        match &entry.change {
+            Change::Note(note) => self.ensure_target(pool, &note.session_id, owner).await?,
+            Change::Transcript(change) => {
+                self.ensure_target(pool, &change.session_id, owner).await?
+            }
+            Change::Library(_) => {}
+        }
         let mut tx = pool.begin().await?;
         match &entry.change {
-            Change::Note(note) => undo_note(&mut tx, session_id, entry.edit.kind, note).await?,
+            Change::Note(note) => {
+                undo_note(&mut tx, &note.session_id, entry.edit.kind, note).await?
+            }
             Change::Transcript(change) => undo_transcript(&mut tx, change).await?,
             Change::Library(change) => crate::library::undo(&mut tx, change).await?,
         }
@@ -1514,7 +1669,7 @@ mod tests {
             matches!(zombie, Err(EditError::NotCurrentMeeting)),
             "{zombie:?}"
         );
-        assert_eq!(stopped.unwrap().session_id, MEETING);
+        assert_eq!(stopped.unwrap().session_id.as_deref(), Some(MEETING));
         assert_eq!(note(&pool, OTHER).await, zombie_before);
     }
 

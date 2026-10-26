@@ -188,6 +188,10 @@ msgstr "Access token"
 msgid "Accessibility"
 msgstr "Accessibility"
 
+#: src/ai/assistant/index.tsx
+msgid "Across your meetings"
+msgstr "Across your meetings"
+
 #: src/shared/open-note-dialog.tsx
 msgid "Actions"
 msgstr "Actions"
@@ -317,6 +321,10 @@ msgstr "Agenda"
 #: src/sidebar/settings-nav-groups.ts
 msgid "AI"
 msgstr "AI"
+
+#: src/ai/assistant/index.tsx
+msgid "AI assistant"
+msgstr "AI assistant"
 
 #: src/session/components/note-input/enhanced/config-error.tsx
 msgid "AI isn’t available"
@@ -759,6 +767,10 @@ msgstr "Clone"
 #: src/session/components/note-input/search/bar.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/ai/assistant/index.tsx
+msgid "Close assistant"
+msgstr "Close assistant"
 
 #: src/changelog/index.tsx
 msgid "Close changelog"
@@ -2172,6 +2184,10 @@ msgstr "Open {0} settings"
 msgid "Open AI settings"
 msgstr "Open AI settings"
 
+#: src/ai/assistant/index.tsx
+msgid "Open assistant"
+msgstr "Open assistant"
+
 #: src/sidebar/timeline/index.tsx
 msgid "Open calendar"
 msgstr "Open calendar"
@@ -2236,6 +2252,10 @@ msgstr "Open the meeting link when a scheduled meeting begins."
 #: src/onboarding/transcription-readiness.tsx
 msgid "Open transcription settings"
 msgstr "Open transcription settings"
+
+#: src/ai/assistant/index.tsx
+msgid "Opening assistant…"
+msgstr "Opening assistant…"
 
 #. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
 #: src/onboarding/permissions.tsx
@@ -2339,6 +2359,10 @@ msgstr "Play a sound when transcription or summaries finish."
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 msgid "Play from here"
 msgstr "Play from here"
+
+#: src/ai/assistant/index.tsx
+msgid "Pop out"
+msgstr "Pop out"
 
 #: src/settings/general/meeting-settings.tsx
 msgid "Post recording disclosure in meeting chat"
@@ -2606,6 +2630,10 @@ msgstr "Reset to default format"
 #: src/settings/general/storage/export-location.tsx
 msgid "Reset to Downloads"
 msgstr "Reset to Downloads"
+
+#: src/ai/assistant/index.tsx
+msgid "Resize assistant"
+msgstr "Resize assistant"
 
 #: src/settings/general/notification.tsx
 msgid "Respect Do-Not-Disturb mode"
@@ -3600,6 +3628,10 @@ msgstr "Uses Cue's copy of Claude Code {minVersion}. Your Claude Code {version} 
 #: src/settings/claude/claude-code.tsx
 msgid "Uses your Claude Code {version}."
 msgstr "Uses your Claude Code {version}."
+
+#: src/ai/assistant/index.tsx
+msgid "Using the open note"
+msgstr "Using the open note"
 
 #: src/coach/nudges.tsx
 msgid "Vague promise"

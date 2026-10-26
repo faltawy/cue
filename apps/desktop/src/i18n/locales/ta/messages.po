@@ -188,6 +188,10 @@ msgstr ""
 msgid "Accessibility"
 msgstr ""
 
+#: src/ai/assistant/index.tsx
+msgid "Across your meetings"
+msgstr ""
+
 #: src/shared/open-note-dialog.tsx
 msgid "Actions"
 msgstr ""
@@ -316,6 +320,10 @@ msgstr ""
 #: src/settings/claude/index.tsx
 #: src/sidebar/settings-nav-groups.ts
 msgid "AI"
+msgstr ""
+
+#: src/ai/assistant/index.tsx
+msgid "AI assistant"
 msgstr ""
 
 #: src/session/components/note-input/enhanced/config-error.tsx
@@ -758,6 +766,10 @@ msgstr ""
 #: src/changelog/index.tsx
 #: src/session/components/note-input/search/bar.tsx
 msgid "Close"
+msgstr ""
+
+#: src/ai/assistant/index.tsx
+msgid "Close assistant"
 msgstr ""
 
 #: src/changelog/index.tsx
@@ -2172,6 +2184,10 @@ msgstr ""
 msgid "Open AI settings"
 msgstr ""
 
+#: src/ai/assistant/index.tsx
+msgid "Open assistant"
+msgstr ""
+
 #: src/sidebar/timeline/index.tsx
 msgid "Open calendar"
 msgstr ""
@@ -2235,6 +2251,10 @@ msgstr ""
 
 #: src/onboarding/transcription-readiness.tsx
 msgid "Open transcription settings"
+msgstr ""
+
+#: src/ai/assistant/index.tsx
+msgid "Opening assistant…"
 msgstr ""
 
 #. placeholder {0}: accessibilityGuidance.paneTitle ?? "Privacy"
@@ -2338,6 +2358,10 @@ msgstr ""
 
 #: src/session/components/note-input/transcript/renderer/selection-menu.tsx
 msgid "Play from here"
+msgstr ""
+
+#: src/ai/assistant/index.tsx
+msgid "Pop out"
 msgstr ""
 
 #: src/settings/general/meeting-settings.tsx
@@ -2605,6 +2629,10 @@ msgstr ""
 
 #: src/settings/general/storage/export-location.tsx
 msgid "Reset to Downloads"
+msgstr ""
+
+#: src/ai/assistant/index.tsx
+msgid "Resize assistant"
 msgstr ""
 
 #: src/settings/general/notification.tsx
@@ -3599,6 +3627,10 @@ msgstr ""
 
 #: src/settings/claude/claude-code.tsx
 msgid "Uses your Claude Code {version}."
+msgstr ""
+
+#: src/ai/assistant/index.tsx
+msgid "Using the open note"
 msgstr ""
 
 #: src/coach/nudges.tsx

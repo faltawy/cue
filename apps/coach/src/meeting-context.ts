@@ -1,7 +1,12 @@
 import { z } from "zod";
 
+import {
+  type CoachEvent,
+  CoachEventType,
+  type TurnKind,
+} from "@anlg/assistant/protocol";
+
 import { askContent, type AskContent, type AskImage, thumbsOf } from "./images";
-import { type CoachEvent, CoachEventType, type TurnKind } from "./protocol";
 
 const meetingRefSchema = z.object({ id: z.string(), title: z.string() });
 

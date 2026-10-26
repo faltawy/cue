@@ -1,7 +1,12 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 
-import { type AppBridge, type CoachEdit, CoachEditKind } from "./app-bridge";
+import {
+  type AppBridge,
+  type CoachEdit,
+  CoachEditKind,
+} from "@anlg/assistant/app-bridge";
+
 import { meetingTools } from "./meeting-server";
 import { type Word } from "./transcript";
 
@@ -21,7 +26,7 @@ const word = (
 function db() {
   const database = new Database(":memory:");
   database.exec(`
-    CREATE TABLE sessions (id TEXT PRIMARY KEY, title TEXT, started_at TEXT, ended_at TEXT);
+    CREATE TABLE sessions (id TEXT PRIMARY KEY, title TEXT, started_at TEXT, ended_at TEXT, locked INTEGER DEFAULT 0, deleted_at TEXT);
     CREATE TABLE transcripts (
       id TEXT PRIMARY KEY, session_id TEXT, owner_user_id TEXT DEFAULT '', words_json TEXT,
       speaker_hints_json TEXT, started_at_ms INTEGER, ended_at_ms INTEGER, deleted_at TEXT
@@ -38,7 +43,9 @@ function db() {
 describe("transcript edit context tool", () => {
   test("is read-only and returns stable word references for a finalized transcript", async () => {
     const database = db();
-    database.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', NULL, NULL)`);
+    database.run(
+      `INSERT INTO sessions (id, title, started_at, ended_at) VALUES ('s1', 'Kickoff', NULL, NULL)`,
+    );
     database.run(
       `INSERT INTO transcripts VALUES ('t1', 's1', 'me', ?, '[]', 0, 1000, NULL)`,
       [JSON.stringify([word("w1", " Hello", 0)])],
@@ -106,7 +113,9 @@ describe("explicit transcript edit tools", () => {
 
   test("names only a unique current participant and refuses ambiguous or absent people", async () => {
     const database = db();
-    database.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', NULL, NULL)`);
+    database.run(
+      `INSERT INTO sessions (id, title, started_at, ended_at) VALUES ('s1', 'Kickoff', NULL, NULL)`,
+    );
     database.run(
       `INSERT INTO humans (id, name, email) VALUES ('sara-1', 'Sara', ''), ('sara-2', 'Sara', ''), ('omar', 'Omar', '')`,
     );
@@ -154,7 +163,9 @@ describe("explicit transcript edit tools", () => {
 
   test("correction refuses live words and writes only from finalized transcript context", async () => {
     const database = db();
-    database.run(`INSERT INTO sessions VALUES ('s1', 'Kickoff', NULL, NULL)`);
+    database.run(
+      `INSERT INTO sessions (id, title, started_at, ended_at) VALUES ('s1', 'Kickoff', NULL, NULL)`,
+    );
     database.run(
       `INSERT INTO transcripts (id, session_id, owner_user_id, words_json, speaker_hints_json, started_at_ms, ended_at_ms, deleted_at) VALUES
       ('t1', 's1', 'me', ?, '[]', 1, NULL, NULL)`,

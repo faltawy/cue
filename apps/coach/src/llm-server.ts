@@ -1,10 +1,11 @@
 import { parseArgs } from "node:util";
 
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import { createAccess, randomToken, secure, TOKEN_ENV } from "./access";
 import { CLAUDE_ARGS, claudeCodeFromArgs } from "./claude-code";
 import { codexCodeFromArgs } from "./codex-code";
 import { llmResponse } from "./llm";
-import { CoachProvider } from "./provider";
 
 const { values } = parseArgs({
   args: process.argv.slice(2).filter((arg) => arg !== "--llm-only"),

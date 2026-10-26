@@ -37,6 +37,23 @@ final class NotificationManagerTests: XCTestCase {
     super.tearDown()
   }
 
+  func testCommandLineSymlinkUsesTerminalIconInsteadOfMissingFileIcon() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let command = directory.appendingPathComponent("claude")
+    try FileManager.default.createSymbolicLink(
+      at: command, withDestinationURL: URL(fileURLWithPath: "/bin/sh"))
+    let expected = try XCTUnwrap(
+      NSImage(systemSymbolName: "terminal", accessibilityDescription: nil))
+    let resolved = try XCTUnwrap(manager.resolveNotificationPathIcon(command.path))
+    XCTAssertEqual(resolved.tiffRepresentation, expected.tiffRepresentation)
+    let image = directory.appendingPathComponent("icon.tiff")
+    let imageData = try XCTUnwrap(expected.tiffRepresentation)
+    try imageData.write(to: image)
+    XCTAssertNotNil(manager.resolveNotificationPathIcon(image.path))
+  }
+
   func testCapacityEvictionShrinksBookkeepingSynchronously() {
     let notifications = (0..<manager.maxNotifications).map { makeNotification(index: $0) }
     for notification in notifications {

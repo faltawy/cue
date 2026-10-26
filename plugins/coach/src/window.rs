@@ -3,6 +3,26 @@ use tauri::{AppHandle, LogicalPosition, Manager, WebviewUrl, WebviewWindow, Webv
 use crate::{Endpoint, Error, Result, access};
 
 pub const LABEL: &str = "coach";
+const ASSISTANT_LABEL: &str = "assistant";
+#[derive(Clone, Copy, PartialEq)]
+enum WindowKind {
+    Coach,
+    Assistant,
+}
+impl WindowKind {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Coach => LABEL,
+            Self::Assistant => ASSISTANT_LABEL,
+        }
+    }
+    fn title(self) -> &'static str {
+        match self {
+            Self::Coach => "Coach",
+            Self::Assistant => "Assistant",
+        }
+    }
+}
 const WIDTH: f64 = 440.0;
 const HEIGHT: f64 = 680.0;
 const MAX_WIDTH: f64 = 640.0;
@@ -45,7 +65,7 @@ pub fn reload(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
 }
 
 pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
-    let window = coach_window(app, endpoint)?;
+    let window = conversation_window(app, endpoint, WindowKind::Coach)?;
     window.show()?;
     window.set_focus()?;
     Ok(())
@@ -54,23 +74,52 @@ pub fn show(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
 /// Shows the coach without taking focus from the app in front, typically the meeting. An open
 /// coach stays as it is: it moves to the new meeting on its own.
 pub fn show_beside(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
-    let window = coach_window(app, endpoint)?;
+    let window = conversation_window(app, endpoint, WindowKind::Coach)?;
     if window.is_visible()? {
         return Ok(());
     }
     order_front_without_focus(&window)
 }
 
-fn coach_window(app: &AppHandle, endpoint: &Endpoint) -> Result<WebviewWindow> {
-    if let Some(window) = app.get_webview_window(LABEL) {
+pub fn show_assistant(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
+    let window = conversation_window(app, endpoint, WindowKind::Assistant)?;
+    window.show()?;
+    window.set_focus()?;
+    Ok(())
+}
+
+pub fn reload_assistant(app: &AppHandle, endpoint: &Endpoint) -> Result<()> {
+    if let Some(window) = app.get_webview_window(ASSISTANT_LABEL) {
+        window.navigate(assistant_login(endpoint)?)?;
+    }
+    Ok(())
+}
+
+fn assistant_login(endpoint: &Endpoint) -> Result<tauri::Url> {
+    let mut url = login(endpoint)?;
+    url.query_pairs_mut().append_pair("next", "/?scope=library");
+    Ok(url)
+}
+
+fn conversation_window(
+    app: &AppHandle,
+    endpoint: &Endpoint,
+    kind: WindowKind,
+) -> Result<WebviewWindow> {
+    let login_url = if kind == WindowKind::Assistant {
+        assistant_login(endpoint)?
+    } else {
+        login(endpoint)?
+    };
+    if let Some(window) = app.get_webview_window(kind.label()) {
         if window.url()?.origin() != parse(&endpoint.url)?.origin() {
-            window.navigate(login(endpoint)?)?;
+            window.navigate(login_url)?;
         }
         return Ok(window);
     }
 
-    let window = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::External(login(endpoint)?))
-        .title("Coach")
+    let window = WebviewWindowBuilder::new(app, kind.label(), WebviewUrl::External(login_url))
+        .title(kind.title())
         .inner_size(WIDTH, HEIGHT)
         .min_inner_size(360.0, 420.0)
         .max_inner_size(MAX_WIDTH, MAX_HEIGHT)
@@ -90,7 +139,7 @@ fn coach_window(app: &AppHandle, endpoint: &Endpoint) -> Result<WebviewWindow> {
             api.prevent_close();
             let _ = hide_on_close.hide();
         }
-        tauri::WindowEvent::Focused(true) => {
+        tauri::WindowEvent::Focused(true) if kind == WindowKind::Coach => {
             crate::nudges_seen(&focus_app);
             if let Err(error) = tauri_specta::Event::emit(&crate::CoachFocused {}, &focus_app) {
                 tracing::warn!(%error, "coach_focus_emit_failed");

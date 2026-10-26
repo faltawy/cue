@@ -3,7 +3,8 @@
 Cue is a macOS meeting notepad with a live coach, forked from Anarlog. It is a pnpm and Rust workspace. Read the nearest `AGENTS.md` before changing a component.
 
 - `apps/desktop/`: Tauri 2 with React, TypeScript, Vite, and Tailwind. Zustand owns UI state; TanStack Query/Form own queries, mutations, and forms. The Rust host is `apps/desktop/src-tauri` (package `desktop`).
-- `apps/coach/`: the coach, a Bun sidecar outside the pnpm workspace (own `bun.lock`). `bun run build:sidecar` compiles it into `apps/desktop/src-tauri/binaries/`. The app ships no Claude Code: the coach runs the person's own when it is at least the SDK's version, else downloads Cue's integrity-pinned copy into the app's cache on first use (`apps/coach/src/claude-code.ts`; `apps/coach/scripts/claude-code-bump.ts` moves the pins). `plugins/coach/` launches it and owns its settings.
+- `packages/assistant/`: shared browser-safe assistant UI, contracts, and injectable host transport for the desktop panel and floating windows.
+- `apps/coach/`: the coach, a Bun sidecar in the pnpm workspace. `bun run build:sidecar` compiles it into `apps/desktop/src-tauri/binaries/`. The app ships no Claude Code: the coach runs the person's own when it is at least the SDK's version, else downloads Cue's integrity-pinned copy into the app's cache on first use (`apps/coach/src/claude-code.ts`; `apps/coach/scripts/claude-code-bump.ts` moves the pins). `plugins/coach/` launches it and owns its settings.
 - `crates/db-app/`: canonical SQLite schema and migrations. `db-core` owns runtime initialization, `db-migrate` owns migration execution, and `plugins/db/` exposes the transport. React consumes these through `packages/db-runtime`, `packages/db-react`, and `packages/db-tauri`; `packages/db` is the Drizzle adapter.
 - `docs/design/`: the Cue design spec (`cue.md`) and its audit of the app.
 
@@ -13,7 +14,7 @@ Sessions are the core entity: all notes are backed by sessions. ProseMirror powe
 
 ## Commands
 
-- Install: `pnpm install --frozen-lockfile` and `cd apps/coach && bun install --frozen-lockfile`. Match Node 22, `package.json#packageManager`, and `rust-toolchain.toml`; keep lockfiles in sync with intentional dependency changes.
+- Install: `pnpm install --frozen-lockfile`. Match Bun 1.3.14, Node 22, `package.json#packageManager`, and `rust-toolchain.toml`; keep lockfiles in sync with intentional dependency changes.
 - Format: `pnpm exec dprint fmt --allow-no-files <changed-files>`; check: `pnpm exec dprint check --allow-no-files <changed-files>`.
 - Build shared UI before desktop checks: `pnpm -F @anlg/ui build`.
 - Typecheck (TS): `pnpm -F @anlg/desktop typecheck`; coach: `cd apps/coach && bun run typecheck`.

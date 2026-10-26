@@ -1,7 +1,8 @@
 import { type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "bun:test";
 
-import { CoachEventType } from "./protocol";
+import { CoachEventType } from "@anlg/assistant/protocol";
+
 import { claudeMessages } from "./runtime-message";
 import { OUTPUT_MAX, toolDetail, toolLabels, TurnTracker } from "./turn-events";
 

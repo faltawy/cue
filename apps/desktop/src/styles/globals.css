@@ -1,3 +1,4 @@
+@import "@anlg/assistant/styles.css";
 @import "@anlg/ui/globals.css";
 @import "./scrollbar.css" layer(base);
 @import "./scrollbar.utilities.css";
@@ -22,6 +23,7 @@
   }
 }
 
+@source "../../../../packages/assistant/src";
 @source "../../node_modules/streamdown/dist/index.js";
 @source "../../../../packages/changelog/src";
 @source "../../../../packages/editor/src";
@@ -246,4 +248,11 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.cue-assistant {
+  --surface: var(--background);
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  font-size: 14px;
+  line-height: 1.55;
 }

@@ -3,21 +3,81 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import {
+  ProjectSource,
+  type AppBridge,
+  appBridgeFromEnv,
+  type CoachEdit,
+  type MeetingProject,
+} from "@anlg/assistant/app-bridge";
+import {
+  BlockKind,
+  actionItemText,
+  blockItemCount,
+} from "@anlg/assistant/blocks";
+import {
+  MeetingIntent,
+  DEFAULT_COACHING,
+  meetingCoachingSchema,
+  meetingIntentSchema,
+  intentGuidance,
+} from "@anlg/assistant/coaching-preferences";
+import {
+  CoachErrorKind,
+  coachError,
+  GAVE_UP,
+  StderrTail,
+  withSignIn,
+} from "@anlg/assistant/errors";
+import {
+  StripState,
+  isAnswering,
+  type MeetingPointer,
+  meetingChange,
+  meetingPointer,
+  stripView,
+  type WrapUpActions,
+  wrapUpActions,
+} from "@anlg/assistant/meeting-state";
+import {
+  evidenceMomentId,
+  evidenceTargetSchema,
+  FeedbackReason,
+  type CoachFeedback,
+  type EvidenceTarget,
+  type Moment,
+  MoveTag,
+  moveText,
+} from "@anlg/assistant/move";
+import { NO_SPEND, spendOf } from "@anlg/assistant/pricing";
+import {
+  ResetReason,
+  WrapUpState,
+  CoachEventType,
+  SetupState,
+  addedBlockItem,
+  appendHistory,
+  type BlockItemRef,
+  type CoachEvent,
+  dropSilentNudge,
+  findBlock,
+  type ProjectView,
+  type SetupView,
+  type StatusEvent,
+  TurnKind,
+  type WrapUpView,
+} from "@anlg/assistant/protocol";
+import { CoachProvider, parseProvider } from "@anlg/assistant/provider";
+import { QuestionBroker } from "@anlg/assistant/questions";
+import { AssistantScope } from "@anlg/assistant/scope";
+
+import {
   createAccess,
   loginUrl,
   randomToken,
   TOKEN_ENV,
   withAccess,
 } from "./access";
-import {
-  ProjectSource,
-  type AppBridge,
-  appBridgeFromEnv,
-  type CoachEdit,
-  type MeetingProject,
-} from "./app-bridge";
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
-import { BlockKind, actionItemText, blockItemCount } from "./blocks";
 import {
   ResumeReason,
   type ChatStore,
@@ -40,23 +100,9 @@ import {
 import { CATCH_UP_WINDOW_MS, catchUpPrompt } from "./checkin";
 import { claudeAccount } from "./claude-account";
 import { claudeCodeFromArgs } from "./claude-code";
-import {
-  MeetingIntent,
-  DEFAULT_COACHING,
-  meetingCoachingSchema,
-  meetingIntentSchema,
-  intentGuidance,
-} from "./coaching-preferences";
 import { codexAccount, signInCodex } from "./codex-account";
 import { codexCodeFromArgs } from "./codex-code";
 import { dictationHandler } from "./dictation";
-import {
-  CoachErrorKind,
-  coachError,
-  GAVE_UP,
-  StderrTail,
-  withSignIn,
-} from "./errors";
 import { imageHeaders, resolveImageFile } from "./files";
 import { type AskImage, parseAskImages } from "./images";
 import { createInterrupter, type Interrupter } from "./interrupt";
@@ -67,26 +113,6 @@ import {
   userTurn,
 } from "./meeting-context";
 import {
-  StripState,
-  isAnswering,
-  type MeetingPointer,
-  meetingChange,
-  meetingPointer,
-  stripView,
-  type WrapUpActions,
-  wrapUpActions,
-} from "./meeting-state";
-import {
-  evidenceMomentId,
-  evidenceTargetSchema,
-  FeedbackReason,
-  type CoachFeedback,
-  type EvidenceTarget,
-  type Moment,
-  MoveTag,
-  moveText,
-} from "./move";
-import {
   nudgeLabel,
   nudgeNote,
   rememberNote,
@@ -94,7 +120,6 @@ import {
   withNudgeNotes,
 } from "./nudge";
 import { deliverNudge } from "./nudge-delivery";
-import { NO_SPEND, spendOf } from "./pricing";
 import {
   SpendSource,
   NudgePath,
@@ -105,25 +130,6 @@ import {
   Proactive,
   type ProactiveView,
 } from "./proactive";
-import {
-  ResetReason,
-  WrapUpState,
-  CoachEventType,
-  SetupState,
-  addedBlockItem,
-  appendHistory,
-  type BlockItemRef,
-  type CoachEvent,
-  dropSilentNudge,
-  findBlock,
-  type ProjectView,
-  type SetupView,
-  type StatusEvent,
-  TurnKind,
-  type WrapUpView,
-} from "./protocol";
-import { CoachProvider, parseProvider } from "./provider";
-import { QuestionBroker } from "./questions";
 import { RuntimeMessageType, type RuntimeMessage } from "./runtime-message";
 import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
@@ -158,9 +164,14 @@ const { values } = parseArgs({
       default: String(PROACTIVE_DEFAULTS.capUsd),
     },
     state: { type: "string" },
+    scope: { type: "string", default: AssistantScope.Meeting },
     "exit-with-stdin": { type: "boolean", default: false },
   },
 });
+
+const scope = z.enum(AssistantScope).parse(values.scope);
+const library = scope === AssistantScope.Library;
+const LIBRARY_CHAT = "cue:library";
 
 const nudgeLimit = Number(values["nudge-limit"]);
 if (!Number.isFinite(nudgeLimit) || nudgeLimit <= 0) {
@@ -170,7 +181,7 @@ if (!Number.isFinite(nudgeLimit) || nudgeLimit <= 0) {
 }
 const proactiveConfig = {
   ...PROACTIVE_DEFAULTS,
-  enabled: !values["no-nudges"],
+  enabled: !library && !values["no-nudges"],
   capUsd: nudgeLimit,
 };
 const TRIAGE_TIMEOUT_MS = 30_000;
@@ -183,7 +194,7 @@ const coachFeedbackSchema = z.strictObject({
 });
 const CONTEXT_PEOPLE_MAX = 8;
 const options = await coachOptionsFromArgs(values);
-const bridge = appBridgeFromEnv(process.env);
+const bridge = appBridgeFromEnv(process.env, scope);
 const selectedProvider = parseProvider(values.provider);
 const selected = {
   provider: selectedProvider,
@@ -203,7 +214,11 @@ let provider = selected.provider;
 let model = selected.model;
 const { db } = options;
 const stateFile =
-  values.state ?? path.join(path.dirname(values.db), "coach-chats.json");
+  values.state ??
+  path.join(
+    path.dirname(values.db),
+    library ? "assistant-chats.json" : "coach-chats.json",
+  );
 
 const noProject = values["no-project"];
 
@@ -222,6 +237,7 @@ let tracker = new TurnTracker();
 let interrupter: Interrupter | null = null;
 const stderr = new StderrTail();
 let chatSessionId: string | undefined;
+let libraryContext: string | undefined;
 let seen: MeetingSeen | undefined;
 let project = defaultProject;
 let attached: MeetingPointer | null = null;
@@ -230,7 +246,7 @@ let recordingUnknown = false;
 let wrapUp: WrapUpView | null = null;
 let wrapUpMeeting: { sessionId: string; transcriptId: string } | undefined;
 let wrapUpAbort: AbortController | null = null;
-const editSessions = new Map<string, string>();
+const editSessions = new Map<string, string | null>();
 const addingBlockItems = new Set<string>();
 
 let store: ChatStore = loadChats(stateFile);
@@ -369,9 +385,10 @@ function feed(next: CoachEvent) {
 function persistNow() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = null;
-  if (!chatSessionId) return;
+  const conversationId = library ? LIBRARY_CHAT : chatSessionId;
+  if (!conversationId) return;
   const before = store;
-  store = remember(store, chatSessionId, {
+  store = remember(store, conversationId, {
     runtimeSessionId: tracker.resumable,
     provider,
     model,
@@ -802,6 +819,7 @@ async function openChat(reason: OpenReason) {
     reason,
     store,
     meeting: attached,
+    conversationId: library ? LIBRARY_CHAT : undefined,
     project: nextProject.path,
     selected,
     current: {
@@ -842,6 +860,7 @@ async function openChat(reason: OpenReason) {
   checkSignIn();
   const session = startCoach({
     ...options,
+    scope,
     provider,
     model,
     codexHome,
@@ -849,7 +868,7 @@ async function openChat(reason: OpenReason) {
       ? { pathToCodexExecutable: runtimePath, connectors: {} }
       : { pathToClaudeCodeExecutable: runtimePath }),
     project: project.path,
-    meeting: () => sessionId,
+    meeting: () => (library ? libraryContext : sessionId),
     ...(bridge ? { edits: editHooks(bridge) } : {}),
     ...(plan.resume ? { resume: plan.resume } : {}),
     askUser: (id, asked, signal) => questions.ask(id, asked, signal),
@@ -953,6 +972,7 @@ function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
 }
 
 function readTranscript() {
+  if (library) return null;
   return readLiveTranscript(db, { sessionId: values.session, recording });
 }
 
@@ -1091,6 +1111,7 @@ setInterval(() => {
 }, 1_000);
 
 async function poll() {
+  if (library) return;
   await refreshRecording();
   const transcript = readTranscript();
   const event = transcriptEvent(transcript);
@@ -1270,7 +1291,22 @@ const server = Bun.serve({
           return conflict(
             "The coach is still answering. Stop it first, or wait a moment.",
           );
-        startTurn(coach, TurnKind.Ask, text, text, images.images);
+        if (library && "contextSessionId" in body) {
+          const id = body.contextSessionId;
+          if (
+            id !== null &&
+            (typeof id !== "string" || !readMeetingInfo(db, id))
+          )
+            return new Response("That note is no longer available.", {
+              status: 404,
+            });
+          libraryContext = typeof id === "string" ? id : undefined;
+        }
+        const prompt =
+          library && libraryContext
+            ? `[Current note context: ${libraryContext}. Title: ${meetingBasics(libraryContext).title}. Use only if relevant to this request.]\n${text}`
+            : text;
+        startTurn(coach, TurnKind.Ask, text, prompt, images.images);
         return new Response(null, { status: 204 });
       },
     },
@@ -1538,12 +1574,12 @@ const server = Bun.serve({
         const body = await jsonBody(request);
         const editId = typeof body.edit_id === "string" ? body.edit_id : "";
         const sessionId = editSessions.get(editId);
-        if (!bridge || !sessionId)
+        if (!bridge || sessionId === undefined)
           return new Response("That edit can no longer be undone here.", {
             status: 404,
           });
         return bridgeCall(async () => {
-          const edit = await bridge.undo(sessionId, editId);
+          const edit = await bridge.undo(sessionId ?? undefined, editId);
           feed({
             type: CoachEventType.Undone,
             id: edit.id,

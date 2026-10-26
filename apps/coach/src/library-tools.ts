@@ -1,7 +1,8 @@
 import { type Database } from "bun:sqlite";
 import { z } from "zod";
 
-import { type LibraryChange } from "./app-bridge";
+import { type LibraryChange } from "@anlg/assistant/app-bridge";
+
 import {
   ActionItemStatus,
   getMeeting,
@@ -116,7 +117,7 @@ const READ = { annotations: { readOnlyHint: true } };
 
 export function libraryTools(
   db: Database,
-  current: () => string,
+  current: () => string | undefined,
   edits?: MeetingEdits,
 ) {
   const reads = [

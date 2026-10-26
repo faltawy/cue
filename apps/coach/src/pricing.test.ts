@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { costUsd } from "./pricing";
+import { costUsd } from "@anlg/assistant/pricing";
 
 const usage = (fields: Partial<Parameters<typeof costUsd>[1]> = {}) => ({
   inputTokens: 0,

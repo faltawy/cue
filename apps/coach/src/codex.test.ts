@@ -6,6 +6,8 @@ import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
 
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import { codexAccount } from "./codex-account";
 import { CodexClient } from "./codex-client";
 import { CodexCode } from "./codex-code";
@@ -16,7 +18,6 @@ import {
 } from "./codex-session";
 import { codexFileTools } from "./codex-tools";
 import { LlmEventType, runLlm } from "./llm";
-import { CoachProvider } from "./provider";
 import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
 import { tool } from "./runtime-tool";
 import { startCoach } from "./session";

@@ -3,7 +3,8 @@ import { z } from "zod";
 import {
   MeetingIntent,
   meetingIntentSchema,
-} from "../src/coaching-preferences";
+} from "@anlg/assistant/coaching-preferences";
+
 import { detectHits, type Hit } from "../src/detect";
 import { NudgeDelivery } from "../src/nudge";
 import { monologueNudge, PROACTIVE_DEFAULTS } from "../src/proactive";

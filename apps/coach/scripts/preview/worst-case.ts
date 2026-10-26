@@ -1,9 +1,8 @@
-import { CoachEditKind, ProjectSource } from "../../src/app-bridge";
-import { BlockKind } from "../../src/blocks";
-import { CoachErrorKind } from "../../src/errors";
-import { StripState } from "../../src/meeting-state";
-import { type Move, MoveTag, MoveVerb } from "../../src/move";
-import { ProactiveState } from "../../src/proactive";
+import { CoachEditKind, ProjectSource } from "@anlg/assistant/app-bridge";
+import { BlockKind } from "@anlg/assistant/blocks";
+import { CoachErrorKind } from "@anlg/assistant/errors";
+import { StripState } from "@anlg/assistant/meeting-state";
+import { type Move, MoveTag, MoveVerb } from "@anlg/assistant/move";
 import {
   type CoachEvent,
   CoachEventType,
@@ -12,17 +11,19 @@ import {
   TurnKind,
   WrapUpState,
   type WrapUpView,
-} from "../../src/protocol";
-import { SourceKind } from "../../src/sources";
-import { type TalkStats } from "../../src/talk-time";
-import { screenshotThumb } from "../../src/ui/fixtures";
+} from "@anlg/assistant/protocol";
 import {
   ActionType,
   type CoachState,
   Connection,
   initialState,
   reduce,
-} from "../../src/ui/state";
+} from "@anlg/assistant/ui/state";
+
+import { ProactiveState } from "../../src/proactive";
+import { SourceKind } from "../../src/sources";
+import { type TalkStats } from "../../src/talk-time";
+import { screenshotThumb } from "../../src/ui/fixtures";
 
 // Dev-only fixtures for the preview's "Demo data / Worst case / Empty / One / Huge" toggle.
 // Every value is something a real meeting, model or project can produce; limits are noted where the

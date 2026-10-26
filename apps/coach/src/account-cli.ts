@@ -1,5 +1,7 @@
 import { parseArgs } from "node:util";
 
+import { CoachProvider, parseProvider } from "@anlg/assistant/provider";
+
 import { claudeAccount } from "./claude-account";
 import {
   CLAUDE_ARGS,
@@ -8,7 +10,6 @@ import {
 } from "./claude-code";
 import { codexAccount, signInCodex } from "./codex-account";
 import { codexCodeFromArgs } from "./codex-code";
-import { CoachProvider, parseProvider } from "./provider";
 import { signInCommand } from "./sign-in";
 
 const { values } = parseArgs({

@@ -2,8 +2,9 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "bun:test";
 
-import { DictationAction } from "../app-bridge";
-import { Composer } from "./components/composer";
+import { DictationAction } from "@anlg/assistant/app-bridge";
+import { Composer } from "@anlg/assistant/ui/components/composer";
+
 import { useDom } from "./dom-setup";
 import { status } from "./fixtures";
 

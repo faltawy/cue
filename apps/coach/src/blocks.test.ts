@@ -1,16 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { type CoachEdit, CoachEditKind } from "./app-bridge";
-import { actionItemText, type Block, BlockKind } from "./blocks";
-import { showTool } from "./meeting-server";
-import { MoveTag, MoveVerb } from "./move";
+import { type CoachEdit, CoachEditKind } from "@anlg/assistant/app-bridge";
+import { actionItemText, type Block, BlockKind } from "@anlg/assistant/blocks";
+import { MoveTag, MoveVerb } from "@anlg/assistant/move";
 import {
   addedBlockItem,
   appendHistory,
   type CoachEvent,
   CoachEventType,
   findBlock,
-} from "./protocol";
+} from "@anlg/assistant/protocol";
+
+import { showTool } from "./meeting-server";
 
 function show(input: unknown) {
   const shown: Block[] = [];

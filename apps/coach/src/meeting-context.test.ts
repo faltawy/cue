@@ -3,6 +3,8 @@ import { mkdtempSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+import { CoachEventType, TurnKind } from "@anlg/assistant/protocol";
+
 import {
   emptyStore,
   loadChats,
@@ -17,7 +19,6 @@ import {
   meetingUpdate,
   userTurn,
 } from "./meeting-context";
-import { CoachEventType, TurnKind } from "./protocol";
 
 const MINUTE = 60_000;
 const NOW = Date.parse("2026-10-20T15:00:00Z");

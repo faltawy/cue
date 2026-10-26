@@ -28,20 +28,36 @@ export function scoreCommand(label: string, query: string): number {
   return 1;
 }
 
-export function filterCommands(commands: readonly Command[], query: string): Command[] {
+export function filterCommands(
+  commands: readonly Command[],
+  query: string,
+): Command[] {
   return commands
-    .map((command, index) => ({ command, index, score: scoreCommand(command.label, query) }))
+    .map((command, index) => ({
+      command,
+      index,
+      score: scoreCommand(command.label, query),
+    }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map((entry) => entry.command);
 }
 
-export function Palette({ commands, onClose }: { commands: Command[]; onClose(): void }) {
+export function Palette({
+  commands,
+  onClose,
+}: {
+  commands: Command[];
+  onClose(): void;
+}) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const listId = useId();
-  const results = useMemo(() => filterCommands(commands, query), [commands, query]);
+  const results = useMemo(
+    () => filterCommands(commands, query),
+    [commands, query],
+  );
   const current = Math.min(active, Math.max(0, results.length - 1));
 
   useEffect(() => {
@@ -65,10 +81,13 @@ export function Palette({ commands, onClose }: { commands: Command[]; onClose():
         role="dialog"
         aria-modal="true"
         aria-label="Actions"
-        className="coach-enter w-full max-w-[420px] overflow-hidden rounded-lg border border-border bg-surface shadow-2xl"
+        className="coach-enter border-border bg-surface w-full max-w-[420px] overflow-hidden rounded-lg border shadow-2xl"
       >
-        <div className="flex items-center gap-2 border-b border-border px-3">
-          <Search aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+        <div className="border-border flex items-center gap-2 border-b px-3">
+          <Search
+            aria-hidden
+            className="text-muted-foreground size-4 shrink-0"
+          />
           <input
             ref={input}
             value={query}
@@ -79,10 +98,16 @@ export function Palette({ commands, onClose }: { commands: Command[]; onClose():
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
-                setActive((value) => (results.length === 0 ? 0 : (value + 1) % results.length));
+                setActive((value) =>
+                  results.length === 0 ? 0 : (value + 1) % results.length,
+                );
               } else if (event.key === "ArrowUp") {
                 event.preventDefault();
-                setActive((value) => (results.length === 0 ? 0 : (value - 1 + results.length) % results.length));
+                setActive((value) =>
+                  results.length === 0
+                    ? 0
+                    : (value - 1 + results.length) % results.length,
+                );
               } else if (event.key === "Enter") {
                 event.preventDefault();
                 run(results[current]);
@@ -96,13 +121,24 @@ export function Palette({ commands, onClose }: { commands: Command[]; onClose():
             role="combobox"
             aria-expanded="true"
             aria-controls={listId}
-            aria-activedescendant={results[current] ? `${listId}-${results[current].id}` : undefined}
-            className="h-11 min-w-0 flex-1 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground focus-visible:outline-none"
+            aria-activedescendant={
+              results[current] ? `${listId}-${results[current].id}` : undefined
+            }
+            className="placeholder:text-muted-foreground h-11 min-w-0 flex-1 bg-transparent text-[14px] outline-none focus-visible:outline-none"
           />
           <Kbd keys={["esc"]} />
         </div>
-        <ul id={listId} role="listbox" aria-label="Commands" className="coach-scroll max-h-[320px] overflow-y-auto p-1">
-          {results.length === 0 && <li className="px-3 py-6 text-center text-[13px] text-muted-foreground">No matching action.</li>}
+        <ul
+          id={listId}
+          role="listbox"
+          aria-label="Commands"
+          className="coach-scroll max-h-[320px] overflow-y-auto p-1"
+        >
+          {results.length === 0 && (
+            <li className="text-muted-foreground px-3 py-6 text-center text-[13px]">
+              No matching action.
+            </li>
+          )}
           {results.map((command, index) => (
             <li
               key={command.id}
@@ -118,7 +154,11 @@ export function Palette({ commands, onClose }: { commands: Command[]; onClose():
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{command.label}</span>
-                {command.hint && <span className="block truncate text-[11.5px] text-muted-foreground">{command.hint}</span>}
+                {command.hint && (
+                  <span className="text-muted-foreground block truncate text-[11.5px]">
+                    {command.hint}
+                  </span>
+                )}
               </span>
               {command.shortcut && <Kbd keys={command.shortcut} />}
             </li>

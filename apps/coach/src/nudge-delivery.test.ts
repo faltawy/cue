@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test";
 
-import { type Move, MoveTag, MoveVerb } from "./move";
+import { type Move, MoveTag, MoveVerb } from "@anlg/assistant/move";
+import { NO_SPEND } from "@anlg/assistant/pricing";
+
 import { type NudgeResult } from "./nudge";
 import { deliverNudge } from "./nudge-delivery";
 import { NudgeOutcome } from "./nudge-outcome";
-import { NO_SPEND } from "./pricing";
 
 const move: Move = {
   tag: MoveTag.DecisionOwner,

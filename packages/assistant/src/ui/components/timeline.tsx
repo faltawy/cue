@@ -33,6 +33,7 @@ import {
 } from "../../errors";
 import { type CoachFeedback, type EvidenceTarget } from "../../move";
 import { TurnKind } from "../../protocol";
+import { useAssistantHost, AssistantScope } from "../host";
 import {
   type EditView,
   type Item,
@@ -965,7 +966,14 @@ export function EmptyState({
   disabled: boolean;
   suggestions: string[];
 }) {
-  const copy = EMPTY_COPY[phase];
+  const { scope } = useAssistantHost();
+  const copy =
+    scope === AssistantScope.Library
+      ? {
+          heading: "How can I help?",
+          body: "Find answers across your meetings, organize your notes, or ask a question.",
+        }
+      : EMPTY_COPY[phase];
   return (
     <div
       className={cx(

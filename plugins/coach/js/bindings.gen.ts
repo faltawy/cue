@@ -22,6 +22,22 @@ async llmEndpoint() : Promise<Result<Endpoint, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async assistantEndpoint() : Promise<Result<Endpoint, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|assistant_endpoint") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async showAssistant() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|show_assistant") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getSettings() : Promise<Result<CoachSettings, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:coach|get_settings") };

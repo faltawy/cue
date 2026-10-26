@@ -3,12 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "bun:test";
 import { type Dispatch, useReducer } from "react";
 
-import { type CoachEvent, CoachEventType, TurnKind } from "../protocol";
-import { CoachView } from "./app";
+import {
+  type CoachEvent,
+  CoachEventType,
+  TurnKind,
+} from "@anlg/assistant/protocol";
+import { CoachView } from "@anlg/assistant/ui/app";
+import { type Action, ActionType, reduce } from "@anlg/assistant/ui/state";
+import { type CoachApi } from "@anlg/assistant/ui/use-coach";
+
 import { useDom } from "./dom-setup";
 import { fixtureState, longAnswerDeltas } from "./fixtures";
-import { type Action, ActionType, reduce } from "./state";
-import { type CoachApi } from "./use-coach";
 
 useDom();
 

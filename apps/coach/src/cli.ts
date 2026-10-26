@@ -1,10 +1,11 @@
 import readline from "node:readline";
 import { parseArgs } from "node:util";
 
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import { COACH_ARGS, coachOptionsFromArgs } from "./args";
 import { claudeCodeFromArgs } from "./claude-code";
 import { codexCodeFromArgs } from "./codex-code";
-import { CoachProvider } from "./provider";
 import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
 import { startCoach } from "./session";
 

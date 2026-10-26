@@ -1,4 +1,5 @@
-import { type Move } from "./move";
+import { type Move } from "@anlg/assistant/move";
+
 import { type NudgeResult } from "./nudge";
 import { NudgeOutcome } from "./nudge-outcome";
 import { type TalkStats } from "./talk-time";

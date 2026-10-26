@@ -2,7 +2,12 @@ import { type Database } from "bun:sqlite";
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { z } from "zod";
 
-import { appBridge, type CoachEdit, CoachEditKind } from "./app-bridge";
+import {
+  appBridge,
+  type CoachEdit,
+  CoachEditKind,
+} from "@anlg/assistant/app-bridge";
+
 import { appDb, seedNote } from "./fixtures/app-db";
 import { libraryTools } from "./library-tools";
 

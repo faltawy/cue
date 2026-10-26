@@ -187,6 +187,22 @@ export type MeetingDetail = {
   transcript?: string;
 };
 
+export function readableMeetingId(
+  db: Database,
+  id: string | undefined,
+): string {
+  if (!id)
+    throw new Error("Choose a note or use note_id from search_meetings.");
+  const row = db
+    .query<{ title: string; locked: number }, [string]>(
+      "SELECT title, locked FROM sessions WHERE id = ? AND deleted_at IS NULL",
+    )
+    .get(id);
+  if (!row) throw new Error(`There is no note with id ${id}.`);
+  if (row.locked !== 0) throw new LockedNoteError(row.title);
+  return id;
+}
+
 export function getMeeting(
   db: Database,
   input: { id: string; include: MeetingInclude; max_chars: number },

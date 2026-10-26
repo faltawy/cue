@@ -3,6 +3,7 @@ import { memo, type ReactNode, useState } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { useAssistantHost } from "../host";
 import { post } from "../use-coach";
 import { cx } from "./primitives";
 
@@ -21,6 +22,7 @@ function ExternalLink({
   href?: string;
   children?: ReactNode;
 }) {
+  const host = useAssistantHost();
   const external = href !== undefined && /^https?:\/\//i.test(href);
   return (
     <a
@@ -28,7 +30,7 @@ function ExternalLink({
       title={href}
       onClick={(event) => {
         event.preventDefault();
-        if (external) void post("/open", { url: href });
+        if (external) void post("/open", { url: href }, "POST", host.request);
       }}
     >
       {children}
@@ -88,6 +90,7 @@ function ImageNote({ text }: { text: string }) {
 }
 
 function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
+  const host = useAssistantHost();
   const source = imageSource(src);
   const [allowed, setAllowed] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -123,13 +126,41 @@ function AnswerImage({ src, alt }: { src?: string; alt?: string }) {
         aria-label={`Open ${name} full size`}
         onClick={() =>
           void (source.kind === ImageSourceKind.Local
-            ? post("/open-image", { path: source.path })
-            : post("/open", { url: source.src }))
+            ? post("/open-image", { path: source.path }, "POST", host.request)
+            : post("/open", { url: source.src }, "POST", host.request))
         }
         className="max-w-full rounded-lg"
       >
         <img
-          src={source.src}
+          src={
+            source.kind === ImageSourceKind.Remote
+              ? source.src
+              : host.imageUrl?.(source.src)
+          }
+          ref={(node) => {
+            if (!node || source.kind !== ImageSourceKind.Local || host.imageUrl)
+              return;
+            let active = true;
+            let url: string | undefined;
+            const abort = new AbortController();
+            void host
+              .request(source.src, { signal: abort.signal })
+              .then(async (response) => {
+                if (!response.ok) throw new Error("Image unavailable");
+                const blob = await response.blob();
+                if (!active) return;
+                url = URL.createObjectURL(blob);
+                node.src = url;
+              })
+              .catch(() => {
+                if (active) setFailed(true);
+              });
+            return () => {
+              active = false;
+              abort.abort();
+              if (url) URL.revokeObjectURL(url);
+            };
+          }}
           alt={name}
           loading="lazy"
           onError={() => setFailed(true)}

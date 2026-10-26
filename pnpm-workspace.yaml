@@ -1,6 +1,5 @@
 packages:
   - apps/*
-  - "!apps/coach"
   - packages/*
   - plugins/*
 
@@ -75,6 +74,7 @@ peerDependencyRules:
     esbuild: "0.25"
 
 allowBuilds:
+  bun: true
   "@parcel/watcher": true
   "@sentry/cli": true
   cbor-extract: true

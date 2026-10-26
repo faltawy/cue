@@ -307,6 +307,18 @@
           "markdownDescription": "Denies the add_knowledge command without any pre-configured scope."
         },
         {
+          "description": "Enables the assistant_endpoint command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-assistant-endpoint",
+          "markdownDescription": "Enables the assistant_endpoint command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the assistant_endpoint command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-assistant-endpoint",
+          "markdownDescription": "Denies the assistant_endpoint command without any pre-configured scope."
+        },
+        {
           "description": "Enables the choose_project command without any pre-configured scope.",
           "type": "string",
           "const": "allow-choose-project",
@@ -511,6 +523,18 @@
           "markdownDescription": "Denies the show command without any pre-configured scope."
         },
         {
+          "description": "Enables the show_assistant command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-show-assistant",
+          "markdownDescription": "Enables the show_assistant command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the show_assistant command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-show-assistant",
+          "markdownDescription": "Denies the show_assistant command without any pre-configured scope."
+        },
+        {
           "description": "Enables the show_for_recording command without any pre-configured scope.",
           "type": "string",
           "const": "allow-show-for-recording",
@@ -559,10 +583,10 @@
           "markdownDescription": "Denies the update_claude_code command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-complete-dictation`\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-show-for-recording`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`\n- `allow-provider-account`\n- `allow-sign-in-to-provider`\n- `allow-provider-setup`\n- `allow-retry-provider-setup`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-complete-dictation`\n- `allow-llm-endpoint`\n- `allow-assistant-endpoint`\n- `allow-show-assistant`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-show-for-recording`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`\n- `allow-provider-account`\n- `allow-sign-in-to-provider`\n- `allow-provider-setup`\n- `allow-retry-provider-setup`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-complete-dictation`\n- `allow-llm-endpoint`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-show-for-recording`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`\n- `allow-provider-account`\n- `allow-sign-in-to-provider`\n- `allow-provider-setup`\n- `allow-retry-provider-setup`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-complete-dictation`\n- `allow-llm-endpoint`\n- `allow-assistant-endpoint`\n- `allow-show-assistant`\n- `allow-get-settings`\n- `allow-set-settings`\n- `allow-choose-project`\n- `allow-probe-mcp-server`\n- `allow-set-mcp-secret`\n- `allow-mcp-statuses`\n- `allow-find-claude-connectors`\n- `allow-add-knowledge`\n- `allow-show`\n- `allow-show-for-recording`\n- `allow-claude-signed-in`\n- `allow-sign-in-to-claude`\n- `allow-claude-code-status`\n- `allow-update-claude-code`\n- `allow-claude-setup`\n- `allow-retry-claude-setup`\n- `allow-provider-account`\n- `allow-sign-in-to-provider`\n- `allow-provider-setup`\n- `allow-retry-provider-setup`"
         }
       ]
     }

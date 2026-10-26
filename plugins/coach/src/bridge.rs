@@ -10,16 +10,30 @@ use axum::http::{StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use sqlx::SqlitePool;
 
-use crate::edits::{EditError, Edits, NoteStyle};
+use crate::edits::{EditError, EditOwner, Edits, NoteStyle};
 use crate::library::{
     LibraryChange, NewNote, NoteChanges, OrganizationFields, PersonFields, TemplateFields,
 };
 use crate::series::{self, MeetingProject};
 use crate::settings::{self, SeriesProject};
 use crate::{CoachEvidence, CoachNudged, DictationAction, Error, Result};
+
+#[derive(Clone, Copy)]
+enum EditAuthority {
+    Meeting,
+    Library,
+}
+impl EditAuthority {
+    fn owner(self, session_id: &str) -> EditOwner<'_> {
+        match self {
+            Self::Meeting => EditOwner::Meeting(session_id),
+            Self::Library => EditOwner::Library,
+        }
+    }
+}
 
 pub const URL_ENV: &str = "CUE_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "CUE_COACH_APP_TOKEN";
@@ -152,6 +166,40 @@ fn router(token: &str, host: impl Host) -> Router {
             "/meeting/{session_id}/library/templates/{template_id}",
             post(update_template),
         )
+        .route("/library/notes", post(create_note))
+        .route("/library/notes/{note_id}", post(update_note))
+        .route("/library/folders", post(create_folder))
+        .route("/library/people", post(create_person))
+        .route("/library/people/{person_id}", post(update_person))
+        .route("/library/organizations", post(create_organization))
+        .route(
+            "/library/organizations/{organization_id}",
+            post(update_organization),
+        )
+        .route("/library/participants", post(add_participant))
+        .route("/library/templates", post(create_template))
+        .route("/library/templates/{template_id}", post(update_template))
+        .route("/library/undo", post(undo_library))
+        .nest(
+            "/library/meeting",
+            Router::new()
+                .route("/{session_id}/notes", post(append_note))
+                .route("/{session_id}/action-items", post(add_action_item))
+                .route(
+                    "/{session_id}/action-items/{task_id}/complete",
+                    post(complete_action_item),
+                )
+                .route(
+                    "/{session_id}/transcript/speakers",
+                    post(assign_transcript_speaker),
+                )
+                .route(
+                    "/{session_id}/transcript/corrections",
+                    post(correct_transcript),
+                )
+                .layer(Extension(EditAuthority::Library)),
+        )
+        .layer(Extension(EditAuthority::Meeting))
         .layer(middleware::from_fn_with_state(state.clone(), authorize))
         .with_state(state)
 }
@@ -402,6 +450,7 @@ struct NoteBody {
 }
 
 async fn append_note(
+    Extension(authority): Extension<EditAuthority>,
     State(state): State<Arc<BridgeState>>,
     Path(session_id): Path<String>,
     Json(body): Json<NoteBody>,
@@ -410,7 +459,13 @@ async fn append_note(
     Ok(Json(
         state
             .edits
-            .append_note(&pool, &session_id, &body.lines, body.style)
+            .append_note_owned(
+                &pool,
+                &session_id,
+                &body.lines,
+                body.style,
+                authority.owner(&session_id),
+            )
             .await?,
     ))
 }
@@ -423,6 +478,7 @@ struct AssignTranscriptSpeakerBody {
 }
 
 async fn assign_transcript_speaker(
+    Extension(authority): Extension<EditAuthority>,
     State(state): State<Arc<BridgeState>>,
     Path(session_id): Path<String>,
     Json(body): Json<AssignTranscriptSpeakerBody>,
@@ -430,12 +486,13 @@ async fn assign_transcript_speaker(
     let pool = state.host.pool()?;
     let edit = state
         .edits
-        .assign_transcript_speaker(
+        .assign_transcript_speaker_owned(
             &pool,
             &session_id,
             body.channel,
             body.speaker_index,
             &body.human_id,
+            authority.owner(&session_id),
         )
         .await?;
     state.host.speaker_assigned(session_id).await;
@@ -450,6 +507,7 @@ struct CorrectTranscriptBody {
 }
 
 async fn correct_transcript(
+    Extension(authority): Extension<EditAuthority>,
     State(state): State<Arc<BridgeState>>,
     Path(session_id): Path<String>,
     Json(body): Json<CorrectTranscriptBody>,
@@ -458,12 +516,13 @@ async fn correct_transcript(
     Ok(Json(
         state
             .edits
-            .correct_transcript_words(
+            .correct_transcript_words_owned(
                 &pool,
                 &session_id,
                 &body.word_ids,
                 &body.expected_text,
                 &body.replacement,
+                authority.owner(&session_id),
             )
             .await?,
     ))
@@ -475,6 +534,7 @@ struct ActionItemBody {
 }
 
 async fn add_action_item(
+    Extension(authority): Extension<EditAuthority>,
     State(state): State<Arc<BridgeState>>,
     Path(session_id): Path<String>,
     Json(body): Json<ActionItemBody>,
@@ -483,12 +543,13 @@ async fn add_action_item(
     Ok(Json(
         state
             .edits
-            .add_action_item(&pool, &session_id, &body.text)
+            .add_action_item_owned(&pool, &session_id, &body.text, authority.owner(&session_id))
             .await?,
     ))
 }
 
 async fn complete_action_item(
+    Extension(authority): Extension<EditAuthority>,
     State(state): State<Arc<BridgeState>>,
     Path((session_id, task_id)): Path<(String, String)>,
 ) -> Reply<crate::edits::CoachEdit> {
@@ -496,7 +557,7 @@ async fn complete_action_item(
     Ok(Json(
         state
             .edits
-            .complete_action_item(&pool, &session_id, &task_id)
+            .complete_action_item_owned(&pool, &session_id, &task_id, authority.owner(&session_id))
             .await?,
     ))
 }
@@ -523,29 +584,71 @@ async fn undo(
     Ok(Json(edit))
 }
 
+#[derive(serde::Deserialize)]
+struct LibraryPath {
+    session_id: Option<String>,
+    note_id: Option<String>,
+    person_id: Option<String>,
+    organization_id: Option<String>,
+    template_id: Option<String>,
+}
+impl LibraryPath {
+    fn owner(&self) -> EditOwner<'_> {
+        self.session_id
+            .as_deref()
+            .map(EditOwner::Meeting)
+            .unwrap_or(EditOwner::Library)
+    }
+}
+
+async fn undo_library(
+    State(state): State<Arc<BridgeState>>,
+    body: Option<Json<UndoBody>>,
+) -> Reply<crate::edits::CoachEdit> {
+    let pool = state.host.pool()?;
+    let edit_id = body.and_then(|Json(body)| body.edit_id);
+    let edit = state
+        .edits
+        .undo_last(&pool, EditOwner::Library, edit_id.as_deref())
+        .await?;
+    if edit.kind == crate::edits::EditKind::AssignSpeaker {
+        if let Some(session_id) = &edit.target_id {
+            state.host.speaker_assigned(session_id.clone()).await;
+        }
+    }
+    Ok(Json(edit))
+}
+
 type Changed = Reply<LibraryChange>;
 
 async fn create_note(
     State(state): State<Arc<BridgeState>>,
-    Path(session_id): Path<String>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<NewNote>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
-        state.edits.create_note(&pool, &session_id, body).await?,
+        state.edits.create_note(&pool, path.owner(), body).await?,
     ))
 }
 
 async fn update_note(
     State(state): State<Arc<BridgeState>>,
-    Path((session_id, note_id)): Path<(String, String)>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<NoteChanges>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .update_note(&pool, &session_id, &note_id, body)
+            .update_note(
+                &pool,
+                path.owner(),
+                path.note_id
+                    .as_deref()
+                    .ok_or(EditError::Invalid("Missing target id".into()))?,
+                body,
+            )
             .await?,
     ))
 }
@@ -557,67 +660,81 @@ struct FolderBody {
 
 async fn create_folder(
     State(state): State<Arc<BridgeState>>,
-    Path(session_id): Path<String>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<FolderBody>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .create_folder(&pool, &session_id, &body.path)
+            .create_folder(&pool, path.owner(), &body.path)
             .await?,
     ))
 }
 
 async fn create_person(
     State(state): State<Arc<BridgeState>>,
-    Path(session_id): Path<String>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<PersonFields>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
-        state.edits.create_person(&pool, &session_id, body).await?,
+        state.edits.create_person(&pool, path.owner(), body).await?,
     ))
 }
 
 async fn update_person(
     State(state): State<Arc<BridgeState>>,
-    Path((session_id, person_id)): Path<(String, String)>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<PersonFields>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .update_person(&pool, &session_id, &person_id, body)
+            .update_person(
+                &pool,
+                path.owner(),
+                path.person_id
+                    .as_deref()
+                    .ok_or(EditError::Invalid("Missing target id".into()))?,
+                body,
+            )
             .await?,
     ))
 }
 
 async fn create_organization(
     State(state): State<Arc<BridgeState>>,
-    Path(session_id): Path<String>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<OrganizationFields>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .create_organization(&pool, &session_id, body)
+            .create_organization(&pool, path.owner(), body)
             .await?,
     ))
 }
 
 async fn update_organization(
     State(state): State<Arc<BridgeState>>,
-    Path((session_id, organization_id)): Path<(String, String)>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<OrganizationFields>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .update_organization(&pool, &session_id, &organization_id, body)
+            .update_organization(
+                &pool,
+                path.owner(),
+                path.organization_id
+                    .as_deref()
+                    .ok_or(EditError::Invalid("Missing target id".into()))?,
+                body,
+            )
             .await?,
     ))
 }
@@ -630,42 +747,54 @@ struct ParticipantBody {
 
 async fn add_participant(
     State(state): State<Arc<BridgeState>>,
-    Path(session_id): Path<String>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<ParticipantBody>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .add_participant(&pool, &session_id, body.note_id.as_deref(), &body.person_id)
+            .add_participant(
+                &pool,
+                path.owner(),
+                body.note_id.as_deref(),
+                &body.person_id,
+            )
             .await?,
     ))
 }
 
 async fn create_template(
     State(state): State<Arc<BridgeState>>,
-    Path(session_id): Path<String>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<TemplateFields>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .create_template(&pool, &session_id, body)
+            .create_template(&pool, path.owner(), body)
             .await?,
     ))
 }
 
 async fn update_template(
     State(state): State<Arc<BridgeState>>,
-    Path((session_id, template_id)): Path<(String, String)>,
+    Path(path): Path<LibraryPath>,
     Json(body): Json<TemplateFields>,
 ) -> Changed {
     let pool = state.host.pool()?;
     Ok(Json(
         state
             .edits
-            .update_template(&pool, &session_id, &template_id, body)
+            .update_template(
+                &pool,
+                path.owner(),
+                path.template_id
+                    .as_deref()
+                    .ok_or(EditError::Invalid("Missing target id".into()))?,
+                body,
+            )
             .await?,
     ))
 }
@@ -1117,6 +1246,94 @@ mod tests {
             settings::load_series_projects(host.config.path())
                 .unwrap()
                 .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn library_edits_work_without_a_current_meeting_and_undo_stays_in_its_conversation() {
+        let host = test_host().await;
+        let app = router(TOKEN, host.clone());
+        let post = |path: &str, body: serde_json::Value| {
+            app.clone().oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri(path)
+                    .header("authorization", format!("Bearer {TOKEN}"))
+                    .header("content-type", "application/json")
+                    .body(axum::body::Body::from(body.to_string()))
+                    .unwrap(),
+            )
+        };
+        let live = post(
+            "/meeting/thursday/notes",
+            serde_json::json!({"lines":["Live note"],"style":"paragraphs"}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(live.status(), StatusCode::OK);
+        let created = post("/library/notes", serde_json::json!({"title":"Planning"}))
+            .await
+            .unwrap();
+        assert_eq!(created.status(), StatusCode::OK);
+        let created: serde_json::Value = serde_json::from_slice(
+            &axum::body::to_bytes(created.into_body(), usize::MAX)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(created["edit"]["session_id"].is_null());
+        let id = created["id"].as_str().unwrap();
+        let title: String =
+            sqlx::query_scalar("SELECT title FROM sessions WHERE id = ? AND deleted_at IS NULL")
+                .bind(id)
+                .fetch_one(&host.pool)
+                .await
+                .unwrap();
+        assert_eq!(title, "Planning");
+        let older = post(
+            "/library/meeting/tuesday/notes",
+            serde_json::json!({"lines":["Library note"],"style":"paragraphs"}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(older.status(), StatusCode::OK);
+        let body: String = sqlx::query_scalar("SELECT body FROM session_documents WHERE session_id = 'tuesday' AND deleted_at IS NULL").fetch_one(&host.pool).await.unwrap();
+        assert!(body.contains("Library note"));
+        let undone = post("/library/undo", serde_json::json!({})).await.unwrap();
+        assert_eq!(undone.status(), StatusCode::OK);
+        let body: Option<String> = sqlx::query_scalar("SELECT body FROM session_documents WHERE session_id = 'tuesday' AND deleted_at IS NULL").fetch_optional(&host.pool).await.unwrap();
+        assert!(!body.unwrap_or_default().contains("Library note"));
+        let removed = post("/library/undo", serde_json::json!({})).await.unwrap();
+        assert_eq!(removed.status(), StatusCode::OK);
+        let deleted: Option<String> =
+            sqlx::query_scalar("SELECT deleted_at FROM sessions WHERE id = ?")
+                .bind(id)
+                .fetch_one(&host.pool)
+                .await
+                .unwrap();
+        assert!(deleted.is_some());
+        let live_body: String = sqlx::query_scalar("SELECT body FROM session_documents WHERE session_id = 'thursday' AND deleted_at IS NULL").fetch_one(&host.pool).await.unwrap();
+        assert!(live_body.contains("Live note"));
+        assert_eq!(
+            post("/meeting/thursday/undo", serde_json::json!({}))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::OK
+        );
+        sqlx::query("UPDATE sessions SET locked = 1 WHERE id = 'tuesday'")
+            .execute(&host.pool)
+            .await
+            .unwrap();
+        assert_eq!(
+            post(
+                "/library/meeting/tuesday/notes",
+                serde_json::json!({"lines":["Blocked"],"style":"paragraphs"})
+            )
+            .await
+            .unwrap()
+            .status(),
+            StatusCode::FORBIDDEN
         );
     }
 

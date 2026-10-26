@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { appBridge, BridgeError, DictationAction } from "./app-bridge";
+import {
+  appBridge,
+  BridgeError,
+  DictationAction,
+} from "@anlg/assistant/app-bridge";
 
 type Seen = {
   method: string;

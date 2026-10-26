@@ -1,0 +1,262 @@
+@theme inline {
+  --color-surface: var(--surface, var(--background));
+}
+
+/* Answers: calm, readable at a glance, right-to-left aware per paragraph. */
+.coach-markdown {
+  overflow-wrap: anywhere;
+}
+.coach-markdown > :first-child {
+  margin-top: 0;
+}
+.coach-markdown > :last-child {
+  margin-bottom: 0;
+}
+.coach-markdown :is(p, li, h1, h2, h3, h4, blockquote, td, th) {
+  unicode-bidi: plaintext;
+}
+.coach-markdown p {
+  margin: 0.5em 0;
+}
+.coach-markdown :is(ul, ol) {
+  margin: 0.4em 0;
+  padding-inline-start: 1.25em;
+}
+.coach-markdown ul {
+  list-style: disc;
+}
+.coach-markdown ol {
+  list-style: decimal;
+}
+.coach-markdown li + li {
+  margin-top: 0.2em;
+}
+.coach-markdown li::marker {
+  color: var(--muted-foreground);
+}
+.coach-markdown :is(h1, h2, h3, h4) {
+  margin: 0.9em 0 0.3em;
+  font-size: 1em;
+  font-weight: 600;
+}
+.coach-markdown strong {
+  font-weight: 600;
+}
+.coach-markdown a {
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 2px;
+}
+.coach-markdown a:hover {
+  text-decoration-color: currentColor;
+}
+.coach-markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+}
+.coach-markdown pre {
+  margin: 0.6em 0;
+  padding: 0.6em 0.75em;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--background);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.coach-markdown pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+.coach-markdown blockquote {
+  margin: 0.6em 0;
+  padding-inline-start: 0.75em;
+  border-inline-start: 2px solid var(--border);
+  color: var(--muted-foreground);
+}
+.coach-markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 0.6em 0;
+}
+/* Tables keep words whole and scroll sideways instead of breaking cells mid-word. */
+.coach-markdown :is(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.3em 0.55em;
+  text-align: start;
+  overflow-wrap: normal;
+  min-width: 6ch;
+}
+.coach-markdown :is(th, td) code {
+  white-space: nowrap;
+}
+.coach-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0.8em 0;
+}
+
+/* Streaming caret at the end of the answer so far. */
+@keyframes coach-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.coach-streaming > :is(p, h1, h2, h3, h4):last-child::after,
+.coach-streaming > :is(ul, ol):last-child > li:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-inline-start: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: var(--warm-strong);
+  animation: coach-caret 1s steps(1) infinite;
+}
+
+/* Working text: a soft sheen instead of a spinner. */
+@keyframes coach-sheen {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+.coach-sheen {
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--muted-foreground) 40%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 60%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: coach-sheen 1.8s linear infinite;
+}
+@keyframes coach-skeleton {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.coach-skeleton {
+  background: var(--muted);
+  border-radius: var(--radius-sm);
+  animation: coach-skeleton 0.9s ease-in-out infinite alternate;
+}
+@keyframes coach-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.coach-pulse {
+  animation: coach-pulse 1.2s ease-in-out infinite;
+}
+@keyframes coach-live {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--live) 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+.coach-live-dot {
+  animation: coach-live 2s ease-out infinite;
+}
+@keyframes coach-enter {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+.coach-enter {
+  animation: coach-enter 200ms var(--ease-out-soft) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-sheen {
+    animation: none;
+    color: var(--muted-foreground);
+    background: none;
+  }
+  .coach-streaming > *::after,
+  .coach-streaming li::after,
+  .coach-skeleton,
+  .coach-pulse,
+  .coach-live-dot,
+  .coach-enter {
+    animation: none;
+  }
+  .cue-assistant *,
+  .cue-assistant *::before,
+  .cue-assistant *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Text with its own direction (dir="auto") that should still line up with the column it sits in. */
+.coach-align-parent {
+  text-align: -webkit-match-parent;
+  text-align: match-parent;
+}
+
+.coach-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Edge fades that say "more this way" on scrolling areas. */
+.coach-fade-y {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 16px),
+    transparent 100%
+  );
+}
+.coach-fade-bottom {
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - 16px),
+    transparent 100%
+  );
+}
+.coach-fade-x {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 28px),
+    transparent 100%
+  );
+}
+.coach-fade-x:dir(rtl) {
+  mask-image: linear-gradient(
+    to left,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 28px),
+    transparent 100%
+  );
+}

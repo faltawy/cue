@@ -1,8 +1,9 @@
 import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 
+import { meetingChange, meetingPointer } from "@anlg/assistant/meeting-state";
+
 import { appDb, seedNote } from "./fixtures/app-db";
-import { meetingChange, meetingPointer } from "./meeting-state";
 import {
   foldDeltas,
   type LiveDelta,

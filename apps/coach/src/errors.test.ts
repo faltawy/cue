@@ -7,7 +7,7 @@ import {
   SIGN_IN_STEPS,
   StderrTail,
   withSignIn,
-} from "./errors";
+} from "@anlg/assistant/errors";
 
 describe("classifyError", () => {
   test.each([

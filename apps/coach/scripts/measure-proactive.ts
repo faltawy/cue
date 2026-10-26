@@ -1,14 +1,15 @@
 import { parseArgs } from "node:util";
 
-import { NOTHING } from "../src/checkin";
-import { type Hit } from "../src/detect";
-import { NUDGE_MODEL, nudgeMessage, nudgeSystem } from "../src/nudge";
 import {
   costUsd,
   ONE_SHOT_OVERHEAD_TOKENS,
   estimateTokens as tokens,
   type TokenUsage,
-} from "../src/pricing";
+} from "@anlg/assistant/pricing";
+
+import { NOTHING } from "../src/checkin";
+import { type Hit } from "../src/detect";
+import { NUDGE_MODEL, nudgeMessage, nudgeSystem } from "../src/nudge";
 import {
   NudgeDispatch,
   Proactive,

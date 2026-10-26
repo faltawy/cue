@@ -7,8 +7,8 @@ import {
   meetingChange,
   stripView,
   wrapUpActions,
-} from "./meeting-state";
-import { WrapUpState } from "./protocol";
+} from "@anlg/assistant/meeting-state";
+import { WrapUpState } from "@anlg/assistant/protocol";
 
 const live: MeetingPointer = {
   sessionId: "acme",

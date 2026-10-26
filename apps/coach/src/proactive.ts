@@ -1,27 +1,22 @@
+import { ProactiveState, type ProactiveView } from "@anlg/assistant/proactive";
+export { ProactiveState, type ProactiveView } from "@anlg/assistant/proactive";
 import {
   DEFAULT_COACHING,
   type MeetingCoaching,
   MeetingIntent,
-} from "./coaching-preferences";
+} from "@anlg/assistant/coaching-preferences";
+import { NO_SPEND, type Spend } from "@anlg/assistant/pricing";
+import { formatTimestamp } from "@anlg/assistant/timestamp";
+
 import { detectHits, type Hit, HitKind } from "./detect";
 import { NudgeOutcome } from "./nudge-outcome";
-import { NO_SPEND, type Spend } from "./pricing";
 import { monologue } from "./talk-time";
-import { formatTimestamp } from "./timestamp";
 import type { TranscriptLine } from "./transcript";
 import type { TriageRequest, TriageResult } from "./triage";
 
 export enum NudgePath {
   Fast = "fast",
   Fallback = "fallback",
-}
-
-export enum ProactiveState {
-  On = "on",
-  Off = "off",
-  Quiet = "quiet",
-  Capped = "capped",
-  Unpriced = "unpriced",
 }
 
 export const PROACTIVE_DEFAULTS = {
@@ -43,14 +38,7 @@ export enum SpendSource {
   Nudges = "nudges",
   Asks = "asks",
 }
-export type ProactiveView = {
-  state: ProactiveState;
-  nudgesUsd: number | null;
-  capUsd: number;
-  meetingUsd: number | null;
-  meetingTokens: number;
-  cachedTokens: number;
-};
+
 export type NudgeRequest = {
   revision: number;
   intent: MeetingIntent;

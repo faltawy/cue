@@ -1,13 +1,19 @@
 import { describe, expect, spyOn, test } from "bun:test";
 
+import { MeetingIntent } from "@anlg/assistant/coaching-preferences";
+import { moveSchema, MoveTag, MoveVerb } from "@anlg/assistant/move";
+import {
+  estimateTokens,
+  ONE_SHOT_OVERHEAD_TOKENS,
+} from "@anlg/assistant/pricing";
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import {
   emptyStore,
   prioritizeHitsByFeedback,
   recordFeedback,
 } from "./chat-store";
-import { MeetingIntent } from "./coaching-preferences";
 import { type Hit, HitKind } from "./detect";
-import { moveSchema, MoveTag, MoveVerb } from "./move";
 import {
   NUDGE_SYSTEM,
   nudgeLabel,
@@ -22,8 +28,6 @@ import {
   rememberNote,
   withNudgeNotes,
 } from "./nudge";
-import { estimateTokens, ONE_SHOT_OVERHEAD_TOKENS } from "./pricing";
-import { CoachProvider } from "./provider";
 import { type TranscriptLine } from "./transcript";
 import { TRIAGE_MODEL } from "./triage";
 

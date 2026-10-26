@@ -186,3 +186,15 @@ pub fn complete_dictation(
         .complete(&request_id, result)
         .map_err(|error| error.to_string())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn assistant_endpoint(app: tauri::AppHandle) -> std::result::Result<Endpoint, String> {
+    blocking(app, Coach::assistant_endpoint).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn show_assistant(app: tauri::AppHandle) -> std::result::Result<(), String> {
+    blocking(app, Coach::show_assistant).await
+}

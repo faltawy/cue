@@ -1,8 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { formatTokens, turnUsage } from "./usage";
+import { formatTokens, turnUsage } from "@anlg/assistant/usage";
 
-const modelEntry = (inputTokens: number, outputTokens: number, contextWindow: number) => ({
+const modelEntry = (
+  inputTokens: number,
+  outputTokens: number,
+  contextWindow: number,
+) => ({
   inputTokens,
   outputTokens,
   cacheReadInputTokens: 0,
@@ -13,7 +17,12 @@ const modelEntry = (inputTokens: number, outputTokens: number, contextWindow: nu
   maxOutputTokens: 0,
 });
 
-const usageOf = (input: number, cacheRead: number, cacheCreate: number, output: number) => ({
+const usageOf = (
+  input: number,
+  cacheRead: number,
+  cacheCreate: number,
+  output: number,
+) => ({
   input_tokens: input,
   cache_read_input_tokens: cacheRead,
   cache_creation_input_tokens: cacheCreate,
@@ -26,7 +35,10 @@ describe("turnUsage", () => {
       result: {
         usage: {
           ...usageOf(1_200, 30_000, 500, 400),
-          cache_creation: { ephemeral_5m_input_tokens: 200, ephemeral_1h_input_tokens: 300 },
+          cache_creation: {
+            ephemeral_5m_input_tokens: 200,
+            ephemeral_1h_input_tokens: 300,
+          },
         },
         modelUsage: {
           "claude-haiku": modelEntry(100, 20, 200_000),
@@ -34,7 +46,9 @@ describe("turnUsage", () => {
         },
         total_cost_usd: 0.0123,
       },
-      lastMainUsage: { iterations: [usageOf(10, 0, 0, 5), usageOf(900, 41_000, 100, 60)] },
+      lastMainUsage: {
+        iterations: [usageOf(10, 0, 0, 5), usageOf(900, 41_000, 100, 60)],
+      },
     });
     expect(usage).toEqual({
       model: "claude-sonnet",
@@ -50,18 +64,34 @@ describe("turnUsage", () => {
   });
 
   test("a turn that used nothing reports nothing", () => {
-    expect(turnUsage({ result: { usage: usageOf(0, 0, 0, 0), modelUsage: {}, total_cost_usd: 0 }, lastMainUsage: undefined })).toBeNull();
     expect(
-      turnUsage({ result: { usage: usageOf(3, 0, 0, 1), modelUsage: {}, total_cost_usd: 0 }, lastMainUsage: undefined }),
+      turnUsage({
+        result: {
+          usage: usageOf(0, 0, 0, 0),
+          modelUsage: {},
+          total_cost_usd: 0,
+        },
+        lastMainUsage: undefined,
+      }),
+    ).toBeNull();
+    expect(
+      turnUsage({
+        result: {
+          usage: usageOf(3, 0, 0, 1),
+          modelUsage: {},
+          total_cost_usd: 0,
+        },
+        lastMainUsage: undefined,
+      }),
     ).not.toBeNull();
   });
 });
 
 test("formatTokens", () => {
-  expect([formatTokens(950), formatTokens(4_321), formatTokens(42_000), formatTokens(1_500_000)]).toEqual([
-    "950",
-    "4.3k",
-    "42k",
-    "1.5M",
-  ]);
+  expect([
+    formatTokens(950),
+    formatTokens(4_321),
+    formatTokens(42_000),
+    formatTokens(1_500_000),
+  ]).toEqual(["950", "4.3k", "42k", "1.5M"]);
 });

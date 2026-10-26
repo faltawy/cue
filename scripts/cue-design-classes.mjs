@@ -51,6 +51,8 @@ const FLOATING_SHADOWS = new Set(["shadow-md", "shadow-lg", "shadow-2xl"]);
 const ALLOWED = {
   // Switch thumb: the one white fill and the one small shadow.
   "packages/ui/src/components/ui/switch.tsx": ["bg-white", "shadow-sm"],
+  // Round floating assistant launcher over scrolling content (cue.md §3).
+  "apps/desktop/src/ai/assistant/index.tsx": ["shadow-md"],
   // Kbd keeps the coach's 10.5px.
   "packages/ui/src/components/ui/kbd.tsx": ["text-[10.5px]"],
   // App icon preview mirrors the macOS icon mask (22.5% of the tile).

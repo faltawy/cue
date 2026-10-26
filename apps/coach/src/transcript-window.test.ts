@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { estimateTokens } from "./pricing";
-import { renderRecentLines } from "./transcript-window";
+import { estimateTokens } from "@anlg/assistant/pricing";
+
 import type { TranscriptLine } from "./transcript";
+import { renderRecentLines } from "./transcript-window";
 
 const line = (text: string, start: number): TranscriptLine => ({
   speaker: "Omar",

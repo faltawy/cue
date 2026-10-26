@@ -3,6 +3,7 @@ import { memo } from "react";
 import { ClassicMainBody } from "./body";
 import { resolveMainSurfaceChrome } from "./main-surface-chrome";
 
+import { AssistantLayout } from "~/ai/assistant";
 import { useShell } from "~/contexts/shell";
 import { DevtoolsStatusBar } from "~/devtools-bar";
 import { MainShellBodyFrame, MainShellScaffold } from "~/shared/main";
@@ -41,7 +42,13 @@ export function ClassicMainShellFrame() {
       edgeToEdge={isOnboarding}
       mainSurfaceChrome={isOnboarding ? undefined : mainSurfaceChrome}
     >
-      <ClassicMainBodyHost />
+      {isOnboarding ? (
+        <ClassicMainBodyHost />
+      ) : (
+        <AssistantLayout>
+          <ClassicMainBodyHost />
+        </AssistantLayout>
+      )}
       <ToastNotifications />
     </MainShellScaffold>
   );

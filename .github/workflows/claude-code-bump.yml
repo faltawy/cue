@@ -32,8 +32,8 @@ jobs:
         working-directory: apps/coach
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
+      - uses: ./.github/actions/bun_install
+      - uses: ./.github/actions/pnpm_install
       - name: Pin the release
         id: bump
         env:
@@ -64,10 +64,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$BRANCH"
-          git add package.json bun.lock src/claude-code-pin.ts
+          git add package.json ../../pnpm-lock.yaml src/claude-code-pin.ts
           git commit -m "Bump Claude Code to $CLI (Claude Agent SDK $SDK)"
           git push origin "$BRANCH"
-          body="Moves the Claude Agent SDK from $FROM to $SDK, which ships Claude Code $CLI. The coach runs a person's own Claude Code when it is $CLI or newer, and downloads this pinned copy otherwise. Updated together by \`scripts/claude-code-bump.ts\`: \`package.json\`, \`bun.lock\` and \`src/claude-code-pin.ts\`. Read the SDK's release notes before merging."
+          body="Moves the Claude Agent SDK from $FROM to $SDK, which ships Claude Code $CLI. The coach runs a person's own Claude Code when it is $CLI or newer, and downloads this pinned copy otherwise. Updated together by \`scripts/claude-code-bump.ts\`: \`package.json\`, \`pnpm-lock.yaml\` and \`src/claude-code-pin.ts\`. Read the SDK's release notes before merging."
           gh pr create --base main --head "$BRANCH" --title "Bump Claude Code to $CLI" --body "$body"
           gh workflow run desktop_ci.yaml --ref "$BRANCH"
           gh pr list --state open --json number,headRefName \

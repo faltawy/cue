@@ -9,33 +9,45 @@ import {
 import userEvent from "@testing-library/user-event";
 import { describe, expect, mock, test } from "bun:test";
 
-import { CoachEditKind, ProjectSource } from "../app-bridge";
-import { StripState } from "../meeting-state";
-import { MoveVerb } from "../move";
-import { ProactiveState, type ProactiveView } from "../proactive";
+import { CoachEditKind, ProjectSource } from "@anlg/assistant/app-bridge";
+import { StripState } from "@anlg/assistant/meeting-state";
+import { MoveVerb } from "@anlg/assistant/move";
 import {
   type CoachEvent,
   CoachEventType,
   SetupState,
   TurnKind,
   WrapUpState,
-} from "../protocol";
-import { type WrapUp } from "../wrapup";
-import { CoachView } from "./app";
-import { speakerTurns, spendTooltip } from "./components/header";
-import { completeMarkdown, splitBlocks } from "./components/markdown";
-import { filterCommands } from "./components/palette";
-import { orderKeys } from "./components/primitives";
-import { useDom } from "./dom-setup";
-import { fixtureState, type Scenario, status } from "./fixtures";
+} from "@anlg/assistant/protocol";
+import { CoachView } from "@anlg/assistant/ui/app";
+import {
+  type HeaderSlot,
+  speakerTurns,
+  spendTooltip,
+} from "@anlg/assistant/ui/components/header";
+import {
+  completeMarkdown,
+  splitBlocks,
+} from "@anlg/assistant/ui/components/markdown";
+import { filterCommands } from "@anlg/assistant/ui/components/palette";
+import { orderKeys } from "@anlg/assistant/ui/components/primitives";
 import {
   ActionType,
   type CoachState,
   Connection,
   initialState,
   reduce,
-} from "./state";
-import { type ActionResult, type CoachApi, eventQueue } from "./use-coach";
+} from "@anlg/assistant/ui/state";
+import {
+  type ActionResult,
+  type CoachApi,
+  eventQueue,
+} from "@anlg/assistant/ui/use-coach";
+
+import { ProactiveState, type ProactiveView } from "../proactive";
+import { type WrapUp } from "../wrapup";
+import { useDom } from "./dom-setup";
+import { fixtureState, type Scenario, status } from "./fixtures";
 
 useDom();
 
@@ -51,7 +63,7 @@ function stateFrom(events: CoachEvent[]): CoachState {
   );
 }
 
-function setup(scenario: Scenario | CoachState) {
+function setup(scenario: Scenario | CoachState, header?: HeaderSlot) {
   const api = {
     ask: mock(ok),
     checkItem: mock(ok),
@@ -80,6 +92,7 @@ function setup(scenario: Scenario | CoachState) {
     <CoachView
       state={typeof scenario === "string" ? fixtureState(scenario) : scenario}
       api={api}
+      header={header}
     />,
   );
   return api;
@@ -740,6 +753,27 @@ describe("design review", () => {
     await user.click(view.getByRole("button", { name: "Actions" }));
     expect(view.getByRole("dialog", { name: "Actions" })).toBeTruthy();
     expect(view.queryByRole("dialog", { name: "Coach options" })).toBeNull();
+  });
+
+  test("a host's idle subtitle and actions join the header, and live status still wins the subtitle", () => {
+    const header: HeaderSlot = {
+      subtitle: "Using the open note",
+      actions: <button type="button">Pop out</button>,
+    };
+    setup(stateFrom([]), header);
+    const banner = view.getByRole("banner");
+    expect(within(banner).getByTestId("header-subtitle").textContent).toBe(
+      "Using the open note",
+    );
+    expect(within(banner).getByRole("button", { name: "Pop out" })).toBeTruthy();
+    cleanup();
+    setup("live", header);
+    expect(view.getByTestId("header-subtitle").textContent).toMatch(
+      /^Recording · 12:0\d$/,
+    );
+    expect(
+      within(view.getByRole("banner")).getByRole("button", { name: "Pop out" }),
+    ).toBeTruthy();
   });
 
   test("the header shows a muted recording timer while live and how long ago the meeting ended", () => {

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { AssistantScope } from "./scope";
+
 export enum CoachEditKind {
   Note = "note",
   AddActionItem = "add_action_item",
@@ -36,7 +38,7 @@ export const EDIT_KINDS = Object.values(CoachEditKind);
 
 const coachEditSchema = z.object({
   id: z.string(),
-  session_id: z.string(),
+  session_id: z.string().nullable(),
   kind: z.enum(CoachEditKind),
   summary: z.string(),
   task_id: z.string().nullable(),
@@ -116,7 +118,11 @@ const errorBodySchema = z.object({ error: z.string() });
 
 export type AppBridge = ReturnType<typeof appBridge>;
 
-export function appBridge(url: string, token: string) {
+export function appBridge(
+  url: string,
+  token: string,
+  scope = AssistantScope.Meeting,
+) {
   async function call<T>(
     method: string,
     path: string,
@@ -153,8 +159,10 @@ export function appBridge(url: string, token: string) {
 
   const meeting = (sessionId: string) =>
     `/meeting/${encodeURIComponent(sessionId)}`;
+  const editingMeeting = (sessionId: string) =>
+    `${scope === AssistantScope.Library ? "/library" : ""}${meeting(sessionId)}`;
   const library = (
-    sessionId: string,
+    sessionId: string | undefined,
     path: string,
     id?: string,
     body?: unknown,
@@ -162,7 +170,7 @@ export function appBridge(url: string, token: string) {
     required(
       call(
         "POST",
-        `${meeting(sessionId)}/library/${path}${id === undefined ? "" : `/${encodeURIComponent(id)}`}`,
+        `${scope === AssistantScope.Library ? "/library" : `${meeting(sessionId ?? "")}/library`}/${path}${id === undefined ? "" : `/${encodeURIComponent(id)}`}`,
         libraryChangeSchema,
         body,
       ),
@@ -208,16 +216,21 @@ export function appBridge(url: string, token: string) {
       ),
     appendNote: (sessionId: string, lines: string[], style: NoteStyle) =>
       required(
-        call("POST", `${meeting(sessionId)}/notes`, coachEditSchema, {
+        call("POST", `${editingMeeting(sessionId)}/notes`, coachEditSchema, {
           lines,
           style,
         }),
       ),
     addActionItem: (sessionId: string, text: string) =>
       required(
-        call("POST", `${meeting(sessionId)}/action-items`, coachEditSchema, {
-          text,
-        }),
+        call(
+          "POST",
+          `${editingMeeting(sessionId)}/action-items`,
+          coachEditSchema,
+          {
+            text,
+          },
+        ),
       ),
     assignTranscriptSpeaker: (
       sessionId: string,
@@ -226,7 +239,7 @@ export function appBridge(url: string, token: string) {
       required(
         call(
           "POST",
-          `${meeting(sessionId)}/transcript/speakers`,
+          `${editingMeeting(sessionId)}/transcript/speakers`,
           coachEditSchema,
           assignment,
         ),
@@ -235,7 +248,7 @@ export function appBridge(url: string, token: string) {
       required(
         call(
           "POST",
-          `${meeting(sessionId)}/transcript/corrections`,
+          `${editingMeeting(sessionId)}/transcript/corrections`,
           coachEditSchema,
           correction,
         ),
@@ -244,44 +257,54 @@ export function appBridge(url: string, token: string) {
       required(
         call(
           "POST",
-          `${meeting(sessionId)}/action-items/${encodeURIComponent(taskId)}/complete`,
+          `${editingMeeting(sessionId)}/action-items/${encodeURIComponent(taskId)}/complete`,
           coachEditSchema,
         ),
       ),
-    undo: (sessionId: string, editId?: string) =>
+    undo: (sessionId: string | undefined, editId?: string) =>
       required(
         call(
           "POST",
-          `${meeting(sessionId)}/undo`,
+          scope === AssistantScope.Library
+            ? "/library/undo"
+            : `${meeting(sessionId ?? "")}/undo`,
           coachEditSchema,
           editId ? { edit_id: editId } : {},
         ),
       ),
-    createNote: (sessionId: string, note: NewNote) =>
+    createNote: (sessionId: string | undefined, note: NewNote) =>
       library(sessionId, "notes", undefined, note),
-    updateNote: (sessionId: string, noteId: string, changes: NoteChanges) =>
-      library(sessionId, "notes", noteId, changes),
-    createFolder: (sessionId: string, path: string) =>
+    updateNote: (
+      sessionId: string | undefined,
+      noteId: string,
+      changes: NoteChanges,
+    ) => library(sessionId, "notes", noteId, changes),
+    createFolder: (sessionId: string | undefined, path: string) =>
       library(sessionId, "folders", undefined, { path }),
-    createPerson: (sessionId: string, person: PersonFields) =>
+    createPerson: (sessionId: string | undefined, person: PersonFields) =>
       library(sessionId, "people", undefined, person),
-    updatePerson: (sessionId: string, personId: string, person: PersonFields) =>
-      library(sessionId, "people", personId, person),
-    createOrganization: (sessionId: string, organization: OrganizationFields) =>
-      library(sessionId, "organizations", undefined, organization),
+    updatePerson: (
+      sessionId: string | undefined,
+      personId: string,
+      person: PersonFields,
+    ) => library(sessionId, "people", personId, person),
+    createOrganization: (
+      sessionId: string | undefined,
+      organization: OrganizationFields,
+    ) => library(sessionId, "organizations", undefined, organization),
     updateOrganization: (
-      sessionId: string,
+      sessionId: string | undefined,
       organizationId: string,
       organization: OrganizationFields,
     ) => library(sessionId, "organizations", organizationId, organization),
     addParticipant: (
-      sessionId: string,
+      sessionId: string | undefined,
       link: { person_id: string; note_id?: string },
     ) => library(sessionId, "participants", undefined, link),
-    createTemplate: (sessionId: string, template: TemplateFields) =>
+    createTemplate: (sessionId: string | undefined, template: TemplateFields) =>
       library(sessionId, "templates", undefined, template),
     updateTemplate: (
-      sessionId: string,
+      sessionId: string | undefined,
       templateId: string,
       template: TemplateFields,
     ) => library(sessionId, "templates", templateId, template),
@@ -290,8 +313,9 @@ export function appBridge(url: string, token: string) {
 
 export function appBridgeFromEnv(
   env: Record<string, string | undefined>,
+  scope = AssistantScope.Meeting,
 ): AppBridge | null {
   const url = env[APP_URL_ENV];
   const token = env[APP_TOKEN_ENV];
-  return url && token ? appBridge(url, token) : null;
+  return url && token ? appBridge(url, token, scope) : null;
 }

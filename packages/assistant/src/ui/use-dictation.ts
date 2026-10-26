@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 
 import { DictationAction } from "../app-bridge";
+import { useAssistantHost, type AssistantHost } from "./host";
 
 export enum DictationPhase {
   Idle = "idle",
@@ -8,7 +9,11 @@ export enum DictationPhase {
   Transcribing = "transcribing",
 }
 
-async function request(recordingId: string, action: DictationAction) {
+async function request(
+  fetch: AssistantHost["request"],
+  recordingId: string,
+  action: DictationAction,
+) {
   const response = await fetch("/dictation", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -32,6 +37,7 @@ async function request(recordingId: string, action: DictationAction) {
 }
 
 export function useDictation(owner: number, onText: (text: string) => void) {
+  const host = useAssistantHost();
   const [state, setState] = useState<{
     phase: DictationPhase;
     error: string | null;
@@ -50,7 +56,7 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       if (mounted) setState({ phase, error });
     };
     const discard = (id: string) => {
-      void request(id, DictationAction.Cancel).catch(() => {});
+      void request(host.request, id, DictationAction.Cancel).catch(() => {});
     };
     const cancel = () => {
       const current = active;
@@ -74,7 +80,9 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       try {
         await current.started;
         if (active !== current) return;
-        const text = (await request(current.id, DictationAction.Stop))?.trim();
+        const text = (
+          await request(host.request, current.id, DictationAction.Stop)
+        )?.trim();
         if (active !== current) return;
         active = null;
         publish(
@@ -101,7 +109,7 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       const current = {
         id,
         phase: DictationPhase.Listening,
-        started: request(id, DictationAction.Start),
+        started: request(host.request, id, DictationAction.Start),
         timer: setTimeout(() => {
           void stop();
         }, 60_000),
@@ -150,6 +158,6 @@ export function useDictation(owner: number, onText: (text: string) => void) {
       lifecycle,
       isListening: () => active?.phase === DictationPhase.Listening,
     };
-  }, [owner]);
+  }, [owner, host]);
   return { ...control, ...state };
 }

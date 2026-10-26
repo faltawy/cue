@@ -10,28 +10,29 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { CoachEditKind } from "../app-bridge";
-import { BlockKind } from "../blocks";
-import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
-import { IMAGE_ERRORS } from "../image-limits";
+import { CoachEditKind } from "@anlg/assistant/app-bridge";
+import { BlockKind } from "@anlg/assistant/blocks";
+import { IMAGE_ERRORS } from "@anlg/assistant/image-limits";
 import {
   type CoachEvent,
   CoachEventType,
   ResetReason,
   TurnKind,
-} from "../protocol";
-import { SourceKind } from "../sources";
-import { CoachView } from "./app";
-import { useDom } from "./dom-setup";
-import { status } from "./fixtures";
+} from "@anlg/assistant/protocol";
+import { CoachView } from "@anlg/assistant/ui/app";
 import {
   ActionType,
   type CoachState,
   Connection,
   initialState,
   reduce,
-} from "./state";
-import { type ActionResult, type CoachApi } from "./use-coach";
+} from "@anlg/assistant/ui/state";
+import { type ActionResult, type CoachApi } from "@anlg/assistant/ui/use-coach";
+
+import { emptyStore, loadChats, remember, saveChats } from "../chat-store";
+import { SourceKind } from "../sources";
+import { useDom } from "./dom-setup";
+import { status } from "./fixtures";
 
 useDom();
 

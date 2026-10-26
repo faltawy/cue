@@ -9,20 +9,22 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import { type Database } from "bun:sqlite";
 
-import { type Block } from "./blocks";
+import { type Block } from "@anlg/assistant/blocks";
+import { CoachProvider } from "@anlg/assistant/provider";
+import {
+  answerInput,
+  parseQuestions,
+  type Question,
+  type QuestionOutcome,
+} from "@anlg/assistant/questions";
+import { AssistantScope } from "@anlg/assistant/scope";
+
 import { startCodexCoach } from "./codex-session";
 import { sessionEnv } from "./env";
 import { decide, GMAIL_SERVER, REMOVED_TOOLS, WEB_TOOLS } from "./guard";
 import { type AskContent } from "./images";
 import { type Connectors } from "./mcp-config";
 import { type MeetingEdits, meetingServer } from "./meeting-server";
-import { CoachProvider } from "./provider";
-import {
-  answerInput,
-  parseQuestions,
-  type Question,
-  type QuestionOutcome,
-} from "./questions";
 import { normalizeClaude, type RuntimeMessage } from "./runtime-message";
 
 export const COACH_PROMPT = `You are the user's attentive meeting coach. The user reads your answers between sentences; help them participate in the way they intend.
@@ -39,6 +41,13 @@ export const COACH_PROMPT = `You are the user's attentive meeting coach. The use
 - When a screenshot or diagram in the project, or a public image, genuinely helps, show it with markdown image syntax: ![what it shows](docs/flow.png) with a path inside the project, or an https URL.
 - Reply in the language the user writes to you in. When the message comes from the app rather than the user (Catch me up, a check-in), reply in the meeting's main language, the one most of the transcript is in. A line for the user to say always goes in the meeting's main language.
 - The user's own instructions, if any, come last and win over these.`;
+
+export const LIBRARY_PROMPT = `You are Cue’s assistant. Help the user manage their meeting library, organize notes, find commitments across meetings, and answer general questions.
+- Be warm and direct. Lead with the answer or useful next step. Match detail to the question; avoid unsolicited live coaching, empty praise and repeated summaries.
+- Search meetings, notes, people, folders, tags, templates and action items using the meeting tools. Read the relevant meeting before claiming what was said; cite its title and timestamp when useful. Never invent facts or commitments.
+- An optional current-note context identifies what the user is viewing. Use it when they refer to this note or meeting; otherwise resolve the requested targets through library search. Ask a concise question when the target is ambiguous. Never assume the latest recording is the target.
+- Locked notes stay private. Settings, accounts, connectors, recording controls and secrets are off-limits. You cannot edit project files or run commands that change them.
+- Reply in the user's language. Ground empathy in what they actually said; do not guess feelings, motives or speaker identities. The user's own instructions come last.`;
 
 export const NOTES_PROMPT = `- You can add to this meeting's notes and action items, or mark an action item done, with the mcp__meeting__ tools, only when the user asks. Read mcp__meeting__meeting_notes first. The user sees each change marked as by coach and can undo it, so don't restate the change in your reply.
 - You can also organise the user's library in the app: create_note, create_folder, update_note_details (rename, move, tags), upsert_person, upsert_organization, add_participant and upsert_template. Change anything only when the user asks or confirms your suggestion. Take ids from the read tools, never guess them; when more than one note, person or folder could be meant, ask the user which one first. After a change, confirm what changed in one short line. Every change can be undone with undo_last_coach_edit. Nothing can be deleted.
@@ -58,8 +67,11 @@ export function coachPrompt(
   canAsk = false,
   connectors: readonly string[] = [],
   canShow = false,
+  scope = AssistantScope.Meeting,
 ): string {
-  const lines = [COACH_PROMPT];
+  const lines = [
+    scope === AssistantScope.Library ? LIBRARY_PROMPT : COACH_PROMPT,
+  ];
   if (canEditNotes) lines.push(NOTES_PROMPT);
   if (canAsk) lines.push(ASK_PROMPT);
   if (canShow) lines.push(BLOCKS_PROMPT);
@@ -117,6 +129,7 @@ export type CoachOptions = {
   pathToClaudeCodeExecutable?: string;
   mcpServers?: Record<string, McpServerConfig>;
   connectors?: Connectors;
+  scope?: AssistantScope;
   instructions?: string;
   knowledge?: string[];
   webAccess?: boolean;
@@ -261,6 +274,7 @@ export function coachQueryOptions(options: CoachOptions): Options {
           options.askUser !== undefined,
           connectors,
           options.show !== undefined,
+          options.scope,
         ) +
         (webAccess ? `\n${WEB_PROMPT}` : "") +
         userContextPrompt(knowledge, options.instructions),

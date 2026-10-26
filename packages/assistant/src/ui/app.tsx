@@ -13,6 +13,7 @@ import {
 import {
   CATCH_UP_SHORTCUT,
   Header,
+  type HeaderSlot,
   TranscriptStrip,
 } from "./components/header";
 import { type Command, Palette } from "./components/palette";
@@ -28,6 +29,14 @@ import {
   isEmptyWrapUp,
   WrapUpCard,
 } from "./components/wrap-up-card";
+import {
+  AssistantHostProvider,
+  AssistantSurface,
+  browserHost,
+  type AssistantHost,
+  AssistantScope,
+  useAssistantHost,
+} from "./host";
 import { type PreparedImage } from "./images";
 import {
   chipsAllowed,
@@ -43,6 +52,7 @@ import {
   type Turn,
 } from "./state";
 import { type CoachApi, useCoach } from "./use-coach";
+import { useMountEffect } from "./use-mount-effect";
 
 export const GLANCE_QUERY = "(max-height: 500px)";
 
@@ -70,18 +80,37 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function App() {
+export function App({
+  host = browserHost,
+  header,
+}: {
+  host?: AssistantHost;
+  header?: HeaderSlot;
+}) {
+  return (
+    <AssistantHostProvider host={host}>
+      <ConnectedAssistant header={header} />
+    </AssistantHostProvider>
+  );
+}
+
+function ConnectedAssistant({ header }: { header?: HeaderSlot }) {
   const [state, api] = useCoach();
-  return <CoachView state={state} api={api} />;
+  return <CoachView state={state} api={api} header={header} />;
 }
 
 export function CoachView({
   state,
   api,
+  header,
 }: {
   state: CoachState;
   api: CoachApi;
+  header?: HeaderSlot;
 }) {
+  const host = useAssistantHost();
+  const library = host.scope === AssistantScope.Library;
+  const container = useRef<HTMLDivElement>(null);
   const [palette, setPalette] = useState(false);
   const [sent, setSent] = useState(0);
   const glance = useMediaQuery(GLANCE_QUERY);
@@ -99,11 +128,17 @@ export function CoachView({
   const projectName =
     state.status && !needsFolder ? folderName(state.status.project.path) : null;
   const latestAsk = lastAsk(state);
-  const chips = suggestions(
-    phase,
-    state.wrapUp?.state === WrapUpState.Ready &&
-      hasFollowUp(state.wrapUp.wrapUp.follow_up_draft),
-  );
+  const chips = library
+    ? [
+        "Find my recent meetings",
+        "What action items are still open?",
+        "Help me organize my notes",
+      ]
+    : suggestions(
+        phase,
+        state.wrapUp?.state === WrapUpState.Ready &&
+          hasFollowUp(state.wrapUp.wrapUp.follow_up_draft),
+      );
 
   const ask = useCallback(
     async (text: string, images: readonly PreparedImage[] = []) => {
@@ -231,6 +266,7 @@ export function CoachView({
   }, [
     api,
     busy,
+    library,
     canCatchUp,
     copyLast,
     latestAsk,
@@ -240,54 +276,53 @@ export function CoachView({
     stopOrDismiss,
   ]);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.isComposing) return;
-      const mod = event.metaKey || event.ctrlKey;
-      const key = event.key.toLowerCase();
-      if (mod && key === "k") {
+  const onKey = (event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.isComposing) return;
+    if (
+      host.surface === AssistantSurface.Embedded &&
+      !container.current?.contains(document.activeElement)
+    )
+      return;
+    const mod = event.metaKey || event.ctrlKey;
+    const key = event.key.toLowerCase();
+    if (mod && key === "k") {
+      event.preventDefault();
+      setPalette((open) => !open);
+      return;
+    }
+    if (palette) return;
+    if (mod && !event.shiftKey && key === "j") {
+      event.preventDefault();
+      if (canCatchUp) void api.checkIn();
+    } else if (mod && event.shiftKey && key === "o") {
+      event.preventDefault();
+      newChat();
+    } else if (mod && event.shiftKey && key === "c") {
+      event.preventDefault();
+      void copyLast();
+    } else if (event.key === "Escape" || (mod && event.key === ".")) {
+      if (state.question || busy) {
         event.preventDefault();
-        setPalette((open) => !open);
-        return;
+        stopOrDismiss();
       }
-      if (palette) return;
-      if (mod && !event.shiftKey && key === "j") {
+    } else if (event.key === "/" && !mod) {
+      const target = event.target;
+      const typing =
+        target instanceof HTMLElement &&
+        (target.tagName === "TEXTAREA" || target.tagName === "INPUT");
+      if (!typing) {
         event.preventDefault();
-        if (canCatchUp) void api.checkIn();
-      } else if (mod && event.shiftKey && key === "o") {
-        event.preventDefault();
-        newChat();
-      } else if (mod && event.shiftKey && key === "c") {
-        event.preventDefault();
-        void copyLast();
-      } else if (event.key === "Escape" || (mod && event.key === ".")) {
-        if (state.question || busy) {
-          event.preventDefault();
-          stopOrDismiss();
-        }
-      } else if (event.key === "/" && !mod) {
-        const target = event.target;
-        const typing =
-          target instanceof HTMLElement &&
-          (target.tagName === "TEXTAREA" || target.tagName === "INPUT");
-        if (!typing) {
-          event.preventDefault();
-          composer.current?.focus();
-        }
+        composer.current?.focus();
       }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [
-    api,
-    busy,
-    canCatchUp,
-    copyLast,
-    newChat,
-    palette,
-    state.question,
-    stopOrDismiss,
-  ]);
+    }
+  };
+  const keyHandler = useRef(onKey);
+  keyHandler.current = onKey;
+  useMountEffect(() => {
+    const listener = (event: KeyboardEvent) => keyHandler.current(event);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  });
 
   const placeholder = !ready
     ? state.connection === Connection.Lost
@@ -301,7 +336,9 @@ export function CoachView({
         ? "Ask about this meeting…"
         : projectName
           ? `Ask about ${projectName}…`
-          : "Ask the coach…";
+          : library
+            ? "Ask about your meetings or anything else…"
+            : "Ask the coach…";
 
   const submit = useCallback(
     async (text: string, images: readonly PreparedImage[]) => {
@@ -355,8 +392,12 @@ export function CoachView({
   ) : undefined;
 
   return (
-    <div className="bg-surface text-foreground flex h-full flex-col">
+    <div
+      ref={container}
+      className="cue-assistant bg-surface text-foreground flex h-full min-h-0 flex-col"
+    >
       <Header
+        titleOverride={library ? "Assistant" : undefined}
         provider={state.status?.provider}
         coaching={live ? state.status?.coaching : undefined}
         onCoachingChange={(input) => api.setCoaching(input)}
@@ -367,6 +408,8 @@ export function CoachView({
         onNewChat={newChat}
         newChatDisabled={!ready}
         onPalette={() => setPalette(true)}
+        idleSubtitle={header?.subtitle}
+        actions={header?.actions}
       />
       {live && state.transcript && (
         <TranscriptStrip
@@ -407,7 +450,9 @@ export function CoachView({
             disabled={!ready || busy}
             onSuggestion={(text) => void ask(text)}
             onChooseFolder={
-              needsFolder ? () => void api.chooseProjectFolder() : undefined
+              !library && needsFolder
+                ? () => void api.chooseProjectFolder()
+                : undefined
             }
           />
         }

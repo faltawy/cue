@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 
 import { type MeetingCoaching } from "../coaching-preferences";
 import { type CoachFeedback, type EvidenceTarget } from "../move";
 import { type CoachEvent, CoachEventType } from "../protocol";
+import { browserHost, useAssistantHost, type AssistantHost } from "./host";
 import { type PreparedImage } from "./images";
 import {
   ActionType,
@@ -11,6 +12,7 @@ import {
   initialState,
   reduce,
 } from "./state";
+import { useMountEffect } from "./use-mount-effect";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
 
@@ -18,9 +20,10 @@ export async function post(
   url: string,
   body?: unknown,
   method = "POST",
+  request: AssistantHost["request"] = browserHost.request,
 ): Promise<ActionResult> {
   try {
-    const response = await fetch(url, {
+    const response = await request(url, {
       method,
       ...(body === undefined
         ? {}
@@ -159,38 +162,45 @@ export const LOST_AFTER_MS = 1_500;
 
 export function useCoach(): [CoachState, CoachApi] {
   const [state, dispatch] = useReducer(reduce, initialState);
+  const host = useAssistantHost();
+  const send = useCallback(
+    (url: string, body?: unknown, method = "POST") =>
+      post(url, body, method, host.request),
+    [host],
+  );
 
-  useEffect(() => {
-    const source = new EventSource("/events");
+  useMountEffect(() => {
     const queue = eventQueue((events) =>
       dispatch({ type: ActionType.Events, events }),
     );
     let lost: ReturnType<typeof setTimeout> | null = null;
-    source.onopen = () => {
-      if (lost) clearTimeout(lost);
-      lost = null;
-      dispatch({ type: ActionType.Connection, connection: Connection.Open });
-    };
-    source.onerror = () => {
-      lost ??= setTimeout(
-        () =>
-          dispatch({
-            type: ActionType.Connection,
-            connection: Connection.Lost,
-          }),
-        LOST_AFTER_MS,
-      );
-    };
-    source.onmessage = (message: MessageEvent<string>) => {
-      const event = parseEvent(message.data);
-      if (event) queue.push(event);
-    };
+    const close = host.subscribe({
+      open: () => {
+        if (lost) clearTimeout(lost);
+        lost = null;
+        dispatch({ type: ActionType.Connection, connection: Connection.Open });
+      },
+      error: () => {
+        lost ??= setTimeout(
+          () =>
+            dispatch({
+              type: ActionType.Connection,
+              connection: Connection.Lost,
+            }),
+          LOST_AFTER_MS,
+        );
+      },
+      message: (data) => {
+        const event = parseEvent(data);
+        if (event) queue.push(event);
+      },
+    });
     return () => {
       if (lost) clearTimeout(lost);
       queue.close();
-      source.close();
+      close();
     };
-  }, []);
+  });
 
   const notify = useCallback((message: string) => {
     dispatch({
@@ -219,7 +229,7 @@ export function useCoach(): [CoachState, CoachApi] {
           height,
         })),
       });
-      const result = await post(
+      const result = await send(
         "/ask",
         images.length > 0 ? { text, images } : { text },
       );
@@ -231,7 +241,7 @@ export function useCoach(): [CoachState, CoachApi] {
         });
       return result;
     },
-    [],
+    [send],
   );
 
   const api = useMemo<CoachApi>(
@@ -239,32 +249,32 @@ export function useCoach(): [CoachState, CoachApi] {
       ask,
       checkItem: (blockId, index, checked) =>
         withNotice(
-          post("/blocks/check", { block_id: blockId, index, checked }),
+          send("/blocks/check", { block_id: blockId, index, checked }),
         ),
       addItemToNote: (blockId, index) =>
-        withNotice(post("/blocks/action-item", { block_id: blockId, index })),
-      open: (url) => withNotice(post("/open", { url })),
-      openEvidence: (target) => withNotice(post("/evidence", target)),
-      feedback: (input) => withNotice(post("/feedback", input)),
-      resetFeedback: () => withNotice(post("/feedback/reset")),
-      setCoaching: (input) => post("/coaching", input),
-      stop: () => withNotice(post("/stop")),
-      checkIn: () => withNotice(post("/checkin")),
-      newChat: () => withNotice(post("/new-chat")),
-      answer: (id, answers) => withNotice(post("/question", { id, answers })),
-      dismiss: (id) => withNotice(post("/question", { id })),
-      undo: (editId) => withNotice(post("/undo", { edit_id: editId })),
-      chooseSeriesFolder: () => withNotice(post("/project/series")),
+        withNotice(send("/blocks/action-item", { block_id: blockId, index })),
+      open: (url) => withNotice(send("/open", { url })),
+      openEvidence: (target) => withNotice(send("/evidence", target)),
+      feedback: (input) => withNotice(send("/feedback", input)),
+      resetFeedback: () => withNotice(send("/feedback/reset")),
+      setCoaching: (input) => send("/coaching", input),
+      stop: () => withNotice(send("/stop")),
+      checkIn: () => withNotice(send("/checkin")),
+      newChat: () => withNotice(send("/new-chat")),
+      answer: (id, answers) => withNotice(send("/question", { id, answers })),
+      dismiss: (id) => withNotice(send("/question", { id })),
+      undo: (editId) => withNotice(send("/undo", { edit_id: editId })),
+      chooseSeriesFolder: () => withNotice(send("/project/series")),
       useDefaultFolder: () =>
-        withNotice(post("/project/series", undefined, "DELETE")),
-      addActionItems: () => withNotice(post("/wrapup/action-items")),
-      logToClients: () => withNotice(post("/wrapup/log-clients")),
-      signIn: () => withNotice(post("/sign-in")),
-      chooseProjectFolder: () => withNotice(post("/project")),
-      retrySetup: () => withNotice(post("/setup/retry")),
+        withNotice(send("/project/series", undefined, "DELETE")),
+      addActionItems: () => withNotice(send("/wrapup/action-items")),
+      logToClients: () => withNotice(send("/wrapup/log-clients")),
+      signIn: () => withNotice(send("/sign-in")),
+      chooseProjectFolder: () => withNotice(send("/project")),
+      retrySetup: () => withNotice(send("/setup/retry")),
       notify,
     }),
-    [ask, notify, withNotice],
+    [ask, notify, withNotice, send],
   );
   return [state, api];
 }

@@ -3,6 +3,8 @@ description = "Default permissions for the plugin"
 permissions = [
   "allow-complete-dictation",
   "allow-llm-endpoint",
+  "allow-assistant-endpoint",
+  "allow-show-assistant",
   "allow-get-settings",
   "allow-set-settings",
   "allow-choose-project",

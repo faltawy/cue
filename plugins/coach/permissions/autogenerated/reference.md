@@ -6,6 +6,8 @@ Default permissions for the plugin
 
 - `allow-complete-dictation`
 - `allow-llm-endpoint`
+- `allow-assistant-endpoint`
+- `allow-show-assistant`
 - `allow-get-settings`
 - `allow-set-settings`
 - `allow-choose-project`
@@ -58,6 +60,32 @@ Enables the add_knowledge command without any pre-configured scope.
 <td>
 
 Denies the add_knowledge command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-assistant-endpoint`
+
+</td>
+<td>
+
+Enables the assistant_endpoint command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-assistant-endpoint`
+
+</td>
+<td>
+
+Denies the assistant_endpoint command without any pre-configured scope.
 
 </td>
 </tr>
@@ -500,6 +528,32 @@ Enables the show command without any pre-configured scope.
 <td>
 
 Denies the show command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-show-assistant`
+
+</td>
+<td>
+
+Enables the show_assistant command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-show-assistant`
+
+</td>
+<td>
+
+Denies the show_assistant command without any pre-configured scope.
 
 </td>
 </tr>

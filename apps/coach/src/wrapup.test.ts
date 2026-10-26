@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { MeetingIntent } from "./coaching-preferences";
-import { MoveVerb } from "./move";
+import { MeetingIntent } from "@anlg/assistant/coaching-preferences";
+import { MoveVerb } from "@anlg/assistant/move";
+
 import {
   commitmentText,
   logToClientsPrompt,

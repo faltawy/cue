@@ -3,7 +3,19 @@ import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { BlockKind } from "./blocks";
+import { BlockKind } from "@anlg/assistant/blocks";
+import { MeetingIntent } from "@anlg/assistant/coaching-preferences";
+import { meetingChange } from "@anlg/assistant/meeting-state";
+import { FeedbackReason, MoveTag, MoveVerb } from "@anlg/assistant/move";
+import {
+  type CoachEvent,
+  CoachEventType,
+  ResetReason,
+  TurnKind,
+  WrapUpState,
+} from "@anlg/assistant/protocol";
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import {
   type ChatStore,
   clearFeedback,
@@ -27,18 +39,7 @@ import {
   type SettledWrapUp,
   wrappedTranscripts,
 } from "./chat-store";
-import { MeetingIntent } from "./coaching-preferences";
 import { HitKind } from "./detect";
-import { meetingChange } from "./meeting-state";
-import { FeedbackReason, MoveTag, MoveVerb } from "./move";
-import {
-  type CoachEvent,
-  CoachEventType,
-  ResetReason,
-  TurnKind,
-  WrapUpState,
-} from "./protocol";
-import { CoachProvider } from "./provider";
 
 const asked: CoachEvent[] = [
   { type: CoachEventType.User, kind: TurnKind.Ask, text: "What did Sara ask?" },
@@ -688,4 +689,54 @@ test("a failed feedback save leaves the previous vote intact and a retry counts 
   });
   expect(store.feedback.categories.pushback).toBe(2);
   expect(loadChats(file).feedback.categories.pushback).toBe(2);
+});
+
+test("library chat survives meeting changes and resets without erasing the live coach", () => {
+  const store = remember(
+    storeWith("meeting-a", "/work/northwind", "live-runtime"),
+    "cue:library",
+    {
+      runtimeSessionId: "library-runtime",
+      project: "/work/northwind",
+      history: [
+        {
+          type: CoachEventType.User,
+          kind: TurnKind.Ask,
+          text: "Organize my notes",
+        },
+        { type: CoachEventType.Text, delta: "Which folder?" },
+      ],
+      updatedAt: 2,
+    },
+  );
+  const input = {
+    reason: ResumeReason.Startup,
+    store,
+    conversationId: "cue:library",
+    meeting: { sessionId: "meeting-a", live: true },
+    project: "/work/northwind",
+    current: {
+      runtimeSessionId: null,
+      project: "/work/northwind",
+      history: [],
+    },
+  };
+  const resumed = planChat(input);
+  expect(resumed.resume).toBe("library-runtime");
+  expect(resumed.history[1]).toEqual({
+    type: CoachEventType.Text,
+    delta: "Which folder?",
+  });
+  const reset = planChat({ ...input, reason: ResetReason.Manual });
+  expect(reset.history).toEqual([]);
+  const live = planChat({
+    ...input,
+    store: reset.store,
+    conversationId: undefined,
+  });
+  expect(live.resume).toBe("live-runtime");
+  expect(live.history[1]).toEqual({
+    type: CoachEventType.Text,
+    delta: "About the Bcc option.",
+  });
 });

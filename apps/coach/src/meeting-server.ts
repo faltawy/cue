@@ -5,10 +5,16 @@ import {
 import { type Database } from "bun:sqlite";
 import { z } from "zod";
 
-import { type AppBridge, type CoachEdit, NoteStyle } from "./app-bridge";
-import { type Block, showInputShape } from "./blocks";
+import {
+  type AppBridge,
+  type CoachEdit,
+  NoteStyle,
+} from "@anlg/assistant/app-bridge";
+import { type Block, showInputShape } from "@anlg/assistant/blocks";
+import { MOVE_TAGS } from "@anlg/assistant/move";
+
+import { readableMeetingId } from "./library";
 import { libraryTools } from "./library-tools";
-import { MOVE_TAGS } from "./move";
 import { readMeetingNote } from "./notes";
 import { tool } from "./runtime-tool";
 import { failed, text } from "./tool-result";
@@ -58,10 +64,16 @@ export function meetingTools(
   edits?: MeetingEdits,
   onShow?: (block: Block) => void,
 ) {
-  const current = () => {
-    const id = sessionId();
-    if (!id) throw new Error("No meeting is attached to the coach.");
-    return id;
+  const current = (noteId?: string) =>
+    readableMeetingId(db, noteId ?? sessionId());
+  const target = {
+    note_id: z
+      .string()
+      .min(1)
+      .optional()
+      .describe(
+        "Target note id from search_meetings. Omit only to use the explicitly selected note.",
+      ),
   };
 
   const editTools = edits
@@ -70,12 +82,13 @@ export function meetingTools(
           "assign_speaker",
           "Assign a diarized speaker to a uniquely named person who is already a participant in this meeting. Use only when the user explicitly asks. Read transcript_edit_context first; use its exact channel and speaker_index. Ask the user if the person or speaker is ambiguous. Never create a person or infer an identity.",
           {
+            ...target,
             channel: z.number().int().nonnegative(),
             speaker_index: z.number().int().nonnegative(),
             person_name: z.string().trim().min(1),
           },
-          async ({ channel, speaker_index, person_name }) => {
-            const session = current();
+          async ({ note_id, channel, speaker_index, person_name }) => {
+            const session = current(note_id);
             const context = readTranscriptEditContext(db, session);
             const speakerExists =
               context.status === TranscriptEditStatus.Live
@@ -130,12 +143,13 @@ export function meetingTools(
           "correct_transcript",
           "Correct a clearly identified misheard span only after this meeting has ended and only when the user explicitly asks. Take exact word_ids and expected_text from transcript_edit_context; ask if the span or replacement is ambiguous. Preserve the original timing. The user can undo this edit.",
           {
+            ...target,
             word_ids: z.array(z.string().min(1)).min(1),
             expected_text: z.string().min(1),
             replacement: z.string().trim().min(1),
           },
-          async ({ word_ids, expected_text, replacement }) => {
-            const session = current();
+          async ({ note_id, word_ids, expected_text, replacement }) => {
+            const session = current(note_id);
             const context = readTranscriptEditContext(db, session);
             if (context.status === TranscriptEditStatus.Live)
               return failed(
@@ -173,13 +187,14 @@ export function meetingTools(
           "update_note",
           "Add lines to the end of this meeting's notes in the app, as paragraphs or as a bullet list. Use only when the user asks you to write something into the notes. The user sees the edit marked as by coach, with Undo.",
           {
+            ...target,
             lines: z.array(z.string().min(1)).min(1),
             style: z.enum(NoteStyle).default(NoteStyle.Bullets),
           },
-          async ({ lines, style }) => {
+          async ({ note_id, lines, style }) => {
             try {
               const edit = await edits.bridge.appendNote(
-                current(),
+                current(note_id),
                 lines,
                 style,
               );
@@ -193,10 +208,13 @@ export function meetingTools(
         tool(
           "add_action_item",
           'Add an action item (a checkbox task) to this meeting\'s notes in the app. Use only when the user asks. Put the owner first when it is not the user, e.g. "Sara: send the pricing sheet (Friday)".',
-          { text: z.string().min(1) },
-          async ({ text: task }) => {
+          { ...target, text: z.string().min(1) },
+          async ({ note_id, text: task }) => {
             try {
-              const edit = await edits.bridge.addActionItem(current(), task);
+              const edit = await edits.bridge.addActionItem(
+                current(note_id),
+                task,
+              );
               edits.onEdit(edit);
               return text(`${edit.summary} (task_id ${edit.task_id})`);
             } catch (error) {
@@ -207,11 +225,11 @@ export function meetingTools(
         tool(
           "complete_action_item",
           "Mark one of this meeting's action items done. Take the task_id from mcp__meeting__meeting_notes. Use only when the user asks.",
-          { task_id: z.string().min(1) },
-          async ({ task_id }) => {
+          { ...target, task_id: z.string().min(1) },
+          async ({ note_id, task_id }) => {
             try {
               const edit = await edits.bridge.completeActionItem(
-                current(),
+                current(note_id),
                 task_id,
               );
               edits.onEdit(edit);
@@ -227,7 +245,7 @@ export function meetingTools(
           {},
           async () => {
             try {
-              const edit = await edits.bridge.undo(current());
+              const edit = await edits.bridge.undo(sessionId());
               edits.onUndo(edit);
               return text(`Undid: ${edit.summary}`);
             } catch (error) {
@@ -242,10 +260,10 @@ export function meetingTools(
     tool(
       "live_transcript",
       "The meeting's transcript so far, as timestamped lines labelled by speaker: You (the user), a participant name when known, or Speaker N for an unnamed voice. Pass since_ms to get only speech after that offset.",
-      { since_ms: z.number().int().nonnegative().optional() },
-      async ({ since_ms }) => {
+      { ...target, since_ms: z.number().int().nonnegative().optional() },
+      async ({ note_id, since_ms }) => {
         const transcript = readLiveTranscript(db, {
-          sessionId: sessionId(),
+          sessionId: current(note_id),
           sinceMs: since_ms,
         });
         return text(
@@ -259,9 +277,9 @@ export function meetingTools(
     tool(
       "transcript_edit_context",
       "Read finalized transcript lines with stable word_ids and speaker coordinates. This is only for a specific speaker assignment or wording correction the user explicitly asked for; live transcripts cannot be edited.",
-      {},
-      async () => {
-        const context = readTranscriptEditContext(db, current());
+      target,
+      async ({ note_id }) => {
+        const context = readTranscriptEditContext(db, current(note_id));
         return text(JSON.stringify(context, null, 2));
       },
       { annotations: { readOnlyHint: true } },
@@ -269,9 +287,9 @@ export function meetingTools(
     tool(
       "meeting_info",
       "Title, start/end time and participants of the current meeting.",
-      {},
-      async () => {
-        const id = sessionId();
+      target,
+      async ({ note_id }) => {
+        const id = current(note_id);
         const info = id ? readMeetingInfo(db, id) : null;
         return text(info ? JSON.stringify(info, null, 2) : "No meeting found.");
       },
@@ -280,15 +298,15 @@ export function meetingTools(
     tool(
       "meeting_notes",
       "The user's notes for this meeting as they are in the app right now, including action items as checkboxes with their task_id.",
-      {},
-      async () => {
-        const id = sessionId();
+      target,
+      async ({ note_id }) => {
+        const id = current(note_id);
         return text(id ? readMeetingNote(db, id) : "No meeting found.");
       },
       { annotations: { readOnlyHint: true } },
     ),
     ...editTools,
-    ...libraryTools(db, current, edits),
+    ...libraryTools(db, sessionId, edits),
     ...(onShow ? [showTool(onShow)] : []),
   ];
 }

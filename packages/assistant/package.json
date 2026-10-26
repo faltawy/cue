@@ -1,0 +1,33 @@
+{
+  "name": "@anlg/assistant",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./ui/*": "./src/ui/*.ts",
+    "./ui/app": "./src/ui/app.tsx",
+    "./ui/components/*": "./src/ui/components/*.tsx",
+    "./styles.css": "./src/styles.css",
+    "./ui/host": "./src/ui/host.tsx"
+  },
+  "dependencies": {
+    "lucide-react": "^1.59.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "use-stick-to-bottom": "^1.1.6",
+    "zod": "4.5.4"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -108,7 +108,15 @@ function ProactiveBudget({ view }: { view: ProactiveView }) {
   );
 }
 
+export type HeaderSlot = {
+  /** Shown under the title when no connection or recording status applies. */
+  subtitle?: ReactNode;
+  /** Host controls rendered after the options menu. */
+  actions?: ReactNode;
+};
+
 export function Header({
+  titleOverride,
   provider,
   coaching,
   onCoachingChange,
@@ -119,7 +127,10 @@ export function Header({
   onNewChat,
   newChatDisabled,
   onPalette,
+  idleSubtitle,
+  actions,
 }: {
+  titleOverride?: string;
   provider?: CoachProvider;
   coaching?: MeetingCoaching & { sessionId: string };
   onCoachingChange: CoachApi["setCoaching"];
@@ -130,6 +141,8 @@ export function Header({
   onNewChat: () => void;
   newChatDisabled: boolean;
   onPalette: () => void;
+  idleSubtitle?: ReactNode;
+  actions?: ReactNode;
 }) {
   const strip = transcript?.strip;
   const settled = connection === Connection.Open;
@@ -141,7 +154,8 @@ export function Header({
     live || (settled && endedTitle !== null),
   );
   const title =
-    strip?.state === StripState.Live ? strip.title : (endedTitle ?? "Coach");
+    titleOverride ??
+    (strip?.state === StripState.Live ? strip.title : (endedTitle ?? "Coach"));
   let subtitle: ReactNode = null;
   if (!settled) {
     subtitle = connection === Connection.Lost ? "Reconnecting…" : "Connecting…";
@@ -158,6 +172,8 @@ export function Header({
   } else if (strip?.state === StripState.Waiting && endedTitle !== null) {
     subtitle =
       strip.endedAt === null ? "Ended" : formatEndedAgo(now - strip.endedAt);
+  } else if (idleSubtitle) {
+    subtitle = idleSubtitle;
   }
   return (
     <header className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
@@ -204,6 +220,7 @@ export function Header({
         disabled={newChatDisabled}
         onPalette={onPalette}
       />
+      {actions}
     </header>
   );
 }

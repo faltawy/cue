@@ -57,6 +57,7 @@ struct CoachState {
     speaker_assigned: SpeakerAssignmentProbe,
     coach: Mutex<Option<Sidecar>>,
     llm: Mutex<Option<Sidecar>>,
+    assistant: Mutex<Option<Sidecar>>,
     opening: Mutex<()>,
     bridge: Mutex<Option<bridge::Bridge>>,
     setup: Mutex<SetupSlot>,
@@ -441,6 +442,15 @@ impl Coach {
         self.retry_provider_setup(CoachProvider::Claude)
     }
 
+    pub fn show_assistant(&self) -> Result<()> {
+        window::show_assistant(&self.app, &self.assistant_endpoint()?)
+    }
+
+    pub fn assistant_endpoint(&self) -> Result<Endpoint> {
+        let state = self.app.state::<CoachState>();
+        ensure_assistant(&self.app, &state, &self.settings()?)
+    }
+
     pub fn llm_endpoint(&self) -> Result<Endpoint> {
         let state = self.app.state::<CoachState>();
         let claude_dir = claude_dir(&self.app)?;
@@ -450,26 +460,34 @@ impl Coach {
     }
 
     pub async fn is_answering(&self) -> bool {
-        let endpoint = {
+        let endpoints = {
             let state = self.app.state::<CoachState>();
-            let Ok(mut slot) = lock(&state.coach) else {
-                return true;
-            };
-            let Some(sidecar) = slot.as_mut() else {
-                return false;
-            };
-            if !sidecar.is_running() {
-                return false;
+            let mut endpoints = Vec::new();
+            for slot in [&state.coach, &state.assistant] {
+                let Ok(mut slot) = lock(slot) else {
+                    return true;
+                };
+                if let Some(sidecar) = slot.as_mut()
+                    && sidecar.is_running()
+                {
+                    endpoints.push(sidecar.endpoint());
+                }
             }
-            sidecar.endpoint()
+            endpoints
         };
-        match http_client() {
-            Ok(client) => busy::answering(&client, &endpoint).await,
+        let client = match http_client() {
+            Ok(client) => client,
             Err(error) => {
                 tracing::warn!(%error, "coach_busy_probe_failed");
-                true
+                return true;
+            }
+        };
+        for endpoint in endpoints {
+            if busy::answering(&client, &endpoint).await {
+                return true;
             }
         }
+        false
     }
 }
 
@@ -698,21 +716,58 @@ fn protected_dirs(app: &AppHandle) -> Vec<PathBuf> {
     .collect()
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum ConversationScope {
+    Meeting,
+    Library,
+}
+
 fn ensure_coach(app: &AppHandle, state: &CoachState, settings: &CoachSettings) -> Result<Endpoint> {
+    ensure_conversation(
+        app,
+        state,
+        settings,
+        &state.coach,
+        ConversationScope::Meeting,
+    )
+}
+
+fn ensure_assistant(
+    app: &AppHandle,
+    state: &CoachState,
+    settings: &CoachSettings,
+) -> Result<Endpoint> {
+    ensure_conversation(
+        app,
+        state,
+        settings,
+        &state.assistant,
+        ConversationScope::Library,
+    )
+}
+
+fn ensure_conversation(
+    app: &AppHandle,
+    state: &CoachState,
+    settings: &CoachSettings,
+    slot: &Mutex<Option<Sidecar>>,
+    scope: ConversationScope,
+) -> Result<Endpoint> {
     let servers = resolve_servers(app, settings);
     let key = coach_launch(state, settings, &servers, 0, None, None)?.key();
     let bridge = app_bridge(app, state)?;
-    ensure(&state.coach, key, |port| {
+    ensure(slot, key, |port| {
         let mcp_config =
             mcp::write_config(&mcp_config_dir(), &servers, &settings.claude_connectors)?;
         let instructions = mcp::write_instructions(&instructions_dir(), &settings.instructions)?;
-        let mut command = process::sidecar_command(
-            process::server_args(&process::Launch {
-                protected: protected_dirs(app),
-                ..coach_launch(state, settings, &servers, port, mcp_config, instructions)?
-            }),
-            &claude_dir(app)?,
-        )?;
+        let mut args = process::server_args(&process::Launch {
+            protected: protected_dirs(app),
+            ..coach_launch(state, settings, &servers, port, mcp_config, instructions)?
+        });
+        if scope == ConversationScope::Library {
+            args.extend(["--scope".into(), "library".into()]);
+        }
+        let mut command = process::sidecar_command(args, &claude_dir(app)?)?;
         bridge.apply(&mut command);
         Ok(command)
     })
@@ -735,6 +790,13 @@ fn instructions_dir() -> PathBuf {
 
 fn restart_running_coach(app: &AppHandle, settings: &CoachSettings) -> Result<()> {
     let state = app.state::<CoachState>();
+    let assistant_running = lock(&state.assistant)?
+        .as_mut()
+        .is_some_and(|sidecar| sidecar.is_running());
+    if assistant_running {
+        let endpoint = ensure_assistant(app, &state, settings)?;
+        window::reload_assistant(app, &endpoint)?;
+    }
     let running = lock(&state.coach)?
         .as_mut()
         .is_some_and(|sidecar| sidecar.is_running());
@@ -813,6 +875,8 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         .commands(tauri_specta::collect_commands![
             commands::complete_dictation,
             commands::llm_endpoint,
+            commands::assistant_endpoint,
+            commands::show_assistant,
             commands::get_settings,
             commands::set_settings,
             commands::choose_project,
@@ -860,6 +924,7 @@ pub fn init(
                 speaker_assigned: speaker_assigned.clone(),
                 coach: Mutex::new(None),
                 llm: Mutex::new(None),
+                assistant: Mutex::new(None),
                 opening: Mutex::new(()),
                 bridge: Mutex::new(None),
                 setup: Mutex::new(SetupSlot::default()),
@@ -881,7 +946,7 @@ pub fn init(
             if let RunEvent::Exit = event
                 && let Some(state) = app.try_state::<CoachState>()
             {
-                for slot in [&state.coach, &state.llm] {
+                for slot in [&state.coach, &state.assistant, &state.llm] {
                     if let Ok(mut slot) = slot.lock() {
                         slot.take();
                     }
@@ -930,6 +995,7 @@ mod test {
             speaker_assigned: std::sync::Arc::new(|_, _| Box::pin(async {})),
             coach: Mutex::new(None),
             llm: Mutex::new(None),
+            assistant: Mutex::new(None),
             opening: Mutex::new(()),
             bridge: Mutex::new(None),
             setup: Mutex::new(SetupSlot::default()),

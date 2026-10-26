@@ -1,3 +1,6 @@
+vi.mock("~/ai/assistant", () => ({
+  AssistantLayout: ({ children }: { children: React.ReactNode }) => children,
+}));
 import {
   act,
   cleanup,

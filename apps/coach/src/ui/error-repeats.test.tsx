@@ -1,11 +1,9 @@
 import { fireEvent, render, within } from "@testing-library/react";
 import { describe, expect, mock, test } from "bun:test";
 
-import { coachError, GAVE_UP, withSignIn } from "../errors";
-import { type CoachEvent, CoachEventType } from "../protocol";
-import { CoachView } from "./app";
-import { useDom } from "./dom-setup";
-import { status } from "./fixtures";
+import { coachError, GAVE_UP, withSignIn } from "@anlg/assistant/errors";
+import { type CoachEvent, CoachEventType } from "@anlg/assistant/protocol";
+import { CoachView } from "@anlg/assistant/ui/app";
 import {
   ActionType,
   type CoachState,
@@ -13,8 +11,11 @@ import {
   initialState,
   ItemKind,
   reduce,
-} from "./state";
-import { type ActionResult, type CoachApi } from "./use-coach";
+} from "@anlg/assistant/ui/state";
+import { type ActionResult, type CoachApi } from "@anlg/assistant/ui/use-coach";
+
+import { useDom } from "./dom-setup";
+import { status } from "./fixtures";
 
 useDom();
 

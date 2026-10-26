@@ -1,45 +1,28 @@
+import {
+  wrapUpSchema,
+  type WrapUp,
+  type Commitment,
+} from "@anlg/assistant/wrapup";
+export {
+  wrapUpSchema,
+  type WrapUp,
+  type Commitment,
+} from "@anlg/assistant/wrapup";
 import { z } from "zod";
 
-import { intentGuidance, type MeetingIntent } from "./coaching-preferences";
+import {
+  intentGuidance,
+  type MeetingIntent,
+} from "@anlg/assistant/coaching-preferences";
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import { LlmEventType, runLlm } from "./llm";
-import { MoveVerb } from "./move";
-import { CoachProvider } from "./provider";
 import { talkStats, talkSummary } from "./talk-time";
 import {
   type LiveTranscript,
   type MeetingInfo,
   renderTranscript,
 } from "./transcript";
-
-export const wrapUpSchema = z.object({
-  commitments: z.array(
-    z.object({
-      who: z.string(),
-      what: z.string(),
-      when: z.string().nullable(),
-    }),
-  ),
-  open_questions: z.array(z.string()),
-  follow_up_draft: z.string(),
-  coaching: z.object({
-    went_well: z.array(z.string()),
-    next_time: z.array(
-      z.object({
-        moment: z.object({
-          speaker: z.string(),
-          at: z.string().nullable(),
-          quote: z.string(),
-        }),
-        headline: z.string(),
-        verb: z.enum(MoveVerb),
-        line: z.string(),
-      }),
-    ),
-  }),
-});
-
-export type WrapUp = z.infer<typeof wrapUpSchema>;
-export type Commitment = WrapUp["commitments"][number];
 
 export const WRAP_UP_SYSTEM = `You write the wrap-up of a meeting that just ended, from its transcript.
 "You" in the transcript is the user; other speakers appear by name, as "Speaker N", or as "Them".

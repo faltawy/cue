@@ -1,10 +1,14 @@
 import { z } from "zod";
 
-import { intentGuidance, type MeetingIntent } from "./coaching-preferences";
+import {
+  intentGuidance,
+  type MeetingIntent,
+} from "@anlg/assistant/coaching-preferences";
+import { NO_SPEND, type Spend, spendOf } from "@anlg/assistant/pricing";
+import { CoachProvider } from "@anlg/assistant/provider";
+
 import { type HitKind } from "./detect";
 import { jsonOf, LlmEventType, runLlm } from "./llm";
-import { NO_SPEND, type Spend, spendOf } from "./pricing";
-import { CoachProvider } from "./provider";
 import { type TranscriptLine } from "./transcript";
 import { headWithin, renderRecentLines } from "./transcript-window";
 

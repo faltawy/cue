@@ -108,7 +108,8 @@
     "vfile": "^6.0.3",
     "wavesurfer.js": "^7.12.6",
     "zod": "^4.5.4",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "@anlg/assistant": "workspace:*"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.61.0",

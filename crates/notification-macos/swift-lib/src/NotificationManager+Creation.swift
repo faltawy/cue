@@ -133,7 +133,17 @@ extension NotificationManager {
     guard FileManager.default.fileExists(atPath: expandedPath) else {
       return nil
     }
-    return NSWorkspace.shared.icon(forFile: expandedPath)
+    var application = URL(fileURLWithPath: expandedPath).resolvingSymlinksInPath()
+    while application.path != "/" {
+      if application.pathExtension.lowercased() == "app" {
+        return NSWorkspace.shared.icon(forFile: application.path)
+      }
+      application.deleteLastPathComponent()
+    }
+    if FileManager.default.isExecutableFile(atPath: expandedPath) {
+      return systemSymbolNotificationIcon("terminal")
+    }
+    return nil
   }
 
   func calendarNotificationIcon() -> NSImage? {

@@ -6,12 +6,18 @@ import {
   DEFAULT_COACHING,
   type MeetingCoaching,
   meetingCoachingSchema,
-} from "./coaching-preferences";
+} from "@anlg/assistant/coaching-preferences";
+import { CoachFeedback, FeedbackReason, MoveTag } from "@anlg/assistant/move";
+import {
+  CoachEvent,
+  ResetReason,
+  WrapUpState,
+  WrapUpView,
+} from "@anlg/assistant/protocol";
+import { CoachProvider, providerSchema } from "@anlg/assistant/provider";
+
 import { type Hit, type HitKind } from "./detect";
 import { type MeetingSeen, meetingSeenSchema } from "./meeting-context";
-import { CoachFeedback, FeedbackReason, MoveTag } from "./move";
-import { CoachEvent, ResetReason, WrapUpState, WrapUpView } from "./protocol";
-import { CoachProvider, providerSchema } from "./provider";
 
 export const MAX_MEETINGS = 20;
 export const MAX_HISTORY = 400;
@@ -386,6 +392,7 @@ export function planChat(input: {
   reason: OpenReason;
   store: ChatStore;
   meeting: { sessionId: string; live: boolean } | null;
+  conversationId?: string;
   project: string;
   selected?: {
     provider: CoachProvider;
@@ -401,7 +408,10 @@ export function planChat(input: {
     seen?: MeetingSeen;
   };
 }): ChatPlan {
-  const { reason, meeting, project, current } = input;
+  const { reason, project, current } = input;
+  const meeting = input.conversationId
+    ? { sessionId: input.conversationId, live: true }
+    : input.meeting;
   const selected = input.selected ?? {
     provider: CoachProvider.Claude,
     model: "sonnet",
