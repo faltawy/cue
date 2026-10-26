@@ -37,11 +37,19 @@ describe("estimateTranscriptRowHeight", () => {
 describe("evidence timestamp navigation", () => {
   it("locates the transcript turn containing the target and clamps a gap to the nearest turn", () => {
     const first = createSegment("First turn");
-    first.words = first.words.map((word) => ({ ...word, start_ms: 100, end_ms: 180 }));
+    first.words = first.words.map((word) => ({
+      ...word,
+      start_ms: 100,
+      end_ms: 180,
+    }));
     first.start_ms = 100;
     first.end_ms = 180;
     const second = createSegment("Second turn");
-    second.words = second.words.map((word) => ({ ...word, start_ms: 1_200, end_ms: 1_280 }));
+    second.words = second.words.map((word) => ({
+      ...word,
+      start_ms: 1_200,
+      end_ms: 1_280,
+    }));
     second.start_ms = 1_200;
     second.end_ms = 1_280;
 
@@ -154,6 +162,46 @@ describe("VirtualSegmentRow", () => {
 });
 
 describe("useVirtualSegments measurements", () => {
+  it("renders the merged transcript after a speaker change removes the focused row", () => {
+    const first = createSegment("First turn");
+    const second = createSegment("Second turn");
+    const { result, rerender } = renderHook(
+      ({ segments, keys }) => {
+        const virtual = useVirtualSegments({
+          segments,
+          segmentKeys: keys,
+          scrollElement: null,
+          activeMatchId: null,
+          searchEnabled: false,
+          currentMs: 0,
+          offsetMs: 0,
+        });
+        return {
+          virtual,
+          rows: virtual.virtualItems.map(({ index }) => ({
+            speaker: segments[index].key.speaker_index,
+            text: segments[index].text,
+          })),
+        };
+      },
+      {
+        initialProps: { segments: [first, second], keys: ["first", "second"] },
+      },
+    );
+    expect(result.current.rows.map((row) => row.text)).toEqual([
+      "First turn",
+      "Second turn",
+    ]);
+    act(() => result.current.virtual.handleRowFocus(1));
+    rerender({
+      segments: [createSegment("First turn Second turn")],
+      keys: ["first"],
+    });
+    expect(result.current.rows).toEqual([
+      { speaker: 0, text: "First turn Second turn" },
+    ]);
+  });
+
   it.each(["removed", "unchanged"])(
     "prunes stale heights when pending measurements are %s",
     (pending) => {

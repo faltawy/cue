@@ -55,7 +55,8 @@ export function findTranscriptSegmentIndex(
     const end =
       segment.words[segment.words.length - 1]?.end_ms ?? segment.end_ms;
     if (timestampMs >= start && timestampMs <= end) return index;
-    const distance = timestampMs < start ? start - timestampMs : timestampMs - end;
+    const distance =
+      timestampMs < start ? start - timestampMs : timestampMs - end;
     if (distance < nearestDistance) {
       nearestIndex = index;
       nearestDistance = distance;
@@ -172,6 +173,7 @@ export function useVirtualSegments({
     for (const index of selectedIndexes) indexes.add(index);
 
     return Array.from(indexes)
+      .filter((index) => index >= 0 && index < segments.length)
       .sort((left, right) => left - right)
       .map((index) => ({
         index,

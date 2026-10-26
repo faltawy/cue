@@ -78,7 +78,7 @@ function ChangelogRelease({
       className="group grid grid-cols-[24px_minmax(0,1fr)] gap-x-3 sm:gap-x-5"
     >
       <div aria-hidden="true" className="flex flex-col items-center">
-        <div className="text-muted-foreground bg-background flex h-10 shrink-0 items-center">
+        <div className="text-muted-foreground flex h-10 shrink-0 items-center">
           <Package size={18} />
         </div>
         <div className="bg-border w-px flex-1 group-last:hidden" />

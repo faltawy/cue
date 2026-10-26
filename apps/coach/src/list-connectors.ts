@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 
 import { CLAUDE_ARGS, claudeCodeFromArgs } from "./claude-code";
+import { CODEX_ARGS } from "./codex-code";
 import { findConnectors } from "./connectors";
 
 const DISCOVERY_TIMEOUT_MS = 10_000;
@@ -9,6 +10,7 @@ const { values } = parseArgs({
   options: {
     "list-connectors": { type: "boolean" },
     ...CLAUDE_ARGS,
+    ...CODEX_ARGS,
   },
 });
 
