@@ -25,6 +25,11 @@ export enum ProjectSource {
   Default = "default",
 }
 
+export enum RecordingPauseAction {
+  Pause = "pause",
+  Resume = "resume",
+}
+
 export enum DictationAction {
   Start = "start",
   Stop = "stop",
@@ -92,7 +97,10 @@ const meetingProjectSchema = z.object({
 
 export type MeetingProject = z.infer<typeof meetingProjectSchema>;
 
-const recordingSchema = z.object({ session_ids: z.array(z.string()) });
+const recordingSchema = z.object({
+  session_ids: z.array(z.string()),
+  paused_session_ids: z.array(z.string()).default([]),
+});
 
 export type TranscriptCorrection = {
   word_ids: string[];
@@ -177,6 +185,22 @@ export function appBridge(
     );
 
   return {
+    setRecordingPaused: (sessionId: string, action: RecordingPauseAction) =>
+      required(
+        call(
+          "POST",
+          `${meeting(sessionId)}/recording/${action}`,
+          z.object({ paused: z.boolean() }),
+        ),
+      ),
+    stopRecording: (sessionId: string) =>
+      required(
+        call(
+          "POST",
+          `${meeting(sessionId)}/recording/stop`,
+          z.object({ stopped: z.boolean() }),
+        ),
+      ),
     dictation: (recordingId: string, action: DictationAction) =>
       required(
         call("POST", "/dictation", z.object({ text: z.string().nullable() }), {
@@ -184,6 +208,7 @@ export function appBridge(
           action,
         }),
       ),
+    recordingState: () => required(call("GET", "/recording", recordingSchema)),
     recordingSessions: async (): Promise<ReadonlySet<string>> =>
       new Set(
         (await required(call("GET", "/recording", recordingSchema)))

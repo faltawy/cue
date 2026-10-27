@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 use anlg_audio::AudioProvider;
 use anlg_transcript::IdentityAssignment;
@@ -144,12 +144,13 @@ impl SessionParams {
 
 #[derive(Clone)]
 pub struct SessionContext {
+    pub paused: Arc<std::sync::atomic::AtomicBool>,
+    pub captured_samples: Arc<std::sync::atomic::AtomicU64>,
     pub runtime: Arc<dyn ListenerRuntime>,
     pub audio: Arc<dyn AudioProvider>,
     pub requested_transcription_mode: TranscriptionMode,
     pub params: SessionParams,
     pub app_dir: PathBuf,
-    pub started_at_instant: Instant,
     pub started_at_system: SystemTime,
     /// The live transcript outlives any one listener: a reconnecting listener resumes it so the
     /// audio it replays cannot finalize words twice and segments continue across the gap.

@@ -199,6 +199,9 @@ function HeaderMeetingAction({
 }) {
   const startListening = useStartListening(sessionId);
   const stop = useListener((state) => state.stop);
+  const paused = useListener(
+    (state) => state.live.sessionId === sessionId && state.live.paused,
+  );
   const remote = getRemoteMeeting(event?.meeting_link);
   const meetingLink = event?.meeting_link || null;
   const canJoinFromHeader = Boolean(
@@ -257,7 +260,7 @@ function HeaderMeetingAction({
   const action = (() => {
     if (sessionMode === "active") {
       return {
-        label: t`Stop`,
+        label: paused ? t`Paused · Stop` : t`Stop`,
         title: t`Stop listening`,
         icon: <Square className="text-destructive size-3" />,
         onClick: stopListening,

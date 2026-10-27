@@ -5,6 +5,7 @@ import {
   type AppBridge,
   type CoachEdit,
   CoachEditKind,
+  RecordingPauseAction,
 } from "@anlg/assistant/app-bridge";
 
 import { meetingTools } from "./meeting-server";
@@ -203,4 +204,76 @@ describe("explicit transcript edit tools", () => {
       ],
     ]);
   });
+});
+
+test("stop recording targets the attached meeting and cannot stop another meeting from an old chat", async () => {
+  const database = db();
+  database.exec(
+    "INSERT INTO sessions (id, title) VALUES ('live', 'Live'), ('old', 'Old')",
+  );
+  let selected: string | undefined = "old";
+  let active = "live";
+  const bridge = {
+    stopRecording: async (sessionId: string) => {
+      if (sessionId !== active)
+        throw new Error("This meeting is not recording");
+      active = "";
+      return { stopped: true };
+    },
+  } as unknown as AppBridge;
+  const entry = meetingTools(database, () => selected, {
+    bridge,
+    onEdit() {},
+    onUndo() {},
+  }).find((item) => item.name === "stop_recording");
+  expect(entry).toBeDefined();
+  expect((await entry!.handler({})).isError).toBe(true);
+  expect(active).toBe("live");
+  selected = "live";
+  const result = await entry!.handler({});
+  expect(result.content[0]?.text).toContain("Recording stopped");
+  expect(active).toBe("");
+  selected = undefined;
+  expect((await entry!.handler({})).isError).toBe(true);
+  database.close();
+});
+
+test("pause and resume keep the selected meeting open and reject an older chat", async () => {
+  const database = db();
+  database.exec(
+    "INSERT INTO sessions (id, title) VALUES ('live', 'Live'), ('old', 'Old')",
+  );
+  let selected = "live";
+  let paused = false;
+  const bridge = {
+    setRecordingPaused: async (
+      sessionId: string,
+      action: RecordingPauseAction,
+    ) => {
+      if (sessionId !== "live")
+        throw new Error("This meeting is not open for recording");
+      paused = action === RecordingPauseAction.Pause;
+      return { paused };
+    },
+  } as unknown as AppBridge;
+  const tools = meetingTools(database, () => selected, {
+    bridge,
+    onEdit() {},
+    onUndo() {},
+  });
+  const pause = tools.find((entry) => entry.name === "pause_recording")!;
+  const resume = tools.find((entry) => entry.name === "resume_recording")!;
+  expect((await pause.handler({})).content[0]?.text).toContain(
+    "Recording paused",
+  );
+  expect(paused).toBe(true);
+  selected = "old";
+  expect((await resume.handler({})).isError).toBe(true);
+  expect(paused).toBe(true);
+  selected = "live";
+  expect((await resume.handler({})).content[0]?.text).toContain(
+    "Recording resumed",
+  );
+  expect(paused).toBe(false);
+  database.close();
 });

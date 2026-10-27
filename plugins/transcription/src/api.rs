@@ -25,6 +25,8 @@ pub struct CaptureSnapshot {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mic_muted: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub paused: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub degraded: Option<listener::DegradedError>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub capture_health: Option<listener::actors::CaptureHealth>,
@@ -176,6 +178,8 @@ pub enum CaptureStatusEvent {
 #[derive(serde::Serialize, serde::Deserialize, Clone, specta::Type, tauri_specta::Event)]
 #[serde(tag = "type")]
 pub enum CaptureDataEvent {
+    #[serde(rename = "recording_paused")]
+    RecordingPaused { session_id: String, value: bool },
     #[serde(rename = "audio_amplitude")]
     AudioAmplitude {
         session_id: String,
@@ -345,6 +349,7 @@ impl From<listener::Snapshot> for CaptureSnapshot {
             live_segments: None,
             started_at_ms: None,
             mic_muted: None,
+            paused: Some(value.paused),
             degraded: None,
             capture_health: None,
         }
@@ -407,6 +412,9 @@ impl From<listener::SessionDataEvent> for CaptureDataEvent {
                 mic,
                 speaker,
             },
+            listener::SessionDataEvent::RecordingPaused { session_id, value } => {
+                Self::RecordingPaused { session_id, value }
+            }
             listener::SessionDataEvent::MicMuted { session_id, value } => {
                 Self::MicMuted { session_id, value }
             }

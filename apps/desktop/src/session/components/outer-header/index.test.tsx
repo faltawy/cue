@@ -90,6 +90,7 @@ vi.mock("~/store/zustand/tabs", () => ({
 vi.mock("~/stt/contexts", () => ({
   useListener: vi.fn((selector: (state: unknown) => unknown) =>
     selector({
+      live: { sessionId: null, paused: false },
       getSessionMode: (sessionId: string) =>
         mocks.sessionModes[sessionId] ?? "inactive",
       stop: mocks.stopListening,

@@ -160,15 +160,16 @@ export function Header({
   if (!settled) {
     subtitle = connection === Connection.Lost ? "Reconnecting…" : "Connecting…";
   } else if (strip?.state === StripState.Live && live) {
-    subtitle =
-      strip.startedAt === null ? (
-        "Recording"
-      ) : (
-        <>
-          <span className="max-[399px]:sr-only">Recording · </span>
-          {formatElapsed(now - strip.startedAt)}
-        </>
-      );
+    subtitle = strip.paused ? (
+      "Paused"
+    ) : strip.startedAt === null ? (
+      "Recording"
+    ) : (
+      <>
+        <span className="max-[399px]:sr-only">Recording · </span>
+        {formatElapsed(now - strip.startedAt)}
+      </>
+    );
   } else if (strip?.state === StripState.Waiting && endedTitle !== null) {
     subtitle =
       strip.endedAt === null ? "Ended" : formatEndedAgo(now - strip.endedAt);
@@ -183,7 +184,7 @@ export function Header({
           "size-2 shrink-0 rounded-full",
           !settled
             ? "coach-pulse bg-muted-foreground"
-            : live
+            : live && strip?.state === StripState.Live && !strip.paused
               ? "coach-live-dot bg-live"
               : "bg-muted-foreground/40",
         )}

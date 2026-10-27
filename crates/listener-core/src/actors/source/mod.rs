@@ -26,6 +26,8 @@ use anlg_device_monitor::{DeviceMonitorHandle, DeviceSwitch, DeviceSwitchMonitor
 
 pub enum SourceMsg {
     SetMicMute(bool),
+    SetPaused(bool, RpcReplyPort<bool>),
+    GetPaused(RpcReplyPort<bool>),
     GetMicMute(RpcReplyPort<bool>),
     GetMicDevice(RpcReplyPort<Option<String>>),
     GetMicIsolated(RpcReplyPort<bool>),
@@ -61,6 +63,7 @@ pub struct SourceFrame {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ListenerRefreshReplay {
     pub duration_secs: f64,
+    pub start_offset_secs: f64,
 }
 
 #[derive(Clone)]
@@ -71,6 +74,8 @@ pub enum ListenerRouting {
 }
 
 pub struct SourceArgs {
+    pub paused: Arc<AtomicBool>,
+    pub captured_samples: Arc<std::sync::atomic::AtomicU64>,
     pub mic_device: Option<String>,
     pub onboarding: bool,
     pub runtime: Arc<dyn ListenerRuntime>,
@@ -81,6 +86,7 @@ pub struct SourceArgs {
 }
 
 pub struct SourceState {
+    paused: Arc<AtomicBool>,
     pub(super) runtime: Arc<dyn ListenerRuntime>,
     pub(super) audio: Arc<dyn AudioProvider>,
     pub(super) session_id: String,
@@ -304,13 +310,16 @@ impl Actor for SourceActor {
                     session_id: session_id.clone(),
                 });
 
-            let silence_stream_tx = Some(args.audio.play_silence());
+            let silence_stream_tx =
+                (!args.paused.load(Ordering::SeqCst)).then(|| args.audio.play_silence());
             let mic_device = args.mic_device;
             tracing::info!(mic_device = ?mic_device);
 
-            let pipeline = Pipeline::new(args.runtime.clone(), args.session_id.clone());
+            let mut pipeline = Pipeline::new(args.runtime.clone(), args.session_id.clone());
+            pipeline.captured_samples = args.captured_samples;
 
             let mut st = SourceState {
+                paused: args.paused,
                 runtime: args.runtime,
                 audio: args.audio,
                 session_id: args.session_id,
@@ -330,7 +339,7 @@ impl Actor for SourceActor {
                 capture_health: CaptureHealth::default(),
                 healthy_since: None,
                 last_frame: None,
-                current_mode: ChannelMode::MicAndSpeaker,
+                current_mode: ChannelMode::determine(args.onboarding),
                 pipeline,
                 listener_routing: args.listener_routing,
                 recorder: args.recorder,
@@ -338,6 +347,9 @@ impl Actor for SourceActor {
 
             // The watcher's baseline is the verdict the streams opened with, sampled after the
             // silence stream started, so it cannot read startup skew as a routing change.
+            if st.paused.load(Ordering::SeqCst) {
+                return Ok(st);
+            }
             let capture = start_source_loop(&myself, &mut st).await?;
             st._device_watcher = Some(DeviceChangeWatcher::spawn(
                 myself.clone(),
@@ -357,7 +369,71 @@ impl Actor for SourceActor {
     ) -> Result<(), ActorProcessingErr> {
         let span = session_span(&st.session_id);
         async {
+            if st.paused.load(Ordering::SeqCst)
+                && matches!(
+                    &msg,
+                    SourceMsg::InputChanged
+                        | SourceMsg::OutputChanged
+                        | SourceMsg::CaptureFramesReady
+                        | SourceMsg::CaptureReady
+                        | SourceMsg::CaptureUnavailable
+                        | SourceMsg::ChannelReady(..)
+                        | SourceMsg::ChannelFailed(..)
+                        | SourceMsg::StreamFailed(..)
+                )
+            {
+                return Ok(());
+            }
             match msg {
+                SourceMsg::GetPaused(reply) => {
+                    let _ = reply.send(st.paused.load(Ordering::SeqCst));
+                }
+                SourceMsg::SetPaused(paused, reply) => {
+                    if paused != st.paused.load(Ordering::SeqCst) {
+                        if paused {
+                            st.paused.store(true, Ordering::SeqCst);
+                            st._device_watcher.take();
+                            if let Some(cancel) = st.stream_cancel_token.take() {
+                                cancel.cancel();
+                            }
+                            let pending = st.capture_frames.take();
+                            st.capture_retry.take();
+                            st.capture_output.take();
+                            if let Some(task) = st.run_task.take() {
+                                let _ = task.await;
+                            }
+                            if let Some(mut frames) = pending {
+                                while let Ok(frame) = frames.try_recv() {
+                                    st.pipeline
+                                        .dispatch_frame(
+                                            frame,
+                                            st.current_mode,
+                                            &st.listener_routing,
+                                            st.recorder.as_ref(),
+                                        )
+                                        .await
+                                        .map_err(std::io::Error::other)?;
+                                }
+                            }
+                            st._silence_stream_tx.take();
+                        } else {
+                            st._silence_stream_tx = Some(st.audio.play_silence());
+                            let capture = stream::resume_source_loop(&myself, st).await?;
+                            st.paused.store(false, Ordering::SeqCst);
+                            st._device_watcher = Some(DeviceChangeWatcher::spawn(
+                                myself.clone(),
+                                capture.headphone_output,
+                            ));
+                        }
+                        tracing::info!(paused, "recording_pause_changed");
+                        st.runtime
+                            .emit_data(crate::SessionDataEvent::RecordingPaused {
+                                session_id: st.session_id.clone(),
+                                value: paused,
+                            });
+                    }
+                    let _ = reply.send(true);
+                }
                 SourceMsg::SetMicMute(muted) => {
                     st.mic_muted.store(muted, Ordering::Relaxed);
                 }
@@ -642,7 +718,15 @@ mod tests {
         fn emit_data(&self, _event: SessionDataEvent) {}
     }
 
+    struct CaptureLease(Arc<AtomicUsize>);
+    impl Drop for CaptureLease {
+        fn drop(&mut self) {
+            self.0.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+
     struct TestAudio {
+        active_streams: Arc<AtomicUsize>,
         capture_tx: mpsc::UnboundedSender<Option<String>>,
         default_device_name_calls: AtomicUsize,
         end_immediately: bool,
@@ -698,9 +782,12 @@ mod tests {
                     aec_mic: None,
                 };
                 let output_tx = self.output_tx.clone();
+                self.active_streams.fetch_add(1, Ordering::SeqCst);
+                let lease = CaptureLease(self.active_streams.clone());
                 Ok(
                     CaptureStream::new(stream::iter([Ok(frame)]).chain(stream::pending()))
                         .with_output_change(move |enabled| {
+                            let _ = &lease;
                             if let Some(output_tx) = &output_tx {
                                 let _ = output_tx.send(enabled);
                             }
@@ -757,10 +844,65 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn pause_releases_capture_and_resume_reopens_it_without_ending_the_source() {
+        let (progress_tx, _) = mpsc::unbounded_channel();
+        let (capture_tx, mut opened) = mpsc::unbounded_channel();
+        let active_streams = Arc::new(AtomicUsize::new(0));
+        let paused = Arc::new(AtomicBool::new(false));
+        let audio = Arc::new(TestAudio {
+            active_streams: active_streams.clone(),
+            capture_tx,
+            default_device_name_calls: AtomicUsize::new(0),
+            end_immediately: false,
+            emit_frame: true,
+            partial_audio: false,
+            gap_only: false,
+            output_tx: None,
+        });
+        let args = || SourceArgs {
+            paused: paused.clone(),
+            captured_samples: Default::default(),
+            mic_device: Some("test-mic".into()),
+            onboarding: false,
+            runtime: Arc::new(TestRuntime {
+                progress_tx: progress_tx.clone(),
+                error_tx: None,
+            }),
+            audio: audio.clone(),
+            session_id: "pause-test".into(),
+            listener_routing: ListenerRouting::Dropped,
+            recorder: None,
+        };
+        let (actor, handle) = Actor::spawn(None, SourceActor, args()).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(1), opened.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(active_streams.load(Ordering::SeqCst), 1);
+        assert!(ractor::call!(actor, SourceMsg::SetPaused, true).unwrap());
+        assert_eq!(active_streams.load(Ordering::SeqCst), 0);
+        // Recovery must preserve a user pause, even if the source actor is replaced.
+        actor.stop(None);
+        handle.await.unwrap();
+        let (actor, handle) = Actor::spawn(None, SourceActor, args()).await.unwrap();
+        assert!(ractor::call!(actor, SourceMsg::GetPaused).unwrap());
+        assert_eq!(active_streams.load(Ordering::SeqCst), 0);
+        assert!(ractor::call!(actor, SourceMsg::SetPaused, false).unwrap());
+        tokio::time::timeout(Duration::from_secs(1), opened.recv())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(active_streams.load(Ordering::SeqCst), 1);
+        actor.stop(None);
+        handle.await.unwrap();
+    }
+
     async fn assert_source_uses_mic_device(mic_device: Option<&str>) {
         let (progress_tx, mut progress_rx) = mpsc::unbounded_channel();
         let (capture_tx, mut capture_rx) = mpsc::unbounded_channel();
         let audio = Arc::new(TestAudio {
+            active_streams: Default::default(),
             capture_tx,
             default_device_name_calls: AtomicUsize::new(0),
             end_immediately: false,
@@ -774,6 +916,8 @@ mod tests {
             None,
             SourceActor,
             SourceArgs {
+                paused: Default::default(),
+                captured_samples: Default::default(),
                 mic_device: expected.clone(),
                 onboarding: false,
                 runtime: Arc::new(TestRuntime {
@@ -820,6 +964,8 @@ mod tests {
             None,
             SourceActor,
             SourceArgs {
+                paused: Default::default(),
+                captured_samples: Default::default(),
                 mic_device: None,
                 onboarding: false,
                 runtime: Arc::new(TestRuntime {
@@ -827,6 +973,7 @@ mod tests {
                     error_tx: Some(error_tx),
                 }),
                 audio: Arc::new(TestAudio {
+                    active_streams: Default::default(),
                     capture_tx,
                     default_device_name_calls: AtomicUsize::new(0),
                     end_immediately: false,
@@ -912,6 +1059,8 @@ mod tests {
             None,
             SourceActor,
             SourceArgs {
+                paused: Default::default(),
+                captured_samples: Default::default(),
                 mic_device: Some("working mic".into()),
                 onboarding: false,
                 runtime: Arc::new(TestRuntime {
@@ -919,6 +1068,7 @@ mod tests {
                     error_tx: None,
                 }),
                 audio: Arc::new(TestAudio {
+                    active_streams: Default::default(),
                     capture_tx,
                     default_device_name_calls: AtomicUsize::new(0),
                     end_immediately: false,
@@ -968,6 +1118,7 @@ mod tests {
         let (error_tx, mut error_rx) = mpsc::unbounded_channel();
         let (capture_tx, _capture_rx) = mpsc::unbounded_channel();
         let audio = Arc::new(TestAudio {
+            active_streams: Default::default(),
             capture_tx,
             default_device_name_calls: AtomicUsize::new(0),
             end_immediately: true,
@@ -980,6 +1131,8 @@ mod tests {
             None,
             SourceActor,
             SourceArgs {
+                paused: Default::default(),
+                captured_samples: Default::default(),
                 mic_device: None,
                 onboarding: false,
                 runtime: Arc::new(TestRuntime {
@@ -1058,10 +1211,13 @@ mod tests {
             None,
             SourceActor,
             SourceArgs {
+                paused: Default::default(),
+                captured_samples: Default::default(),
                 mic_device: Some("unavailable mic".into()),
                 onboarding: false,
                 runtime,
                 audio: Arc::new(TestAudio {
+                    active_streams: Default::default(),
                     capture_tx,
                     default_device_name_calls: AtomicUsize::new(0),
                     end_immediately: false,
@@ -1238,6 +1394,7 @@ mod tests {
                     let (progress_tx, _progress_rx) = mpsc::unbounded_channel();
                     let (capture_tx, _capture_rx) = mpsc::unbounded_channel();
                     let audio = Arc::new(TestAudio {
+                        active_streams: Default::default(),
                         capture_tx,
                         default_device_name_calls: AtomicUsize::new(0),
                         end_immediately: false,
@@ -1250,6 +1407,8 @@ mod tests {
                         None,
                         SourceActor,
                         SourceArgs {
+                            paused: Default::default(),
+                            captured_samples: Default::default(),
                             mic_device: None,
                             onboarding: false,
                             runtime: Arc::new(TestRuntime {

@@ -141,6 +141,7 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Listener<'a, R, M> {
             && let Some(cell) = registry::where_is(SourceActor::name(session_id))
         {
             let source: ActorRef<SourceMsg> = cell.into();
+
             snapshot.mic_muted = call_t!(source, SourceMsg::GetMicMute, 100).ok();
             snapshot.capture_health = call_t!(source, SourceMsg::GetCaptureHealth, 100).ok();
         }
@@ -211,6 +212,15 @@ impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Listener<'a, R, M> {
     }
 
     #[tracing::instrument(skip_all)]
+    pub async fn set_capture_paused_for_session(&self, session_id: String, paused: bool) -> bool {
+        let Some(cell) = registry::where_is(RootActor::name()) else {
+            return false;
+        };
+        let actor: ActorRef<RootMsg> = cell.into();
+        ractor::call!(actor, RootMsg::SetPausedIfActive, session_id, paused).unwrap_or(false)
+    }
+
+    #[tracing::instrument(skip_all)]
     pub async fn stop_capture_for_session(&self, session_id: String) -> bool {
         let Some(cell) = registry::where_is(RootActor::name()) else {
             return false;
@@ -276,6 +286,7 @@ mod tests {
             match message {
                 RootMsg::GetSnapshot(reply) => {
                     let _ = reply.send(anlg_transcription_core::listener::Snapshot {
+                        paused: false,
                         state: if state.is_some() {
                             anlg_transcription_core::listener::State::Active
                         } else {
@@ -388,6 +399,7 @@ mod tests {
             live_segments: None,
             started_at_ms: None,
             mic_muted: None,
+            paused: None,
             degraded: None,
             capture_health: None,
         };

@@ -225,7 +225,7 @@ const createLiveSecondsInterval = <T extends GeneralState>(
   setInterval(() => {
     let stalled = false;
     setLiveState(set, (live) => {
-      if (guard && !guard(live)) {
+      if (live.paused || (guard && !guard(live))) {
         return;
       }
       live.seconds += 1;
@@ -631,6 +631,16 @@ const createSessionEventHandlers = <T extends LiveStore>(
       return;
     }
 
+    if (
+      payload.type === "recording_paused" &&
+      get().live.sessionId === targetSessionId
+    ) {
+      setLiveState(set, (live) => {
+        live.paused = payload.value;
+        live.amplitude = { mic: 0, speaker: 0 };
+      });
+      return;
+    }
     if (payload.type === "mic_muted") {
       if (get().live.sessionId !== targetSessionId) {
         return;
@@ -1003,6 +1013,7 @@ function applyCaptureSnapshot<T extends LiveStore>(
       if (snapshot.captureHealth != null) {
         live.captureHealth = snapshot.captureHealth;
       }
+      live.paused = snapshot.paused ?? false;
       if (snapshot.micMuted != null) {
         live.muted = snapshot.micMuted;
       }

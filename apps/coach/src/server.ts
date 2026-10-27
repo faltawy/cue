@@ -243,6 +243,7 @@ let project = defaultProject;
 let attached: MeetingPointer | null = null;
 let recording: ReadonlySet<string> | undefined;
 let recordingUnknown = false;
+let pausedRecordings = new Set<string>();
 let wrapUp: WrapUpView | null = null;
 let wrapUpMeeting: { sessionId: string; transcriptId: string } | undefined;
 let wrapUpAbort: AbortController | null = null;
@@ -604,13 +605,14 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
         if (
           !transcript ||
           transcript.sessionId !== sessionId ||
-          !transcript.live
+          !transcript.live ||
+          transcript.paused
         )
           return false;
         owner.observe({
           lines: transcript.lines,
           pending: transcript.pending,
-          live: transcript.live,
+          live: transcript.live && !transcript.paused,
           selfName,
         });
         return owner.canDeliver(request);
@@ -973,13 +975,21 @@ function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
 
 function readTranscript() {
   if (library) return null;
-  return readLiveTranscript(db, { sessionId: values.session, recording });
+  const transcript = readLiveTranscript(db, {
+    sessionId: values.session,
+    recording,
+  });
+  return transcript
+    ? { ...transcript, paused: pausedRecordings.has(transcript.sessionId) }
+    : null;
 }
 
 async function refreshRecording() {
   if (!bridge) return;
   try {
-    recording = await bridge.recordingSessions();
+    const state = await bridge.recordingState();
+    recording = new Set(state.session_ids);
+    pausedRecordings = new Set(state.paused_session_ids);
     recordingUnknown = false;
   } catch (error) {
     recording = undefined;
@@ -1139,7 +1149,7 @@ async function poll() {
   proactive?.observe({
     lines: transcript.lines,
     pending: transcript.pending,
-    live: transcript.live,
+    live: transcript.live && !transcript.paused,
     selfName,
   });
 }

@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.14.0
+
+### Minor Changes
+
+- Ask the coach to pause, resume, or stop recording the meeting attached to your chat. Pausing suspends microphone and meeting audio without ending the meeting; resume continues in the same meeting. An older chat cannot control a different recording.
+
 ## 0.13.1
 
 ### Patch Changes

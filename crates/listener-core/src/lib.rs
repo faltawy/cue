@@ -20,6 +20,7 @@ pub enum State {
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
+    pub paused: bool,
     pub state: State,
     pub active_session_id: Option<String>,
     pub finalizing_session_ids: Vec<String>,

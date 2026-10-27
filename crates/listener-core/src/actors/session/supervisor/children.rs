@@ -89,6 +89,8 @@ pub(super) async fn spawn_source(
         Some(SourceActor::name(&ctx.params.session_id)),
         SourceActor,
         SourceArgs {
+            paused: ctx.paused.clone(),
+            captured_samples: ctx.captured_samples.clone(),
             mic_device: ctx.params.mic_device.clone(),
             onboarding: ctx.params.onboarding,
             runtime: ctx.runtime.clone(),
@@ -119,7 +121,11 @@ pub(super) async fn spawn_recorder(
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_millis() as u64,
-            offset_ms: ctx.started_at_instant.elapsed().as_millis() as u64,
+            offset_ms: ctx
+                .captured_samples
+                .load(std::sync::atomic::Ordering::SeqCst)
+                * 1000
+                / crate::actors::SAMPLE_RATE as u64,
             session_id: ctx.params.session_id.clone(),
         },
         supervisor_cell,
@@ -152,7 +158,7 @@ pub(super) async fn spawn_listener(
             keywords: ctx.params.keywords.clone(),
             transcription_mode: ctx.params.transcription_mode,
             mode,
-            session_started_at: ctx.started_at_instant,
+            captured_samples: ctx.captured_samples.clone(),
             session_started_at_unix: ctx.started_at_system,
             stream_offset_secs,
             session_id: ctx.params.session_id.clone(),
@@ -277,24 +283,24 @@ pub(super) async fn attach_listener_to_source(state: &SessionState) {
     }
 }
 
-pub(super) async fn stop_listener(state: &mut SessionState, reason: &str) -> f64 {
+pub(super) async fn stop_listener(state: &mut SessionState, reason: &str) -> Option<f64> {
     if let Some(cell) = state.listener_cell.take() {
-        let replay_duration_secs = prepare_listener_refresh(state).await;
+        let replay_offset_secs = prepare_listener_refresh(state).await;
         stop_child(&cell, reason, "listener").await;
-        return replay_duration_secs;
+        return replay_offset_secs;
     }
 
-    0.0
+    None
 }
 
-pub(super) async fn prepare_listener_refresh(state: &SessionState) -> f64 {
+pub(super) async fn prepare_listener_refresh(state: &SessionState) -> Option<f64> {
     let Some(source_cell) = &state.source_cell else {
-        return 0.0;
+        return None;
     };
 
     let source_ref: ActorRef<SourceMsg> = source_cell.clone().into();
     match ractor::call_t!(source_ref, SourceMsg::PrepareListenerRefresh, 500) {
-        Ok(replay) => replay.duration_secs,
+        Ok(replay) => Some(replay.start_offset_secs),
         Err(error) => {
             tracing::warn!(?error, "failed_to_prepare_listener_refresh");
             if let Some(source_cell) = &state.source_cell {
@@ -303,7 +309,7 @@ pub(super) async fn prepare_listener_refresh(state: &SessionState) -> f64 {
                     state.mode.listener_routing(state.listener_cell.as_ref()),
                 ));
             }
-            0.0
+            None
         }
     }
 }

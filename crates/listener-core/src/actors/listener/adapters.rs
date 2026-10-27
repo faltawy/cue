@@ -531,9 +531,11 @@ fn format_languages(languages: &[anlg_language::Language]) -> String {
 }
 
 fn build_extra(args: &ListenerArgs) -> (f64, Extra) {
-    let session_offset_secs = args
-        .stream_offset_secs
-        .unwrap_or_else(|| args.session_started_at.elapsed().as_secs_f64());
+    let session_offset_secs = args.stream_offset_secs.unwrap_or_else(|| {
+        args.captured_samples
+            .load(std::sync::atomic::Ordering::SeqCst) as f64
+            / crate::actors::SAMPLE_RATE as f64
+    });
     let started_unix_millis = args
         .session_started_at_unix
         .duration_since(UNIX_EPOCH)
@@ -661,7 +663,7 @@ async fn spawn_rx_task_dual_with_adapter<A: RealtimeSttAdapter>(
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use std::time::{Instant, SystemTime};
+    use std::time::SystemTime;
 
     use super::*;
 
@@ -689,6 +691,7 @@ mod tests {
 
     fn listener_args(base_url: &str, model: &str) -> ListenerArgs {
         ListenerArgs {
+            captured_samples: Default::default(),
             runtime: Arc::new(NoopRuntime),
             languages: vec![anlg_language::ISO639::En.into()],
             onboarding: false,
@@ -698,7 +701,6 @@ mod tests {
             keywords: vec![],
             transcription_mode: crate::TranscriptionMode::Live,
             mode: crate::actors::ChannelMode::MicOnly,
-            session_started_at: Instant::now(),
             session_started_at_unix: SystemTime::now(),
             stream_offset_secs: None,
             session_id: "session".to_string(),
@@ -791,8 +793,11 @@ mod tests {
     }
 
     #[test]
-    fn build_extra_prefers_explicit_stream_offset() {
+    fn reconnect_offset_uses_captured_audio_or_explicit_replay_offset() {
         let mut args = listener_args("https://api.deepgram.com", "nova-3");
+        args.captured_samples
+            .store(320_000, std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(build_extra(&args).0, 20.0);
         args.stream_offset_secs = Some(12.5);
 
         let (offset_secs, _) = build_extra(&args);

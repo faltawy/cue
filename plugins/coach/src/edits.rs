@@ -133,7 +133,7 @@ pub(crate) struct UndoEntry {
 }
 
 pub(crate) type RecordingSource =
-    std::sync::Arc<dyn Fn() -> crate::bridge::RecordingFuture + Send + Sync>;
+    std::sync::Arc<dyn Fn() -> crate::bridge::RecordingSessionsFuture + Send + Sync>;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum EditOwner<'a> {

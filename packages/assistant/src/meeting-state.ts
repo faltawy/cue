@@ -48,11 +48,17 @@ export type StripView =
       lastTitle: string | null;
       endedAt: number | null;
     }
-  | { state: StripState.Live; title: string; startedAt: number | null };
+  | {
+      state: StripState.Live;
+      title: string;
+      startedAt: number | null;
+      paused?: boolean;
+    };
 
 export function stripView(
   transcript: {
     title: string | null;
+    paused?: boolean;
     live: boolean;
     startedAtMs: number | null;
     endedAtMs: number | null;
@@ -70,6 +76,7 @@ export function stripView(
     state: StripState.Live,
     title: transcript.title || "Untitled",
     startedAt: transcript.startedAtMs,
+    ...(transcript.paused ? { paused: true } : {}),
   };
 }
 

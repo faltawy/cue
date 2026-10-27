@@ -195,7 +195,11 @@ async fn wait_for_listener(
     .expect("listener should connect automatically")
 }
 
-async fn send_audio(listener: &ActorRef<ListenerMsg>) {
+async fn send_audio(
+    listener: &ActorRef<ListenerMsg>,
+    captured_samples: &std::sync::atomic::AtomicU64,
+) {
+    captured_samples.fetch_add(16_000, std::sync::atomic::Ordering::SeqCst);
     let audio = Bytes::from(
         1000_i16
             .to_le_bytes()
@@ -272,36 +276,37 @@ async fn live_words_resume_after_stalled_streams_without_restarting_recorder() {
         ctx.params.base_url = format!("http://{address}/v1");
         ctx.params.model = "nova-3".to_string();
         let session_id = ctx.params.session_id.clone();
+        let captured_samples = ctx.captured_samples.clone();
         let (supervisor, supervisor_task) = Actor::spawn(None, SessionActor, ctx).await.unwrap();
         let listener = wait_for_listener(&session_id, None).await;
         let recorder = registry::where_is(RecorderActor::name(&session_id)).unwrap();
         let source = registry::where_is(SourceActor::name(&session_id)).unwrap();
         record_audio(&recorder).await;
-        send_audio(&listener).await;
+        send_audio(&listener, &captured_samples).await;
         wait_for_word(&mut events, "before").await;
 
         match failure {
             StreamFailure::Unfinalized => {
                 for _ in 0..89 {
-                    send_audio(&listener).await;
+                    send_audio(&listener, &captured_samples).await;
                     tokio::time::sleep(Duration::from_millis(5)).await;
                 }
             }
             StreamFailure::Silent => {
                 tokio::time::sleep(Duration::from_secs(30)).await;
                 for _ in 0..4 {
-                    send_audio(&listener).await;
+                    send_audio(&listener, &captured_samples).await;
                 }
             }
             StreamFailure::RepeatedFinal => {
                 for _ in 0..5 {
-                    send_audio(&listener).await;
+                    send_audio(&listener, &captured_samples).await;
                     tokio::time::sleep(Duration::from_secs(6)).await;
                 }
             }
         }
         // The first finalized response resets the audio count for the stalled period.
-        send_audio(&listener).await;
+        send_audio(&listener, &captured_samples).await;
         let recovered = wait_for_listener(&session_id, Some(listener.get_id())).await;
         assert_eq!(
             registry::where_is(RecorderActor::name(&session_id))
@@ -317,7 +322,7 @@ async fn live_words_resume_after_stalled_streams_without_restarting_recorder() {
         );
         assert_eq!(recorder.get_status(), ActorStatus::Running);
         record_audio(&recorder).await;
-        send_audio(&recovered).await;
+        send_audio(&recovered, &captured_samples).await;
         wait_for_word(&mut events, "after").await;
         supervisor.cast(SessionMsg::Shutdown).unwrap();
         timeout(Duration::from_secs(10), supervisor_task)

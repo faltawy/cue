@@ -39,12 +39,20 @@ pub const URL_ENV: &str = "CUE_COACH_APP_URL";
 pub const TOKEN_ENV: &str = "CUE_COACH_APP_TOKEN";
 
 pub type DictationFuture = Pin<Box<dyn Future<Output = Result<Option<String>>> + Send>>;
-pub type RecordingFuture = Pin<Box<dyn Future<Output = Option<Vec<String>>> + Send>>;
+pub type RecordingControlFuture = Pin<Box<dyn Future<Output = bool> + Send>>;
+pub type RecordingSessionsFuture = Pin<Box<dyn Future<Output = Option<Vec<String>>> + Send>>;
+pub type RecordingFuture = Pin<Box<dyn Future<Output = Option<Recording>> + Send>>;
 pub type SpeakerAssignmentFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 pub trait Host: Send + Sync + 'static {
     fn pool(&self) -> Result<SqlitePool>;
     fn recording_sessions(&self) -> RecordingFuture;
+    fn pause_recording(&self, _session_id: String, _paused: bool) -> RecordingControlFuture {
+        Box::pin(async { false })
+    }
+    fn stop_recording(&self, _session_id: String) -> RecordingControlFuture {
+        Box::pin(async { false })
+    }
     fn speaker_assigned(&self, _session_id: String) -> SpeakerAssignmentFuture {
         Box::pin(async {})
     }
@@ -107,11 +115,23 @@ fn router(token: &str, host: impl Host) -> Router {
     let state = Arc::new(BridgeState {
         host,
         token: token.to_string(),
-        edits: Edits::following(Arc::new(move || source.recording_sessions())),
+        edits: Edits::following(Arc::new(move || {
+            let future = source.recording_sessions();
+            Box::pin(async move { future.await.map(|recording| recording.session_ids) })
+        })),
     });
     Router::new()
         .route("/recording", get(recording))
         .route("/dictation", post(dictation))
+        .route("/meeting/{session_id}/recording/stop", post(stop_recording))
+        .route(
+            "/meeting/{session_id}/recording/pause",
+            post(pause_recording),
+        )
+        .route(
+            "/meeting/{session_id}/recording/resume",
+            post(resume_recording),
+        )
         .route("/project", post(choose_default_project))
         .route("/meeting/{session_id}/project", get(meeting_project))
         .route(
@@ -290,17 +310,63 @@ impl IntoResponse for BridgeError {
 type Reply<T> = std::result::Result<Json<T>, BridgeError>;
 
 #[derive(serde::Serialize)]
-struct Recording {
-    session_ids: Vec<String>,
+pub struct Recording {
+    pub session_ids: Vec<String>,
+    pub paused_session_ids: Vec<String>,
 }
 
 async fn recording(State(state): State<Arc<BridgeState>>) -> Response {
     match state.host.recording_sessions().await {
-        Some(session_ids) => Json(Recording { session_ids }).into_response(),
+        Some(recording) => Json(recording).into_response(),
         None => failure(
             StatusCode::SERVICE_UNAVAILABLE,
             "the app could not tell what it is recording",
         ),
+    }
+}
+
+async fn pause_recording(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+) -> Response {
+    set_recording_paused(state, session_id, true).await
+}
+async fn resume_recording(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+) -> Response {
+    set_recording_paused(state, session_id, false).await
+}
+async fn set_recording_paused(
+    state: Arc<BridgeState>,
+    session_id: String,
+    paused: bool,
+) -> Response {
+    let changed = state.host.pause_recording(session_id.clone(), paused).await;
+    tracing::info!(%session_id, paused, changed, "coach_recording_pause_requested");
+    if changed {
+        Json(serde_json::json!({"paused": paused})).into_response()
+    } else {
+        failure(
+            StatusCode::CONFLICT,
+            "This meeting is not open for recording. No other meeting was changed.",
+        )
+    }
+}
+
+async fn stop_recording(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+) -> Response {
+    let stopped = state.host.stop_recording(session_id.clone()).await;
+    tracing::info!(%session_id, stopped, "coach_stop_recording");
+    if stopped {
+        Json(serde_json::json!({ "stopped": true })).into_response()
+    } else {
+        failure(
+            StatusCode::CONFLICT,
+            "This meeting is not recording. No recording was stopped.",
+        )
     }
 }
 
@@ -812,6 +878,7 @@ mod tests {
         default_project: tempfile::TempDir,
         picks: Mutex<Vec<Option<PathBuf>>>,
         recording: Mutex<Option<Vec<String>>>,
+        paused: Mutex<Vec<String>>,
         evidence: Mutex<Vec<CoachEvidence>>,
         speaker_assignments: Mutex<Vec<String>>,
     }
@@ -822,7 +889,39 @@ mod tests {
         }
         fn recording_sessions(&self) -> RecordingFuture {
             let recording = self.recording.lock().unwrap().clone();
-            Box::pin(async move { recording })
+            let paused_session_ids = self.paused.lock().unwrap().clone();
+            Box::pin(async move {
+                recording.map(|session_ids| Recording {
+                    session_ids,
+                    paused_session_ids,
+                })
+            })
+        }
+        fn pause_recording(&self, session_id: String, paused: bool) -> RecordingControlFuture {
+            let host = self.clone();
+            Box::pin(async move {
+                let recording = host.recording.lock().unwrap();
+                if !recording
+                    .as_ref()
+                    .is_some_and(|ids| ids == &[session_id.clone()])
+                {
+                    return false;
+                }
+                *host.paused.lock().unwrap() = if paused { vec![session_id] } else { vec![] };
+                true
+            })
+        }
+        fn stop_recording(&self, session_id: String) -> RecordingControlFuture {
+            let host = self.clone();
+            Box::pin(async move {
+                let mut recording = host.recording.lock().unwrap();
+                if recording.as_ref().is_some_and(|ids| ids == &[session_id]) {
+                    *recording = Some(Vec::new());
+                    true
+                } else {
+                    false
+                }
+            })
         }
         fn speaker_assigned(&self, session_id: String) -> SpeakerAssignmentFuture {
             let host = self.clone();
@@ -889,6 +988,7 @@ mod tests {
             default_project: tempfile::tempdir().unwrap(),
             picks: Mutex::new(Vec::new()),
             recording: Mutex::new(Some(Vec::new())),
+            paused: Mutex::new(Vec::new()),
             evidence: Mutex::new(Vec::new()),
             speaker_assignments: Mutex::new(Vec::new()),
         })
@@ -927,6 +1027,7 @@ mod tests {
             default_project: tempfile::tempdir().unwrap(),
             picks: Mutex::new(Vec::new()),
             recording: Mutex::new(Some(Vec::new())),
+            paused: Mutex::new(Vec::new()),
             evidence: Mutex::new(Vec::new()),
             speaker_assignments: Mutex::new(Vec::new()),
         });
@@ -941,6 +1042,77 @@ mod tests {
 
     fn client() -> reqwest::Client {
         reqwest::Client::new()
+    }
+
+    #[tokio::test]
+    async fn pause_and_resume_preserve_the_recording_and_reject_a_stale_target() {
+        let host = test_host().await;
+        *host.recording.lock().unwrap() = Some(vec!["thursday".into()]);
+        let app = router(TOKEN, host.clone());
+        for (session, action, status, paused) in [
+            ("thursday", "pause", StatusCode::OK, true),
+            ("tuesday", "resume", StatusCode::CONFLICT, true),
+            ("thursday", "resume", StatusCode::OK, false),
+        ] {
+            let response = app
+                .clone()
+                .oneshot(
+                    axum::http::Request::builder()
+                        .method("POST")
+                        .uri(format!("/meeting/{session}/recording/{action}"))
+                        .header(header::AUTHORIZATION, format!("Bearer {TOKEN}"))
+                        .body(axum::body::Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), status);
+            let recording = host.recording_sessions().await.unwrap();
+            assert_eq!(recording.session_ids, vec!["thursday"]);
+            assert_eq!(
+                recording.paused_session_ids,
+                if paused { vec!["thursday"] } else { vec![] }
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn stop_recording_requires_authorization_and_preserves_a_different_active_meeting() {
+        let host = test_host().await;
+        *host.recording.lock().unwrap() = Some(vec!["thursday".into()]);
+        let app = router(TOKEN, host.clone());
+        for (token, session, expected) in [
+            ("wrong", "thursday", StatusCode::UNAUTHORIZED),
+            (TOKEN, "tuesday", StatusCode::CONFLICT),
+            (TOKEN, "thursday", StatusCode::OK),
+        ] {
+            let response = app
+                .clone()
+                .oneshot(
+                    axum::http::Request::builder()
+                        .method("POST")
+                        .uri(format!("/meeting/{session}/recording/stop"))
+                        .header(header::AUTHORIZATION, format!("Bearer {token}"))
+                        .body(axum::body::Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), expected);
+            let active = host.recording.lock().unwrap().clone().unwrap();
+            if expected == StatusCode::OK {
+                assert!(active.is_empty());
+                let body = axum::body::to_bytes(response.into_body(), 1024)
+                    .await
+                    .unwrap();
+                assert_eq!(
+                    serde_json::from_slice::<serde_json::Value>(&body).unwrap(),
+                    serde_json::json!({"stopped": true})
+                );
+            } else {
+                assert_eq!(active, vec!["thursday"]);
+            }
+        }
     }
 
     #[tokio::test]
@@ -1154,7 +1326,7 @@ mod tests {
 
         assert_eq!(
             recording,
-            serde_json::json!({ "session_ids": ["thursday"] })
+            serde_json::json!({ "session_ids": ["thursday"], "paused_session_ids": [] })
         );
         assert_eq!(unknown.status(), StatusCode::SERVICE_UNAVAILABLE);
     }

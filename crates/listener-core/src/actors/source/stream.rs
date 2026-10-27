@@ -24,7 +24,13 @@ pub(super) async fn start_source_loop(
     tracing::info!(?new_mode, mode_changed, "start_source_loop");
 
     st.pipeline.reset();
+    resume_source_loop(myself, st).await
+}
 
+pub(super) async fn resume_source_loop(
+    myself: &ActorRef<SourceMsg>,
+    st: &mut SourceState,
+) -> Result<CaptureSettings, ActorProcessingErr> {
     st.active_mic_device = active_mic_device(st.mic_device.clone(), st.audio.as_ref());
     let mic_swapped = st.mic_device.is_none() && st.active_mic_device.is_some();
     let capture = capture_settings(mic_swapped);

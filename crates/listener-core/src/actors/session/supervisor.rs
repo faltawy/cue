@@ -428,18 +428,16 @@ async fn refresh_listener(myself: ActorRef<SessionMsg>, state: &mut SessionState
         return;
     }
 
-    let replay_duration_secs = children::stop_listener(state, "config_update").await;
+    let replay_offset_secs = children::stop_listener(state, "config_update").await;
 
     if !state.mode.should_spawn_listener() {
         return;
     }
 
-    let replay_offset_secs =
-        (state.ctx.started_at_instant.elapsed().as_secs_f64() - replay_duration_secs).max(0.0);
     start_listener_connect(
         &myself,
         state,
-        Some(replay_offset_secs),
+        replay_offset_secs,
         ListenerConnectReason::Refresh,
     );
 }
@@ -590,13 +588,11 @@ async fn retry_listener(myself: ActorRef<SessionMsg>, state: &mut SessionState) 
         return;
     }
 
-    let replay_duration_secs = children::prepare_listener_refresh(state).await;
-    let replay_offset_secs =
-        (state.ctx.started_at_instant.elapsed().as_secs_f64() - replay_duration_secs).max(0.0);
+    let replay_offset_secs = children::prepare_listener_refresh(state).await;
     start_listener_connect(
         &myself,
         state,
-        Some(replay_offset_secs),
+        replay_offset_secs,
         ListenerConnectReason::Retry,
     );
 }
@@ -737,7 +733,7 @@ async fn meltdown(myself: ActorRef<SessionMsg>, state: &mut SessionState) {
 mod tests {
     use std::path::PathBuf;
     use std::sync::Arc;
-    use std::time::{Instant, SystemTime};
+    use std::time::SystemTime;
 
     use anlg_audio::{AudioProvider, CaptureConfig, CaptureStream};
     use anlg_supervisor::RestartTracker;
@@ -934,9 +930,10 @@ mod tests {
                 speaker_assignments: vec![],
             },
             app_dir: std::env::temp_dir(),
-            started_at_instant: Instant::now(),
             started_at_system: SystemTime::now(),
             live_transcript: Default::default(),
+            paused: Default::default(),
+            captured_samples: Default::default(),
         }
     }
 

@@ -85,13 +85,40 @@ fn recording_sessions(app: tauri::AppHandle) -> tauri_plugin_coach::RecordingFut
         use tauri_plugin_transcription::ListenerPluginExt;
 
         let snapshot = app.listener().get_capture_snapshot().await.ok()?;
-        Some(
-            snapshot
+        Some(tauri_plugin_coach::Recording {
+            paused_session_ids: if snapshot.paused == Some(true) {
+                snapshot.active_session_id.clone().into_iter().collect()
+            } else {
+                vec![]
+            },
+            session_ids: snapshot
                 .active_session_id
                 .into_iter()
                 .chain(snapshot.finalizing_session_ids)
                 .collect(),
-        )
+        })
+    })
+}
+
+fn coach_pause_recording(
+    app: tauri::AppHandle,
+    session_id: String,
+    paused: bool,
+) -> tauri_plugin_coach::RecordingControlFuture {
+    Box::pin(async move {
+        use tauri_plugin_transcription::ListenerPluginExt;
+        app.listener()
+            .set_capture_paused_for_session(session_id, paused)
+            .await
+    })
+}
+
+fn coach_stop_recording(
+    app: tauri::AppHandle,
+    session_id: String,
+) -> tauri_plugin_coach::RecordingControlFuture {
+    Box::pin(async move {
+        tauri_plugin_transcription::stop_capture_for_session(&app, &session_id).await
     })
 }
 
@@ -271,6 +298,8 @@ pub fn main() {
         .plugin(tauri_plugin_coach::init(
             db::desktop_db_path(&identifier),
             std::sync::Arc::new(recording_sessions),
+            std::sync::Arc::new(coach_stop_recording),
+            std::sync::Arc::new(coach_pause_recording),
             std::sync::Arc::new(coach_speaker_assigned),
         ))
         .plugin(tauri_plugin_tray::init(std::sync::Arc::new(

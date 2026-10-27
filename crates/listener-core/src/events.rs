@@ -63,6 +63,8 @@ pub enum SessionErrorEvent {
 #[cfg_attr(feature = "tauri-event", derive(tauri_specta::Event))]
 #[serde(tag = "type")]
 pub enum SessionDataEvent {
+    #[serde(rename = "recording_paused")]
+    RecordingPaused { session_id: String, value: bool },
     #[serde(rename = "audio_amplitude")]
     AudioAmplitude {
         session_id: String,

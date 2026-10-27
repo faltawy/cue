@@ -202,6 +202,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
       if (
         pendingAutoStopRef.current !== pending ||
         live.status !== LiveSessionStatus.Active ||
+        live.paused ||
         live.sessionId !== pending.sessionId
       ) {
         return;
@@ -247,6 +248,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
           if (
             pendingAutoStopRef.current !== pending ||
             liveAfterCheck.status !== LiveSessionStatus.Active ||
+            liveAfterCheck.paused ||
             liveAfterCheck.sessionId !== pending.sessionId
           ) {
             return;
@@ -358,6 +360,7 @@ export const useHandleDetectEvents = (store: ListenerStore) => {
       if (
         pendingAutoStopRef.current !== pending ||
         currentLive.status !== LiveSessionStatus.Active ||
+        currentLive.paused ||
         currentLive.sessionId !== pending.sessionId
       ) {
         return;

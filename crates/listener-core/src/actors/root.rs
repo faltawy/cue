@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 use ractor::{
     Actor, ActorCell, ActorProcessingErr, ActorRef, ActorStatus, RpcReplyPort, SupervisionEvent,
@@ -21,6 +21,7 @@ pub enum RootMsg {
     UpdateSessionConfig(SessionConfigUpdate, RpcReplyPort<()>),
     StopSession(RpcReplyPort<()>),
     StopSessionIfActive(String, RpcReplyPort<bool>),
+    SetPausedIfActive(String, bool, RpcReplyPort<bool>),
     GetState(RpcReplyPort<State>),
     GetSnapshot(RpcReplyPort<Snapshot>),
 }
@@ -31,6 +32,7 @@ pub struct RootArgs {
 }
 
 pub struct RootState {
+    paused: Arc<std::sync::atomic::AtomicBool>,
     runtime: Arc<dyn ListenerRuntime>,
     audio: Arc<dyn AudioProvider>,
     active_session_id: Option<String>,
@@ -65,6 +67,7 @@ impl Actor for RootActor {
             myself.send_after(std::time::Duration::from_secs(30), || RootMsg::RetryCleanup);
         }
         Ok(RootState {
+            paused: Default::default(),
             runtime: args.runtime,
             audio: args.audio,
             active_session_id: None,
@@ -119,6 +122,20 @@ impl Actor for RootActor {
                     stop_session_impl(state).await;
                 }
                 let _ = reply.send(active);
+            }
+            RootMsg::SetPausedIfActive(session_id, paused, reply) => {
+                let mut changed = false;
+                if state.active_session_id.as_deref() == Some(session_id.as_str()) {
+                    if let Some(cell) =
+                        ractor::registry::where_is(crate::actors::SourceActor::name(&session_id))
+                    {
+                        let source: ActorRef<crate::actors::SourceMsg> = cell.into();
+                        changed =
+                            ractor::call!(source, crate::actors::SourceMsg::SetPaused, paused)
+                                .unwrap_or(false);
+                    }
+                }
+                let _ = reply.send(changed);
             }
             RootMsg::GetState(reply) => {
                 let _ = reply.send(root_snapshot(state).state);
@@ -263,6 +280,8 @@ fn root_snapshot(state: &RootState) -> Snapshot {
         .keys()
         .cloned()
         .collect::<Vec<_>>();
+    let paused =
+        active_session_id.is_some() && state.paused.load(std::sync::atomic::Ordering::SeqCst);
     let state = if active_session_id.is_some() {
         State::Active
     } else if !finalizing_session_ids.is_empty() {
@@ -272,6 +291,7 @@ fn root_snapshot(state: &RootState) -> Snapshot {
     };
 
     Snapshot {
+        paused,
         state,
         active_session_id,
         finalizing_session_ids,
@@ -317,11 +337,13 @@ async fn start_session_impl(
             requested_transcription_mode,
             params: params.clone(),
             app_dir,
-            started_at_instant: Instant::now(),
             started_at_system: SystemTime::now(),
             live_transcript: Default::default(),
+            paused: Default::default(),
+            captured_samples: Default::default(),
         };
 
+        let paused = ctx.paused.clone();
         match spawn_session_supervisor(ctx).await {
             Ok((supervisor_cell, _handle)) => {
                 supervisor_cell.link(root_cell);
@@ -330,6 +352,7 @@ async fn start_session_impl(
                     return Err(StartSessionError::FailedToStartSession);
                 }
 
+                state.paused = paused;
                 state.active_session_id = Some(params.session_id.clone());
                 state.active_supervisor = Some(supervisor_cell);
 

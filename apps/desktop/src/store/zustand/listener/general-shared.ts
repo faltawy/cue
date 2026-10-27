@@ -39,6 +39,7 @@ export type GeneralState = {
     intervalId?: LiveIntervalId;
     sessionId: string | null;
     muted: boolean;
+    paused: boolean;
     captureHealth: {
       mic: boolean | null;
       speaker: boolean | null;
@@ -78,6 +79,7 @@ const initialLiveState: LiveState = {
   captureGenerationBySession: {},
   sessionId: null,
   muted: false,
+  paused: false,
   captureHealth: { mic: null, speaker: null, unavailable: false },
   lastError: null,
   lastErrorSessionId: null,
@@ -181,6 +183,7 @@ export const markLiveCaptureStarted = (live: LiveState, sessionId: string) => {
 };
 
 export const markLiveStartRequested = (live: LiveState, sessionId: string) => {
+  live.paused = false;
   live.captureHealth = { mic: null, speaker: null, unavailable: false };
   ensureLiveCaptureGeneration(live, sessionId);
   live.loading = true;

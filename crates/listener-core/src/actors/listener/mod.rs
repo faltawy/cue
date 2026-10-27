@@ -54,6 +54,7 @@ pub struct ListenerConfigUpdate {
 
 #[derive(Clone)]
 pub struct ListenerArgs {
+    pub captured_samples: Arc<std::sync::atomic::AtomicU64>,
     pub runtime: Arc<dyn ListenerRuntime>,
     pub languages: Vec<anlg_language::Language>,
     pub onboarding: bool,
@@ -63,7 +64,6 @@ pub struct ListenerArgs {
     pub keywords: Vec<String>,
     pub transcription_mode: crate::TranscriptionMode,
     pub mode: crate::actors::ChannelMode,
-    pub session_started_at: Instant,
     pub session_started_at_unix: SystemTime,
     pub stream_offset_secs: Option<f64>,
     pub session_id: String,
@@ -323,7 +323,12 @@ impl Actor for ListenerActor {
                     state.args.self_human_id.as_deref(),
                     state.args.speaker_assignments.clone(),
                     state.args.mic_isolated,
-                    state.args.session_started_at.elapsed().as_millis() as i64,
+                    (state
+                        .args
+                        .captured_samples
+                        .load(std::sync::atomic::Ordering::SeqCst)
+                        * 1000
+                        / crate::actors::SAMPLE_RATE as u64) as i64,
                 ) {
                     state
                         .args
@@ -462,7 +467,11 @@ fn resume_transcript(args: &ListenerArgs, adapter_name: &str) -> LiveTranscriptE
                 args.self_human_id.as_deref(),
                 args.speaker_assignments.clone(),
                 args.mic_isolated,
-                args.session_started_at.elapsed().as_millis() as i64,
+                (args
+                    .captured_samples
+                    .load(std::sync::atomic::Ordering::SeqCst)
+                    * 1000
+                    / crate::actors::SAMPLE_RATE as u64) as i64,
             ) {
                 args.runtime
                     .emit_data(SessionDataEvent::TranscriptSegmentDelta {
@@ -478,7 +487,11 @@ fn resume_transcript(args: &ListenerArgs, adapter_name: &str) -> LiveTranscriptE
             args.self_human_id.as_deref(),
             args.speaker_assignments.clone(),
             args.mic_isolated,
-            args.session_started_at.elapsed().as_millis() as i64,
+            (args
+                .captured_samples
+                .load(std::sync::atomic::Ordering::SeqCst)
+                * 1000
+                / crate::actors::SAMPLE_RATE as u64) as i64,
         ),
     }
 }

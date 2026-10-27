@@ -27,7 +27,9 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
-pub use bridge::{DictationFuture, RecordingFuture, SpeakerAssignmentFuture};
+pub use bridge::{
+    DictationFuture, Recording, RecordingFuture, SpeakerAssignmentFuture, RecordingControlFuture,
+};
 pub use claude_code::{
     ClaudeAccount, ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup,
     InstalledClaudeCode,
@@ -48,12 +50,18 @@ const START_TIMEOUT: Duration = Duration::from_secs(20);
 const DEFAULT_PICK_TITLE: &str = "Choose the project the coach can read";
 
 pub type RecordingProbe = std::sync::Arc<dyn Fn(AppHandle) -> RecordingFuture + Send + Sync>;
+pub type PauseRecording =
+    std::sync::Arc<dyn Fn(AppHandle, String, bool) -> RecordingControlFuture + Send + Sync>;
+pub type StopRecording =
+    std::sync::Arc<dyn Fn(AppHandle, String) -> RecordingControlFuture + Send + Sync>;
 pub type SpeakerAssignmentProbe =
     std::sync::Arc<dyn Fn(AppHandle, String) -> SpeakerAssignmentFuture + Send + Sync>;
 
 struct CoachState {
     db: Option<PathBuf>,
     recording: RecordingProbe,
+    stop_recording: StopRecording,
+    pause_recording: PauseRecording,
     speaker_assigned: SpeakerAssignmentProbe,
     coach: Mutex<Option<Sidecar>>,
     llm: Mutex<Option<Sidecar>>,
@@ -87,6 +95,19 @@ impl bridge::Host for AppHost {
         match self.0.try_state::<CoachState>() {
             Some(state) => (state.recording)(self.0.clone()),
             None => Box::pin(async { None }),
+        }
+    }
+
+    fn pause_recording(&self, session_id: String, paused: bool) -> RecordingControlFuture {
+        match self.0.try_state::<CoachState>() {
+            Some(state) => (state.pause_recording)(self.0.clone(), session_id, paused),
+            None => Box::pin(async { false }),
+        }
+    }
+    fn stop_recording(&self, session_id: String) -> RecordingControlFuture {
+        match self.0.try_state::<CoachState>() {
+            Some(state) => (state.stop_recording)(self.0.clone(), session_id),
+            None => Box::pin(async { false }),
         }
     }
 
@@ -910,6 +931,8 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
 pub fn init(
     db: Option<PathBuf>,
     recording: RecordingProbe,
+    stop_recording: StopRecording,
+    pause_recording: PauseRecording,
     speaker_assigned: SpeakerAssignmentProbe,
 ) -> tauri::plugin::TauriPlugin<tauri::Wry> {
     let specta_builder = make_specta_builder();
@@ -921,6 +944,8 @@ pub fn init(
             app.manage(CoachState {
                 db: db.clone(),
                 recording: recording.clone(),
+                stop_recording: stop_recording.clone(),
+                pause_recording: pause_recording.clone(),
                 speaker_assigned: speaker_assigned.clone(),
                 coach: Mutex::new(None),
                 llm: Mutex::new(None),
@@ -992,6 +1017,8 @@ mod test {
         let state = CoachState {
             db: Some("/data/app.db".into()),
             recording: std::sync::Arc::new(|_| Box::pin(async { None })),
+            stop_recording: std::sync::Arc::new(|_, _| Box::pin(async { false })),
+            pause_recording: std::sync::Arc::new(|_, _, _| Box::pin(async { false })),
             speaker_assigned: std::sync::Arc::new(|_, _| Box::pin(async {})),
             coach: Mutex::new(None),
             llm: Mutex::new(None),

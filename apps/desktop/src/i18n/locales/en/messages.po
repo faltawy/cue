@@ -2324,6 +2324,10 @@ msgstr "Paste a past summary you like..."
 msgid "Pause alerts while Do Not Disturb is on."
 msgstr "Pause alerts while Do Not Disturb is on."
 
+#: src/session/components/outer-header/index.tsx
+msgid "Paused · Stop"
+msgstr "Paused · Stop"
+
 #: src/contacts/organization-details.tsx
 #: src/session/components/note-input/transcript/renderer/speaker-assign.tsx
 #: src/shared/open-note-dialog.tsx

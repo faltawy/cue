@@ -61,6 +61,7 @@ pub(super) enum DispatchFrameResult {
 }
 
 pub(in crate::actors) struct Pipeline {
+    pub(super) captured_samples: Arc<AtomicU64>,
     vad_mask: VadMask,
     amplitude: AmplitudeEmitter,
     dropouts: DropoutMonitor,
@@ -73,6 +74,7 @@ pub(in crate::actors) struct Pipeline {
 impl Pipeline {
     pub(super) fn new(runtime: Arc<dyn ListenerRuntime>, session_id: String) -> Self {
         Self {
+            captured_samples: Default::default(),
             amplitude: AmplitudeEmitter::new(runtime.clone(), session_id.clone()),
             dropouts: DropoutMonitor::new(runtime, session_id),
             audio_buffer: AudioBuffer::new(MAX_BUFFER_CHUNKS),
@@ -131,8 +133,13 @@ impl Pipeline {
             self.audio_buffer.push_item(item);
         }
 
+        let duration_secs = self.replay_history.duration_secs();
         ListenerRefreshReplay {
-            duration_secs: self.replay_history.duration_secs(),
+            duration_secs,
+            start_offset_secs: (self.captured_samples.load(Ordering::SeqCst) as f64
+                / SAMPLE_RATE as f64
+                - duration_secs)
+                .max(0.0),
         }
     }
 
@@ -152,6 +159,8 @@ impl Pipeline {
         let processed_mic = Arc::<[f32]>::from(processed_mic);
         let item = BufferedAudio::new(processed_mic, processed_spk, mode);
 
+        self.captured_samples
+            .fetch_add(item.sample_count() as u64, Ordering::SeqCst);
         self.complete_item(item.clone(), listener_routing);
         if let Some(actor) = recorder {
             self.recorder_dispatcher.try_send(actor.clone(), item);
@@ -1294,6 +1303,7 @@ mod tests {
         }
         assert!(values[0] < values[1] && values[1] < values[2]);
 
+        assert_eq!(pipeline.captured_samples.load(Ordering::SeqCst), 12);
         old_handle.abort();
         new_handle.abort();
     }
