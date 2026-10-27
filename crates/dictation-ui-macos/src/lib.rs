@@ -15,7 +15,13 @@ pub fn capture_target() -> Result<String, String> {
 pub fn insert_text(target: &str, text: &str) -> Result<(), String> {
     let value = unsafe { _insert_dictation_text(&SRString::from(target), &SRString::from(text)) }
         .to_string();
-    if value.is_empty() { Ok(()) } else { Err(value) }
+    if let Some(method) = value.strip_prefix("ok:") {
+        tracing::info!(method, "dictation insertion returned");
+        Ok(())
+    } else {
+        tracing::warn!(error = %value, "dictation insertion failed");
+        Err(value)
+    }
 }
 
 #[derive(Serialize, Clone, Copy, Debug)]

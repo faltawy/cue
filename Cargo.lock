@@ -3842,6 +3842,7 @@ dependencies = [
  "serde",
  "serde_json",
  "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
+ "tracing",
 ]
 
 [[package]]
@@ -14269,6 +14270,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite 0.29.0",
  "tokio-util",
+ "tracing",
  "url",
 ]
 

@@ -92,6 +92,7 @@ import {
   useDictationStatus,
   waitForDictationCleanup,
 } from "./lifecycle";
+import { waitForDictationPanel } from "./panel";
 
 import { DictationPhase } from "~/dictation/controller";
 
@@ -190,6 +191,47 @@ describe("dictation access and lifecycle", () => {
       expect(mocks.startSystemRecording).not.toHaveBeenCalled();
     },
   );
+
+  it("records the opening words while the floating panel is still opening", async () => {
+    let showPanel!: () => void;
+    vi.mocked(waitForDictationPanel).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          showPanel = resolve;
+        }),
+    );
+    let recording = false;
+    mocks.startSystemRecording.mockImplementationOnce(async () => {
+      recording = true;
+      return { status: "ok", data: null };
+    });
+    render(<DictationLifecycle />);
+    await waitFor(() => expect(useDictationStatus.getState().ready).toBe(true));
+    await act(async () => {
+      mocks.listener?.({ payload: { type: "pressed" } });
+    });
+    const openingWords = recording ? "From the beginning" : "";
+    await act(async () => {
+      showPanel();
+    });
+    mocks.stopRecording.mockResolvedValueOnce({
+      status: "ok",
+      data: { filePath: "/tmp/dictation.wav", transcript: openingWords },
+    });
+    await act(async () => {
+      mocks.listener?.({ payload: { type: "released" } });
+    });
+    await waitFor(() =>
+      expect(useDictationStatus.getState().phase).toBe(DictationPhase.Idle),
+    );
+    expect(useDictationStatus.getState().lastTranscript).toBe(
+      "From the beginning",
+    );
+    expect(mocks.insertText).toHaveBeenCalledWith(
+      "focused-field",
+      "From the beginning",
+    );
+  });
 
   it("registers without an account and inserts into the captured field", async () => {
     render(<DictationLifecycle />);

@@ -25,6 +25,20 @@ import { useRunBatch } from "~/stt/useRunBatch";
 import { useSTTConnection } from "~/stt/useSTTConnection";
 export { useDictationStatus } from "./state";
 
+enum DictationDiagnosticStage {
+  ShortcutAccepted = "shortcut_accepted",
+  MicrophoneStarted = "microphone_started",
+  TargetCaptured = "target_captured",
+  PanelPresented = "panel_presented",
+  RecordingStopped = "recording_stopped",
+  TranscriptionStarted = "transcription_started",
+  InsertionStarted = "insertion_started",
+  InsertionReturned = "insertion_returned",
+  TranscriptionCompleted = "transcription_completed",
+  PhaseChanged = "phase_changed",
+  ShortcutConfigured = "shortcut_configured",
+}
+
 let lifecycle: Promise<void> = Promise.resolve();
 
 export function waitForDictationCleanup() {
@@ -113,7 +127,29 @@ function ActiveDictation({
     let unlisten: (() => void) | undefined;
     let abort = new AbortController();
     let presentation: Promise<void> = Promise.resolve();
+    let runId = id;
+    let startedAt = performance.now();
+    const record = (
+      stage: DictationDiagnosticStage,
+      details: Record<string, string | number | boolean> = {},
+    ) => {
+      console.info("[dictation]", {
+        runId,
+        stage,
+        elapsedMs: Math.round(performance.now() - startedAt),
+        ...details,
+      });
+    };
     const onError = (error: unknown) => {
+      console.error(
+        "[dictation] failed",
+        {
+          runId,
+          phase: useDictationStatus.getState().phase,
+          elapsedMs: Math.round(performance.now() - startedAt),
+        },
+        error,
+      );
       if (disposed) return;
       const message = error instanceof Error ? error.message : String(error);
       useDictationStatus.setState({ error: message });
@@ -126,6 +162,9 @@ function ActiveDictation({
         finalTranscript = null;
         const recordingAbort = abort;
         const owner = `${id}:${crypto.randomUUID()}`;
+        runId = owner;
+        startedAt = performance.now();
+        record(DictationDiagnosticStage.ShortcutAccepted, { handsFree });
         const { microphone, livePreview, conn, languages, dictionary } =
           current.current;
         useDictationStatus.setState({
@@ -135,20 +174,22 @@ function ActiveDictation({
           partial: "",
           amplitude: 0,
         });
-        const permission = unwrap(
-          await permissions.checkPermission("microphone"),
-        );
+        const [permissionResult, captureResult] = await Promise.all([
+          permissions.checkPermission("microphone"),
+          transcription.getCaptureState(),
+        ]);
+        const permission = unwrap(permissionResult);
         if (permission !== "authorized")
           throw new Error(
             "Enable microphone permission in Settings > Permissions before dictating.",
           );
-        const capture = unwrap(await transcription.getCaptureState());
+        const capture = unwrap(captureResult);
         if (capture !== "inactive")
           throw new Error(
             "Dictation is unavailable while Cue is recording a meeting.",
           );
         abort.signal.throwIfAborted();
-        target = unwrap(await dictation.captureTarget());
+
         const preview = conn
           ? {
               provider: conn.provider,
@@ -168,48 +209,72 @@ function ActiveDictation({
             }
           : null;
         abort.signal.throwIfAborted();
-        await waitForDictationPanel(owner, abort.signal);
-        abort.signal.throwIfAborted();
-        unwrap(
-          await dictation.startSystemRecording(
-            microphone || null,
-            id,
-            preview,
-            new Channel<RecordingUpdate>((update) => {
-              if (
-                disposed ||
-                recordingAbort.signal.aborted ||
-                recordingAbort !== abort
-              )
-                return;
-              if (
-                ![DictationPhase.Starting, DictationPhase.Recording].includes(
-                  useDictationStatus.getState().phase,
+        const [targetResult, recordingResult] = await Promise.allSettled([
+          dictation.captureTarget(),
+          dictation
+            .startSystemRecording(
+              microphone || null,
+              runId,
+              preview,
+              new Channel<RecordingUpdate>((update) => {
+                if (
+                  disposed ||
+                  recordingAbort.signal.aborted ||
+                  recordingAbort !== abort
                 )
-              )
-                return;
-              if (update.type === "amplitude")
-                useDictationStatus.setState({ amplitude: update.amplitude });
-              else if (!livePreview) return;
-              else if (update.type === "transcript")
-                useDictationStatus.setState({
-                  text: update.text,
-                  partial: update.partial,
-                });
-              else useDictationStatus.setState({ partial: "" });
+                  return;
+                if (
+                  ![DictationPhase.Starting, DictationPhase.Recording].includes(
+                    useDictationStatus.getState().phase,
+                  )
+                )
+                  return;
+                if (update.type === "amplitude")
+                  useDictationStatus.setState({ amplitude: update.amplitude });
+                else if (!livePreview) return;
+                else if (update.type === "transcript")
+                  useDictationStatus.setState({
+                    text: update.text,
+                    partial: update.partial,
+                  });
+                else useDictationStatus.setState({ partial: "" });
+              }),
+            )
+            .then((result) => {
+              unwrap(result);
+              record(DictationDiagnosticStage.MicrophoneStarted);
+              return result;
             }),
-          ),
-        );
+        ]);
+        if (recordingResult.status === "rejected") throw recordingResult.reason;
+        unwrap(recordingResult.value);
+        try {
+          if (targetResult.status === "rejected") throw targetResult.reason;
+          target = unwrap(targetResult.value);
+          record(DictationDiagnosticStage.TargetCaptured);
+          await waitForDictationPanel(owner, abort.signal);
+          abort.signal.throwIfAborted();
+          record(DictationDiagnosticStage.PanelPresented);
+        } catch (error) {
+          await dictation.cancelRecording(runId).then(unwrap).catch(onError);
+          throw error;
+        }
       },
       stop: async () => {
-        const recorded = unwrap(await dictation.stopRecording(id));
+        const recorded = unwrap(await dictation.stopRecording(runId));
         finalTranscript = recorded.transcript ?? null;
+        record(DictationDiagnosticStage.RecordingStopped, {
+          liveTranscriptAvailable: finalTranscript !== null,
+        });
         return recorded.filePath;
       },
       cancel: async () => {
-        unwrap(await dictation.cancelRecording(id));
+        unwrap(await dictation.cancelRecording(runId));
       },
       transcribe: async (path) => {
+        record(DictationDiagnosticStage.TranscriptionStarted, {
+          live: finalTranscript !== null,
+        });
         if (finalTranscript !== null) return finalTranscript;
         return transcribeDictation(
           current.current.runBatch,
@@ -218,16 +283,26 @@ function ActiveDictation({
         );
       },
       insert: async (text) => {
-        if (!disposed) unwrap(await dictation.insertText(target, text));
+        if (!disposed) {
+          record(DictationDiagnosticStage.InsertionStarted, {
+            characters: text.length,
+          });
+          unwrap(await dictation.insertText(target, text));
+          record(DictationDiagnosticStage.InsertionReturned);
+        }
       },
       discard: async (path) => {
         unwrap(await dictation.discardRecording(path));
       },
       onTranscript: (lastTranscript) => {
+        record(DictationDiagnosticStage.TranscriptionCompleted, {
+          characters: lastTranscript.length,
+        });
         if (!disposed) useDictationStatus.setState({ lastTranscript });
       },
       onError,
       onPhase: (phase) => {
+        record(DictationDiagnosticStage.PhaseChanged, { phase });
         if (!disposed)
           useDictationStatus.setState({
             phase,
@@ -286,6 +361,7 @@ function ActiveDictation({
         }
         unwrap(await shortcuts.configure(shortcut));
         armed = !disposed;
+        record(DictationDiagnosticStage.ShortcutConfigured, { shortcut });
         if (!disposed)
           useDictationStatus.setState({ ready: true, error: null, cancel });
       })

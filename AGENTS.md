@@ -45,6 +45,8 @@ Sessions are the core entity: all notes are backed by sessions. ProseMirror powe
 
 ## Guidelines
 
+- Production features must leave a useful local diagnostic trail: operation/run ID, start/completion/failure, duration, and actionable error context, including handled failures. Use the shared native-command diagnostics and add domain stages where a command alone cannot explain the outcome. Never log command payloads, transcripts, notes, clipboard contents, credentials, or provider response bodies; summarize high-frequency events instead of logging every audio frame.
+
 - JavaScript/TypeScript formatting runs through `oxfmt` via dprint's exec plugin.
 - Use `useForm` (tanstack-form) and `useQuery`/`useMutation` (tanstack-query) for form/mutation state. Avoid manual state management (e.g. `setError`).
 - Keep schema creation, migrations, and DB initialization on the Rust side. TypeScript consumes the shared transport contracts; the Drizzle adapter uses `executeProxy` and must not parse SQL or remap named rows into positional rows.

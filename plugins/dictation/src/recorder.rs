@@ -8,6 +8,7 @@ use std::sync::{
 use futures_util::StreamExt;
 use tauri::async_runtime::JoinHandle;
 use tokio_util::sync::CancellationToken;
+use tracing::Instrument;
 
 use crate::Error;
 use crate::preview::{Preview, PreviewConfig, RecordingUpdate};
@@ -70,9 +71,12 @@ impl Recorder {
             return Err(Error::AlreadyRecording);
         }
 
+        let started = std::time::Instant::now();
+        tracing::info!(%owner, "opening dictation microphone");
         let stream = audio
             .open_mic_capture(microphone_device, SAMPLE_RATE, CHUNK_SIZE)
             .map_err(|error| Error::Capture(error.to_string()))?;
+        tracing::info!(%owner, elapsed_ms = started.elapsed().as_millis() as u64, "dictation microphone opened");
         let temporary_file = tempfile::Builder::new()
             .prefix("cue-dictation-")
             .suffix(".wav")
@@ -87,24 +91,28 @@ impl Recorder {
         let task_path = path.clone();
         let finalize = Arc::new(AtomicBool::new(false));
         let task_finalize = finalize.clone();
-        let task = tauri::async_runtime::spawn(async move {
-            let preview = preview
-                .zip(updates.clone())
-                .map(|(config, updates)| Preview::start(config, updates));
-            let result = record_to_file(
-                stream,
-                task_cancellation,
-                &task_path,
-                preview,
-                updates,
-                task_finalize,
-            )
-            .await;
-            if result.is_err() {
-                let _ = std::fs::remove_file(&task_path);
+        let span = tracing::info_span!("dictation_recording", %owner);
+        let task = tauri::async_runtime::spawn(
+            async move {
+                let preview = preview
+                    .zip(updates.clone())
+                    .map(|(config, updates)| Preview::start(config, updates));
+                let result = record_to_file(
+                    stream,
+                    task_cancellation,
+                    &task_path,
+                    preview,
+                    updates,
+                    task_finalize,
+                )
+                .await;
+                if result.is_err() {
+                    let _ = std::fs::remove_file(&task_path);
+                }
+                result
             }
-            result
-        });
+            .instrument(span),
+        );
 
         *active = Some(ActiveRecording {
             owner,
@@ -198,6 +206,7 @@ async fn record_to_file(
     let deadline = tokio::time::sleep(std::time::Duration::from_secs(MAX_RECORDING_SECONDS));
     tokio::pin!(deadline);
     let mut sample_count = 0_u64;
+    let started = std::time::Instant::now();
 
     loop {
         tokio::select! {
@@ -209,6 +218,9 @@ async fn record_to_file(
                 };
                 let frame = frame.map_err(|error| Error::Capture(error.to_string()))?;
                 let samples = frame.preferred_mic();
+                if sample_count == 0 && !samples.is_empty() {
+                    tracing::info!(elapsed_ms = started.elapsed().as_millis() as u64, "dictation first audio frame");
+                }
                 for sample in samples.iter() {
                     writer
                         .write_sample(*sample)
@@ -219,6 +231,7 @@ async fn record_to_file(
                     let rms = (samples.iter().map(|s| f64::from(*s).powi(2)).sum::<f64>() / samples.len().max(1) as f64).sqrt();
                     let _ = updates.send(RecordingUpdate::Amplitude { amplitude: (rms * 8.0).clamp(0.0, 1.0) });
                     if preview.as_ref().is_some_and(|preview| !preview.send(&samples)) {
+                        tracing::warn!("dictation live transcription unavailable; retaining recorded audio for batch transcription");
                         preview = None;
                     }
                 }
@@ -239,6 +252,11 @@ async fn record_to_file(
     } else {
         None
     };
+    tracing::info!(
+        duration_ms = sample_count.saturating_mul(1_000) / u64::from(SAMPLE_RATE),
+        live_transcript_available = transcript.is_some(),
+        "dictation audio finalized"
+    );
     Ok(RecordedAudio {
         transcript,
         file_path: path.to_string_lossy().into_owned(),

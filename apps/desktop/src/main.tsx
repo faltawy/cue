@@ -10,7 +10,12 @@ import "@fontsource/ibm-plex-sans-arabic/600.css";
 import "./styles/globals.css";
 import "./styles/cursor.css";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
 import { StrictMode, useMemo } from "react";
@@ -58,6 +63,26 @@ import { listenerStore } from "./store/zustand/listener/instance";
 import { type ThemePreference } from "~/shared/enums";
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) =>
+      captureOperationalError(
+        { errorType: error.name },
+        {
+          operation: "query",
+          context: { failures: query.state.fetchFailureCount },
+        },
+      ),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) =>
+      captureOperationalError(
+        { errorType: error.name },
+        {
+          operation: "mutation",
+          context: { mutationId: mutation.mutationId },
+        },
+      ),
+  }),
   defaultOptions: {
     queries: {
       gcTime: 60_000,

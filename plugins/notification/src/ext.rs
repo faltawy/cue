@@ -6,14 +6,14 @@ pub struct Notification<'a, R: tauri::Runtime, M: tauri::Manager<R>> {
 }
 
 impl<'a, R: tauri::Runtime, M: tauri::Manager<R>> Notification<'a, R, M> {
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip_all)]
     pub fn show(&self, v: anlg_notification::Notification) -> Result<(), Error> {
         let _ = self.manager;
         anlg_notification::show(&v);
         Ok(())
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip_all)]
     pub fn clear(&self) -> Result<(), Error> {
         let _ = self.manager;
         anlg_notification::clear();

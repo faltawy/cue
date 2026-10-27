@@ -10,12 +10,14 @@ use crate::{
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn capture_target() -> Result<String, String> {
     crate::insertion::capture().await
 }
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn insert_text(target: String, text: String) -> Result<(), String> {
     if text.contains('\0') {
         return Err("Dictation text contains an unsupported NUL character".into());
@@ -71,6 +73,7 @@ pub(crate) async fn set_preview<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn start_recording<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     microphone_device: Option<String>,
@@ -87,6 +90,7 @@ pub(crate) async fn start_recording<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn stop_recording<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     owner: String,
@@ -99,6 +103,7 @@ pub(crate) async fn stop_recording<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn cancel_recording<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     owner: String,
@@ -111,6 +116,7 @@ pub(crate) async fn cancel_recording<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn discard_recording<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     file_path: String,
@@ -122,6 +128,7 @@ pub(crate) async fn discard_recording<R: tauri::Runtime>(
 
 #[tauri::command]
 #[specta::specta]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn start_system_recording<R: tauri::Runtime>(
     app: tauri::AppHandle<R>,
     microphone_device: Option<String>,

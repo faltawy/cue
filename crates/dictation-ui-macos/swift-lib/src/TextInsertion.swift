@@ -1,3 +1,4 @@
+import Carbon
 import Cocoa
 import SwiftRs
 
@@ -16,6 +17,15 @@ private final class DictationPasteProvider: NSObject, NSPasteboardItemDataProvid
       self.didRead = nil
     }
   }
+}
+
+func acceptsDictationText(
+  role: String?, subrole: String?, isSettable: (String) -> Bool
+) -> Bool {
+  if subrole == kAXSecureTextFieldSubrole { return false }
+  if isSettable(kAXSelectedTextAttribute) { return true }
+  // Terminals and web editors can accept paste without writable AX text attributes.
+  return [kAXTextFieldRole, kAXTextAreaRole, kAXComboBoxRole].contains(role ?? "")
 }
 
 private final class DictationTarget {
@@ -46,20 +56,25 @@ private final class DictationTarget {
     var subrole: CFTypeRef?
     AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
     AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole)
-    if subrole as? String == kAXSecureTextFieldSubrole { return false }
-    var editable = DarwinBoolean(false)
-    AXUIElementIsAttributeSettable(element, kAXSelectedTextAttribute as CFString, &editable)
-    if editable.boolValue { return true }
-    AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &editable)
-    return editable.boolValue
-      && [kAXTextFieldRole, kAXTextAreaRole, kAXComboBoxRole].contains(role as? String ?? "")
+    return acceptsDictationText(role: role as? String, subrole: subrole as? String) { attribute in
+      var editable = DarwinBoolean(false)
+      AXUIElementIsAttributeSettable(element, attribute as CFString, &editable)
+      return editable.boolValue
+    }
   }
 
   func capture() -> String {
     element = nil
+    guard AXIsProcessTrusted() else {
+      return "Enable Cue in System Settings > Privacy & Security > Accessibility, then try again."
+    }
+    guard !IsSecureEventInputEnabled() else {
+      return
+        "Dictation is unavailable while secure keyboard input is enabled. Leave the password field or disable secure input in the destination app."
+    }
     guard let focused = focusedElement(), acceptsText(focused) else {
       return
-        "Focus an editable text field and enable Cue in System Settings > Privacy & Security > Accessibility. Password fields are excluded."
+        "Click a text field or terminal input before starting dictation. Password fields are excluded."
     }
     token = UUID().uuidString
     element = focused
@@ -67,7 +82,8 @@ private final class DictationTarget {
   }
 
   func insert(token: String, text: String) -> String {
-    guard token == self.token, let target = element, let focused = focusedElement(),
+    guard !IsSecureEventInputEnabled(), token == self.token, let target = element,
+      let focused = focusedElement(),
       CFEqual(target, focused), acceptsText(focused)
     else {
       return "The focused text field changed. Copy your last dictation from Settings > Dictation."
@@ -78,7 +94,7 @@ private final class DictationTarget {
     if AXUIElementSetAttributeValue(target, kAXSelectedTextAttribute as CFString, text as CFString)
       == .success
     {
-      return ""
+      return "ok:accessibility"
     }
     guard let source = CGEventSource(stateID: .combinedSessionState),
       let down = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true),
@@ -129,7 +145,7 @@ private final class DictationTarget {
     up.flags = .maskCommand
     down.post(tap: .cghidEventTap)
     up.post(tap: .cghidEventTap)
-    return ""
+    return "ok:paste_requested"
   }
 
   private func restoreClipboard(_ saved: [NSPasteboardItem], expectedChangeCount: Int, retries: Int)

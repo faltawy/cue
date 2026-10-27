@@ -50,6 +50,7 @@ where
 {
     fmt::layer()
         .with_ansi(false)
+        .with_span_events(fmt::format::FmtSpan::CLOSE)
         .fmt_fields(FileFields::default())
         .with_writer(writer)
 }
@@ -133,6 +134,13 @@ impl Builder {
                     .with(file_writer.map(file_layer))
                     .init();
 
+                tracing::info!(
+                    version = %app.package_info().version,
+                    bundle = %app.config().identifier,
+                    pid = std::process::id(),
+                    arch = std::env::consts::ARCH,
+                    "application logging initialized"
+                );
                 Ok(())
             })
             .build()
@@ -205,7 +213,8 @@ mod test {
             "{file:?}"
         );
         assert!(!file.contains('\u{1b}'), "{file:?}");
-        assert_eq!(file.lines().count(), 1, "{file:?}");
+        assert!(file.contains("close time.busy="), "{file:?}");
+        assert_eq!(file.lines().count(), 2, "{file:?}");
     }
 
     #[derive(Clone, Default)]

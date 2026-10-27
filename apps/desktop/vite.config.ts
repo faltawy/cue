@@ -16,6 +16,7 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [
+    nativeDiagnostics(),
     devGallery(),
     devScreens(),
     relayShim(),
@@ -99,3 +100,15 @@ const tauri: UserConfig = {
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
 };
+
+function nativeDiagnostics(): Plugin {
+  const wrapper = new URL("./src/native-api.ts", import.meta.url).pathname;
+  return {
+    name: "cue-native-diagnostics",
+    enforce: "pre",
+    resolveId(source, importer) {
+      if (source === "@tauri-apps/api/core" && importer !== wrapper)
+        return wrapper;
+    },
+  };
+}
