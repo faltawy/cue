@@ -141,15 +141,12 @@ function ActiveDictation({
       });
     };
     const onError = (error: unknown) => {
-      console.error(
-        "[dictation] failed",
-        {
-          runId,
-          phase: useDictationStatus.getState().phase,
-          elapsedMs: Math.round(performance.now() - startedAt),
-        },
-        error,
-      );
+      console.error("[dictation] failed", {
+        runId,
+        phase: useDictationStatus.getState().phase,
+        elapsedMs: Math.round(performance.now() - startedAt),
+        errorType: error instanceof Error ? error.name : typeof error,
+      });
       if (disposed) return;
       const message = error instanceof Error ? error.message : String(error);
       useDictationStatus.setState({ error: message });
