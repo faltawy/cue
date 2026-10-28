@@ -6,6 +6,14 @@
 
 
 export const commands = {
+async configureBrowserExtension(registration: BrowserRegistration | null) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:coach|configure_browser_extension", { registration }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async completeDictation(requestId: string, result: DictationResult) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:coach|complete_dictation", { requestId, result }) };
@@ -221,6 +229,19 @@ coachNudged: "plugin:coach:coach-nudged"
 
 /** user-defined types **/
 
+export type BrowserContext = { title: string; captions: CaptureAvailability; chat: CaptureAvailability; participants: BrowserParticipant[]; events: BrowserEvent[]; presentation: PresentationImage | null }
+export type BrowserEvent = { id: string; kind: BrowserEventKind; timestamp_ms: number; participant_id: string | null; text: string }
+export type BrowserEventKind = "caption" | "chat" | "reaction" | "hand_raised" | "participant_joined" | "participant_left" | "presentation_started" | "presentation_ended"
+export type BrowserFailure = "invalid_request" | "unsupported_version" | "no_active_meeting" | "meeting_changed" | "already_attached" | "binding_expired" | "out_of_order" | "app_unavailable" | "unauthorized" | "invalid_message"
+export type BrowserOperation = { kind: "status" } | { kind: "attach"; session_id: string; connection_id: string; meeting_url: string } | { kind: "snapshot"; binding_id: string; sequence: number; context: BrowserContext } | { kind: "poll"; binding_id: string; after: number } | { kind: "detach"; binding_id: string }
+export type BrowserParticipant = { id: string; name: string; speaking: boolean; presenting: boolean }
+export type BrowserRegistration = { browser: ChromiumBrowser; extension_id: string }
+export type BrowserReply = { kind: "status"; active_session_id: string | null } | { kind: "attached"; binding_id: string } | { kind: "accepted" } | { kind: "cues"; cues: PrivateCue[] }
+export type BrowserRequest = { version: number; request_id: string; operation: BrowserOperation }
+export type BrowserResponse = { version: number; request_id: string; result: BrowserResult }
+export type BrowserResult = { status: "ok"; reply: BrowserReply } | { status: "error"; error: BrowserFailure }
+export type CaptureAvailability = "available" | "disabled" | "unavailable"
+export type ChromiumBrowser = "chrome" | "chromium"
 /**
  * Who Claude Code is signed in as, from `--auth-status`.
  */
@@ -286,6 +307,9 @@ export type McpProbe = { kind: "none"; server_name: string | null; server_versio
 export type McpSecretInput = { kind: "token"; token: string } | { kind: "basic"; password: string } | { kind: "header"; value: string }
 export type McpServer = { name: string; url: string; auth?: McpAuth; allow_changes?: boolean; enabled?: boolean }
 export type McpServerStatus = { name: string; state: McpAuthState }
+export type MeetingBrowserContext = { meeting_url: string; sequence: number; context: BrowserContext }
+export type PresentationImage = { timestamp_ms: number; jpeg_base64: string }
+export type PrivateCue = { sequence: number; tag: string; line: string }
 
 /** tauri-specta globals **/
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { browserContextSchema } from "./browser-context";
 import { AssistantScope } from "./scope";
 
 export enum CoachEditKind {
@@ -207,6 +208,12 @@ export function appBridge(
           recording_id: recordingId,
           action,
         }),
+      ),
+    browserContext: (sessionId: string) =>
+      call(
+        "GET",
+        `${meeting(sessionId)}/browser-context`,
+        browserContextSchema.nullable(),
       ),
     recordingState: () => required(call("GET", "/recording", recordingSchema)),
     recordingSessions: async (): Promise<ReadonlySet<string>> =>

@@ -198,3 +198,30 @@ pub async fn assistant_endpoint(app: tauri::AppHandle) -> std::result::Result<En
 pub async fn show_assistant(app: tauri::AppHandle) -> std::result::Result<(), String> {
     blocking(app, Coach::show_assistant).await
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn configure_browser_extension(
+    app: tauri::AppHandle,
+    registration: Option<crate::native_host::BrowserRegistration>,
+) -> std::result::Result<String, String> {
+    use tauri::Manager;
+    tauri::async_runtime::spawn_blocking(move || -> Result<String> {
+        let config = app.path().app_config_dir()?;
+        let home = app.path().home_dir()?;
+        let state = app.state::<crate::CoachState>();
+        let _guard = state
+            .browser_registration
+            .lock()
+            .map_err(|e| crate::Error::Other(e.to_string()))?;
+        let bridge = crate::app_bridge(&app, &state)?;
+        bridge.configure_browser(&config, None)?;
+        let binary = crate::process::bundled_coach().unwrap_or_default();
+        crate::native_host::register(&config, &home, &binary, registration.as_ref())?;
+        bridge.configure_browser(&config, registration.as_ref())?;
+        crate::native_host::host_name(&config)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())
+}

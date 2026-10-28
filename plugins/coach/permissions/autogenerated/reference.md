@@ -4,6 +4,7 @@ Default permissions for the plugin
 
 #### This default permission set includes the following:
 
+- `allow-configure-browser-extension`
 - `allow-complete-dictation`
 - `allow-llm-endpoint`
 - `allow-assistant-endpoint`
@@ -216,6 +217,32 @@ Enables the complete_dictation command without any pre-configured scope.
 <td>
 
 Denies the complete_dictation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:allow-configure-browser-extension`
+
+</td>
+<td>
+
+Enables the configure_browser_extension command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`coach:deny-configure-browser-extension`
+
+</td>
+<td>
+
+Denies the configure_browser_extension command without any pre-configured scope.
 
 </td>
 </tr>

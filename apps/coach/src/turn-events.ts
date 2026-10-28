@@ -60,6 +60,11 @@ export function toolLabels(
   const file = path.basename(str(input.file_path) || str(input.path));
   const pattern = clip(str(input.pattern), 40);
   switch (name) {
+    case "mcp__meeting__browser_meeting_context":
+      return label(
+        "Checked browser meeting context",
+        "Checking browser meeting context",
+      );
     case "mcp__meeting__live_transcript":
       return label("Read the transcript", "Reading the transcript");
     case "mcp__meeting__transcript_edit_context":

@@ -86,6 +86,7 @@ fn recording_sessions(app: tauri::AppHandle) -> tauri_plugin_coach::RecordingFut
 
         let snapshot = app.listener().get_capture_snapshot().await.ok()?;
         Some(tauri_plugin_coach::Recording {
+            active_session_id: snapshot.active_session_id.clone(),
             paused_session_ids: if snapshot.paused == Some(true) {
                 snapshot.active_session_id.clone().into_iter().collect()
             } else {

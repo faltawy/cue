@@ -163,7 +163,7 @@ pub fn llm_args(port: u16) -> Vec<OsString> {
 
 const BUNDLED_COACH: &str = "cue-coach";
 
-fn bundled_coach() -> Option<PathBuf> {
+pub(crate) fn bundled_coach() -> Option<PathBuf> {
     let executable = std::env::current_exe().ok()?;
     let directory = executable.parent()?;
     bundled_coach_for(directory)

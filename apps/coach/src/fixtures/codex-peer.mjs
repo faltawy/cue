@@ -69,6 +69,12 @@ for await (const line of readline.createInterface({ input: process.stdin })) {
   }
   if (id === "meeting-call") {
     if (!message.result?.success) throw new Error("Meeting tool failed");
+    const image = message.result.contentItems[1];
+    if (
+      image?.type !== "inputImage" ||
+      image.imageUrl !== "data:image/jpeg;base64,slide-data"
+    )
+      throw new Error("Meeting image lost in tool transport");
     finish(message.result.contentItems[0].text);
     continue;
   }

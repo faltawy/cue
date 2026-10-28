@@ -1,6 +1,7 @@
 mod access;
 mod auth;
 mod bridge;
+mod browser;
 mod busy;
 mod claude_code;
 mod commands;
@@ -10,6 +11,7 @@ mod error;
 mod events;
 mod library;
 mod mcp;
+mod native_host;
 mod probe;
 mod process;
 mod series;
@@ -28,8 +30,9 @@ use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use auth::{KeychainSecrets, McpSecret};
 pub use auth::{McpAuthState, McpSecretInput, McpServerStatus};
 pub use bridge::{
-    DictationFuture, Recording, RecordingFuture, SpeakerAssignmentFuture, RecordingControlFuture,
+    DictationFuture, Recording, RecordingControlFuture, RecordingFuture, SpeakerAssignmentFuture,
 };
+pub use browser::{BrowserFailure, BrowserRequest, BrowserResponse};
 pub use claude_code::{
     ClaudeAccount, ClaudeCodeSource, ClaudeCodeStatus, ClaudeCodeUpdate, ClaudeSetup,
     InstalledClaudeCode,
@@ -68,6 +71,7 @@ struct CoachState {
     assistant: Mutex<Option<Sidecar>>,
     opening: Mutex<()>,
     bridge: Mutex<Option<bridge::Bridge>>,
+    browser_registration: Mutex<()>,
     setup: Mutex<SetupSlot>,
     codex_setup: Mutex<SetupSlot>,
     sign_in: [Mutex<()>; 2],
@@ -894,6 +898,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .plugin_name(PLUGIN_NAME)
         .commands(tauri_specta::collect_commands![
+            commands::configure_browser_extension,
             commands::complete_dictation,
             commands::llm_endpoint,
             commands::assistant_endpoint,
@@ -925,6 +930,9 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             CoachFocused,
             CoachEvidence
         ])
+        .typ::<browser::BrowserRequest>()
+        .typ::<browser::BrowserResponse>()
+        .typ::<browser::MeetingBrowserContext>()
         .error_handling(tauri_specta::ErrorHandlingMode::Result)
 }
 
@@ -952,12 +960,30 @@ pub fn init(
                 assistant: Mutex::new(None),
                 opening: Mutex::new(()),
                 bridge: Mutex::new(None),
+                browser_registration: Mutex::new(()),
                 setup: Mutex::new(SetupSlot::default()),
                 codex_setup: Mutex::new(SetupSlot::default()),
                 sign_in: std::array::from_fn(|_| Mutex::new(())),
                 unseen_nudge: AtomicBool::new(false),
                 dictation: dictation::Broker::default(),
             });
+            if let Err(error) = (|| -> Result<()> {
+                let config = app.path().app_config_dir()?;
+                if let Some(registration) = native_host::read(&config)? {
+                    if let Some(binary) = process::bundled_coach() {
+                        native_host::register(
+                            &config,
+                            &app.path().home_dir()?,
+                            &binary,
+                            Some(&registration),
+                        )?;
+                    }
+                    app_bridge(app, &app.state::<CoachState>())?;
+                }
+                Ok(())
+            })() {
+                tracing::error!(%error, "browser_bridge_start_failed");
+            }
             if let Err(error) = app
                 .coach()
                 .settings()
@@ -1025,6 +1051,7 @@ mod test {
             assistant: Mutex::new(None),
             opening: Mutex::new(()),
             bridge: Mutex::new(None),
+            browser_registration: Mutex::new(()),
             setup: Mutex::new(SetupSlot::default()),
             codex_setup: Mutex::new(SetupSlot::default()),
             sign_in: std::array::from_fn(|_| Mutex::new(())),

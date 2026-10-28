@@ -16,7 +16,7 @@ import { decide } from "./guard";
 import { type AskContent } from "./images";
 import { meetingTools } from "./meeting-server";
 import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
-import { type RuntimeTool } from "./runtime-tool";
+import { type RuntimeTool, type ToolResult } from "./runtime-tool";
 import {
   type CoachOptions,
   coachPrompt,
@@ -181,7 +181,7 @@ export function startCodexSession(options: {
           };
         const name = entry.name;
         messages.push({ type: RuntimeMessageType.ToolStart, id, name, input });
-        let response;
+        let response: ToolResult;
         try {
           options.authorize?.(name, input);
           response = await entry.handler(input, {
@@ -202,10 +202,17 @@ export function startCodexSession(options: {
           isError: response.isError === true,
         });
         return {
-          contentItems: response.content.map((part) => ({
-            type: "inputText",
-            text: part.text,
-          })),
+          contentItems: response.content.map((part) =>
+            part.type === "image"
+              ? {
+                  type: "inputImage",
+                  imageUrl: `data:${part.mimeType};base64,${part.data}`,
+                }
+              : {
+                  type: "inputText",
+                  text: part.text,
+                },
+          ),
           success: response.isError !== true,
         };
       },

@@ -111,7 +111,7 @@ test("Codex streams host tool output, rejects native/unknown tools, and preserve
   });
 });
 
-test("Codex exposes meeting tools outside its reserved MCP namespace", async () => {
+test("Codex exposes meeting tools outside its reserved MCP namespace and preserves image results", async () => {
   const options = await fixture();
   const session = startCodexSession({
     ...options,
@@ -121,7 +121,16 @@ test("Codex exposes meeting tools outside its reserved MCP namespace", async () 
         "mcp__meeting__live_transcript",
         "Read the live transcript",
         {},
-        async () => text("Transcript from the meeting"),
+        async () => ({
+          content: [
+            { type: "text" as const, text: "Transcript from the meeting" },
+            {
+              type: "image" as const,
+              mimeType: "image/jpeg",
+              data: "slide-data",
+            },
+          ],
+        }),
       ),
     ],
   });

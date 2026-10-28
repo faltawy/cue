@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-configure-browser-extension"
+description = "Enables the configure_browser_extension command without any pre-configured scope."
+commands.allow = ["configure_browser_extension"]
+
+[[permission]]
+identifier = "deny-configure-browser-extension"
+description = "Denies the configure_browser_extension command without any pre-configured scope."
+commands.deny = ["configure_browser_extension"]

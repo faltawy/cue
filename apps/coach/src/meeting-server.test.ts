@@ -231,7 +231,11 @@ test("stop recording targets the attached meeting and cannot stop another meetin
   expect(active).toBe("live");
   selected = "live";
   const result = await entry!.handler({});
-  expect(result.content[0]?.text).toContain("Recording stopped");
+  expect(
+    result.content
+      .map((part) => (part.type === "text" ? part.text : ""))
+      .join(""),
+  ).toContain("Recording stopped");
   expect(active).toBe("");
   selected = undefined;
   expect((await entry!.handler({})).isError).toBe(true);
@@ -263,17 +267,63 @@ test("pause and resume keep the selected meeting open and reject an older chat",
   });
   const pause = tools.find((entry) => entry.name === "pause_recording")!;
   const resume = tools.find((entry) => entry.name === "resume_recording")!;
-  expect((await pause.handler({})).content[0]?.text).toContain(
-    "Recording paused",
-  );
+  expect(
+    (await pause.handler({})).content
+      .map((part) => (part.type === "text" ? part.text : ""))
+      .join(""),
+  ).toContain("Recording paused");
   expect(paused).toBe(true);
   selected = "old";
   expect((await resume.handler({})).isError).toBe(true);
   expect(paused).toBe(true);
   selected = "live";
-  expect((await resume.handler({})).content[0]?.text).toContain(
-    "Recording resumed",
-  );
+  expect(
+    (await resume.handler({})).content
+      .map((part) => (part.type === "text" ? part.text : ""))
+      .join(""),
+  ).toContain("Recording resumed");
   expect(paused).toBe(false);
+  database.close();
+});
+
+test("browser context returns images only when requested and honors locked meeting access", async () => {
+  const database = db();
+  database.exec("INSERT INTO sessions (id, title) VALUES ('live', 'Live')");
+  const bridge = {
+    browserContext: async () => ({
+      meeting_url: "https://meet.google.com/abc-defg-hij",
+      sequence: 1,
+      context: {
+        title: "Demo",
+        participants: [],
+        events: [],
+        captions: "available",
+        chat: "unavailable",
+        presentation: { timestamp_ms: 1000, jpeg_base64: "image-data" },
+      },
+    }),
+  } as unknown as AppBridge;
+  const entry = meetingTools(database, () => "live", {
+    bridge,
+    onEdit() {},
+    onUndo() {},
+  }).find((item) => item.name === "browser_meeting_context")!;
+  const withImage = await entry.handler({ include_presentation: true });
+  expect(withImage.content).toContainEqual({
+    type: "image",
+    mimeType: "image/jpeg",
+    data: "image-data",
+  });
+  const withoutImage = await entry.handler({});
+  expect(withoutImage.content).toHaveLength(1);
+  expect(withoutImage.content[0]).toMatchObject({
+    type: "text",
+    text: expect.stringContaining('"title":"Demo"'),
+  });
+  expect(JSON.stringify(withoutImage)).not.toContain("image-data");
+  database.exec("UPDATE sessions SET locked = 1 WHERE id = 'live'");
+  const locked = await entry.handler({ include_presentation: true });
+  expect(locked.isError).toBe(true);
+  expect(JSON.stringify(locked)).not.toContain("image-data");
   database.close();
 });

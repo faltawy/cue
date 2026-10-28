@@ -3,7 +3,7 @@ use std::net::Ipv4Addr;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::process::Command;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use axum::extract::{Path, Request, State};
 use axum::http::{StatusCode, header};
@@ -71,15 +71,52 @@ struct BridgeState {
     host: Arc<dyn Host>,
     token: String,
     edits: Edits,
+    browser_token: Arc<Mutex<Option<String>>>,
+    browser: Arc<Mutex<crate::browser::BrowserHub>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Bridge {
     pub url: String,
     token: String,
+    browser_token: Arc<Mutex<Option<String>>>,
+    browser: Arc<Mutex<crate::browser::BrowserHub>>,
 }
 
 impl Bridge {
+    pub fn configure_browser(
+        &self,
+        config: &std::path::Path,
+        registration: Option<&crate::native_host::BrowserRegistration>,
+    ) -> Result<()> {
+        let mut token = self
+            .browser_token
+            .lock()
+            .map_err(|e| Error::Other(e.to_string()))?;
+        *token = None;
+        *self
+            .browser
+            .lock()
+            .map_err(|e| Error::Other(e.to_string()))? = Default::default();
+        if let Some(registration) = registration {
+            let binary = crate::process::bundled_coach().ok_or_else(|| {
+                Error::Other("browser connection requires a bundled Cue app".into())
+            })?;
+            let secret = format!(
+                "{}{}",
+                uuid::Uuid::new_v4().simple(),
+                uuid::Uuid::new_v4().simple()
+            );
+            crate::native_host::publish(config, &binary, &self.url, &secret, registration)?;
+            *token = Some(secret);
+        }
+        tracing::info!(
+            enabled = registration.is_some(),
+            "browser_bridge_configured"
+        );
+        Ok(())
+    }
+
     pub fn apply(&self, command: &mut Command) {
         command.env(URL_ENV, &self.url).env(TOKEN_ENV, &self.token);
     }
@@ -88,15 +125,28 @@ impl Bridge {
 pub fn start(host: impl Host) -> Result<Bridge> {
     let listener = std::net::TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
     listener.set_nonblocking(true)?;
+    let config = host.config_dir()?;
     let bridge = Bridge {
         url: format!("http://{}", listener.local_addr()?),
+        browser_token: Arc::new(Mutex::new(None)),
+        browser: Arc::new(Mutex::new(Default::default())),
         token: format!(
             "{}{}",
             uuid::Uuid::new_v4().simple(),
             uuid::Uuid::new_v4().simple()
         ),
     };
-    let app = router(&bridge.token, host);
+    if let Err(error) = crate::native_host::read(&config)
+        .and_then(|registration| bridge.configure_browser(&config, registration.as_ref()))
+    {
+        tracing::error!(%error, "browser_bridge_configuration_failed");
+    }
+    let app = browser_router(
+        &bridge.token,
+        host,
+        bridge.browser_token.clone(),
+        bridge.browser.clone(),
+    );
     tauri::async_runtime::spawn(async move {
         let served = match tokio::net::TcpListener::from_std(listener) {
             Ok(listener) => axum::serve(listener, app).await,
@@ -109,11 +159,28 @@ pub fn start(host: impl Host) -> Result<Bridge> {
     Ok(bridge)
 }
 
+#[cfg(test)]
 fn router(token: &str, host: impl Host) -> Router {
+    browser_router(
+        token,
+        host,
+        Arc::new(Mutex::new(None)),
+        Arc::new(Mutex::new(Default::default())),
+    )
+}
+
+fn browser_router(
+    token: &str,
+    host: impl Host,
+    browser_token: Arc<Mutex<Option<String>>>,
+    browser: Arc<Mutex<crate::browser::BrowserHub>>,
+) -> Router {
     let host: Arc<dyn Host> = Arc::new(host);
     let source = host.clone();
     let state = Arc::new(BridgeState {
         host,
+        browser_token,
+        browser,
         token: token.to_string(),
         edits: Edits::following(Arc::new(move || {
             let future = source.recording_sessions();
@@ -121,6 +188,16 @@ fn router(token: &str, host: impl Host) -> Router {
         })),
     });
     Router::new()
+        .route(
+            "/browser",
+            post(browser_request).layer(axum::extract::DefaultBodyLimit::max(
+                crate::browser::MAX_MESSAGE,
+            )),
+        )
+        .route(
+            "/meeting/{session_id}/browser-context",
+            get(browser_context),
+        )
         .route("/recording", get(recording))
         .route("/dictation", post(dictation))
         .route("/meeting/{session_id}/recording/stop", post(stop_recording))
@@ -244,7 +321,21 @@ async fn authorize(
         .and_then(|value| value.to_str().ok())
         .and_then(|value| value.strip_prefix("Bearer "))
         .unwrap_or_default();
-    if !same_secret(presented.as_bytes(), state.token.as_bytes()) {
+    let authorized = if request.uri().path() == "/browser" {
+        state
+            .browser_token
+            .lock()
+            .ok()
+            .and_then(|token| {
+                token
+                    .as_ref()
+                    .map(|token| same_secret(presented.as_bytes(), token.as_bytes()))
+            })
+            .unwrap_or(false)
+    } else {
+        same_secret(presented.as_bytes(), state.token.as_bytes())
+    };
+    if !authorized {
         return failure(StatusCode::UNAUTHORIZED, "missing or wrong coach token");
     }
     next.run(request).await
@@ -311,6 +402,7 @@ type Reply<T> = std::result::Result<Json<T>, BridgeError>;
 
 #[derive(serde::Serialize)]
 pub struct Recording {
+    pub active_session_id: Option<String>,
     pub session_ids: Vec<String>,
     pub paused_session_ids: Vec<String>,
 }
@@ -483,6 +575,10 @@ async fn nudged(
     Path(session_id): Path<String>,
     Json(body): Json<NudgeBody>,
 ) -> StatusCode {
+    let active = active_browser_session(&state).await;
+    if let Ok(mut browser) = state.browser.lock() {
+        browser.nudge(&session_id, active.as_deref(), &body.tag, &body.line);
+    }
     state.host.nudged(CoachNudged {
         session_id,
         tag: body.tag,
@@ -892,6 +988,7 @@ mod tests {
             let paused_session_ids = self.paused.lock().unwrap().clone();
             Box::pin(async move {
                 recording.map(|session_ids| Recording {
+                    active_session_id: session_ids.first().cloned(),
                     session_ids,
                     paused_session_ids,
                 })
@@ -1326,7 +1423,7 @@ mod tests {
 
         assert_eq!(
             recording,
-            serde_json::json!({ "session_ids": ["thursday"], "paused_session_ids": [] })
+            serde_json::json!({ "active_session_id": "thursday", "session_ids": ["thursday"], "paused_session_ids": [] })
         );
         assert_eq!(unknown.status(), StatusCode::SERVICE_UNAVAILABLE);
     }
@@ -1577,5 +1674,169 @@ mod tests {
         assert_eq!(unknown.status(), StatusCode::NOT_FOUND);
         let undone: serde_json::Value = undo.json().await.unwrap();
         assert_eq!(undone["kind"], "create_note");
+    }
+    #[tokio::test]
+    async fn browser_context_and_private_cues_stay_bound_to_one_meeting_with_separate_credentials()
+    {
+        use axum::body::{Body, to_bytes};
+        use tower::ServiceExt;
+        let host = test_host().await;
+        *host.recording.lock().unwrap() = Some(vec!["thursday".into()]);
+        let credentials = Arc::new(Mutex::new(Some("browser-secret".into())));
+        let app = browser_router(
+            TOKEN,
+            host.clone(),
+            credentials.clone(),
+            Arc::new(Mutex::new(Default::default())),
+        );
+        async fn call(
+            app: &Router,
+            path: &str,
+            token: &str,
+            body: Option<serde_json::Value>,
+        ) -> (StatusCode, serde_json::Value) {
+            let request = axum::http::Request::builder()
+                .method(if body.is_some() { "POST" } else { "GET" })
+                .uri(path)
+                .header(header::AUTHORIZATION, format!("Bearer {token}"))
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(body.map(|v| v.to_string()).unwrap_or_default()))
+                .unwrap();
+            let response = app.clone().oneshot(request).await.unwrap();
+            let status = response.status();
+            let bytes = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+            (
+                status,
+                serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+            )
+        }
+        let request = |operation| {
+            Some(
+                serde_json::json!({ "version": 1, "request_id": "request-1", "operation": operation }),
+            )
+        };
+        let attach = request(
+            serde_json::json!({"kind":"attach", "session_id":"thursday", "connection_id":"tab-1", "meeting_url":"https://meet.google.com/abc-defg-hij?authuser=0"}),
+        );
+        let (status, attached) = call(&app, "/browser", "browser-secret", attach.clone()).await;
+        assert_eq!(status, StatusCode::OK);
+        let binding = attached["result"]["reply"]["binding_id"].as_str().unwrap();
+        let (_, snapshot) = call(&app, "/browser", "browser-secret", request(serde_json::json!({"kind":"snapshot", "binding_id":binding, "sequence":1, "context":{
+            "title":"Weekly", "captions":"available", "chat":"available", "participants":[], "presentation":null,
+            "events":[{"id":"caption-1", "kind":"caption", "timestamp_ms":1000, "participant_id":null, "text":"Please check the slide"}]
+        }}))).await;
+        assert_eq!(snapshot["result"]["reply"]["kind"], "accepted");
+        let (_, context) = call(&app, "/meeting/thursday/browser-context", TOKEN, None).await;
+        assert_eq!(
+            context["context"]["events"][0]["text"],
+            "Please check the slide"
+        );
+        assert_eq!(
+            context["meeting_url"],
+            "https://meet.google.com/abc-defg-hij"
+        );
+        assert_eq!(
+            call(
+                &app,
+                "/meeting/thursday/browser-context",
+                "browser-secret",
+                None
+            )
+            .await
+            .0,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            call(&app, "/browser", TOKEN, attach.clone()).await.0,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            call(
+                &app,
+                "/meeting/thursday/recording/stop",
+                "browser-secret",
+                Some(serde_json::json!({}))
+            )
+            .await
+            .0,
+            StatusCode::UNAUTHORIZED
+        );
+        let (_, other) = call(&app, "/meeting/tuesday/browser-context", TOKEN, None).await;
+        assert!(other.is_null());
+        call(
+            &app,
+            "/meeting/thursday/nudge",
+            TOKEN,
+            Some(serde_json::json!({"tag":"question", "line":"Ask who owns the follow-up."})),
+        )
+        .await;
+        let poll = request(serde_json::json!({"kind":"poll", "binding_id":binding, "after":0}));
+        let (_, cues) = call(&app, "/browser", "browser-secret", poll.clone()).await;
+        assert_eq!(
+            cues["result"]["reply"]["cues"][0]["line"],
+            "Ask who owns the follow-up."
+        );
+        *host.recording.lock().unwrap() = Some(vec!["tuesday".into()]);
+        let (_, expired) = call(&app, "/browser", "browser-secret", poll).await;
+        assert_eq!(expired["result"]["error"], "binding_expired");
+        assert!(
+            call(&app, "/meeting/thursday/browser-context", TOKEN, None)
+                .await
+                .1
+                .is_null()
+        );
+        *credentials.lock().unwrap() = None;
+        assert_eq!(
+            call(&app, "/browser", "browser-secret", attach).await.0,
+            StatusCode::UNAUTHORIZED
+        );
+    }
+}
+
+async fn browser_request(
+    State(state): State<Arc<BridgeState>>,
+    Json(request): Json<crate::browser::BrowserRequest>,
+) -> Response {
+    let active = active_browser_session(&state).await;
+    match state.browser.lock() {
+        Ok(mut browser) => Json(browser.handle(request, active.as_deref())).into_response(),
+        Err(_) => failure(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "browser context unavailable",
+        ),
+    }
+}
+
+async fn browser_context(
+    State(state): State<Arc<BridgeState>>,
+    Path(session_id): Path<String>,
+) -> Response {
+    let active = active_browser_session(&state).await;
+    match state.browser.lock() {
+        Ok(mut browser) => Json(browser.context(&session_id, active.as_deref())).into_response(),
+        Err(_) => failure(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "browser context unavailable",
+        ),
+    }
+}
+
+async fn active_browser_session(state: &BridgeState) -> Option<String> {
+    let recording = state.host.recording_sessions().await?;
+    let id = recording.active_session_id?;
+    if recording.paused_session_ids.contains(&id) {
+        return None;
+    }
+    let pool = state.host.pool().ok()?;
+    match state
+        .edits
+        .ensure_target(&pool, &id, EditOwner::Library)
+        .await
+    {
+        Ok(()) => Some(id),
+        Err(error) => {
+            tracing::warn!(%error, "browser_meeting_access_unavailable");
+            None
+        }
     }
 }
