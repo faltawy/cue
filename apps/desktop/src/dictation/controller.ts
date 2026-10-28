@@ -5,6 +5,21 @@ export enum DictationPhase {
   Transcribing = "transcribing",
 }
 
+export enum DictationErrorCode {
+  NoSpeech = "no_speech",
+  CaptureInterrupted = "capture_interrupted",
+}
+
+export class DictationError extends Error {
+  constructor(
+    readonly code: DictationErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "DictationError";
+  }
+}
+
 export class DictationController {
   private phase: DictationPhase = DictationPhase.Idle;
   private cancelled = false;
@@ -101,7 +116,11 @@ export class DictationController {
       if (this.cancelled) return;
       const text = (await this.dependencies.transcribe(path)).trim();
       if (this.cancelled) return;
-      if (!text) throw new Error("No speech detected. Please try again.");
+      if (!text)
+        throw new DictationError(
+          DictationErrorCode.NoSpeech,
+          "No speech detected. Please try again.",
+        );
       this.dependencies.onTranscript(text);
       await this.dependencies.insert(text);
     } catch (error) {

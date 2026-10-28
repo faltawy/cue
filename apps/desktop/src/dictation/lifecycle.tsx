@@ -4,6 +4,7 @@ import { useRef } from "react";
 import {
   commands as dictation,
   type RecordingUpdate,
+  type CaptureFailure,
 } from "@anlg/plugin-dictation";
 import { commands as permissions } from "@anlg/plugin-permissions";
 import { commands as shortcuts, events } from "@anlg/plugin-shortcut";
@@ -11,7 +12,11 @@ import { commands as transcription } from "@anlg/plugin-transcription";
 import { toast } from "@anlg/ui/components/ui/toast";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
-import { DictationController } from "./controller";
+import {
+  DictationController,
+  DictationError,
+  DictationErrorCode,
+} from "./controller";
 import { waitForDictationPanel } from "./panel";
 import { useDictationStatus } from "./state";
 import { transcribeDictation } from "./transcribe";
@@ -37,6 +42,8 @@ enum DictationDiagnosticStage {
   TranscriptionCompleted = "transcription_completed",
   PhaseChanged = "phase_changed",
   ShortcutConfigured = "shortcut_configured",
+  CaptureFailed = "capture_failed",
+  BatchFallback = "batch_fallback",
 }
 
 let lifecycle: Promise<void> = Promise.resolve();
@@ -129,10 +136,13 @@ function ActiveDictation({
     let presentation: Promise<void> = Promise.resolve();
     let runId = id;
     let startedAt = performance.now();
+    let lastStage = DictationDiagnosticStage.ShortcutConfigured;
+    let captureFailure: CaptureFailure | undefined;
     const record = (
       stage: DictationDiagnosticStage,
       details: Record<string, string | number | boolean> = {},
     ) => {
+      lastStage = stage;
       console.info("[dictation]", {
         runId,
         stage,
@@ -146,6 +156,9 @@ function ActiveDictation({
         phase: useDictationStatus.getState().phase,
         elapsedMs: Math.round(performance.now() - startedAt),
         errorType: error instanceof Error ? error.name : typeof error,
+        stage: lastStage,
+        captureFailure,
+        code: error instanceof DictationError ? error.code : undefined,
       });
       if (disposed) return;
       const message = error instanceof Error ? error.message : String(error);
@@ -157,6 +170,7 @@ function ActiveDictation({
       start: async () => {
         abort = new AbortController();
         finalTranscript = null;
+        captureFailure = undefined;
         const recordingAbort = abort;
         const owner = `${id}:${crypto.randomUUID()}`;
         runId = owner;
@@ -226,6 +240,14 @@ function ActiveDictation({
                   )
                 )
                   return;
+                if (update.type === "captureFailed") {
+                  captureFailure = update.reason;
+                  record(DictationDiagnosticStage.CaptureFailed, {
+                    reason: update.reason,
+                  });
+                  void controller.release(true);
+                  return;
+                }
                 if (update.type === "amplitude")
                   useDictationStatus.setState({ amplitude: update.amplitude });
                 else if (!livePreview) return;
@@ -260,6 +282,7 @@ function ActiveDictation({
       stop: async () => {
         const recorded = unwrap(await dictation.stopRecording(runId));
         finalTranscript = recorded.transcript ?? null;
+        captureFailure = recorded.captureFailure ?? captureFailure;
         record(DictationDiagnosticStage.RecordingStopped, {
           liveTranscriptAvailable: finalTranscript !== null,
         });
@@ -272,7 +295,11 @@ function ActiveDictation({
         record(DictationDiagnosticStage.TranscriptionStarted, {
           live: finalTranscript !== null,
         });
-        if (finalTranscript !== null) return finalTranscript;
+        if (finalTranscript?.trim()) return finalTranscript;
+        if (finalTranscript !== null)
+          record(DictationDiagnosticStage.BatchFallback, {
+            reason: "empty_live_transcript",
+          });
         return transcribeDictation(
           current.current.runBatch,
           path,
@@ -280,6 +307,11 @@ function ActiveDictation({
         );
       },
       insert: async (text) => {
+        if (captureFailure)
+          throw new DictationError(
+            DictationErrorCode.CaptureInterrupted,
+            "The microphone stopped delivering audio. Recovered text is saved in Settings → Dictation → Last dictation. Check it before pasting, and reconnect or choose another microphone.",
+          );
         if (!disposed) {
           record(DictationDiagnosticStage.InsertionStarted, {
             characters: text.length,

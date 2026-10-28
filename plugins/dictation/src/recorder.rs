@@ -17,6 +17,7 @@ use tauri::ipc::Channel;
 const SAMPLE_RATE: u32 = 16_000;
 const CHUNK_SIZE: usize = 1_600;
 const MAX_RECORDING_SECONDS: u64 = 300;
+const AUDIO_STALL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +25,8 @@ pub struct RecordedAudio {
     pub file_path: String,
     pub duration_ms: u64,
     pub transcript: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub capture_failure: Option<crate::error::CaptureFailure>,
 }
 
 struct ActiveRecording {
@@ -206,18 +209,39 @@ async fn record_to_file(
     let deadline = tokio::time::sleep(std::time::Duration::from_secs(MAX_RECORDING_SECONDS));
     tokio::pin!(deadline);
     let mut sample_count = 0_u64;
+    let mut capture_failure = None;
+    let stalled = tokio::time::sleep(AUDIO_STALL_TIMEOUT);
+    tokio::pin!(stalled);
     let started = std::time::Instant::now();
 
     loop {
         tokio::select! {
             _ = cancellation.cancelled() => break,
             _ = &mut deadline => break,
-            next = stream.next() => {
-                let Some(frame) = next else {
-                    break;
+            _ = &mut stalled => {
+                let reason = if sample_count == 0 {
+                    crate::error::CaptureFailure::NoAudio
+                } else {
+                    crate::error::CaptureFailure::Stalled
                 };
-                let frame = frame.map_err(|error| Error::Capture(error.to_string()))?;
+                report_capture_failure(reason, &updates, sample_count, started);
+                if sample_count == 0 { return Err(reason.into()); }
+                capture_failure = Some(reason);
+                break;
+            },
+            next = stream.next() => {
+                let frame = match next {
+                    Some(Ok(frame)) => frame,
+                    _ => {
+                        let reason = crate::error::CaptureFailure::Disconnected;
+                        report_capture_failure(reason, &updates, sample_count, started);
+                        if sample_count == 0 { return Err(reason.into()); }
+                        capture_failure = Some(reason);
+                        break;
+                    },
+                };
                 let samples = frame.preferred_mic();
+                if !samples.is_empty() { stalled.as_mut().reset(tokio::time::Instant::now() + AUDIO_STALL_TIMEOUT); }
                 if sample_count == 0 && !samples.is_empty() {
                     tracing::info!(elapsed_ms = started.elapsed().as_millis() as u64, "dictation first audio frame");
                 }
@@ -243,7 +267,13 @@ async fn record_to_file(
         .finalize()
         .map_err(|error| Error::Recording(error.to_string()))?;
 
-    let transcript = if finalize.load(Ordering::SeqCst) {
+    if sample_count == 0 && finalize.load(Ordering::SeqCst) {
+        let reason = crate::error::CaptureFailure::NoAudio;
+        report_capture_failure(reason, &updates, sample_count, started);
+        return Err(reason.into());
+    }
+
+    let transcript = if finalize.load(Ordering::SeqCst) || capture_failure.is_some() {
         if let Some(preview) = preview {
             preview.finish().await
         } else {
@@ -258,10 +288,28 @@ async fn record_to_file(
         "dictation audio finalized"
     );
     Ok(RecordedAudio {
+        capture_failure,
         transcript,
         file_path: path.to_string_lossy().into_owned(),
         duration_ms: sample_count.saturating_mul(1_000) / u64::from(SAMPLE_RATE),
     })
+}
+
+fn report_capture_failure(
+    reason: crate::error::CaptureFailure,
+    updates: &Option<Channel<RecordingUpdate>>,
+    sample_count: u64,
+    started: std::time::Instant,
+) {
+    tracing::warn!(
+        ?reason,
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        captured_ms = sample_count * 1000 / u64::from(SAMPLE_RATE),
+        "dictation capture failed"
+    );
+    if let Some(updates) = updates {
+        let _ = updates.send(RecordingUpdate::CaptureFailed { reason });
+    }
 }
 
 #[cfg(test)]
@@ -331,6 +379,55 @@ mod tests {
         fn probe_speaker(&self) -> Result<(), anlg_audio::Error> {
             Ok(())
         }
+    }
+
+    #[tokio::test]
+    async fn stalled_microphone_preserves_audio_and_reports_interruption() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        let frame = anlg_audio::CaptureFrame {
+            raw_mic: Arc::from([0.25_f32; CHUNK_SIZE]),
+            raw_speaker: Arc::from([]),
+            aec_mic: None,
+        };
+        let stream =
+            anlg_audio::CaptureStream::new(stream::iter([Ok(frame)]).chain(stream::pending()));
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            record_to_file(
+                stream,
+                CancellationToken::new(),
+                file.path(),
+                None,
+                None,
+                Arc::new(AtomicBool::new(true)),
+            ),
+        )
+        .await
+        .expect("a stalled microphone must be detected before five seconds");
+        let recorded = result.unwrap();
+        assert!(matches!(
+            recorded.capture_failure,
+            Some(crate::error::CaptureFailure::Stalled)
+        ));
+        assert_eq!(recorded.duration_ms, 100);
+        let mut wav = hound::WavReader::open(file.path()).unwrap();
+        assert_eq!(wav.samples::<f32>().next().unwrap().unwrap(), 0.25);
+
+        let cancelled = CancellationToken::new();
+        cancelled.cancel();
+        let empty = record_to_file(
+            CaptureStream::new(stream::pending()),
+            cancelled,
+            file.path(),
+            None,
+            None,
+            Arc::new(AtomicBool::new(true)),
+        )
+        .await;
+        assert!(matches!(
+            empty,
+            Err(Error::CaptureFailed(crate::error::CaptureFailure::NoAudio))
+        ));
     }
 
     #[tokio::test]

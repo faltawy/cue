@@ -17,9 +17,17 @@ pub struct PreviewConfig {
 #[derive(Clone, serde::Serialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase")]
 pub enum RecordingUpdate {
-    Amplitude { amplitude: f64 },
-    Transcript { text: String, partial: String },
+    Amplitude {
+        amplitude: f64,
+    },
+    Transcript {
+        text: String,
+        partial: String,
+    },
     PreviewUnavailable,
+    CaptureFailed {
+        reason: crate::error::CaptureFailure,
+    },
 }
 
 pub struct Preview {

@@ -255,6 +255,77 @@ describe("dictation access and lifecycle", () => {
     expect(mocks.discardRecording).toHaveBeenCalledWith("/tmp/dictation.wav");
   });
 
+  it("stops and reports capture failure even when preview display is disabled", async () => {
+    render(<DictationLifecycle />);
+    await waitFor(() => expect(useDictationStatus.getState().ready).toBe(true));
+    await act(async () => {
+      mocks.listener?.({ payload: { type: "pressed" } });
+    });
+    expect(useDictationStatus.getState().phase).toBe(DictationPhase.Recording);
+    mocks.stopRecording.mockResolvedValue({
+      status: "error",
+      error: "Microphone stopped delivering audio",
+    });
+    const channel = mocks.startSystemRecording.mock.calls[0]![3];
+    await act(async () => {
+      channel.onmessage({ type: "captureFailed", reason: "stalled" });
+    });
+    await waitFor(() =>
+      expect(useDictationStatus.getState()).toMatchObject({
+        phase: DictationPhase.Idle,
+        error: "Microphone stopped delivering audio",
+      }),
+    );
+  });
+
+  it("keeps interrupted speech recoverable without inserting an incomplete transcript", async () => {
+    mocks.stopRecording.mockResolvedValue({
+      status: "ok",
+      data: {
+        filePath: "/tmp/dictation.wav",
+        transcript: "Words before interruption",
+        captureFailure: "stalled",
+      },
+    });
+    render(<DictationLifecycle />);
+    await waitFor(() => expect(useDictationStatus.getState().ready).toBe(true));
+    await act(async () => {
+      mocks.listener?.({ payload: { type: "pressed" } });
+    });
+    const channel = mocks.startSystemRecording.mock.calls[0]![3];
+    await act(async () => {
+      channel.onmessage({ type: "captureFailed", reason: "stalled" });
+    });
+    await waitFor(() =>
+      expect(useDictationStatus.getState().lastTranscript).toBe(
+        "Words before interruption",
+      ),
+    );
+    expect(useDictationStatus.getState().error).toContain(
+      "Recovered text is saved",
+    );
+    expect(mocks.insertText).not.toHaveBeenCalled();
+  });
+
+  it("transcribes saved audio when the live result is empty", async () => {
+    mocks.stopRecording.mockResolvedValue({
+      status: "ok",
+      data: { filePath: "/tmp/dictation.wav", transcript: "  " },
+    });
+    render(<DictationLifecycle />);
+    await waitFor(() => expect(useDictationStatus.getState().ready).toBe(true));
+    await act(async () => {
+      mocks.listener?.({ payload: { type: "pressed" } });
+    });
+    await act(async () => {
+      mocks.listener?.({ payload: { type: "released" } });
+    });
+    await waitFor(() =>
+      expect(useDictationStatus.getState().lastTranscript).toBe("Hello"),
+    );
+    expect(mocks.insertText).toHaveBeenCalledWith("focused-field", "Hello");
+  });
+
   it("reuses the finalized live transcript even when preview display is disabled", async () => {
     mocks.settings.dictation_live_preview = false;
     mocks.connection = {

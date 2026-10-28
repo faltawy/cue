@@ -114,11 +114,12 @@ async insertText(target: string, text: string) : Promise<Result<null, string>> {
 
 /** user-defined types **/
 
+export type CaptureFailure = "no_audio" | "stalled" | "disconnected"
 export type ListenParams = { model?: string | null; channels?: number; sample_rate?: number; languages?: string[]; keywords?: string[]; num_speakers?: number | null; min_speakers?: number | null; max_speakers?: number | null; mic_num_speakers?: number | null; custom_query?: Partial<{ [key in string]: string }> | null }
 export type Phase = "recording" | "processing"
 export type PreviewConfig = { provider: string; baseUrl: string; apiKey: string; params: ListenParams }
-export type RecordedAudio = { filePath: string; durationMs: number; transcript: string | null }
-export type RecordingUpdate = { type: "amplitude"; amplitude: number } | { type: "transcript"; text: string; partial: string } | { type: "previewUnavailable" }
+export type RecordedAudio = { filePath: string; durationMs: number; transcript: string | null; captureFailure?: CaptureFailure | null }
+export type RecordingUpdate = { type: "amplitude"; amplitude: number } | { type: "transcript"; text: string; partial: string } | { type: "previewUnavailable" } | { type: "captureFailed"; reason: CaptureFailure }
 export type TAURI_CHANNEL<TSend> = null
 
 /** tauri-specta globals **/
