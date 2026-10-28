@@ -1,5 +1,0 @@
----
-"@anlg/desktop": patch
----
-
-Detect microphones that stop delivering dictation audio and explain how to recover. Preserve text captured before an interruption in Last dictation for review, and retry saved audio when live transcription returns no text.

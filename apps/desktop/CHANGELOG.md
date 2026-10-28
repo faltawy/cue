@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.14.1
+
+### Patch Changes
+
+- Detect microphones that stop delivering dictation audio and explain how to recover. Preserve text captured before an interruption in Last dictation for review, and retry saved audio when live transcription returns no text.
+
 ## 0.14.0
 
 ### Minor Changes
