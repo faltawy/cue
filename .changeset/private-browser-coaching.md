@@ -1,4 +1,0 @@
----
-"@anlg/desktop": minor
----
-Prepare Cue for private coaching in browser meetings, including captions, chat, participants, and presentation images. Browser capture will become available with the upcoming extension.

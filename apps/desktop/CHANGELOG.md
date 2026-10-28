@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.15.0
+
+### Minor Changes
+
+- Prepare Cue for private coaching in browser meetings, including captions, chat, participants, and presentation images. Browser capture will become available with the upcoming extension.
+
 ## 0.14.1
 
 ### Patch Changes
