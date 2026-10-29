@@ -22,3 +22,9 @@ pub struct CoachDictationRequested {
     pub recording_id: String,
     pub action: crate::DictationAction,
 }
+
+#[derive(Debug, Clone, serde::Serialize, specta::Type, tauri_specta::Event)]
+pub struct BrowserRecordingRequested {
+    pub session_id: String,
+    pub expires_at_ms: u64,
+}

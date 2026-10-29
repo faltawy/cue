@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 
+import { type MeetingPointer } from "@anlg/assistant/meeting-state";
 import { formatTimestamp } from "@anlg/assistant/timestamp";
 
 import {
@@ -208,7 +209,9 @@ function transcriptRow(
     options.recording,
     options.nowMs ?? Date.now(),
   );
-  return options.sessionId
+  const sessionId =
+    options.sessionId ?? options.recording?.values().next().value;
+  return sessionId
     ? db
         .query<TranscriptRow, [RecordingParams & { $sessionId: string }]>(
           `SELECT ${TRANSCRIPT_COLUMNS}
@@ -216,7 +219,7 @@ function transcriptRow(
            WHERE t.session_id = $sessionId AND t.deleted_at IS NULL
            ORDER BY t.started_at_ms DESC LIMIT 1`,
         )
-        .get({ ...params, $sessionId: options.sessionId })
+        .get({ ...params, $sessionId: sessionId })
     : db
         .query<TranscriptRow, [RecordingParams]>(
           `SELECT ${TRANSCRIPT_COLUMNS}
@@ -236,7 +239,30 @@ export function readMeetingStatus(
   db: Database,
   options: TranscriptQuery = {},
 ): MeetingStatus | null {
-  const row = transcriptRow(db, options);
+  const active = options.sessionId
+    ? options.recording?.has(options.sessionId)
+      ? options.sessionId
+      : undefined
+    : options.recording?.values().next().value;
+  const row = transcriptRow(
+    db,
+    active ? { ...options, sessionId: active } : options,
+  );
+  if (active && row?.recording !== 1) {
+    const session = db
+      .query<{ title: string | null }, [string]>(
+        "SELECT title FROM sessions WHERE id = ?",
+      )
+      .get(active);
+    if (session)
+      return {
+        sessionId: active,
+        title: session.title,
+        live: true,
+        startedAtMs: null,
+        endedAtMs: null,
+      };
+  }
   return row
     ? {
         sessionId: row.session_id,
@@ -478,5 +504,20 @@ export function readMeetingInfo(
     startedAt: session.started_at,
     endedAt: session.ended_at,
     participants,
+  };
+}
+
+export function readMeetingPointer(
+  db: Database,
+  options: TranscriptQuery = {},
+): MeetingPointer | null {
+  const status = readMeetingStatus(db, options);
+  if (!status) return null;
+  const row = transcriptRow(db, { ...options, sessionId: status.sessionId });
+  return {
+    sessionId: status.sessionId,
+    transcriptId:
+      status.live && row?.recording !== 1 ? null : (row?.id ?? null),
+    live: status.live,
   };
 }

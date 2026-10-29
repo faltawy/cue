@@ -740,3 +740,29 @@ test("library chat survives meeting changes and resets without erasing the live 
     delta: "About the Bcc option.",
   });
 });
+
+test("meeting goals and parked thoughts survive reload without crossing meetings", () => {
+  const file = path.join(
+    mkdtempSync(path.join(os.tmpdir(), "cue-brief-")),
+    "chats.json",
+  );
+  const store = setMeetingCoaching(emptyStore(), "meeting-a", {
+    goal: "Agree an owner and launch date",
+    parking: ["Ask about the rollout pilot"],
+  });
+  saveChats(file, store);
+  const loaded = loadChats(file);
+  expect(coachingFor(loaded, "meeting-a").goal).toBe(
+    "Agree an owner and launch date",
+  );
+  expect(coachingFor(loaded, "meeting-a").parking).toEqual([
+    "Ask about the rollout pilot",
+  ]);
+  expect(coachingFor(loaded, "meeting-b").goal).toBeUndefined();
+  const cleared = setMeetingCoaching(loaded, "meeting-a", { parking: [] });
+  saveChats(file, cleared);
+  expect(coachingFor(loadChats(file), "meeting-a").parking).toEqual([]);
+  expect(coachingFor(loadChats(file), "meeting-a").goal).toBe(
+    "Agree an owner and launch date",
+  );
+});

@@ -8,6 +8,7 @@ import { Skeleton } from "@anlg/ui/components/ui/skeleton";
 
 import { AppSettingsView } from "./app-settings";
 import { AudioSettingsView } from "./audio-settings";
+import { BrowserExtensionSettings } from "./browser-extension";
 import {
   CORE_TRANSCRIPTION_LANGUAGE_CODES,
   getAdditionalSpokenLanguages,
@@ -328,6 +329,7 @@ function SettingsSectionContent({
 
       {section === SettingsSection.Meetings && (
         <>
+          <BrowserExtensionSettings />
           <form.Subscribe selector={(state) => state.values}>
             {(values) => (
               <MeetingSettingsView

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Cue for Meet</title><link rel="stylesheet" href="panel.css"></head>
+<body>
+<div id="connection-panel">
+  <header><img src="cue-mark.svg" width="22" height="22" alt=""><strong>Coach</strong><span class="private-label"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Only you</span></header>
+  <details id="diagnostics">
+    <summary><span id="status-dot" aria-hidden="true"></span><span id="app-connection" role="status">Checking Cue…</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary>
+    <div class="diagnostic-content">
+      <label class="toggle"><input id="debug-mode" type="checkbox">Debug mode</label>
+      <p class="hint">Extra connection diagnostics only. No meeting content is logged. Turning this off clears the log.</p>
+      <div id="debug-controls" hidden>
+      <button id="test-tooltip" class="secondary" type="button">Test tooltip</button>
+      <button id="test-highlight" class="secondary" type="button">Test highlight + tooltip</button>
+      <button id="debug-export" class="secondary" type="button">Export diagnostics</button>
+      <button id="debug-clear" class="secondary" type="button">Clear log</button>
+      </div>
+      <p id="heartbeat"></p><p id="connection"></p>
+      <details id="context"><summary>Meeting context <span id="coverage-summary">Not connected</span></summary>
+        <dl><div><dt>Captions</dt><dd id="captions">—</dd></div><div><dt>Chat</dt><dd id="chat">—</dd></div><div><dt>People seen</dt><dd id="people">—</dd></div><div><dt>Shared screen</dt><dd id="screen">—</dd></div></dl>
+        <label class="toggle"><input id="screens" type="checkbox" checked>Include shared-screen images</label>
+        <p class="hint">Turn on captions and open chat in Meet to make them available.</p>
+      </details>
+      <p class="hint">Sharing this Meet tab, window, or screen may show the coach. Minimize it before sharing.</p>
+    </div>
+  </details>
+  <main>
+    <section>
+      <h1 id="meeting-title">Your coach, here.</h1>
+      <p id="description">Connect this call to your recording in Cue.</p>
+      <div id="recording-prompt" hidden><h2 id="recording-question"></h2><p id="recording-detail"></p><div class="actions"><button id="record-new" type="button">Start recording</button><button id="record-current" class="secondary" type="button">Use current recording</button><button id="record-dismiss" class="secondary" type="button">Not now</button></div></div>
+      <p id="error" role="alert" hidden></p>
+      <div class="actions"><button id="back-to-meeting" class="secondary" type="button" hidden>Back to meeting</button><button id="connect" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/></svg><span id="connect-label">Connect meeting</span></button><button id="refresh" class="secondary icon-button" type="button" title="Retry connection" aria-label="Retry connection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17a8 8 0 0 0 14 2M20 7A8 8 0 0 0 6 5L4 7M4 2v5h5"/></svg></button></div>
+    </section>
+    <section id="cues-section" hidden><div id="cues"></div></section>
+  </main>
+</div>
+<p id="coach-error" role="status" hidden></p>
+    <div id="coach" hidden></div>
+<script src="panel.js"></script>
+</body>
+</html>

@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export enum BrowserPlatform {
+  GoogleMeet = "google_meet",
+  Zoom = "zoom",
+  MicrosoftTeams = "microsoft_teams",
+}
+
 export const BROWSER_PROTOCOL_VERSION = 1;
 
 export enum BrowserResponseStatus {
@@ -37,11 +43,30 @@ export enum CaptureAvailability {
   Unavailable = "unavailable",
 }
 
+export enum VisualTargetKind {
+  Control = "control",
+  Participant = "participant",
+  Presentation = "presentation",
+  Captions = "captions",
+  Chat = "chat",
+  Heading = "heading",
+}
 export const browserContextSchema = z.object({
+  platform: z.enum(BrowserPlatform).optional(),
   meeting_url: z.string(),
   sequence: z.number().int().nonnegative(),
   context: z.object({
     title: z.string(),
+    visual_targets: z
+      .array(
+        z.object({
+          id: z.string(),
+          kind: z.enum(VisualTargetKind),
+          label: z.string(),
+        }),
+      )
+      .max(120)
+      .optional(),
     captions: z.enum(CaptureAvailability),
     chat: z.enum(CaptureAvailability),
     participants: z.array(
@@ -65,4 +90,16 @@ export const browserContextSchema = z.object({
       .object({ timestamp_ms: z.number(), jpeg_base64: z.string() })
       .nullable(),
   }),
+});
+
+export enum ExtensionPresence {
+  Online = "online",
+  Offline = "offline",
+}
+export const browserStatusSchema = z.object({
+  extension: z.enum(ExtensionPresence),
+  meeting_connected: z.boolean(),
+  context_available: z.boolean(),
+  last_seen_ms: z.number().nullable(),
+  context_age_ms: z.number().nullable(),
 });

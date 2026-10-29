@@ -59,6 +59,8 @@ pub struct PresentationImage {
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 #[serde(deny_unknown_fields)]
 pub struct BrowserContext {
+    #[serde(default)]
+    pub visual_targets: Vec<BrowserVisualTarget>,
     pub title: String,
     pub captions: CaptureAvailability,
     pub chat: CaptureAvailability,
@@ -67,9 +69,31 @@ pub struct BrowserContext {
     pub presentation: Option<PresentationImage>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum VisualTargetKind {
+    Control,
+    Participant,
+    Presentation,
+    Captions,
+    Chat,
+    Heading,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[serde(deny_unknown_fields)]
+pub struct BrowserVisualTarget {
+    pub id: String,
+    pub kind: VisualTargetKind,
+    pub label: String,
+}
 impl BrowserContext {
     fn valid(&self) -> bool {
-        self.title.len() <= 512
+        self.visual_targets.len() <= 120
+            && self
+                .visual_targets
+                .iter()
+                .all(|t| valid_id(&t.id) && t.label.len() <= 640)
+            && self.title.len() <= 512
             && self.participants.len() <= 250
             && self
                 .participants
@@ -107,7 +131,20 @@ pub struct BrowserRequest {
 #[derive(Debug, Deserialize, Type)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum BrowserOperation {
+    CancelRecording {
+        session_id: String,
+        meeting_url: String,
+    },
     Status,
+    Record {
+        meeting_url: String,
+        title: String,
+        expected_session_id: Option<String>,
+        use_current: bool,
+    },
+    Coach {
+        binding_id: String,
+    },
     Attach {
         session_id: String,
         connection_id: String,
@@ -166,17 +203,51 @@ pub enum BrowserResult {
 #[derive(Debug, Serialize, Type)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum BrowserReply {
-    Status { active_session_id: Option<String> },
-    Attached { binding_id: String },
+    Recording {
+        session_id: String,
+    },
+    Coach {
+        url: String,
+        token: String,
+    },
+    Status {
+        active_session_id: Option<String>,
+        active_session_title: Option<String>,
+        active_meeting_url: Option<String>,
+        paused: bool,
+        recording_supported: bool,
+    },
+    Attached {
+        binding_id: String,
+    },
     Accepted,
-    Cues { cues: Vec<PrivateCue> },
+    Cues {
+        cues: Vec<PrivateCue>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
 pub struct MeetingBrowserContext {
+    pub platform: BrowserPlatform,
     pub meeting_url: String,
     pub sequence: u32,
     pub context: BrowserContext,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExtensionPresence {
+    Online,
+    Offline,
+}
+
+#[derive(Serialize)]
+pub struct BrowserStatus {
+    pub extension: ExtensionPresence,
+    pub meeting_connected: bool,
+    pub context_available: bool,
+    pub last_seen_ms: Option<u64>,
+    pub context_age_ms: Option<u64>,
 }
 
 struct Binding {
@@ -193,6 +264,7 @@ struct Binding {
 
 #[derive(Default)]
 pub struct BrowserHub {
+    last_contact: Option<Instant>,
     binding: Option<Binding>,
 }
 
@@ -204,23 +276,61 @@ fn valid_id(id: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || b"-_".contains(&c))
 }
 
-fn meet_url(value: &str) -> Option<String> {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum BrowserPlatform {
+    GoogleMeet,
+    Zoom,
+    MicrosoftTeams,
+}
+
+fn browser_platform(value: &str) -> Option<BrowserPlatform> {
     let url = url::Url::parse(value).ok()?;
-    let code = url.path().strip_prefix('/')?;
-    (url.scheme() == "https"
-        && url.host_str() == Some("meet.google.com")
-        && url.port().is_none()
-        && url.username().is_empty()
-        && url.password().is_none()
-        && code.len() == 12
-        && code.bytes().enumerate().all(|(i, c)| {
-            if i == 3 || i == 8 {
-                c == b'-'
-            } else {
-                c.is_ascii_lowercase()
-            }
-        }))
-    .then(|| format!("https://meet.google.com/{code}"))
+    if url.scheme() != "https"
+        || url.port().is_some()
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || value.len() > 4096
+    {
+        return None;
+    }
+    let host = url.host_str()?;
+    let path = url.path();
+    if host == "meet.google.com" {
+        let code = path
+            .strip_prefix("/meet/")
+            .or_else(|| path.strip_prefix('/'))?;
+        if code.len() == 12
+            && code.bytes().enumerate().all(|(i, c)| {
+                if i == 3 || i == 8 {
+                    c == b'-'
+                } else {
+                    c.is_ascii_lowercase()
+                }
+            })
+        {
+            return Some(BrowserPlatform::GoogleMeet);
+        }
+    }
+    if (host == "zoom.us" || host.ends_with(".zoom.us"))
+        && (path.starts_with("/j/") || path.starts_with("/wc/"))
+    {
+        return Some(BrowserPlatform::Zoom);
+    }
+    if matches!(host, "teams.microsoft.com" | "teams.live.com")
+        && (path.starts_with("/l/meetup-join/") || path.starts_with("/meet/"))
+    {
+        return Some(BrowserPlatform::MicrosoftTeams);
+    }
+    None
+}
+
+pub(crate) fn normalize_meeting_url(value: &str) -> Option<String> {
+    browser_platform(value)?;
+    let mut url = url::Url::parse(value).ok()?;
+    url.set_query(None);
+    url.set_fragment(None);
+    Some(url.to_string())
 }
 
 impl BrowserHub {
@@ -250,6 +360,9 @@ impl BrowserHub {
         } else {
             self.apply(request.operation, active, started)
         };
+        if result.is_ok() {
+            self.last_contact = Some(started);
+        }
         if let Err(error) = &result {
             tracing::warn!(%run_id, ?error, duration_ms = started.elapsed().as_millis() as u64, "browser_request_failed");
         }
@@ -277,8 +390,19 @@ impl BrowserHub {
         now: Instant,
     ) -> std::result::Result<BrowserReply, BrowserFailure> {
         match operation {
+            BrowserOperation::Coach { binding_id } => {
+                self.bound(&binding_id, now)?;
+                Ok(BrowserReply::Accepted)
+            }
+            BrowserOperation::CancelRecording { .. } | BrowserOperation::Record { .. } => {
+                Err(BrowserFailure::InvalidRequest)
+            }
             BrowserOperation::Status => Ok(BrowserReply::Status {
                 active_session_id: active.map(str::to_owned),
+                active_session_title: None,
+                active_meeting_url: None,
+                paused: false,
+                recording_supported: true,
             }),
             BrowserOperation::Attach {
                 session_id,
@@ -292,11 +416,18 @@ impl BrowserHub {
                 if !valid_id(&connection_id) {
                     return Err(BrowserFailure::InvalidRequest);
                 }
-                let meeting_url = meet_url(&meeting_url).ok_or(BrowserFailure::InvalidRequest)?;
+                let meeting_url =
+                    normalize_meeting_url(&meeting_url).ok_or(BrowserFailure::InvalidRequest)?;
                 if let Some(binding) = &mut self.binding {
-                    if binding.connection_id != connection_id || binding.meeting_url != meeting_url
-                    {
+                    if binding.meeting_url != meeting_url {
                         return Err(BrowserFailure::AlreadyAttached);
+                    }
+                    if binding.connection_id != connection_id {
+                        binding.id = uuid::Uuid::new_v4().to_string();
+                        binding.connection_id = connection_id;
+                        binding.snapshot = None;
+                        binding.cues.clear();
+                        binding.cue_sequence = 0;
                     }
                     binding.touched = now;
                     return Ok(BrowserReply::Attached {
@@ -337,6 +468,8 @@ impl BrowserHub {
                 }
                 binding.snapshot_at = now;
                 binding.snapshot = Some(MeetingBrowserContext {
+                    platform: browser_platform(&binding.meeting_url)
+                        .ok_or(BrowserFailure::InvalidRequest)?,
                     meeting_url: binding.meeting_url.clone(),
                     sequence,
                     context,
@@ -366,6 +499,19 @@ impl BrowserHub {
         }
     }
 
+    pub fn authorize_coach(
+        &mut self,
+        binding_id: &str,
+        active: Option<&str>,
+    ) -> std::result::Result<String, BrowserFailure> {
+        self.expire(active, Instant::now());
+        self.binding
+            .as_ref()
+            .filter(|b| b.id == binding_id)
+            .map(|b| b.session_id.clone())
+            .ok_or(BrowserFailure::BindingExpired)
+    }
+
     fn bound(
         &mut self,
         id: &str,
@@ -378,6 +524,27 @@ impl BrowserHub {
             .ok_or(BrowserFailure::BindingExpired)?;
         binding.touched = now;
         Ok(binding)
+    }
+
+    pub fn status(&mut self, session_id: &str, active: Option<&str>) -> BrowserStatus {
+        self.expire(active, Instant::now());
+        let last_seen_ms = self.last_contact.map(|at| at.elapsed().as_millis() as u64);
+        let online = last_seen_ms.is_some_and(|age| age < 15_000);
+        let binding = self.binding.as_ref().filter(|b| b.session_id == session_id);
+        let context_age_ms = binding
+            .filter(|b| b.snapshot.is_some())
+            .map(|b| b.snapshot_at.elapsed().as_millis() as u64);
+        BrowserStatus {
+            extension: if online {
+                ExtensionPresence::Online
+            } else {
+                ExtensionPresence::Offline
+            },
+            meeting_connected: online && binding.is_some(),
+            context_available: online && context_age_ms.is_some_and(|age| age < 15_000),
+            last_seen_ms,
+            context_age_ms,
+        }
     }
 
     pub fn context(
@@ -412,5 +579,65 @@ impl BrowserHub {
                 binding.cues.pop_front();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vanished_extension_expires_without_stopping_the_meeting_and_can_reconnect() {
+        let mut hub = BrowserHub::default();
+        let now = Instant::now();
+        let attach = |connection: &str| BrowserOperation::Attach {
+            session_id: "meeting".into(),
+            connection_id: connection.into(),
+            meeting_url: "https://meet.google.com/meet/abc-defg-hij?authuser=1".into(),
+        };
+        let BrowserReply::Attached { binding_id } =
+            hub.apply(attach("before"), Some("meeting"), now).unwrap()
+        else {
+            panic!("expected attached meeting");
+        };
+        hub.nudge(
+            "meeting",
+            Some("meeting"),
+            "question",
+            "Who owns the follow-up?",
+        );
+        let BrowserReply::Cues { cues } = hub
+            .apply(
+                BrowserOperation::Poll {
+                    binding_id: binding_id.clone(),
+                    after: 0,
+                },
+                Some("meeting"),
+                now,
+            )
+            .unwrap()
+        else {
+            panic!("expected private cues");
+        };
+        assert_eq!(cues[0].line, "Who owns the follow-up?");
+        hub.expire(Some("meeting"), now + Duration::from_secs(121));
+        assert!(matches!(
+            hub.apply(
+                BrowserOperation::Poll {
+                    binding_id,
+                    after: 0
+                },
+                Some("meeting"),
+                now
+            ),
+            Err(BrowserFailure::BindingExpired)
+        ));
+        assert!(
+            matches!(hub.apply(BrowserOperation::Status, Some("meeting"), now).unwrap(), BrowserReply::Status { active_session_id: Some(id), .. } if id == "meeting")
+        );
+        assert!(matches!(
+            hub.apply(attach("after"), Some("meeting"), now).unwrap(),
+            BrowserReply::Attached { .. }
+        ));
     }
 }

@@ -26,3 +26,7 @@ internal
 .codex-security-artifacts-*/
 .codex-security-work-ledger-*.jsonl
 .claude/launch.json
+
+# Bundled browser extension build output
+/apps/extension/dist/
+/apps/desktop/src-tauri/resources/browser-extension/

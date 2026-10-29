@@ -1,4 +1,5 @@
 const COMMANDS: &[&str] = &[
+    "browser_extension_setup",
     "configure_browser_extension",
     "complete_dictation",
     "llm_endpoint",

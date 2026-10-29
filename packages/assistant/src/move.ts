@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { AttentionTarget } from "./attention";
+
 export enum MoveVerb {
   Say = "Say",
   Ask = "Ask",
@@ -72,6 +74,13 @@ export const moveFields = {
 
 export const moveSchema = z.strictObject({
   ...moveFields,
+  focus: z
+    .enum([
+      AttentionTarget.Coach,
+      AttentionTarget.Captions,
+      AttentionTarget.Presentation,
+    ])
+    .optional(),
   moment: momentSchema.optional(),
   evidence: evidenceTargetSchema.optional(),
 });

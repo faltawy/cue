@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useReducer } from "react";
 
 import { type MeetingCoaching } from "../coaching-preferences";
+import { type MeetingAction } from "../meeting-actions";
 import { type CoachFeedback, type EvidenceTarget } from "../move";
 import { type CoachEvent, CoachEventType } from "../protocol";
 import { browserHost, useAssistantHost, type AssistantHost } from "./host";
@@ -47,7 +48,11 @@ export async function post(
 }
 
 export type CoachApi = {
-  ask(text: string, images?: readonly PreparedImage[]): Promise<ActionResult>;
+  ask(
+    text: string,
+    images?: readonly PreparedImage[],
+    action?: MeetingAction,
+  ): Promise<ActionResult>;
   checkItem(
     blockId: string,
     index: number,
@@ -219,7 +224,11 @@ export function useCoach(): [CoachState, CoachApi] {
   );
 
   const ask = useCallback(
-    async (text: string, images: readonly PreparedImage[] = []) => {
+    async (
+      text: string,
+      images: readonly PreparedImage[] = [],
+      action?: MeetingAction,
+    ) => {
       dispatch({
         type: ActionType.Send,
         prompt: text,
@@ -229,10 +238,11 @@ export function useCoach(): [CoachState, CoachApi] {
           height,
         })),
       });
-      const result = await send(
-        "/ask",
-        images.length > 0 ? { text, images } : { text },
-      );
+      const result = await send("/ask", {
+        text,
+        ...(images.length > 0 ? { images } : {}),
+        ...(action ? { action } : {}),
+      });
       if (!result.ok)
         dispatch({
           type: ActionType.SendFailed,

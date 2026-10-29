@@ -313,6 +313,10 @@ msgstr ""
 msgid "After recording"
 msgstr ""
 
+#: src/settings/general/browser-extension.tsx
+msgid "After updating Cue, set up the extension again and click Reload on its card in Brave. Nothing is published to an extension store."
+msgstr ""
+
 #: src/coach/nudges.tsx
 msgid "Agenda"
 msgstr ""
@@ -481,6 +485,14 @@ msgstr ""
 
 #: src/settings/appearance/theme.tsx
 msgid "Bright canvas"
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Browser access disconnected."
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Browser extension"
 msgstr ""
 
 #: src/settings/general/audio-settings.tsx
@@ -670,6 +682,10 @@ msgstr ""
 msgid "Choose how long recordings stay on this device."
 msgstr ""
 
+#: src/settings/general/browser-extension.tsx
+msgid "Choose Load unpacked and select the extension folder opened by Cue."
+msgstr ""
+
 #: src/templates/template-icon-picker.tsx
 msgid "Choose template icon"
 msgstr ""
@@ -837,6 +853,10 @@ msgstr ""
 #. placeholder {0}: provider.displayName
 #: src/calendar/components/sidebar.tsx
 msgid "Connect {0}"
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Connect a browser meeting to Cue. The bundled extension currently supports Google Meet."
 msgstr ""
 
 #: src/onboarding/calendar.tsx
@@ -1146,6 +1166,10 @@ msgstr ""
 msgid "Disconnect"
 msgstr ""
 
+#: src/settings/general/browser-extension.tsx
+msgid "Disconnect browser access"
+msgstr ""
+
 #: src/settings/general/audio-settings.tsx
 msgid "Don't save"
 msgstr ""
@@ -1315,6 +1339,10 @@ msgstr ""
 
 #: src/session/components/outer-header/overflow/export-modal.tsx
 msgid "Exporting..."
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Extension folder:"
 msgstr ""
 
 #: src/task/resource-view.tsx
@@ -2188,6 +2216,10 @@ msgstr ""
 msgid "Open assistant"
 msgstr ""
 
+#: src/settings/general/browser-extension.tsx
+msgid "Open Brave extensions"
+msgstr ""
+
 #: src/sidebar/timeline/index.tsx
 msgid "Open calendar"
 msgstr ""
@@ -2210,6 +2242,10 @@ msgstr ""
 
 #: src/settings/general/app-settings.tsx
 msgid "Open Cue from the menu bar."
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Open extension folder"
 msgstr ""
 
 #: src/main/empty.tsx
@@ -2251,6 +2287,10 @@ msgstr ""
 
 #: src/onboarding/transcription-readiness.tsx
 msgid "Open transcription settings"
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Open your meeting, join the call, and use the Cue toolbar button to connect it to the recording in Cue."
 msgstr ""
 
 #: src/ai/assistant/index.tsx
@@ -2414,6 +2454,10 @@ msgstr "미리보기"
 
 #: src/session/components/note-input/search/bar.tsx
 msgid "Previous match"
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Private cues in Brave"
 msgstr ""
 
 #: src/onboarding/claude.tsx
@@ -2885,6 +2929,14 @@ msgstr ""
 #: src/templates/auto-form.tsx
 #: src/templates/details.tsx
 msgid "Set as default"
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Set up Brave extension"
+msgstr ""
+
+#: src/settings/general/browser-extension.tsx
+msgid "Set up the extension, then open Brave’s extensions page and turn on Developer mode."
 msgstr ""
 
 #: src/ai/claude-setup-label.tsx

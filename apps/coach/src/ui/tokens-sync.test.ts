@@ -5,17 +5,28 @@ import { join } from "node:path";
 // The coach ships its own copy of the palette (it follows the OS appearance
 // instead of a `.dark` class); the app's lives in the design system. They must
 // not drift: docs/design/cue.md derives one from the other.
-const coachCss = readFileSync(join(import.meta.dir, "styles.css"), "utf8");
-const appCss = readFileSync(join(import.meta.dir, "../../../../packages/design-system/src/tokens.css"), "utf8");
+const coachCss = readFileSync(
+  join(import.meta.dir, "../../../../packages/assistant/src/theme.css"),
+  "utf8",
+);
+const appCss = readFileSync(
+  join(import.meta.dir, "../../../../packages/design-system/src/tokens.css"),
+  "utf8",
+);
 
 // The first innermost rule whose selector list includes `selector` (`:root`, `:root, .light`, …).
 function block(css: string, selector: string): Record<string, string> {
   const uncommented = css.replace(/\/\*[\s\S]*?\*\//g, "");
-  for (const [, prelude = "", body = ""] of uncommented.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+  for (const [, prelude = "", body = ""] of uncommented.matchAll(
+    /([^{}]+)\{([^{}]*)\}/g,
+  )) {
     const selectors = prelude.split(";").at(-1) ?? "";
-    if (!selectors.split(",").some((part) => part.trim() === selector)) continue;
+    if (!selectors.split(",").some((part) => part.trim() === selector))
+      continue;
     return Object.fromEntries(
-      [...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(([, name, value = ""]) => [name, value.trim()]),
+      [...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map(
+        ([, name, value = ""]) => [name, value.trim()],
+      ),
     );
   }
   throw new Error(`missing a rule for ${selector}`);
@@ -23,7 +34,10 @@ function block(css: string, selector: string): Record<string, string> {
 
 const coach = {
   light: block(coachCss, ":root"),
-  dark: block(coachCss.slice(coachCss.indexOf("@media (prefers-color-scheme: dark)")), ":root"),
+  dark: block(
+    coachCss.slice(coachCss.indexOf("@media (prefers-color-scheme: dark)")),
+    ":root",
+  ),
 };
 const app = { light: block(appCss, ":root"), dark: block(appCss, ".dark") };
 

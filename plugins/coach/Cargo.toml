@@ -15,6 +15,7 @@ anlg-db-app = { workspace = true }
 anlg-transcript = { workspace = true }
 anlg-tiptap = { workspace = true }
 axum = { workspace = true }
+async-stream = { workspace = true }
 base64 = { workspace = true }
 hmac = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }

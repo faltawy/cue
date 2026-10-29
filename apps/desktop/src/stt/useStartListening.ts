@@ -54,7 +54,10 @@ export function useStartListening(sessionId: string) {
 
 export function useStartListeningState(
   sessionId: string,
-  { automatic = false }: { automatic?: boolean } = {},
+  {
+    automatic = false,
+    expiresAt,
+  }: { automatic?: boolean; expiresAt?: number } = {},
 ) {
   const {
     conn,
@@ -103,7 +106,10 @@ export function useStartListeningState(
   );
 
   const startListening = useCallback(async () => {
-    if (!canStartLiveSession(sessionId)) {
+    if (
+      (expiresAt !== undefined && Date.now() >= expiresAt) ||
+      !canStartLiveSession(sessionId)
+    ) {
       return;
     }
     await stopMeetingChatTasks();
@@ -143,7 +149,10 @@ export function useStartListeningState(
         }),
         lifecycle.ready,
       ]);
-    if (!canStartLiveSession(sessionId)) {
+    if (
+      (expiresAt !== undefined && Date.now() >= expiresAt) ||
+      !canStartLiveSession(sessionId)
+    ) {
       return;
     }
 
@@ -168,6 +177,13 @@ export function useStartListeningState(
       return;
     }
 
+    if (
+      (expiresAt !== undefined && Date.now() >= expiresAt) ||
+      !canStartLiveSession(sessionId)
+    ) {
+      await lifecycle.cleanupFailedStart();
+      return;
+    }
     let started = false;
     try {
       started = await start(
@@ -294,6 +310,7 @@ export function useStartListeningState(
       );
     }
   }, [
+    expiresAt,
     automatic,
     aiLanguage,
     canStartLiveSession,

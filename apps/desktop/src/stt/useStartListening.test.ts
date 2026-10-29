@@ -683,6 +683,40 @@ describe("useStartListening", () => {
     vi.useRealTimers();
   });
 
+  test("an expired browser request cannot start capture after durable preparation finishes", async () => {
+    let now = 1000;
+    let recording: string | null = null;
+    const clock = vi.spyOn(Date, "now").mockImplementation(() => now);
+    startMock.mockImplementation(async (input: { session_id: string }) => {
+      recording = input.session_id;
+      return true;
+    });
+    try {
+      const control = renderHook(() =>
+        useStartListeningState("session-1", { expiresAt: 1500 }),
+      );
+      await act(async () => {
+        await control.result.current.startListening();
+      });
+      expect(recording).toBe("session-1");
+      control.unmount();
+      recording = null;
+      saveCaptureLifecycleMarkerMock.mockImplementationOnce(async () => {
+        now = 2000;
+      });
+      const expired = renderHook(() =>
+        useStartListeningState("session-1", { expiresAt: 1500 }),
+      );
+      await act(async () => {
+        await expired.result.current.startListening();
+      });
+      expect(recording).toBeNull();
+      expired.unmount();
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
   test("zero retention keeps untranscribed audio at stop after a disconnect", async () => {
     deleteTranscribedCaptureAudioMock.mockResolvedValue({
       status: "ok",

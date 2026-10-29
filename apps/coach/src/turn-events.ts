@@ -60,6 +60,11 @@ export function toolLabels(
   const file = path.basename(str(input.file_path) || str(input.path));
   const pattern = clip(str(input.pattern), 40);
   switch (name) {
+    case "mcp__meeting__browser_connection_status":
+      return label(
+        "Checked extension connection",
+        "Checking extension connection",
+      );
     case "mcp__meeting__browser_meeting_context":
       return label(
         "Checked browser meeting context",

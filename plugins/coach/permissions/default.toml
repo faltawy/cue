@@ -1,6 +1,7 @@
 [default]
 description = "Default permissions for the plugin"
 permissions = [
+    "allow-browser-extension-setup",
     "allow-configure-browser-extension",
   "allow-complete-dictation",
   "allow-llm-endpoint",

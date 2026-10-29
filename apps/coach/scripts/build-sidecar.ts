@@ -1,9 +1,15 @@
-import path from "node:path";
-
 import tailwind from "bun-plugin-tailwind";
+import path from "node:path";
 
 const root = path.resolve(import.meta.dir, "..");
 const binaries = path.resolve(root, "../desktop/src-tauri/binaries");
+
+const extension = Bun.spawn(
+  ["bun", path.resolve(root, "../extension/scripts/build.ts")],
+  { stdout: "inherit", stderr: "inherit" },
+);
+if ((await extension.exited) !== 0)
+  throw new Error("Browser extension build failed");
 
 const result = await Bun.build({
   entrypoints: [path.join(root, "src/main.ts")],
@@ -18,4 +24,6 @@ if (!result.success) {
   process.exit(1);
 }
 
-console.error(`built ${result.outputs.map((output) => path.relative(root, output.path)).join(", ")}`);
+console.error(
+  `built ${result.outputs.map((output) => path.relative(root, output.path)).join(", ")}`,
+);

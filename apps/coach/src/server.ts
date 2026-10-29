@@ -9,6 +9,7 @@ import {
   type CoachEdit,
   type MeetingProject,
 } from "@anlg/assistant/app-bridge";
+import { AttentionTarget } from "@anlg/assistant/attention";
 import {
   BlockKind,
   actionItemText,
@@ -20,6 +21,7 @@ import {
   meetingCoachingSchema,
   meetingIntentSchema,
   intentGuidance,
+  meetingBrief,
 } from "@anlg/assistant/coaching-preferences";
 import {
   CoachErrorKind,
@@ -29,11 +31,14 @@ import {
   withSignIn,
 } from "@anlg/assistant/errors";
 import {
+  MEETING_ACTIONS,
+  MeetingAction,
+} from "@anlg/assistant/meeting-actions";
+import {
   StripState,
   isAnswering,
   type MeetingPointer,
   meetingChange,
-  meetingPointer,
   stripView,
   type WrapUpActions,
   wrapUpActions,
@@ -140,6 +145,7 @@ import {
   readLiveTranscript,
   readMeetingInfo,
   readMeetingStatus,
+  readMeetingPointer,
   readSelfName,
   type TranscriptLine,
 } from "./transcript";
@@ -231,6 +237,10 @@ const defaultProject: ProjectView = {
 };
 
 const clients = new Set<ReadableStreamDefaultController<string>>();
+const browserClients = new Map<
+  ReadableStreamDefaultController<string>,
+  string
+>();
 
 let coach: CoachSession | null = null;
 let tracker = new TurnTracker();
@@ -573,7 +583,14 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
       executable(selected.provider)
         .then((claudePath) =>
           runNudge(
-            { ...request, hits, sessionId },
+            {
+              ...request,
+              hits,
+              sessionId,
+              brief: sessionId
+                ? meetingBrief(coachingFor(store, sessionId))
+                : "",
+            },
             {
               instructions: options.instructions ?? "",
               signal: AbortSignal.any([
@@ -623,6 +640,16 @@ async function runLightNudge(owner: Proactive, request: NudgeRequest) {
         saveStore();
       },
       publish: (move) => {
+        broadcast({
+          type: CoachEventType.Attention,
+          attention: {
+            id: crypto.randomUUID(),
+            target: AttentionTarget.Coach,
+            line: move.line,
+            expiresAt: Date.now() + 12_000,
+            automatic: true,
+          },
+        });
         feed({ type: CoachEventType.User, kind: TurnKind.Nudge, text: label });
         feed({
           type: CoachEventType.Block,
@@ -719,6 +746,7 @@ function enqueue(task: () => Promise<void>) {
     console.error("[coach] could not open a chat", { _e: errorText(error) });
     notice(`The coach could not start: ${errorText(error)}`);
   });
+  return lifecycle;
 }
 
 function settleTurn(input: {
@@ -808,11 +836,22 @@ function rememberEdits(events: readonly CoachEvent[]) {
       editSessions.set(event.edit.id, event.edit.session_id);
 }
 
-async function openChat(reason: OpenReason) {
-  if (reason === ResetReason.Manual) cancelWrapUp();
+async function openChat(reason: OpenReason, expectedSession?: string) {
+  if (
+    expectedSession &&
+    (attached?.sessionId !== expectedSession ||
+      chatSessionId !== expectedSession)
+  )
+    return;
   const sessionId = attached?.sessionId;
   const nextProject =
     reason === ResumeReason.Recover ? project : await projectFor(sessionId);
+  if (
+    sessionId !== attached?.sessionId ||
+    (expectedSession && chatSessionId !== expectedSession)
+  )
+    return;
+  if (reason === ResetReason.Manual) cancelWrapUp();
   if (reason !== ResumeReason.Recover) {
     persistNow();
     supervisor.reset();
@@ -842,6 +881,13 @@ async function openChat(reason: OpenReason) {
   questions.dismissAll("The chat was closed.");
   store = plan.store;
   project = nextProject;
+  for (const [client, expected] of browserClients) {
+    if (expected !== sessionId) {
+      clients.delete(client);
+      browserClients.delete(client);
+      client.close();
+    }
+  }
   chatSessionId = sessionId;
   history = plan.history;
   seen = plan.seen;
@@ -874,11 +920,50 @@ async function openChat(reason: OpenReason) {
     ...(bridge ? { edits: editHooks(bridge) } : {}),
     ...(plan.resume ? { resume: plan.resume } : {}),
     askUser: (id, asked, signal) => questions.ask(id, asked, signal),
+    highlight: (elementId, line) => {
+      if (
+        library ||
+        !sessionId ||
+        sessionId !== chatSessionId ||
+        attached?.sessionId !== sessionId ||
+        pausedRecordings.has(sessionId)
+      )
+        return false;
+      broadcast({
+        type: CoachEventType.Attention,
+        attention: {
+          id: crypto.randomUUID(),
+          target: AttentionTarget.Element,
+          elementId,
+          line,
+          expiresAt: Date.now() + 12_000,
+          automatic: false,
+        },
+      });
+      return true;
+    },
     show: (block) => {
       const transcript = sessionId
         ? readLiveTranscript(db, { sessionId, recording })
         : null;
       const move = block.kind === BlockKind.Move ? block : null;
+      if (
+        move &&
+        transcript?.live &&
+        !pausedRecordings.has(transcript.sessionId) &&
+        sessionId === chatSessionId
+      ) {
+        broadcast({
+          type: CoachEventType.Attention,
+          attention: {
+            id: crypto.randomUUID(),
+            target: move.focus ?? AttentionTarget.Coach,
+            line: move.line,
+            expiresAt: Date.now() + 12_000,
+            automatic: false,
+          },
+        });
+      }
       const evidence =
         move?.moment && sessionId
           ? evidenceForMoment(move.moment, sessionId, transcript?.lines ?? [])
@@ -949,7 +1034,7 @@ function startTurn(
     label,
     prompt: withNudgeNotes(
       nudgeNotes,
-      `${intentGuidance(chatSessionId ? coachingFor(store, chatSessionId).intent : MeetingIntent.General)}\n\n${prompt}`,
+      `${intentGuidance(chatSessionId ? coachingFor(store, chatSessionId).intent : MeetingIntent.General)}\n\n${chatSessionId ? meetingBrief(coachingFor(store, chatSessionId)) : ""}\n\n${prompt}`,
     ),
     line: update.line,
     images,
@@ -973,10 +1058,10 @@ function runCatchUp(session: CoachSession, lines: LiveTranscript["lines"]) {
   if (talk) feed({ type: CoachEventType.Talk, talk });
 }
 
-function readTranscript() {
+function readTranscript(sessionId = values.session) {
   if (library) return null;
   const transcript = readLiveTranscript(db, {
-    sessionId: values.session,
+    sessionId,
     recording,
   });
   return transcript
@@ -1001,13 +1086,22 @@ async function refreshRecording() {
   }
 }
 
-function transcriptEvent(transcript = readTranscript()): CoachEvent {
-  const strip = stripView(transcript);
+function transcriptEvent(
+  transcript = readTranscript(),
+  sessionId = values.session,
+): CoachEvent {
+  const strip = stripView(
+    transcript?.live
+      ? transcript
+      : library
+        ? null
+        : readMeetingStatus(db, { sessionId, recording }),
+  );
   return {
     type: CoachEventType.Transcript,
     strip,
     lines:
-      strip.state === StripState.Live && transcript
+      strip.state === StripState.Live && transcript?.live
         ? transcript.lines.slice(-6).map((line) => ({
             speaker: line.speaker,
             you: line.channel === 0,
@@ -1015,7 +1109,7 @@ function transcriptEvent(transcript = readTranscript()): CoachEvent {
           }))
         : [],
     pending:
-      strip.state === StripState.Live && transcript
+      strip.state === StripState.Live && transcript?.live
         ? transcript.pending.trim()
         : "",
   };
@@ -1108,7 +1202,9 @@ function cancelWrapUp() {
 }
 
 await refreshRecording();
-attached = meetingPointer(readTranscript());
+attached = library
+  ? null
+  : readMeetingPointer(db, { sessionId: values.session, recording });
 enqueue(() => openChat(ResumeReason.Startup));
 
 let polling = false;
@@ -1124,6 +1220,14 @@ async function poll() {
   if (library) return;
   await refreshRecording();
   const transcript = readTranscript();
+  const next = readMeetingPointer(db, { sessionId: values.session, recording });
+  for (const [client, expected] of browserClients) {
+    if (next?.sessionId !== expected) {
+      clients.delete(client);
+      browserClients.delete(client);
+      client.close();
+    }
+  }
   const event = transcriptEvent(transcript);
   const serialized = JSON.stringify(event);
   if (serialized !== lastTranscript) {
@@ -1131,7 +1235,6 @@ async function poll() {
     broadcast(event);
   }
 
-  const next = meetingPointer(transcript);
   const change = meetingChange(attached, next, wrapped);
   if (next?.live && wrapUp) cancelWrapUp();
   if (next) attached = next;
@@ -1214,15 +1317,18 @@ async function changeSeriesProject(
   });
 }
 
+function browserSessionMatches(request: Request) {
+  const expected = request.headers.get("x-cue-browser-session");
+  return expected === null || (!library && expected === chatSessionId);
+}
+
 async function jsonBody(request: Request): Promise<Record<string, unknown>> {
-  try {
-    const body: unknown = await request.json();
-    return body && typeof body === "object" && !Array.isArray(body)
-      ? Object.fromEntries(Object.entries(body))
-      : {};
-  } catch {
-    return {};
-  }
+  const body: unknown = await request.json().catch(() => null);
+  if (!browserSessionMatches(request))
+    throw new Error("Browser meeting changed");
+  return body && typeof body === "object" && !Array.isArray(body)
+    ? Object.fromEntries(Object.entries(body))
+    : {};
 }
 
 function projectImage(requested: string) {
@@ -1249,20 +1355,64 @@ const launchToken = process.env[TOKEN_ENV];
 delete process.env[TOKEN_ENV];
 const access = createAccess(launchToken || randomToken(), port);
 
+access.check = async (request) => {
+  if (browserSessionMatches(request)) return null;
+  const expected = request.headers.get("x-cue-browser-session");
+  if (
+    !library &&
+    expected &&
+    request.method === "GET" &&
+    new URL(request.url).pathname === "/events"
+  ) {
+    await refreshRecording();
+    const current = readMeetingPointer(db, { sessionId: expected, recording });
+    if (
+      current?.live &&
+      current.sessionId === expected &&
+      recording?.has(expected)
+    ) {
+      attached = current;
+      await enqueue(async () => {
+        if (attached?.sessionId === expected && chatSessionId !== expected)
+          await openChat(ResetReason.Meeting);
+      });
+    }
+    if (browserSessionMatches(request)) return null;
+  }
+  console.warn("[coach] browser_chat_meeting_mismatch", {
+    run_id: crypto.randomUUID(),
+  });
+  return new Response(
+    "COACH_MEETING_MISMATCH: The coach has not attached to this recording yet.",
+    { status: 409 },
+  );
+};
+
 const server = Bun.serve({
   hostname: "127.0.0.1",
   port,
   idleTimeout: 0,
   routes: withAccess(access, page, {
-    "/events": () => {
+    "/events": (request) => {
+      if (!browserSessionMatches(request))
+        return new Response("COACH_MEETING_MISMATCH", { status: 409 });
       let controller: ReadableStreamDefaultController<string>;
       const stream = new ReadableStream<string>({
         start(next) {
           controller = next;
           clients.add(controller);
+          const expected = request.headers.get("x-cue-browser-session");
+          if (expected) browserClients.set(controller, expected);
           controller.enqueue(`retry: ${RECONNECT_MS}\n\n`);
           controller.enqueue(frame(status()));
-          controller.enqueue(frame(transcriptEvent()));
+          controller.enqueue(
+            frame(
+              transcriptEvent(
+                readTranscript(expected ?? values.session),
+                expected ?? values.session,
+              ),
+            ),
+          );
           controller.enqueue(
             frame({ type: CoachEventType.Reset, reason: ResetReason.Sync }),
           );
@@ -1272,6 +1422,7 @@ const server = Bun.serve({
         },
         cancel() {
           clients.delete(controller);
+          browserClients.delete(controller);
         },
       });
       return new Response(stream, {
@@ -1288,7 +1439,20 @@ const server = Bun.serve({
     "/ask": {
       POST: async (request) => {
         const body = await jsonBody(request);
-        const text = typeof body.text === "string" ? body.text.trim() : "";
+        const action =
+          body.action === undefined
+            ? null
+            : z.enum(MeetingAction).safeParse(body.action);
+        if (action && (!action.success || library))
+          return new Response("That meeting action is unavailable.", {
+            status: 400,
+          });
+        const selectedAction = action?.success
+          ? MEETING_ACTIONS[action.data]
+          : null;
+        const text =
+          selectedAction?.label ??
+          (typeof body.text === "string" ? body.text.trim() : "");
         const images = parseAskImages(body.images);
         if (!images.ok) return new Response(images.error, { status: 400 });
         if (!text && images.images.length === 0)
@@ -1315,7 +1479,7 @@ const server = Bun.serve({
         const prompt =
           library && libraryContext
             ? `[Current note context: ${libraryContext}. Title: ${meetingBasics(libraryContext).title}. Use only if relevant to this request.]\n${text}`
-            : text;
+            : (selectedAction?.prompt ?? text);
         startTurn(coach, TurnKind.Ask, text, prompt, images.images);
         return new Response(null, { status: 204 });
       },
@@ -1417,7 +1581,9 @@ const server = Bun.serve({
         const body = await jsonBody(request);
         const url = typeof body.url === "string" ? body.url : "";
         if (!/^https?:\/\//i.test(url))
-          return new Response("Only web links can be opened.", { status: 400 });
+          return new Response("Only web links can be opened.", {
+            status: 400,
+          });
         Bun.spawn(["open", url], { stdout: "ignore", stderr: "ignore" });
         return new Response(null, { status: 204 });
       },
@@ -1507,6 +1673,8 @@ const server = Bun.serve({
             sessionId: z.string().min(1),
             intent: meetingIntentSchema.optional(),
             quiet: z.boolean().optional(),
+            goal: meetingCoachingSchema.shape.goal,
+            parking: meetingCoachingSchema.shape.parking,
           })
           .safeParse(await jsonBody(request));
         if (!parsed.success)
@@ -1553,8 +1721,10 @@ const server = Bun.serve({
       },
     },
     "/new-chat": {
-      POST: () => {
-        enqueue(() => openChat(ResetReason.Manual));
+      POST: (request) => {
+        const expected =
+          request.headers.get("x-cue-browser-session") ?? undefined;
+        enqueue(() => openChat(ResetReason.Manual, expected));
         return new Response(null, { status: 204 });
       },
     },

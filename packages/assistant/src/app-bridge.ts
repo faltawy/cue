@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { browserContextSchema } from "./browser-context";
+import { browserContextSchema, browserStatusSchema } from "./browser-context";
 import { AssistantScope } from "./scope";
 
 export enum CoachEditKind {
@@ -208,6 +208,14 @@ export function appBridge(
           recording_id: recordingId,
           action,
         }),
+      ),
+    browserStatus: (sessionId: string) =>
+      required(
+        call(
+          "GET",
+          `${meeting(sessionId)}/browser-status`,
+          browserStatusSchema,
+        ),
       ),
     browserContext: (sessionId: string) =>
       call(

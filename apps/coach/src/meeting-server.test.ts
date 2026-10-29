@@ -7,6 +7,7 @@ import {
   CoachEditKind,
   RecordingPauseAction,
 } from "@anlg/assistant/app-bridge";
+import { VisualTargetKind } from "@anlg/assistant/browser-context";
 
 import { meetingTools } from "./meeting-server";
 import { type Word } from "./transcript";
@@ -290,13 +291,42 @@ test("browser context returns images only when requested and honors locked meeti
   const database = db();
   database.exec("INSERT INTO sessions (id, title) VALUES ('live', 'Live')");
   const bridge = {
+    browserStatus: async () => ({
+      meeting_connected: true,
+      context_available: true,
+      context_age_ms: 0,
+    }),
     browserContext: async () => ({
       meeting_url: "https://meet.google.com/abc-defg-hij",
       sequence: 1,
       context: {
         title: "Demo",
-        participants: [],
-        events: [],
+        visual_targets: [
+          {
+            id: "72506a5a-e5e8-4ec8-81d6-f94f3662b57c",
+            kind: VisualTargetKind.Control,
+            label: "Private target label",
+          },
+        ],
+        participants: [
+          { id: "self", name: "Alex", speaking: false, presenting: false },
+        ],
+        events: [
+          {
+            id: "caption",
+            kind: "caption",
+            timestamp_ms: 1,
+            participant_id: "self",
+            text: "Caption detail",
+          },
+          {
+            id: "chat",
+            kind: "chat",
+            timestamp_ms: 2,
+            participant_id: "self",
+            text: "Chat detail",
+          },
+        ],
         captions: "available",
         chat: "unavailable",
         presentation: { timestamp_ms: 1000, jpeg_base64: "image-data" },
@@ -308,6 +338,19 @@ test("browser context returns images only when requested and honors locked meeti
     onEdit() {},
     onUndo() {},
   }).find((item) => item.name === "browser_meeting_context")!;
+  const visual = meetingTools(
+    database,
+    () => "live",
+    { bridge, onEdit() {}, onUndo() {} },
+    undefined,
+    () => true,
+  ).find((tool) => tool.name === "meeting_visual_targets")!;
+  expect(JSON.stringify(await visual.handler({}))).toContain(
+    "Private target label",
+  );
+  expect(JSON.stringify(await entry.handler({}))).not.toContain(
+    "Private target label",
+  );
   const withImage = await entry.handler({ include_presentation: true });
   expect(withImage.content).toContainEqual({
     type: "image",
@@ -321,6 +364,15 @@ test("browser context returns images only when requested and honors locked meeti
     text: expect.stringContaining('"title":"Demo"'),
   });
   expect(JSON.stringify(withoutImage)).not.toContain("image-data");
+  const captions = await entry.handler({ sources: ["captions"] });
+  expect(JSON.stringify(captions)).toContain("Caption detail");
+  expect(JSON.stringify(captions)).not.toContain("Chat detail");
+  const chat = await entry.handler({ sources: ["chat"] });
+  expect(JSON.stringify(chat)).toContain("Chat detail");
+  expect(JSON.stringify(withoutImage)).not.toContain("Caption detail");
+  expect(JSON.stringify(withoutImage)).not.toContain("Chat detail");
+  const people = await entry.handler({ sources: ["participants"] });
+  expect(JSON.stringify(people)).toContain("Alex");
   database.exec("UPDATE sessions SET locked = 1 WHERE id = 'live'");
   const locked = await entry.handler({ include_presentation: true });
   expect(locked.isError).toBe(true);

@@ -9,7 +9,8 @@
     "./ui/app": "./src/ui/app.tsx",
     "./ui/components/*": "./src/ui/components/*.tsx",
     "./styles.css": "./src/styles.css",
-    "./ui/host": "./src/ui/host.tsx"
+    "./ui/host": "./src/ui/host.tsx",
+    "./theme.css": "./src/theme.css"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",

@@ -1,0 +1,27 @@
+{
+  "name": "@anlg/extension",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@anlg/assistant": "workspace:*",
+    "@shardsui/notation": "0.2.0",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^21.0.3",
+    "@types/bun": "^1.3.12",
+    "@types/chrome": "^0.1.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "bun-plugin-tailwind": "^0.1.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.8.3"
+  }
+}

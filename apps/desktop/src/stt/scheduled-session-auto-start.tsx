@@ -2,6 +2,8 @@ import { useRef } from "react";
 
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
 
+import { browserRecordingDeadline } from "./browser-recording-deadline";
+
 import { isLockedFlag } from "~/lock/flag";
 import { useAppLock } from "~/lock/store";
 import { useSession } from "~/session/queries";
@@ -86,7 +88,7 @@ function ReadyScheduledSessionAutoStart({
 }) {
   const { connectionReady, startListening } = useStartListeningState(
     sessionId,
-    { automatic: true },
+    { automatic: true, expiresAt: browserRecordingDeadline(sessionId) },
   );
   const attemptedRef = useRef(false);
 

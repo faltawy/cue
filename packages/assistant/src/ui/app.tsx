@@ -16,6 +16,7 @@ import {
   type HeaderSlot,
   TranscriptStrip,
 } from "./components/header";
+import { MeetingTools } from "./components/meeting-tools";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
 import { SetupFailed, setupLabel } from "./components/setup-notice";
@@ -457,6 +458,14 @@ export function CoachView({
           />
         }
       />
+      {!library && live && state.status?.coaching && (
+        <MeetingTools
+          key={state.status.coaching.sessionId}
+          coaching={state.status.coaching}
+          disabled={!ready || busy}
+          api={api}
+        />
+      )}
       <Composer
         dictationOwner={state.dictationOwner}
         ref={composer}

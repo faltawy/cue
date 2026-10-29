@@ -1,0 +1,275 @@
+@import "tailwindcss";
+@import "@anlg/assistant/styles.css";
+@import "@anlg/assistant/theme.css";
+@source "../../../packages/assistant/src";
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+  --bg: #191919;
+  --fg: #ebebe8;
+  --panel-muted: #aaa69f;
+  --panel-border: #333331;
+  --panel-accent: #d6a25c;
+  --error: #ff8877;
+}
+* {
+  box-sizing: border-box;
+  scrollbar-color: var(--panel-border) transparent;
+}
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
+}
+#connection-panel {
+  flex-shrink: 0;
+  overflow: auto;
+}
+#connection-panel header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 8px;
+}
+#connection-panel header strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.private-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-inline-start: auto;
+  font-size: 11.5px;
+  color: var(--panel-muted);
+}
+#connection-panel svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.private-label svg {
+  width: 12px;
+  height: 12px;
+}
+#diagnostics {
+  padding: 0 16px;
+}
+#diagnostics > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--panel-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 5px 0;
+  list-style: none;
+}
+#diagnostics > summary::-webkit-details-marker {
+  display: none;
+}
+#diagnostics > summary svg {
+  margin-inline-start: auto;
+  transition: transform 120ms ease-out;
+}
+#diagnostics[open] > summary svg {
+  transform: rotate(180deg);
+}
+#status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #777;
+}
+#status-dot.connected {
+  background: var(--panel-accent);
+}
+.diagnostic-content {
+  font-size: 12px;
+  color: var(--panel-muted);
+  padding: 8px 0 12px;
+}
+#heartbeat {
+  font-variant-numeric: tabular-nums;
+}
+#connection-panel p {
+  margin: 0;
+}
+#connection-panel p + p {
+  margin-top: 5px;
+}
+#connection-panel main {
+  padding: 20px 16px 16px;
+}
+#connection-panel h1 {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  margin: 0 0 7px;
+}
+#description {
+  color: var(--panel-muted);
+  max-width: 34ch;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+#connection-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #4a4946;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fg);
+  background: #292927;
+  cursor: pointer;
+  transition: background 120ms ease-out;
+}
+#connection-panel button:hover {
+  background: #363633;
+}
+#connection-panel button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+#connection-panel button.secondary {
+  background: transparent;
+  color: var(--panel-muted);
+  border-color: var(--panel-border);
+}
+#connection-panel button.icon-button {
+  width: 32px;
+  padding: 6px;
+}
+#connection-panel button[hidden] {
+  display: none;
+}
+#connection-panel :is(button, summary, input):focus-visible {
+  outline: 2px solid var(--panel-accent);
+  outline-offset: 3px;
+}
+#error {
+  font-size: 12px;
+  color: var(--error);
+  margin-top: 12px !important;
+}
+#context {
+  border-block: 1px solid var(--panel-border);
+  padding: 10px 0;
+  margin: 10px 0;
+}
+#context summary {
+  cursor: pointer;
+  color: var(--fg);
+}
+#coverage-summary {
+  float: inline-end;
+  color: var(--panel-muted);
+}
+#connection-panel dl {
+  margin: 10px 0;
+}
+#connection-panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+#connection-panel dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.toggle input {
+  accent-color: var(--panel-accent);
+}
+.hint {
+  font-size: 11.5px;
+  margin-top: 10px !important;
+}
+#coach {
+  flex: 1;
+  min-height: 0;
+}
+#coach[hidden] {
+  display: none;
+}
+.meeting-connected #connection-panel {
+  max-height: 45%;
+  border-bottom: 1px solid var(--panel-border);
+}
+.meeting-connected #meeting-title, .meeting-connected #description {
+  display: none;
+}
+.meeting-connected #connection-panel main {
+  padding: 0 16px 10px;
+}
+.meeting-connected .actions {
+  margin-top: 4px;
+}
+.meeting-connected #connect {
+  background: transparent;
+  border-color: transparent;
+  color: var(--panel-muted);
+  min-height: 26px;
+  padding: 2px 0;
+  font-size: 11.5px;
+}
+::selection {
+  background: var(--panel-accent);
+  color: var(--bg);
+}
+@media (prefers-reduced-motion: reduce) {
+  #connection-panel button, #diagnostics > summary svg {
+    transition: none;
+  }
+}
+
+#coach-error {
+  margin: 0;
+  padding: 8px 16px;
+  color: #ef9a88;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.meeting-tools-content::-webkit-scrollbar {
+  width: 6px;
+}
+.meeting-tools-content::-webkit-scrollbar-thumb {
+  background: #69665f;
+  border-radius: 3px;
+}
+.meeting-tools-content::-webkit-scrollbar-track {
+  background: transparent;
+}

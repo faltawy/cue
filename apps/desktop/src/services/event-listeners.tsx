@@ -1,5 +1,6 @@
 import { type UnlistenFn } from "@tauri-apps/api/event";
 
+import { events as coachEvents } from "@anlg/plugin-coach";
 import { events as notificationEvents } from "@anlg/plugin-notification";
 import { commands as openerCommands } from "@anlg/plugin-opener2";
 import type {
@@ -11,6 +12,8 @@ import {
   getCurrentWebviewWindowLabel,
 } from "@anlg/plugin-windows";
 import { useMountEffect } from "@anlg/ui/hooks/use-mount-effect";
+
+import { startBrowserRecording } from "./browser-recording";
 
 import {
   getCalendarEventMeetingLink,
@@ -805,6 +808,16 @@ export function EventListeners() {
 
 function EventListenersInner() {
   useNotificationEvents();
+  useMountEffect(() => {
+    const listening = coachEvents.browserRecordingRequested.listen(
+      ({ payload }) => {
+        startBrowserRecording(payload.session_id, payload.expires_at_ms);
+      },
+    );
+    return () => {
+      void listening.then((unlisten) => unlisten());
+    };
+  });
 
   return null;
 }

@@ -1,4 +1,5 @@
 import { type CoachEdit, type MeetingProject } from "./app-bridge";
+import { type Attention } from "./attention";
 import { type Block } from "./blocks";
 import { type MeetingCoaching } from "./coaching-preferences";
 import { type CoachError } from "./errors";
@@ -39,6 +40,7 @@ export enum CoachEventType {
   Error = "error",
   Done = "done",
   Edit = "edit",
+  Attention = "attention",
   Block = "block",
   BlockCheck = "block_check",
   Sources = "sources",
@@ -113,6 +115,7 @@ export type StatusEvent = {
 export type BlockItemRef = { id: string; index: number };
 
 export type CoachEvent =
+  | { type: CoachEventType.Attention; attention: Attention }
   | StatusEvent
   | { type: CoachEventType.Reset; reason: ResetReason }
   | { type: CoachEventType.Divider; text: string }

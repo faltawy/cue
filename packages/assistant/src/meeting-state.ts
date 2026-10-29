@@ -7,7 +7,7 @@ export enum StripState {
 
 export type MeetingPointer = {
   sessionId: string;
-  transcriptId: string;
+  transcriptId: string | null;
   live: boolean;
 };
 
@@ -35,6 +35,7 @@ export function meetingChange(
   const wrapUp =
     attached !== null &&
     next !== null &&
+    next.transcriptId !== null &&
     attached.transcriptId === next.transcriptId &&
     attached.live &&
     !next.live &&

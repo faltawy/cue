@@ -368,6 +368,7 @@ export function startCodexCoach(options: CoachOptions): CoachSession {
     options.meeting ?? (() => options.sessionId),
     options.edits,
     options.show,
+    options.highlight,
   ).map((entry) => ({ ...entry, name: `mcp__meeting__${entry.name}` }));
   const questionShape = {
     questions: z

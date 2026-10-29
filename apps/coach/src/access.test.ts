@@ -317,3 +317,50 @@ test("opening a second assistant window preserves both sidecar sessions", async 
     ),
   ).toBeNull();
 });
+
+test("async meeting alignment completes before serving the authenticated chat stream", async () => {
+  const scoped = createAccess(TOKEN, server.port!);
+  let selected = "previous";
+  scoped.check = async (request) => {
+    await Promise.resolve();
+    if (request.headers.get("x-cue-browser-session") !== "current")
+      return new Response("meeting mismatch", { status: 409 });
+    selected = "current";
+    return null;
+  };
+  const routes = secure(scoped, {
+    "/events": () => new Response(`data: ${selected}\n\n`),
+  });
+  const handler = routes["/events"];
+  if (typeof handler !== "function") throw new Error("missing events handler");
+  const current = await handler(
+    new Request(`${base}/events`, {
+      headers: {
+        host: `127.0.0.1:${server.port}`,
+        authorization: `Bearer ${TOKEN}`,
+        "x-cue-browser-session": "current",
+      },
+    }),
+  );
+  expect(await current.text()).toBe("data: current\n\n");
+  const other = await handler(
+    new Request(`${base}/events`, {
+      headers: {
+        host: `127.0.0.1:${server.port}`,
+        authorization: `Bearer ${TOKEN}`,
+        "x-cue-browser-session": "another",
+      },
+    }),
+  );
+  expect(other.status).toBe(409);
+  const unauthorized = await handler(
+    new Request(`${base}/events`, {
+      headers: {
+        host: `127.0.0.1:${server.port}`,
+        authorization: `Bearer ${OTHER}`,
+        "x-cue-browser-session": "current",
+      },
+    }),
+  );
+  expect(unauthorized.status).toBe(401);
+});

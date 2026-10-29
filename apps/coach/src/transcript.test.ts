@@ -11,6 +11,7 @@ import {
   readLiveTranscript,
   readMeetingInfo,
   readMeetingStatus,
+  readMeetingPointer,
   readSelfName,
   readTranscriptEditContext,
   renderTranscript,
@@ -238,6 +239,55 @@ describe("a recording left open by a crash", () => {
     );
     return db;
   }
+
+  test("connects the active meeting before its first transcript without reopening an older meeting", async () => {
+    const db = await zombieAndRealMeeting();
+    seedNote(db, { id: "s-new", title: "New meeting" });
+    const recording = new Set(["s-new"]);
+    expect(
+      readLiveTranscript(db, { sessionId: "s-real", recording })?.lines[0]
+        ?.text,
+    ).toBe("What's the ETA?");
+    expect(readLiveTranscript(db, { recording })).toBeNull();
+    expect(readMeetingPointer(db, { recording })).toEqual({
+      sessionId: "s-new",
+      transcriptId: null,
+      live: true,
+    });
+    expect(readMeetingStatus(db, { recording })).toEqual({
+      sessionId: "s-new",
+      title: "New meeting",
+      live: true,
+      startedAtMs: null,
+      endedAtMs: null,
+    });
+    db.run(
+      "INSERT INTO transcripts (id,session_id,owner_user_id,started_at_ms,ended_at_ms) VALUES ('t-previous','s-new','me',?,?)",
+      [NOW - 5000, NOW - 1000],
+    );
+    expect(readMeetingPointer(db, { recording })).toEqual({
+      sessionId: "s-new",
+      transcriptId: null,
+      live: true,
+    });
+    db.run(
+      "INSERT INTO transcripts (id,session_id,owner_user_id,started_at_ms) VALUES ('t-new','s-new','me',?)",
+      [NOW],
+    );
+    const next = readMeetingPointer(db, { recording });
+    expect(next).toEqual({
+      sessionId: "s-new",
+      transcriptId: "t-new",
+      live: true,
+    });
+    expect(
+      meetingChange(
+        { sessionId: "s-new", transcriptId: null, live: true },
+        next,
+        new Set(),
+      ),
+    ).toEqual({ newChat: false, wrapUp: false });
+  });
 
   test("the meeting the user just stopped gets its wrap-up and the zombie never opens a chat", async () => {
     const db = await zombieAndRealMeeting();

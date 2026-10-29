@@ -301,6 +301,8 @@ function sameError(a: CoachError, b: CoachError): boolean {
 
 function applyEvent(state: CoachState, event: CoachEvent): CoachState {
   switch (event.type) {
+    case CoachEventType.Attention:
+      return state;
     case CoachEventType.Status:
       return { ...state, status: event };
     case CoachEventType.Transcript:

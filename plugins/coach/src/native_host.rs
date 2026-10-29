@@ -16,6 +16,7 @@ pub const DISCOVERY_FILE: &str = "browser-bridge.json";
 pub enum ChromiumBrowser {
     Chrome,
     Chromium,
+    Brave,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -28,7 +29,10 @@ pub struct BrowserRegistration {
 fn manifest_path(home: &Path, browser: ChromiumBrowser, host_name: &str) -> PathBuf {
     home.join("Library/Application Support")
         .join(match browser {
-            ChromiumBrowser::Chrome => "Google/Chrome/NativeMessagingHosts",
+            // Brave redirects native messaging lookup to Chrome’s directory on macOS.
+            ChromiumBrowser::Chrome | ChromiumBrowser::Brave => {
+                "Google/Chrome/NativeMessagingHosts"
+            }
             ChromiumBrowser::Chromium => "Chromium/NativeMessagingHosts",
         })
         .join(format!("{host_name}.json"))
@@ -109,9 +113,18 @@ pub fn register(
         }
     }
     let name = host_name(config)?;
-    for browser in [ChromiumBrowser::Chrome, ChromiumBrowser::Chromium] {
+    for browser in [
+        ChromiumBrowser::Chrome,
+        ChromiumBrowser::Chromium,
+        ChromiumBrowser::Brave,
+    ] {
         remove(&manifest_path(home, browser, &name))?;
     }
+    remove(
+        &home
+            .join("Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts")
+            .join(format!("{name}.json")),
+    )?;
     remove(&config.join(DISCOVERY_FILE))?;
     remove(&config.join(REGISTRATION_FILE))?;
     if let Some(registration) = registration {
@@ -158,15 +171,11 @@ mod tests {
         let binary = root.path().join("cue-coach");
         fs::write(&binary, "binary").unwrap();
         let registration = BrowserRegistration {
-            browser: ChromiumBrowser::Chrome,
+            browser: ChromiumBrowser::Brave,
             extension_id: "abcdefghijklmnopabcdefghijklmnop".into(),
         };
         register(&config, root.path(), &binary, Some(&registration)).unwrap();
-        let manifest = manifest_path(
-            root.path(),
-            ChromiumBrowser::Chrome,
-            "com.hyprnote.stable.browser",
-        );
+        let manifest = root.path().join("Library/Application Support/Google/Chrome/NativeMessagingHosts/com.hyprnote.stable.browser.json");
         let content: serde_json::Value =
             serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
         assert_eq!(
@@ -202,4 +211,71 @@ mod tests {
         assert!(!config.join(REGISTRATION_FILE).exists());
         assert!(!config.join(DISCOVERY_FILE).exists());
     }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum BrowserSetupAction {
+    Prepare,
+    OpenExtensions,
+    RevealFolder,
+    Disconnect,
+}
+
+#[derive(Serialize, Type)]
+pub struct BrowserExtensionSetup {
+    pub directory: String,
+    pub extension_id: String,
+    pub version: String,
+}
+
+pub fn prepare_extension(config: &Path, source: &Path) -> Result<BrowserExtensionSetup> {
+    use base64::Engine;
+    use sha2::{Digest, Sha256};
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(source.join("manifest.json"))?)?;
+    let key = manifest["key"]
+        .as_str()
+        .ok_or_else(|| Error::Other("extension key is missing".into()))?;
+    let public_key = base64::engine::general_purpose::STANDARD
+        .decode(key)
+        .map_err(|_| Error::Other("extension key is invalid".into()))?;
+    let digest = Sha256::digest(&public_key);
+    let extension_id: String = digest[..16]
+        .iter()
+        .flat_map(|byte| {
+            [
+                char::from(b'a' + (byte >> 4)),
+                char::from(b'a' + (byte & 15)),
+            ]
+        })
+        .collect();
+    let version = manifest["version"]
+        .as_str()
+        .ok_or_else(|| Error::Other("extension version is missing".into()))?
+        .to_owned();
+    let directory = config.join("browser-extension");
+    fs::create_dir_all(&directory)?;
+    for name in [
+        "background.js",
+        "content.js",
+        "panel.js",
+        "panel.html",
+        "panel.css",
+        "icon.png",
+        "manifest.json",
+    ] {
+        let temporary = directory.join(format!(".{name}.tmp"));
+        fs::copy(source.join(name), &temporary)?;
+        fs::rename(temporary, directory.join(name))?;
+    }
+    write_private(
+        &directory.join("host.json"),
+        &serde_json::json!({"host": host_name(config)?}),
+    )?;
+    Ok(BrowserExtensionSetup {
+        directory: directory.to_string_lossy().into_owned(),
+        extension_id,
+        version,
+    })
 }

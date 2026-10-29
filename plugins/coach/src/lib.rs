@@ -39,7 +39,9 @@ pub use claude_code::{
 };
 pub use dictation::{DictationAction, DictationResult};
 pub use error::{Error, Result};
-pub use events::{CoachDictationRequested, CoachEvidence, CoachFocused, CoachNudged};
+pub use events::{
+    BrowserRecordingRequested, CoachDictationRequested, CoachEvidence, CoachFocused, CoachNudged,
+};
 use mcp::ResolvedServer;
 pub use probe::McpProbe;
 pub use process::Endpoint;
@@ -88,6 +90,19 @@ struct SetupSlot {
 struct AppHost(AppHandle, SpeakerAssignmentProbe);
 
 impl bridge::Host for AppHost {
+    fn meeting_coach(
+        &self,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Endpoint>> + Send>> {
+        let app = self.0.clone();
+        Box::pin(async move {
+            tauri::async_runtime::spawn_blocking(move || {
+                let state = app.state::<CoachState>();
+                ensure_coach(&app, &state, &app.coach().settings()?)
+            })
+            .await
+            .map_err(|error| Error::Other(error.to_string()))?
+        })
+    }
     fn pool(&self) -> Result<sqlx::SqlitePool> {
         self.0
             .try_state::<tauri_plugin_db::ManagedState>()
@@ -107,6 +122,49 @@ impl bridge::Host for AppHost {
             Some(state) => (state.pause_recording)(self.0.clone(), session_id, paused),
             None => Box::pin(async { false }),
         }
+    }
+    fn start_recording(&self, session_id: String) -> RecordingControlFuture {
+        let app = self.0.clone();
+        Box::pin(async move {
+            let Some(window) = app.get_webview_window("main") else {
+                return false;
+            };
+            let expires_at_ms = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64
+                + 20_000;
+            if tauri_specta::Event::emit_to(
+                &BrowserRecordingRequested {
+                    session_id: session_id.clone(),
+                    expires_at_ms,
+                },
+                &app,
+                tauri::EventTarget::webview_window(window.label()),
+            )
+            .is_err()
+            {
+                return false;
+            }
+            let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(22);
+            loop {
+                let state = app.state::<CoachState>();
+                if (state.recording)(app.clone())
+                    .await
+                    .is_some_and(|recording| {
+                        recording.active_session_id.as_deref() == Some(&session_id)
+                    })
+                {
+                    return true;
+                }
+                if tokio::time::Instant::now() >= deadline {
+                    (state.stop_recording)(app.clone(), session_id.clone()).await;
+                    tracing::warn!(%session_id, "browser_recording_start_timed_out");
+                    return false;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+        })
     }
     fn stop_recording(&self, session_id: String) -> RecordingControlFuture {
         match self.0.try_state::<CoachState>() {
@@ -898,6 +956,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .plugin_name(PLUGIN_NAME)
         .commands(tauri_specta::collect_commands![
+            commands::browser_extension_setup,
             commands::configure_browser_extension,
             commands::complete_dictation,
             commands::llm_endpoint,
@@ -925,6 +984,7 @@ fn make_specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::retry_provider_setup,
         ])
         .events(tauri_specta::collect_events![
+            BrowserRecordingRequested,
             CoachDictationRequested,
             CoachNudged,
             CoachFocused,

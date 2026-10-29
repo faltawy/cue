@@ -86,7 +86,14 @@ export async function relayNativeMessage(
           "Content-Type": "application/json",
         },
         body: JSON.stringify(message),
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(
+          message &&
+            typeof message === "object" &&
+            "operation" in message &&
+            (message.operation as { kind?: string })?.kind === "record"
+            ? 40_000
+            : 5_000,
+        ),
         redirect: "error",
       });
       if (response.status === 401)

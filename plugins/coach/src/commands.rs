@@ -225,3 +225,64 @@ pub async fn configure_browser_extension(
     .map_err(|e| e.to_string())?
     .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn browser_extension_setup(
+    app: tauri::AppHandle,
+    action: crate::native_host::BrowserSetupAction,
+) -> std::result::Result<Option<crate::native_host::BrowserExtensionSetup>, String> {
+    use tauri::Manager;
+    tauri::async_runtime::spawn_blocking(move || -> Result<Option<crate::native_host::BrowserExtensionSetup>> {
+        use crate::native_host::{self, BrowserSetupAction, BrowserRegistration, ChromiumBrowser};
+        let started = std::time::Instant::now();
+        let run_id = uuid::Uuid::new_v4();
+        tracing::info!(%run_id, ?action, "browser_extension_setup_started");
+        let outcome = (|| -> Result<Option<native_host::BrowserExtensionSetup>> {
+            let config = app.path().app_config_dir()?;
+            let state = app.state::<crate::CoachState>();
+            let _guard = state.browser_registration.lock().map_err(|e| crate::Error::Other(e.to_string()))?;
+            match action {
+                BrowserSetupAction::Prepare => {
+                    let mut source = app.path().resource_dir()?.join("browser-extension");
+                    if cfg!(debug_assertions) && !source.join("manifest.json").exists() {
+                        source = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/extension/dist");
+                    }
+                    let setup = native_host::prepare_extension(&config, &source)?;
+                    let registration = BrowserRegistration { browser: ChromiumBrowser::Brave, extension_id: setup.extension_id.clone() };
+                    let binary = crate::process::bundled_coach().ok_or_else(|| crate::Error::Other("Install a bundled Cue app before connecting the extension.".into()))?;
+                    let bridge = crate::app_bridge(&app, &state)?;
+                    bridge.configure_browser(&config, None)?;
+                    native_host::register(&config, &app.path().home_dir()?, &binary, Some(&registration))?;
+                    bridge.configure_browser(&config, Some(&registration))?;
+                    let opened = std::process::Command::new("/usr/bin/open").arg(&setup.directory).status()?;
+                    if !opened.success() { return Err(crate::Error::Other("Extension prepared. Open the extension folder from Cue to finish setup.".into())); }
+                    Ok(Some(setup))
+                }
+                BrowserSetupAction::OpenExtensions => {
+                    let opened = std::process::Command::new("/usr/bin/open").args(["-b", "com.brave.Browser", "brave://extensions"]).status()?;
+                    if !opened.success() { return Err(crate::Error::Other("Could not open Brave. Open brave://extensions in Brave manually.".into())); }
+                    Ok(None)
+                }
+                BrowserSetupAction::RevealFolder => {
+                    let directory = config.join("browser-extension");
+                    if !directory.is_dir() { return Err(crate::Error::Other("Prepare the extension first.".into())); }
+                    let opened = std::process::Command::new("/usr/bin/open").arg(directory).status()?;
+                    if !opened.success() { return Err(crate::Error::Other("Could not open the extension folder.".into())); }
+                    Ok(None)
+                }
+                BrowserSetupAction::Disconnect => {
+                    let bridge = crate::app_bridge(&app, &state)?;
+                    bridge.configure_browser(&config, None)?;
+                    native_host::register(&config, &app.path().home_dir()?, &std::path::PathBuf::new(), None)?;
+                    Ok(None)
+                }
+            }
+        })();
+        match &outcome {
+            Ok(_) => tracing::info!(%run_id, duration_ms = started.elapsed().as_millis() as u64, "browser_extension_setup_completed"),
+            Err(error) => tracing::warn!(%run_id, %error, duration_ms = started.elapsed().as_millis() as u64, "browser_extension_setup_failed"),
+        }
+        outcome
+    }).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())
+}

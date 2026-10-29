@@ -17,6 +17,7 @@ export type Access = {
   session: string;
   port: number;
   used: Set<string>;
+  check?: (request: Request) => Response | null | Promise<Response | null>;
 };
 
 export type Handler = (request: Request) => Response | Promise<Response>;
@@ -97,7 +98,10 @@ export function authorize(request: Request, access: Access): Response | null {
 }
 
 function guard(access: Access, handler: Handler): Handler {
-  return (request) => authorize(request, access) ?? handler(request);
+  return async (request) =>
+    authorize(request, access) ??
+    (await access.check?.(request)) ??
+    handler(request);
 }
 
 export function secure(
@@ -174,7 +178,11 @@ export function withAccess<Page>(
   page: Page,
   routes: Record<string, Route>,
 ): Record<string, Route | Page> {
-  return { "/": page, ...accessRoutes(access), ...secure(access, routes) };
+  return {
+    "/": page,
+    ...accessRoutes(access),
+    ...secure(access, routes),
+  };
 }
 
 export function loginUrl(access: Access, next = "/"): string {

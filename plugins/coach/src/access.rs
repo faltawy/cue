@@ -23,8 +23,8 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 pub fn sign_code(token: &str, expires_ms: u64, nonce: &str) -> String {
-    let mut mac = Hmac::<Sha256>::new_from_slice(token.as_bytes())
-        .expect("HMAC accepts keys of any length");
+    let mut mac =
+        Hmac::<Sha256>::new_from_slice(token.as_bytes()).expect("HMAC accepts keys of any length");
     mac.update(format!("coach-auth:{expires_ms}:{nonce}").as_bytes());
     format!("{expires_ms}.{nonce}.{}", hex(&mac.finalize().into_bytes()))
 }
@@ -48,7 +48,11 @@ mod tests {
     #[test]
     fn codes_match_the_coach_server_signer() {
         assert_eq!(
-            sign_code("secret", 1_760_000_000_000, "00112233445566778899aabbccddeeff"),
+            sign_code(
+                "secret",
+                1_760_000_000_000,
+                "00112233445566778899aabbccddeeff"
+            ),
             "1760000000000.00112233445566778899aabbccddeeff.4f8972c0ce6e10c7bf42ef07364e3cdd8c27e5473f2c88beb6a85f8c6907e79c"
         );
     }
