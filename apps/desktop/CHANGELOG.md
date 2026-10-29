@@ -1,5 +1,11 @@
 # @anlg/desktop
 
+## 0.16.0
+
+### Minor Changes
+
+- Chat with your coach inside your browser meeting, catch up on the conversation, and receive private cues and highlights while the panel is minimized. Connect meetings with recording approval, switch between calls more reliably, and use optional debug tools to test cues and export connection diagnostics.
+
 ## 0.15.0
 
 ### Minor Changes
