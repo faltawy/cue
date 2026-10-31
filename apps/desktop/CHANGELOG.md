@@ -1,5 +1,16 @@
 # @anlg/desktop
 
+## 0.17.0
+
+### Minor Changes
+
+- The coach in your browser meeting folds into one line above the call controls with the latest cue, and opens into a panel you can dock at the bottom or the side. Type / in the coach to run meeting tools such as catch up, promises, open questions, or park a private thought.
+
+### Patch Changes
+
+- The coach keeps answering when one of its connected tools rejects its secret or can't be reached, and tells you which one. Tool settings now show whether each tool actually accepts its saved secret.
+- Captions, chat and highlights keep working through the whole browser meeting, and highlights no longer cover the coach. When Cue is already recording a call that isn't tied to another meeting, connecting offers to use that recording first.
+
 ## 0.16.0
 
 ### Minor Changes
