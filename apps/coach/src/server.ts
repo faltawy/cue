@@ -135,7 +135,12 @@ import {
   Proactive,
   type ProactiveView,
 } from "./proactive";
-import { RuntimeMessageType, type RuntimeMessage } from "./runtime-message";
+import {
+  RuntimeMessageType,
+  ToolUnavailableReason,
+  type RuntimeMessage,
+  type UnavailableTool,
+} from "./runtime-message";
 import { type CoachSession, readRoots, startCoach } from "./session";
 import { signInCommand } from "./sign-in";
 import { Supervisor } from "./supervisor";
@@ -270,6 +275,7 @@ let askedAt = 0;
 let lastTranscript = "";
 let nudgeAbort: AbortController | null = null;
 let nudgeNotes: string[] = [];
+const reportedTools = new Set<string>();
 let proactive: Proactive | null = null;
 let proactiveMeeting: string | undefined;
 let selfName: string | null = null;
@@ -440,6 +446,16 @@ function schedulePersist() {
 
 function notice(text: string) {
   feed({ type: CoachEventType.Notice, text });
+}
+
+function toolsUnavailableNotice(servers: UnavailableTool[]): string {
+  const reason = (server: UnavailableTool) =>
+    server.reason === ToolUnavailableReason.Rejected
+      ? `${server.name} rejected Cue's saved secret`
+      : server.reason === ToolUnavailableReason.Unsupported
+        ? `${server.name} can't be used with this provider`
+        : `Cue couldn't reach ${server.name}`;
+  return `${servers.map(reason).join("; ")}. The coach is answering without ${servers.length === 1 ? "it" : "them"}; check Tools in Settings → AI.`;
 }
 
 function errorText(error: unknown): string {
@@ -855,6 +871,7 @@ async function openChat(reason: OpenReason, expectedSession?: string) {
   if (reason !== ResumeReason.Recover) {
     persistNow();
     supervisor.reset();
+    reportedTools.clear();
   }
   const plan = planChat({
     reason,
@@ -1258,6 +1275,19 @@ async function poll() {
 }
 
 function handle(message: RuntimeMessage) {
+  if (message.type === RuntimeMessageType.ToolsUnavailable) {
+    console.error("[coach] tools unavailable; continuing without them", {
+      servers: message.servers.map(
+        (server) => `${server.name}:${server.reason}`,
+      ),
+    });
+    const fresh = message.servers.filter(
+      (server) => !reportedTools.has(server.name),
+    );
+    for (const server of fresh) reportedTools.add(server.name);
+    if (fresh.length > 0) notice(toolsUnavailableNotice(fresh));
+    return;
+  }
   if (message.type === RuntimeMessageType.Result) {
     const interrupted = interrupter?.pending ?? false;
     interrupter?.settled();

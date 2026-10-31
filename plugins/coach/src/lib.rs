@@ -364,17 +364,14 @@ impl Coach {
         restart_running_coach(&self.app, &self.settings()?)
     }
 
-    pub fn mcp_statuses(&self) -> Result<Vec<McpServerStatus>> {
+    pub fn mcp_servers_with_secrets(&self) -> Result<Vec<(McpServer, Option<auth::McpSecret>)>> {
         let secrets = KeychainSecrets(&self.app);
         self.settings()?
             .mcp_servers
             .into_iter()
             .map(|server| {
                 let secret = auth::read_secret(&secrets, &server.name)?;
-                Ok(McpServerStatus {
-                    state: auth::auth_state(&server.auth, secret.as_ref()),
-                    name: server.name,
-                })
+                Ok((server, secret))
             })
             .collect()
     }

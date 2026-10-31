@@ -15,7 +15,11 @@ import { codexFileTools } from "./codex-tools";
 import { decide } from "./guard";
 import { type AskContent } from "./images";
 import { meetingTools } from "./meeting-server";
-import { type RuntimeMessage, RuntimeMessageType } from "./runtime-message";
+import {
+  type RuntimeMessage,
+  RuntimeMessageType,
+  type UnavailableTool,
+} from "./runtime-message";
 import { type RuntimeTool, type ToolResult } from "./runtime-tool";
 import {
   type CoachOptions,
@@ -80,6 +84,7 @@ export function startCodexSession(options: {
   tools?: RuntimeTool[];
   loadTools?: (signal: AbortSignal) => Promise<{
     tools: RuntimeTool[];
+    unavailable?: UnavailableTool[];
     close: () => Promise<void>;
   }>;
   schema?: Record<string, unknown>;
@@ -154,6 +159,11 @@ export function startCodexSession(options: {
       }
       for (const entry of loaded.tools)
         tools.set(codexDynamicToolName(entry.name), entry);
+      if (loaded.unavailable?.length)
+        messages.push({
+          type: RuntimeMessageType.ToolsUnavailable,
+          servers: loaded.unavailable,
+        });
     }
     client = new CodexClient({
       executable: options.executable,

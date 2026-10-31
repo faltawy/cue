@@ -6,7 +6,7 @@ import path from "node:path";
 import { loadCodexMcpTools } from "./codex-mcp";
 import { startCodexSession } from "./codex-session";
 import { decide } from "./guard";
-import { RuntimeMessageType } from "./runtime-message";
+import { RuntimeMessageType, ToolUnavailableReason } from "./runtime-message";
 
 const directories: string[] = [];
 afterEach(async () => {
@@ -218,3 +218,46 @@ test.each(["http", "sse"] as const)(
     }
   },
 );
+
+test("an MCP server that rejects its secret is skipped and reported while the coach keeps answering", async () => {
+  const options = await fixture();
+  const rejecting = Bun.serve({
+    port: 0,
+    hostname: "127.0.0.1",
+    fetch: () => new Response("Unauthorized", { status: 401 }),
+  });
+  const session = startCodexSession({
+    ...options,
+    prompt: "Read the meeting",
+    loadTools: () =>
+      loadCodexMcpTools({
+        clients: {
+          type: "http",
+          url: `http://127.0.0.1:${rejecting.port}/mcp`,
+          headers: { authorization: "Bearer stale" },
+        },
+        records: { command: options.executable, args: ["--mcp"] },
+      }),
+  });
+  try {
+    session.ask("Update the record, then read it");
+    let answer = "";
+    let unavailable: unknown;
+    for await (const message of session.messages) {
+      if (message.type === RuntimeMessageType.ToolsUnavailable)
+        unavailable = message.servers;
+      if (message.type === RuntimeMessageType.Text) answer += message.delta;
+      if (message.type === RuntimeMessageType.Result) {
+        expect(message.is_error).toBe(false);
+        break;
+      }
+    }
+    expect(unavailable).toEqual([
+      { name: "clients", reason: ToolUnavailableReason.Rejected },
+    ]);
+    expect(answer).toBe("Stored records: 1; original meeting: Tuesday");
+  } finally {
+    session.close();
+    await rejecting.stop(true);
+  }
+});

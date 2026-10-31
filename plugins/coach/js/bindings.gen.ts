@@ -317,7 +317,7 @@ export type FoundConnector = { name: string; id: string; url: string }
  */
 export type InstalledClaudeCode = { executable_path: string; command_path: string; version: string }
 export type McpAuth = { kind: "none" } | { kind: "bearer" } | { kind: "basic"; username: string } | { kind: "header"; name: string }
-export type McpAuthState = "ready" | "needs_secret"
+export type McpAuthState = "ready" | "needs_secret" | "rejected" | "unreachable"
 export type McpProbe = { kind: "none"; server_name: string | null; server_version: string | null } | { kind: "bearer"; browser_sign_in: boolean } | { kind: "basic" } | { kind: "unreachable"; reason: string } | { kind: "not_mcp"; status: number; message: string }
 export type McpSecretInput = { kind: "token"; token: string } | { kind: "basic"; password: string } | { kind: "header"; value: string }
 export type McpServer = { name: string; url: string; auth?: McpAuth; allow_changes?: boolean; enabled?: boolean }

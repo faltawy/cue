@@ -454,6 +454,8 @@ function ServerRow({
   const stateLabels: Record<McpAuthState, string> = {
     ready: t`Ready`,
     needs_secret: t`Needs a secret`,
+    rejected: t`Secret rejected`,
+    unreachable: t`Can't connect`,
   };
 
   const saveSecret = async (event: FormEvent) => {

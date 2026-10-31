@@ -53,6 +53,8 @@ impl From<McpSecretInput> for McpSecret {
 pub enum McpAuthState {
     Ready,
     NeedsSecret,
+    Rejected,
+    Unreachable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
@@ -95,13 +97,24 @@ pub fn write_secret(store: &dyn SecretStore, server: &str, secret: &McpSecret) -
     store.set(server, &serde_json::to_string(secret)?)
 }
 
-pub fn auth_state(auth: &McpAuth, secret: Option<&McpSecret>) -> McpAuthState {
-    match (auth, secret) {
-        (McpAuth::None, _) => McpAuthState::Ready,
-        (McpAuth::Bearer, Some(McpSecret::Token { .. }))
-        | (McpAuth::Basic { .. }, Some(McpSecret::Basic { .. }))
-        | (McpAuth::Header { .. }, Some(McpSecret::Header { .. })) => McpAuthState::Ready,
-        _ => McpAuthState::NeedsSecret,
+/// Ready only when the server accepts the stored secret, so the badge matches what the coach will see.
+pub async fn connection_state(
+    http: &reqwest::Client,
+    url: &str,
+    auth: &McpAuth,
+    secret: Option<&McpSecret>,
+) -> McpAuthState {
+    let Some(headers) = headers_for(auth, secret) else {
+        return McpAuthState::NeedsSecret;
+    };
+    match crate::probe::probe(http, url, &headers).await {
+        crate::probe::McpProbe::None { .. } => McpAuthState::Ready,
+        crate::probe::McpProbe::Bearer { .. } | crate::probe::McpProbe::Basic => {
+            McpAuthState::Rejected
+        }
+        crate::probe::McpProbe::Unreachable { .. } | crate::probe::McpProbe::NotMcp { .. } => {
+            McpAuthState::Unreachable
+        }
     }
 }
 
@@ -219,19 +232,52 @@ mod tests {
         );
     }
 
-    #[test]
-    fn status_reflects_the_stored_secret() {
-        assert_eq!(auth_state(&McpAuth::None, None), McpAuthState::Ready);
-        assert_eq!(
-            auth_state(&McpAuth::Bearer, None),
-            McpAuthState::NeedsSecret
+    #[tokio::test]
+    async fn ready_means_the_server_accepted_the_stored_secret() {
+        use axum::{Router, http::HeaderMap, response::IntoResponse, routing::post};
+
+        let router = Router::new().route(
+            "/mcp",
+            post(|headers: HeaderMap| async move {
+                if headers.get("authorization").and_then(|v| v.to_str().ok()) != Some("Bearer good")
+                {
+                    return (
+                        axum::http::StatusCode::UNAUTHORIZED,
+                        [("www-authenticate", "Bearer")],
+                        "",
+                    )
+                        .into_response();
+                }
+                axum::Json(serde_json::json!({
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "result": {
+                        "protocolVersion": crate::probe::PROTOCOL_VERSION,
+                        "capabilities": {},
+                        "serverInfo": { "name": "clients", "version": "1" },
+                    },
+                }))
+                .into_response()
+            }),
         );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}/mcp", listener.local_addr().unwrap());
+        tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
+        let http = reqwest::Client::new();
+        let state = |token: Option<&str>| {
+            let secret = token.map(|token| McpSecret::Token {
+                token: token.into(),
+            });
+            let (http, url) = (http.clone(), url.clone());
+            async move { connection_state(&http, &url, &McpAuth::Bearer, secret.as_ref()).await }
+        };
+
+        assert_eq!(state(Some("good")).await, McpAuthState::Ready);
+        assert_eq!(state(Some("stale")).await, McpAuthState::Rejected);
+        assert_eq!(state(None).await, McpAuthState::NeedsSecret);
         assert_eq!(
-            auth_state(
-                &McpAuth::Bearer,
-                Some(&McpSecret::Token { token: "t".into() })
-            ),
-            McpAuthState::Ready
+            connection_state(&http, "http://127.0.0.1:9/mcp", &McpAuth::None, None).await,
+            McpAuthState::Unreachable
         );
     }
 

@@ -5,6 +5,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 import { record } from "./codex-client";
+import { ToolUnavailableReason, type UnavailableTool } from "./runtime-message";
 import type { RuntimeTool } from "./runtime-tool";
 import { text } from "./tool-result";
 
@@ -29,6 +30,7 @@ export async function loadCodexMcpTools(
   signal?.addEventListener("abort", onAbort, { once: true });
   if (signal?.aborted) onAbort();
   const tools: RuntimeTool[] = [];
+  const unavailable: UnavailableTool[] = [];
   try {
     for (const [server, config] of Object.entries(servers)) {
       controller.signal.throwIfAborted();
@@ -38,9 +40,11 @@ export async function loadCodexMcpTools(
         server.startsWith("claude_ai_") ||
         config.type === "sdk"
       ) {
-        throw new Error(
-          `The ${server} tool connection is not supported by Codex.`,
-        );
+        unavailable.push({
+          name: server,
+          reason: ToolUnavailableReason.Unsupported,
+        });
+        continue;
       }
       const client = new Client(
         { name: "cue", version: "1.0.0" },
@@ -79,91 +83,104 @@ export async function loadCodexMcpTools(
                 env: config.env,
                 stderr: "ignore",
               });
+      // One unreachable or misconfigured server must not take the coach down: skip it and report it.
       const connectTimer = setTimeout(() => {
-        void close();
+        void client.close();
       }, 15_000);
+      const serverTools: RuntimeTool[] = [];
       try {
         await client.connect(transport, {
           signal: controller.signal,
           timeout: 15_000,
         });
-      } catch {
-        throw new Error(
-          `Could not connect to ${server}. Check this tool in AI settings.`,
-        );
+        clearTimeout(connectTimer);
+        const cursors = new Set<string>();
+        let cursor: string | undefined;
+        do {
+          const page = await client.listTools(cursor ? { cursor } : undefined, {
+            signal: controller.signal,
+            timeout: 15_000,
+          });
+          for (const remote of page.tools) {
+            const name = `mcp__${server}__${remote.name}`;
+            serverTools.push({
+              name,
+              description: remote.description ?? remote.name,
+              inputSchema: {},
+              jsonSchema: remote.inputSchema,
+              options: {
+                annotations: {
+                  readOnlyHint: remote.annotations?.readOnlyHint === true,
+                },
+              },
+              async handler(input, extra) {
+                const turnSignal = record(extra).signal;
+                const callSignal =
+                  turnSignal instanceof AbortSignal
+                    ? AbortSignal.any([controller.signal, turnSignal])
+                    : controller.signal;
+                callSignal.throwIfAborted();
+                const result = await client.callTool(
+                  { name: remote.name, arguments: record(input) },
+                  undefined,
+                  {
+                    signal: callSignal,
+                    timeout: config.timeout ?? 60_000,
+                  },
+                );
+                const content = Array.isArray(result.content)
+                  ? result.content.flatMap((item) => {
+                      const part = record(item);
+                      if (part.type === "text" && typeof part.text === "string")
+                        return [{ type: "text" as const, text: part.text }];
+                      const resource = record(part.resource);
+                      if (
+                        part.type === "resource" &&
+                        typeof resource.text === "string"
+                      )
+                        return [{ type: "text" as const, text: resource.text }];
+                      return [
+                        {
+                          type: "text" as const,
+                          text: `The tool returned ${String(part.type ?? "non-text")} content that Cue cannot display.`,
+                        },
+                      ];
+                    })
+                  : [];
+                if (result.structuredContent && content.length === 0)
+                  content.push(
+                    ...text(JSON.stringify(result.structuredContent)).content,
+                  );
+                return { content, isError: result.isError === true };
+              },
+            });
+          }
+          cursor = page.nextCursor;
+          if (cursor && cursors.has(cursor))
+            throw new Error(`The ${server} tool list repeated a page.`);
+          if (cursor) cursors.add(cursor);
+        } while (cursor);
+        tools.push(...serverTools);
+      } catch (error) {
+        controller.signal.throwIfAborted();
+        await client.close().catch(() => undefined);
+        unavailable.push({ name: server, reason: unavailableReason(error) });
       } finally {
         clearTimeout(connectTimer);
       }
-      const cursors = new Set<string>();
-      let cursor: string | undefined;
-      do {
-        const page = await client.listTools(cursor ? { cursor } : undefined, {
-          signal: controller.signal,
-          timeout: 15_000,
-        });
-        for (const remote of page.tools) {
-          const name = `mcp__${server}__${remote.name}`;
-          tools.push({
-            name,
-            description: remote.description ?? remote.name,
-            inputSchema: {},
-            jsonSchema: remote.inputSchema,
-            options: {
-              annotations: {
-                readOnlyHint: remote.annotations?.readOnlyHint === true,
-              },
-            },
-            async handler(input, extra) {
-              const turnSignal = record(extra).signal;
-              const callSignal =
-                turnSignal instanceof AbortSignal
-                  ? AbortSignal.any([controller.signal, turnSignal])
-                  : controller.signal;
-              callSignal.throwIfAborted();
-              const result = await client.callTool(
-                { name: remote.name, arguments: record(input) },
-                undefined,
-                {
-                  signal: callSignal,
-                  timeout: config.timeout ?? 60_000,
-                },
-              );
-              const content = Array.isArray(result.content)
-                ? result.content.flatMap((item) => {
-                    const part = record(item);
-                    if (part.type === "text" && typeof part.text === "string")
-                      return [{ type: "text" as const, text: part.text }];
-                    const resource = record(part.resource);
-                    if (
-                      part.type === "resource" &&
-                      typeof resource.text === "string"
-                    )
-                      return [{ type: "text" as const, text: resource.text }];
-                    return [
-                      {
-                        type: "text" as const,
-                        text: `The tool returned ${String(part.type ?? "non-text")} content that Cue cannot display.`,
-                      },
-                    ];
-                  })
-                : [];
-              if (result.structuredContent && content.length === 0)
-                content.push(
-                  ...text(JSON.stringify(result.structuredContent)).content,
-                );
-              return { content, isError: result.isError === true };
-            },
-          });
-        }
-        cursor = page.nextCursor;
-        if (cursor && cursors.has(cursor))
-          throw new Error(`The ${server} tool list repeated a page.`);
-        if (cursor) cursors.add(cursor);
-      } while (cursor);
     }
-    return { tools, close };
+    return { tools, unavailable, close };
   } catch (error) {
     await close();
     throw error;
   }
+}
+
+function unavailableReason(error: unknown): ToolUnavailableReason {
+  const status = record(error).code;
+  return status === 401 ||
+    status === 403 ||
+    (error instanceof Error && error.name === "UnauthorizedError")
+    ? ToolUnavailableReason.Rejected
+    : ToolUnavailableReason.Unreachable;
 }

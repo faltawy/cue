@@ -8,7 +8,16 @@ export enum RuntimeMessageType {
   ToolResult = "tool_result",
   AssistantUsage = "assistant_usage",
   Result = "result",
+  ToolsUnavailable = "tools_unavailable",
 }
+
+export enum ToolUnavailableReason {
+  Rejected = "rejected",
+  Unreachable = "unreachable",
+  Unsupported = "unsupported",
+}
+
+export type UnavailableTool = { name: string; reason: ToolUnavailableReason };
 
 export type RuntimeMessage =
   | { type: RuntimeMessageType.Text; delta: string }
@@ -25,9 +34,23 @@ export type RuntimeMessage =
       isError: boolean;
     }
   | { type: RuntimeMessageType.AssistantUsage; usage: unknown; error?: string }
-  | ({ type: RuntimeMessageType.Result } & ResultLike);
+  | ({ type: RuntimeMessageType.Result } & ResultLike)
+  | { type: RuntimeMessageType.ToolsUnavailable; servers: UnavailableTool[] };
 
 export function claudeMessages(message: SDKMessage): RuntimeMessage[] {
+  if (message.type === "system" && message.subtype === "init") {
+    const servers = (message.mcp_servers ?? []).flatMap(
+      (server): UnavailableTool[] =>
+        server.status === "needs-auth"
+          ? [{ name: server.name, reason: ToolUnavailableReason.Rejected }]
+          : server.status === "failed"
+            ? [{ name: server.name, reason: ToolUnavailableReason.Unreachable }]
+            : [],
+    );
+    return servers.length > 0
+      ? [{ type: RuntimeMessageType.ToolsUnavailable, servers }]
+      : [];
+  }
   if (message.type === "result")
     return [{ ...message, type: RuntimeMessageType.Result }];
   if (!("parent_tool_use_id" in message) || message.parent_tool_use_id !== null)

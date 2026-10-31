@@ -135,7 +135,11 @@ fn describe_send_error(error: &reqwest::Error) -> String {
     }
 }
 
-pub async fn probe(client: &reqwest::Client, url: &str) -> McpProbe {
+pub async fn probe(
+    client: &reqwest::Client,
+    url: &str,
+    headers: &std::collections::BTreeMap<String, String>,
+) -> McpProbe {
     let Ok(resource) = Url::parse(url) else {
         return McpProbe::Unreachable {
             reason: format!("{url} is not a valid address"),
@@ -147,8 +151,11 @@ pub async fn probe(client: &reqwest::Client, url: &str) -> McpProbe {
         };
     }
 
-    let response = match client
-        .post(resource.clone())
+    let mut request = client.post(resource.clone());
+    for (name, value) in headers {
+        request = request.header(name, value);
+    }
+    let response = match request
         .header(CONTENT_TYPE, "application/json")
         .header(ACCEPT, "application/json, text/event-stream")
         .timeout(TIMEOUT)
@@ -257,7 +264,12 @@ mod tests {
     }
 
     async fn probe_at(address: SocketAddr, path: &str) -> McpProbe {
-        probe(&reqwest::Client::new(), &format!("http://{address}{path}")).await
+        probe(
+            &reqwest::Client::new(),
+            &format!("http://{address}{path}"),
+            &Default::default(),
+        )
+        .await
     }
 
     fn unauthorized(challenge: &str) -> impl IntoResponse + Clone + use<> {
@@ -420,17 +432,23 @@ mod tests {
         assert!(matches!(
             probe(
                 &reqwest::Client::new(),
-                &format!("http://127.0.0.1:{port}/mcp")
+                &format!("http://127.0.0.1:{port}/mcp"),
+                &Default::default(),
             )
             .await,
             McpProbe::Unreachable { .. }
         ));
         assert!(matches!(
-            probe(&reqwest::Client::new(), "not a url").await,
+            probe(&reqwest::Client::new(), "not a url", &Default::default()).await,
             McpProbe::Unreachable { .. }
         ));
         assert!(matches!(
-            probe(&reqwest::Client::new(), "ftp://127.0.0.1/mcp").await,
+            probe(
+                &reqwest::Client::new(),
+                "ftp://127.0.0.1/mcp",
+                &Default::default()
+            )
+            .await,
             McpProbe::Unreachable { .. }
         ));
     }

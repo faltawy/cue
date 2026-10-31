@@ -45,7 +45,7 @@ pub async fn choose_project(app: tauri::AppHandle) -> std::result::Result<Option
 #[specta::specta]
 pub async fn probe_mcp_server(url: String) -> std::result::Result<McpProbe, String> {
     let http = crate::http_client().map_err(|error| error.to_string())?;
-    Ok(crate::probe::probe(&http, url.trim()).await)
+    Ok(crate::probe::probe(&http, url.trim(), &Default::default()).await)
 }
 
 #[tauri::command]
@@ -94,7 +94,27 @@ pub async fn show_for_recording(app: tauri::AppHandle) -> std::result::Result<()
 pub async fn mcp_statuses(
     app: tauri::AppHandle,
 ) -> std::result::Result<Vec<McpServerStatus>, String> {
-    blocking(app, Coach::mcp_statuses).await
+    let servers = blocking(app, Coach::mcp_servers_with_secrets).await?;
+    let http = crate::http_client().map_err(|error| error.to_string())?;
+    let mut checks = tokio::task::JoinSet::new();
+    for (index, (server, secret)) in servers.into_iter().enumerate() {
+        let http = http.clone();
+        checks.spawn(async move {
+            let state =
+                crate::auth::connection_state(&http, &server.url, &server.auth, secret.as_ref())
+                    .await;
+            (
+                index,
+                McpServerStatus {
+                    name: server.name,
+                    state,
+                },
+            )
+        });
+    }
+    let mut statuses = checks.join_all().await;
+    statuses.sort_by_key(|(index, _)| *index);
+    Ok(statuses.into_iter().map(|(_, status)| status).collect())
 }
 
 #[tauri::command]

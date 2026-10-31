@@ -520,6 +520,10 @@ msgstr "Calendar connected"
 msgid "Can transcribe while the meeting is happening."
 msgstr "Can transcribe while the meeting is happening."
 
+#: src/settings/claude/tools.tsx
+msgid "Can't connect"
+msgstr "Can't connect"
+
 #: src/calendar/components/apple/permission.tsx
 #: src/session/components/outer-header/overflow/export-modal.tsx
 #: src/settings/dictionary/index.tsx
@@ -2844,6 +2848,10 @@ msgstr "Searching notes…"
 #: src/settings/claude/tools.tsx
 msgid "Secret"
 msgstr "Secret"
+
+#: src/settings/claude/tools.tsx
+msgid "Secret rejected"
+msgstr "Secret rejected"
 
 #: src/templates/sections-editor.tsx
 msgid "Section actions"
