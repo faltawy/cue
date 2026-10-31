@@ -30,3 +30,6 @@ internal
 # Bundled browser extension build output
 /apps/extension/dist/
 /apps/desktop/src-tauri/resources/browser-extension/
+
+# Superpowers plugin local state (brainstorm server key, plan scratch)
+.superpowers/
