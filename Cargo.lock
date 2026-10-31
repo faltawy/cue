@@ -3841,7 +3841,7 @@ dependencies = [
  "objc2-foundation",
  "serde",
  "serde_json",
- "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
+ "swift-rs",
  "tracing",
 ]
 
@@ -8721,7 +8721,7 @@ dependencies = [
  "objc2-foundation",
  "serde",
  "serde_json",
- "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
+ "swift-rs",
 ]
 
 [[package]]
@@ -13259,19 +13259,9 @@ dependencies = [
 
 [[package]]
 name = "swift-rs"
-version = "1.0.7"
+version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4057c98e2e852d51fdcfca832aac7b571f6b351ad159f9eda5db1655f8d0c4d7"
-dependencies = [
- "base64 0.21.7",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "swift-rs"
-version = "1.0.7"
-source = "git+https://github.com/Brendonovich/swift-rs?rev=41a1605#41a160524c737c061f5633e4371952544425aa01"
+checksum = "cefd87076fd385308ee4aff597256c902f1fbb4d031de1558efc12f8ffefadd9"
 dependencies = [
  "base64 0.21.7",
  "serde",
@@ -13881,7 +13871,7 @@ dependencies = [
  "serde_repr",
  "serialize-to-javascript",
  "specta",
- "swift-rs 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swift-rs",
  "tauri-build",
  "tauri-macros",
  "tauri-runtime",
@@ -15221,7 +15211,7 @@ dependencies = [
  "serde-untagged",
  "serde_json",
  "serde_with",
- "swift-rs 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "swift-rs",
  "thiserror 2.0.18",
  "toml 1.1.2+spec-1.1.0",
  "url",
@@ -15245,7 +15235,7 @@ dependencies = [
 name = "tcc"
 version = "0.1.0"
 dependencies = [
- "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
+ "swift-rs",
 ]
 
 [[package]]
@@ -16028,7 +16018,7 @@ dependencies = [
  "serde",
  "serde_json",
  "specta",
- "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
+ "swift-rs",
  "thiserror 2.0.18",
  "tracing",
 ]
@@ -16042,7 +16032,7 @@ dependencies = [
  "serde",
  "serde_json",
  "specta",
- "swift-rs 1.0.7 (git+https://github.com/Brendonovich/swift-rs?rev=41a1605)",
+ "swift-rs",
  "thiserror 2.0.18",
  "tracing",
 ]
