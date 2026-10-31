@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:#0f0f0f;font-family:Inter,system-ui;color:#ebebe8;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+.meet{position:absolute;inset:0;padding:64px 24px 96px}
+.top{position:absolute;top:20px;left:28px;font-size:15px;color:#e8e8e8}
+.tile{position:absolute;left:24px;top:64px;right:452px;bottom:96px;border-radius:12px;background:#3a2c22;display:grid;place-items:center}
+.avatar{width:120px;height:120px;border-radius:50%;background:#5b4636}
+.name{position:absolute;left:20px;bottom:16px;font-size:15px}
+.bar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+.bar span{width:52px;height:44px;border-radius:22px;background:#2b2b2b}
+.bar span.end{width:72px;background:#d93025}
+.panel{position:absolute;top:64px;right:24px;width:412px;bottom:96px;background:#191919;border:1px solid #333331;border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.head{height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid #333331}
+.mark{width:18px;height:18px;border-radius:50%;border:2.5px solid #ebebe8;border-right-color:transparent}
+.title{font-size:13.5px;font-weight:600}
+.sub{font-size:12px;color:#aaa69f;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.live{width:8px;height:8px;border-radius:50%;background:#e5484d}
+.status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa69f}
+.dot{width:6px;height:6px;border-radius:50%;background:#d6a25c}
+.cue{margin:16px;padding:14px 16px 16px;border-inline-start:2px solid #d6a25c;background:#202020;border-radius:8px}
+.kicker{font-size:11.5px;color:#aaa69f;display:flex;gap:6px;align-items:center}
+.cue h1{font-size:20px;line-height:28px;font-weight:600;letter-spacing:-.01em;margin-top:8px}
+.why{margin-top:10px;font-size:13px;line-height:18px;color:#aaa69f}
+.why q{color:#ebebe8}
+.cue-actions{display:flex;gap:6px;margin-top:12px}
+.btn{height:28px;padding:0 10px;border-radius:6px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;border:1px solid #333331;color:#ebebe8}
+.btn.ghost{border-color:transparent;color:#aaa69f}
+.strip{margin:0 16px;height:36px;display:flex;align-items:center;gap:8px;border-top:1px solid #333331;border-bottom:1px solid #333331;font-size:13px;color:#aaa69f}
+.strip b{color:#ebebe8;font-weight:500}
+.earlier{padding:12px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.earlier .row{font-size:13px;color:#aaa69f;display:flex;gap:8px}
+.earlier .row i{font-style:normal;color:#8f8b84;font-variant-numeric:tabular-nums;width:38px}
+.chips{display:flex;gap:6px;padding:0 16px 10px;flex-wrap:wrap}
+.chip{border:1px solid #333331;border-radius:999px;padding:4px 10px;font-size:12px;color:#aaa69f}
+.composer{margin:0 16px 16px;border:1px solid #4a4946;border-radius:8px;padding:10px 12px;font-size:14px;color:#8f8b84;display:flex;justify-content:space-between;align-items:center}
+.send{width:28px;height:28px;border-radius:50%;background:#ebebe8}
+</style></head><body>
+<div class="meet">
+  <div class="top">10:24 PM &nbsp;|&nbsp; dbv-eksv-byu</div>
+  <div class="tile"><div class="avatar"></div><div class="name">Sara Al-Harbi · Acme Logistics</div></div>
+  <div class="bar"><span></span><span></span><span></span><span></span><span></span><span class="end"></span></div>
+</div>
+<aside class="panel">
+  <div class="head"><div class="mark"></div><span class="title">Coach</span>
+    <span class="sub"><span class="live"></span>Acme renewal · 18:42</span>
+    <span class="status"><span class="dot"></span>Only you</span></div>
+  <section class="cue">
+    <div class="kicker">Next move · 12s ago</div>
+    <h1>Ask who owns the rollout and the date you can plan around.</h1>
+    <p class="why">Sara said <q>we'll handle the migration</q> without an owner or a date.</p>
+    <div class="cue-actions"><span class="btn">Show me where</span><span class="btn ghost">Dismiss</span></div>
+  </section>
+  <div class="strip"><b>Sara</b> …so the Riyadh team would start in Q2, maybe earlier.</div>
+  <div class="earlier">
+    <div class="row"><i>17:05</i>Promise: send the SLA draft by Thursday (you)</div>
+    <div class="row"><i>15:40</i>Open question: pricing for the second warehouse</div>
+    <div class="row"><i>11:12</i>Goal: a clear owner and launch date</div>
+  </div>
+  <div class="chips"><span class="chip">Catch me up</span><span class="chip">Promises so far</span><span class="chip">What did they ask?</span><span class="chip">More tools</span></div>
+  <div class="composer">Ask about this meeting…<span class="send"></span></div>
+</aside>
+</body></html>

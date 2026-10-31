@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:#0f0f0f;font-family:Inter,system-ui;color:#ebebe8;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+.top{position:absolute;top:20px;left:28px;font-size:15px;color:#e8e8e8}
+.tile{position:absolute;left:24px;top:64px;right:452px;bottom:96px;border-radius:12px;background:#3a2c22;display:grid;place-items:center}
+.avatar{width:120px;height:120px;border-radius:50%;background:#5b4636}
+.name{position:absolute;left:20px;bottom:16px;font-size:15px}
+.bar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+.bar span{width:52px;height:44px;border-radius:22px;background:#2b2b2b}
+.bar span.end{width:72px;background:#d93025}
+.panel{position:absolute;top:64px;right:24px;width:412px;bottom:96px;background:#191919;border:1px solid #333331;border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.head{height:44px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;border-bottom:1px solid #333331}
+.mark{width:18px;height:18px;border-radius:50%;border:2.5px solid #ebebe8;border-right-color:transparent;flex:none}
+.title{font-size:13.5px;font-weight:600}
+.sub{font-size:12px;color:#aaa69f;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.live{width:8px;height:8px;border-radius:50%;background:#e5484d}
+.icons{margin-left:auto;display:flex;gap:2px}
+.icon{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:#aaa69f;font-size:14px}
+.dot{width:6px;height:6px;border-radius:50%;background:#d6a25c}
+.feed{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.divider{font-size:11.5px;color:#8f8b84;text-align:center}
+.user{align-self:flex-end;max-width:80%;background:#2a2a28;border-radius:8px;padding:8px 12px;font-size:14px;line-height:21px}
+.answer{font-size:14px;line-height:21px;color:#ebebe8}
+.answer p+p{margin-top:6px}
+.answer .src{font-size:12px;color:#aaa69f;margin-top:6px}
+.cue{border-inline-start:2px solid #d6a25c;padding:2px 0 2px 12px}
+.cue .k{font-size:11.5px;color:#aaa69f}
+.cue b{display:block;font-size:13.5px;line-height:20px;font-weight:600;margin-top:2px}
+.cue span{font-size:13px;color:#aaa69f}
+.jump{align-self:center;margin-top:-4px;border:1px solid #333331;background:#202020;border-radius:999px;padding:4px 10px;font-size:12px;color:#ebebe8;display:flex;gap:6px;align-items:center}
+.composer{margin:0 12px 12px;border:1px solid #4a4946;border-radius:8px;padding:10px 12px}
+.composer .ph{font-size:14px;color:#8f8b84}
+.menu{margin:0 12px 6px;border:1px solid #333331;background:#202020;border-radius:8px;padding:4px}
+.menu div{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;border-radius:6px;font-size:13px}
+.menu div.on{background:#2a2a28}
+.menu kbd{margin-left:auto;font:500 10.5px Inter;color:#aaa69f;border:1px solid #333331;border-radius:4px;padding:0 4px}
+.menu .g{font-size:12px;color:#aaa69f;font-weight:500;height:24px}
+</style></head><body>
+<div class="top">10:24 PM &nbsp;|&nbsp; dbv-eksv-byu</div>
+<div class="tile"><div class="avatar"></div><div class="name">Sara Al-Harbi · Acme Logistics</div></div>
+<div class="bar"><span></span><span></span><span></span><span></span><span></span><span class="end"></span></div>
+<aside class="panel">
+  <div class="head"><div class="mark"></div><span class="title">Acme renewal</span>
+    <span class="sub"><span class="live"></span>18:42</span>
+    <div class="icons"><span class="icon"><span class="dot"></span></span><span class="icon">⌕</span><span class="icon">⋯</span></div></div>
+  <div class="feed">
+    <div class="divider">Connected to this call · 10:05</div>
+    <div class="cue"><span class="k">Cue · 11:12</span><b>Open with the goal: a clear owner and launch date.</b></div>
+    <div class="user">What did they say about the second warehouse?</div>
+    <div class="answer"><p>Sara wants pricing for Dammam before committing. Nobody quoted a number yet.</p><p class="src">From the transcript at 15:40</p></div>
+    <div class="cue"><span class="k">Cue · now</span><b>Ask who owns the rollout and the date you can plan around.</b><span>She said “we’ll handle the migration” with no owner.</span></div>
+    <div class="jump">↓ New cue</div>
+  </div>
+  <div class="menu">
+    <div class="g">Meeting tools</div>
+    <div class="on">Catch me up<kbd>/catch</kbd></div>
+    <div>Promises so far<kbd>/promises</kbd></div>
+    <div>Open questions<kbd>/questions</kbd></div>
+    <div>Highlight something in Meet<kbd>/show</kbd></div>
+  </div>
+  <div class="composer"><div class="ph">/ for tools · ask about this meeting…</div></div>
+</aside>
+</body></html>

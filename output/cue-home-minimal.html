@@ -1,0 +1,110 @@
+<div id="cue-home-minimal" aria-label="Minimal Cue home concept">
+  <header class="cm-chrome"><span class="cm-lights" aria-hidden="true"><b></b><b></b><b></b></span><span class="cm-caption">Cue · concept</span></header>
+  <main class="cm-home">
+    <div class="cm-brand">
+      <button class="cm-logo cursor-interaction" aria-label="Cue logo" data-action="logo">
+        <svg viewBox="0 0 120 120" role="img" aria-label="Cue"><g class="cm-c" transform="translate(5 0)"><path d="M69 83 A32 32 0 1 1 69 37" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round"/></g><circle class="cm-dot" cx="96" cy="60" r="9"/></svg>
+      </button>
+      <span class="cm-whisper" aria-live="polite"></span>
+    </div>
+    <button class="cm-record cursor-interaction" data-action="record"><span><i data-lucide="mic" aria-hidden="true"></i><span data-record-label>Start recording</span></span><kbd data-record-key>⌘ ⇧ N</kbd></button>
+    <section class="cm-recent" aria-label="Recent notes">
+      <h1>Recent</h1>
+      <button class="cm-row cursor-interaction" data-action="note" data-title="Design team weekly"><span>Design team weekly</span><time>Today</time></button>
+      <button class="cm-row cursor-interaction" data-action="note" data-title="Launch planning"><span>Launch planning</span><time>Yesterday</time></button>
+      <button class="cm-row cursor-interaction" data-action="note" data-title="Friday catch-up"><span>Friday catch-up</span><time>Fri</time></button>
+    </section>
+    <nav class="cm-actions" aria-label="Create"><button class="cursor-interaction" data-action="new">New note <kbd>⌘ N</kbd></button><button class="cursor-interaction" data-action="coach">Open coach <kbd>⇧ ⌘ K</kbd></button></nav>
+    <p class="cm-feedback" role="status" aria-live="polite"></p>
+  </main>
+  <div class="cm-overlay" hidden></div>
+</div>
+<style>
+#cue-home-minimal{--cm-bg:light-dark(#f8f7f4,#191a19);--cm-fg:light-dark(#252622,#eeefea);--cm-muted:light-dark(#6a6c66,#999c94);--cm-line:light-dark(#e0e1db,#30322e);--cm-hover:light-dark(#eeeee8,#242622);--cm-gold:#dda354;position:relative;isolation:isolate;background:var(--cm-bg);color:var(--cm-fg);border:1px solid var(--cm-line);border-radius:12px;font:13px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.012em;min-height:620px}
+#cue-home-minimal *{box-sizing:border-box}#cue-home-minimal [hidden]{display:none!important}#cue-home-minimal button,#cue-home-minimal input,#cue-home-minimal textarea{font:inherit;color:inherit}#cue-home-minimal button{transition:background .15s,color .15s}#cue-home-minimal button:focus-visible{outline:2px solid var(--cm-gold);outline-offset:3px}#cue-home-minimal button svg{width:15px;height:15px}#cue-home-minimal kbd{font:11px/1.5 inherit;font-family:inherit;font-size:11px;white-space:nowrap;color:var(--cm-muted);letter-spacing:.03em}
+#cue-home-minimal .cm-chrome{height:46px;display:flex;align-items:center;gap:15px;padding:0 18px;padding-right:110px}#cue-home-minimal .cm-lights{display:flex;gap:7px}#cue-home-minimal .cm-lights b{display:block;width:9px;height:9px;border-radius:50%;background:var(--cm-line)}#cue-home-minimal .cm-caption{font-size:11px;color:var(--cm-muted)}
+#cue-home-minimal .cm-home{width:100%;max-width:400px;padding:46px 24px 72px;margin:0 auto}#cue-home-minimal .cm-brand{display:flex;flex-direction:column;align-items:center;margin-bottom:23px}#cue-home-minimal .cm-logo{display:block;border:0;background:none;padding:0;width:52px;height:52px;border-radius:8px}#cue-home-minimal .cm-logo svg{width:100%;height:100%;overflow:visible}#cue-home-minimal .cm-dot{fill:var(--cm-gold);transform-origin:60px 60px;transition:transform .45s cubic-bezier(.2,.7,.2,1)}#cue-home-minimal .cm-logo:hover .cm-dot{transform:translate(3px,-2px)}#cue-home-minimal .cm-c{transform-origin:60px 60px;transition:transform .45s cubic-bezier(.2,.7,.2,1)}#cue-home-minimal .cm-logo:hover .cm-c{transform:translate(5px,0) rotate(-4deg)}#cue-home-minimal .cm-logo.secret .cm-dot{animation:cm-orbit .85s cubic-bezier(.3,.1,.2,1)}#cue-home-minimal .cm-whisper{height:16px;margin-top:10px;color:var(--cm-muted);font-size:11px;opacity:0;transition:opacity .2s}#cue-home-minimal .cm-whisper.show{opacity:1}
+#cue-home-minimal .cm-record{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:11px 13px;border:0;border-radius:6px;background:var(--cm-fg);color:var(--cm-bg);font-weight:500}#cue-home-minimal .cm-record>span{display:flex;align-items:center;gap:8px}#cue-home-minimal .cm-record kbd{color:inherit;opacity:.6}#cue-home-minimal .cm-record:hover{opacity:.88}#cue-home-minimal .cm-record.active{background:var(--cm-hover);color:var(--cm-fg);box-shadow:inset 0 0 0 1px var(--cm-line)}
+#cue-home-minimal .cm-recent{margin-top:37px}#cue-home-minimal h1{font-size:11px;font-weight:400;color:var(--cm-muted);margin:0 0 9px;padding:0 1px}#cue-home-minimal .cm-row{border:0;background:none;display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;padding:10px 0;text-align:left;border-radius:4px}#cue-home-minimal .cm-row>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cue-home-minimal .cm-row time{font-size:11px;color:var(--cm-muted);white-space:nowrap}#cue-home-minimal .cm-row:hover{color:var(--cm-muted)}#cue-home-minimal .cm-actions{display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid var(--cm-line);margin-top:24px;padding-top:18px}#cue-home-minimal .cm-actions button{display:flex;align-items:center;gap:12px;padding:7px 0;border:0;background:none;color:var(--cm-muted);font-size:12px;white-space:nowrap}#cue-home-minimal .cm-actions button:hover{color:var(--cm-fg)}#cue-home-minimal .cm-feedback{min-height:17px;margin:16px 0 0;font-size:11px;color:var(--cm-muted);text-align:center}
+#cue-home-minimal .cm-overlay{position:absolute;inset:0;background:light-dark(#25262233,#0008);z-index:2;border-radius:12px;display:flex;align-items:flex-start;justify-content:center;padding:90px 20px 30px}#cue-home-minimal .cm-dialog{width:100%;max-width:400px;border:1px solid var(--cm-line);background:var(--cm-bg);border-radius:8px;padding:20px}#cue-home-minimal .cm-dialog header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}#cue-home-minimal .cm-dialog h2{font-size:15px;font-weight:500;margin:0}#cue-home-minimal .cm-close{border:0;background:none;color:var(--cm-muted);padding:3px;font-size:20px}#cue-home-minimal .cm-dialog label{display:block;color:var(--cm-muted);font-size:12px;margin-top:10px}#cue-home-minimal .cm-dialog input,#cue-home-minimal .cm-dialog textarea{display:block;width:100%;border:1px solid var(--cm-line);border-radius:5px;background:none;padding:9px;margin:5px 0 15px;resize:vertical}#cue-home-minimal .cm-dialog textarea{min-height:120px}#cue-home-minimal .cm-dialog p{font-size:12px;color:var(--cm-muted);margin:0 0 15px}#cue-home-minimal .cm-dialog .cm-answer{border-left:2px solid var(--cm-gold);padding-left:12px;margin:18px 0 0;color:var(--cm-fg)}
+@keyframes cm-orbit{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@media(max-width:420px){#cue-home-minimal{min-height:570px}#cue-home-minimal .cm-home{padding:42px 23px 50px}#cue-home-minimal .cm-actions{gap:10px}#cue-home-minimal .cm-actions button{gap:7px}#cue-home-minimal .cm-actions kbd{font-size:10px}#cue-home-minimal .cm-dialog input,#cue-home-minimal .cm-dialog textarea{font-size:16px}}
+@media(pointer:coarse){#cue-home-minimal .cm-row,#cue-home-minimal .cm-actions button{min-height:44px}#cue-home-minimal .cm-close{min-width:44px;min-height:44px}}
+@media(prefers-reduced-motion:reduce){#cue-home-minimal *{animation:none!important;transition:none!important}#cue-home-minimal .cm-logo:hover .cm-dot{transform:none}#cue-home-minimal .cm-logo:hover .cm-c{transform:translate(5px,0)}}
+</style>
+<script>
+(() => {
+  const root = document.getElementById('cue-home-minimal');
+  if (!root) return;
+  const overlay = root.querySelector('.cm-overlay');
+  const logo = root.querySelector('.cm-logo');
+  const feedback = root.querySelector('.cm-feedback');
+  const drafts = new Map();
+  let recording = false, timer, started, clicks = 0, resetClicks, fade, focusBack;
+  const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const close = () => { overlay.hidden = true; overlay.innerHTML = ''; focusBack?.focus(); };
+  const dialog = (title, content) => {
+    focusBack = document.activeElement;
+    overlay.innerHTML = `<section class="cm-dialog" role="dialog" aria-modal="true" aria-label="${escape(title)}"><header><h2>${escape(title)}</h2><button class="cm-close cursor-interaction" data-action="close" aria-label="Close">×</button></header>${content}</section>`;
+    overlay.hidden = false;
+    (overlay.querySelector('input,textarea') || overlay.querySelector('button')).focus();
+  };
+  root.addEventListener('click', event => {
+    if (event.target === overlay) { close(); return; }
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    switch (button.dataset.action) {
+      case 'logo': {
+        clearTimeout(resetClicks);
+        if (++clicks === 3) {
+          clicks = 0; logo.classList.remove('secret'); void logo.offsetWidth; logo.classList.add('secret');
+          const whisper = root.querySelector('.cm-whisper'); whisper.textContent = 'You found the quiet part.'; whisper.classList.add('show');
+          clearTimeout(fade); fade = setTimeout(() => { whisper.classList.remove('show'); logo.classList.remove('secret'); }, 2200);
+        }
+        resetClicks = setTimeout(() => { clicks = 0; }, 1000);
+        break;
+      }
+      case 'record': {
+        recording = !recording; button.classList.toggle('active', recording);
+        root.querySelector('[data-record-label]').textContent = recording ? 'Stop preview' : 'Start recording';
+        clearInterval(timer);
+        if (recording) {
+          started = Date.now(); feedback.textContent = 'Recording preview · microphone is off';
+          const tick = () => { const seconds = Math.floor((Date.now() - started) / 1000); root.querySelector('[data-record-key]').textContent = `${String(Math.floor(seconds / 60)).padStart(2,'0')}:${String(seconds % 60).padStart(2,'0')}`; };
+          tick(); timer = setInterval(tick, 1000);
+        } else { root.querySelector('[data-record-key]').textContent = '⌘ ⇧ N'; feedback.textContent = ''; }
+        break;
+      }
+      case 'close': close(); break;
+      case 'note':
+      case 'new': {
+        const title = button.dataset.title || '';
+        dialog(title || 'New note', `<label>Title<input data-title value="${escape(title)}" placeholder="Untitled"></label><label>Note<textarea data-body placeholder="Start writing…">${escape(drafts.get(title) ?? (title ? 'A few things to pick up next time.\n\n• What changed?\n• What needs a decision?\n• What happens next?' : ''))}</textarea></label><button class="cm-record cursor-interaction" data-action="save">Keep note</button>`);
+        break;
+      }
+      case 'save': {
+        const title = overlay.querySelector('[data-title]').value.trim() || 'Untitled';
+        const body = overlay.querySelector('[data-body]').value;
+        drafts.set(title, body);
+        if (![...root.querySelectorAll('.cm-row')].some(row => row.dataset.title === title)) {
+          const row = document.createElement('button'); row.className = 'cm-row cursor-interaction'; row.dataset.action = 'note'; row.dataset.title = title;
+          row.innerHTML = `<span>${escape(title)}</span><time>Now</time>`;
+          root.querySelector('.cm-recent h1').after(row);
+        }
+        close(); feedback.textContent = 'Note kept in this preview.'; break;
+      }
+      case 'coach': dialog('Coach', '<p>Preview</p><label>Your question<textarea placeholder="What’s on your mind?"></textarea></label><button class="cm-record cursor-interaction" data-action="ask">Ask</button><div data-answer aria-live="polite"></div>'); break;
+      case 'ask': overlay.querySelector('[data-answer]').innerHTML = '<p class="cm-answer">What’s the one thing you want to leave this conversation knowing?<br><br>Sample response.</p>'; break;
+    }
+  });
+  root.addEventListener('keydown', event => {
+    if (overlay.hidden) return;
+    if (event.key === 'Escape') { event.preventDefault(); close(); }
+    if (event.key === 'Tab') {
+      const controls = [...overlay.querySelectorAll('button,input,textarea')];
+      if (event.shiftKey && document.activeElement === controls[0]) { event.preventDefault(); controls.at(-1).focus(); }
+      else if (!event.shiftKey && document.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+    }
+  });
+})();
+</script>

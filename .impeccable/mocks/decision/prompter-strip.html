@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:#0f0f0f;font-family:Inter,system-ui;color:#ebebe8;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
+.top{position:absolute;top:20px;left:28px;font-size:15px;color:#e8e8e8}
+.tile{position:absolute;left:24px;top:64px;right:24px;bottom:150px;border-radius:12px;background:#3a2c22;display:grid;place-items:center}
+.avatar{width:120px;height:120px;border-radius:50%;background:#5b4636}
+.name{position:absolute;left:20px;bottom:16px;font-size:15px}
+.bar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+.bar span{width:52px;height:44px;border-radius:22px;background:#2b2b2b}
+.bar span.end{width:72px;background:#d93025}
+.sheet{position:absolute;left:50%;transform:translateX(-50%);bottom:84px;width:560px;background:#191919;border:1px solid #333331;border-radius:12px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+.thread{padding:14px 16px;display:flex;flex-direction:column;gap:12px;max-height:300px}
+.k{font-size:11.5px;color:#aaa69f}
+.answer{font-size:14px;line-height:21px}
+.user{align-self:flex-end;background:#2a2a28;border-radius:8px;padding:8px 12px;font-size:14px}
+.chips{display:flex;gap:6px;padding:0 16px 10px}
+.chip{border:1px solid #333331;border-radius:999px;padding:4px 10px;font-size:12px;color:#aaa69f}
+.composer{margin:0 12px 12px;border:1px solid #4a4946;border-radius:8px;padding:10px 12px;font-size:14px;color:#8f8b84}
+.strip{display:flex;align-items:center;gap:10px;height:44px;padding:0 8px 0 14px;border-top:1px solid #333331;background:#1d1d1c}
+.live{width:8px;height:8px;border-radius:50%;background:#e5484d;flex:none}
+.time{font-size:12px;color:#aaa69f;font-variant-numeric:tabular-nums}
+.cueline{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px;font-weight:600;border-inline-start:2px solid #d6a25c;padding-inline-start:10px}
+.btn{height:28px;padding:0 10px;border-radius:6px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;color:#aaa69f}
+.lock{font-size:12px;color:#aaa69f}
+.collapsed{position:absolute;right:24px;bottom:96px;font-size:12px;color:#aaa69f}
+</style></head><body>
+<div class="top">10:24 PM &nbsp;|&nbsp; dbv-eksv-byu</div>
+<div class="tile"><div class="avatar"></div><div class="name">Sara Al-Harbi · Acme Logistics</div></div>
+<div class="sheet">
+  <div class="thread">
+    <span class="k">You asked · 15:52</span>
+    <div class="user">Catch me up on the last five minutes.</div>
+    <div class="answer">Sara confirmed the Riyadh team starts in Q2. She still needs pricing for the Dammam warehouse, and nobody owns the migration yet.</div>
+  </div>
+  <div class="chips"><span class="chip">Promises so far</span><span class="chip">What did they ask?</span><span class="chip">Show me where</span><span class="chip">More tools</span></div>
+  <div class="composer">Ask about this meeting…</div>
+  <div class="strip">
+    <span class="live"></span><span class="time">18:42</span>
+    <span class="cueline">Ask who owns the rollout and the date you can plan around.</span>
+    <span class="lock">Only you</span><span class="btn">⌄</span>
+  </div>
+</div>
+<div class="bar"><span></span><span></span><span></span><span></span><span></span><span class="end"></span></div>
+</body></html>

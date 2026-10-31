@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/command-header.html"
+        ],
+        "createdAt": "2026-10-31T20:13:57.695Z",
+        "reason": "docs/design/cue.md section 2: Kbd is specified at 10.5px; only the kbd shortcut hints use it"
+      },
+      {
+        "rule": "tiny-text",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/strip-command.html"
+        ],
+        "createdAt": "2026-10-31T20:17:05.809Z",
+        "reason": "docs/design/cue.md section 2: text-caption is 11.5px for timestamps and dividers"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-31T20:18:47.882Z",
+        "reason": "docs/design/cue.md section 2 makes Inter the binding UI face for Cue"
+      }
+    ]
+  }
+}
