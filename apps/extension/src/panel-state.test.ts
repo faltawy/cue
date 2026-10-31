@@ -5,6 +5,8 @@ import {
   AppLinkState,
   ConnectionState,
   panelStateForTab,
+  RecordingChoice,
+  recordingOfferView,
   type PanelState,
 } from "./protocol";
 
@@ -47,4 +49,23 @@ test("another Meet tab cannot receive the connected meeting's chat binding or pr
   expect(other.generation).toBeNull();
   expect(JSON.stringify(other)).not.toContain("Ask about the budget");
   expect(other.title).toBe("");
+});
+
+test("a recording not tied to another call is offered as this call's recording first", () => {
+  const offer = {
+    id: "offer",
+    meetingUrl: "https://meet.google.com/abc-defg-hij",
+    expectedSession: "recording-a",
+    title: "Meet",
+    recordingTitle: null,
+    paused: false,
+  };
+  const unlinked = recordingOfferView({ ...offer, canUseCurrent: true });
+  expect(unlinked.primary).toBe(RecordingChoice.Current);
+  expect(unlinked.currentLabel).toBe("Use current recording");
+  expect(unlinked.detail).not.toContain("another meeting");
+
+  const elsewhere = recordingOfferView({ ...offer, canUseCurrent: false });
+  expect(elsewhere.primary).toBe(RecordingChoice.New);
+  expect(elsewhere.currentLabel).toBeNull();
 });

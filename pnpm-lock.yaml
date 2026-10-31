@@ -535,9 +535,21 @@ importers:
       '@anlg/assistant':
         specifier: workspace:*
         version: link:../../packages/assistant
+      '@fontsource/ibm-plex-sans-arabic':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@shardsui/notation':
         specifier: 0.2.0
         version: 0.2.0
+      lucide-react:
+        specifier: ^1.61.0
+        version: 1.61.0(@types/react@19.2.14)(react@19.2.5)
+      motion:
+        specifier: ^11.18.2
+        version: 11.18.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react:
         specifier: 19.2.5
         version: 19.2.5

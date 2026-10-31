@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProjectSource } from "../app-bridge";
 import { BlockKind } from "../blocks";
 import { CoachErrorKind } from "../errors";
+import { MEETING_ACTIONS, MeetingAction } from "../meeting-actions";
+import { StripState } from "../meeting-state";
 import { type EvidenceTarget } from "../move";
 import { SetupState, TurnKind, WrapUpState } from "../protocol";
 import {
@@ -12,14 +14,16 @@ import {
 } from "./components/composer";
 import {
   CATCH_UP_SHORTCUT,
+  CollapsedStrip,
   Header,
   type HeaderSlot,
   TranscriptStrip,
 } from "./components/header";
-import { MeetingTools } from "./components/meeting-tools";
+import { PARKING_LIMIT } from "./components/meeting-notes";
 import { type Command, Palette } from "./components/palette";
 import { QuestionPanel } from "./components/question-panel";
 import { SetupFailed, setupLabel } from "./components/setup-notice";
+import { type SlashCommand } from "./components/slash-commands";
 import {
   EmptyState,
   Timeline,
@@ -47,6 +51,7 @@ import {
   ItemKind,
   lastAsk,
   latestUndoable,
+  liveNudges,
   meetingPhase,
   MeetingPhase,
   suggestions,
@@ -81,33 +86,55 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+// A host that can fold the coach to one row (the Meet panel) passes `collapse`.
+type Collapse = { collapsed: boolean; onExpand(): void };
+
 export function App({
   host = browserHost,
   header,
+  collapse,
 }: {
   host?: AssistantHost;
   header?: HeaderSlot;
+  collapse?: Collapse;
 }) {
   return (
     <AssistantHostProvider host={host}>
-      <ConnectedAssistant header={header} />
+      <ConnectedAssistant header={header} collapse={collapse} />
     </AssistantHostProvider>
   );
 }
 
-function ConnectedAssistant({ header }: { header?: HeaderSlot }) {
+function ConnectedAssistant({
+  header,
+  collapse,
+}: {
+  header?: HeaderSlot;
+  collapse?: Collapse;
+}) {
   const [state, api] = useCoach();
-  return <CoachView state={state} api={api} header={header} />;
+  return (
+    <CoachView state={state} api={api} header={header} collapse={collapse} />
+  );
+}
+
+export function latestCue(items: CoachState["items"]): string | null {
+  const move = liveNudges(items)
+    .at(-1)
+    ?.blocks.find((block) => block.kind === BlockKind.Move);
+  return move?.kind === BlockKind.Move ? move.line : null;
 }
 
 export function CoachView({
   state,
   api,
   header,
+  collapse,
 }: {
   state: CoachState;
   api: CoachApi;
   header?: HeaderSlot;
+  collapse?: Collapse;
 }) {
   const host = useAssistantHost();
   const library = host.scope === AssistantScope.Library;
@@ -142,10 +169,17 @@ export function CoachView({
       );
 
   const ask = useCallback(
-    async (text: string, images: readonly PreparedImage[] = []) => {
+    async (
+      text: string,
+      images: readonly PreparedImage[] = [],
+      action?: MeetingAction,
+    ) => {
       setSent((count) => count + 1);
-      const result =
-        images.length > 0 ? await api.ask(text, images) : await api.ask(text);
+      const result = action
+        ? await api.ask(text, images, action)
+        : images.length > 0
+          ? await api.ask(text, images)
+          : await api.ask(text);
       return result.ok;
     },
     [api],
@@ -277,6 +311,50 @@ export function CoachView({
     stopOrDismiss,
   ]);
 
+  const coaching = live && !library ? (state.status?.coaching ?? null) : null;
+  const slashCommands = useMemo<SlashCommand[]>(() => {
+    if (!coaching) return [];
+    const save = async (patch: { goal?: string; parking?: string[] }) => {
+      const result = await api.setCoaching({
+        sessionId: coaching.sessionId,
+        ...patch,
+      });
+      api.notify(
+        result.ok ? "Saved privately for this meeting." : result.message,
+      );
+      return result.ok;
+    };
+    return [
+      ...Object.values(MeetingAction).map((action) => ({
+        name: MEETING_ACTIONS[action].command,
+        label: MEETING_ACTIONS[action].label,
+        run: () => ask(MEETING_ACTIONS[action].label, [], action),
+      })),
+      {
+        name: "goal",
+        label: "Set the meeting goal",
+        argument: "what you need",
+        run: (goal: string) => save({ goal }),
+      },
+      {
+        name: "park",
+        label: "Park a private thought",
+        argument: "a thought",
+        run: async (thought: string) => {
+          const parking = [...(coaching.parking ?? []), thought];
+          if (
+            parking.length > PARKING_LIMIT.count ||
+            thought.length > PARKING_LIMIT.length
+          ) {
+            api.notify("Keep up to 12 thoughts, each under 300 characters.");
+            return false;
+          }
+          return save({ parking });
+        },
+      },
+    ];
+  }, [api, ask, coaching]);
+
   const onKey = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.isComposing) return;
     if (
@@ -333,13 +411,15 @@ export function CoachView({
         : "Connecting to the coach…"
     : state.question
       ? "Type your own answer…"
-      : live || phase === MeetingPhase.Ended
-        ? "Ask about this meeting…"
-        : projectName
-          ? `Ask about ${projectName}…`
-          : library
-            ? "Ask about your meetings or anything else…"
-            : "Ask the coach…";
+      : live && coaching
+        ? "Ask, or type / for meeting tools…"
+        : live || phase === MeetingPhase.Ended
+          ? "Ask about this meeting…"
+          : projectName
+            ? `Ask about ${projectName}…`
+            : library
+              ? "Ask about your meetings or anything else…"
+              : "Ask the coach…";
 
   const submit = useCallback(
     async (text: string, images: readonly PreparedImage[]) => {
@@ -392,121 +472,134 @@ export function CoachView({
     <WrapUpCard view={state.wrapUp} busy={busy} actions={wrapUpActions} />
   ) : undefined;
 
+  const checkInUnavailable = !ready
+    ? "Available once the coach reconnects"
+    : busy
+      ? "Available when this answer finishes"
+      : null;
+  const collapsed = collapse?.collapsed ?? false;
+
   return (
     <div
       ref={container}
       className="cue-assistant bg-surface text-foreground flex h-full min-h-0 flex-col"
     >
-      <Header
-        titleOverride={library ? "Assistant" : undefined}
-        provider={state.status?.provider}
-        coaching={live ? state.status?.coaching : undefined}
-        onCoachingChange={(input) => api.setCoaching(input)}
-        connection={state.connection}
-        transcript={state.transcript}
-        usage={state.usage}
-        proactive={state.status?.proactive ?? null}
-        onNewChat={newChat}
-        newChatDisabled={!ready}
-        onPalette={() => setPalette(true)}
-        idleSubtitle={header?.subtitle}
-        actions={header?.actions}
-      />
-      {live && state.transcript && (
-        <TranscriptStrip
-          transcript={state.transcript}
-          onCheckIn={() => void api.checkIn()}
-          unavailable={
-            !ready
-              ? "Available once the coach reconnects"
-              : busy
-                ? "Available when this answer finishes"
-                : null
+      {collapse?.collapsed && (
+        <CollapsedStrip
+          title={
+            library
+              ? "Assistant"
+              : ((state.transcript?.strip.state === StripState.Live
+                  ? state.transcript.strip.title
+                  : null) ?? "Coach")
           }
-          emphasis={!authErrorShowing}
+          transcript={live ? state.transcript : null}
+          cue={live ? latestCue(state.items) : null}
+          onExpand={collapse.onExpand}
+          onCheckIn={() => void api.checkIn()}
+          unavailable={checkInUnavailable}
         />
       )}
-      <Timeline
-        key={`${state.status?.coaching?.sessionId ?? "conversation"}:${state.dictationOwner}`}
-        live={live}
-        items={state.items}
-        sent={sent}
-        glance={glance}
-        footer={wrapUp}
-        busy={busy}
-        questionOpen={state.question !== null}
-        ready={ready}
-        canAddToNotes={
-          (state.status?.appConnected ?? false) &&
-          (state.status?.meeting ?? false)
-        }
-        latestUndoable={latestUndoable(state)}
-        lastAskKey={latestAsk?.key ?? null}
-        actions={timelineActions}
-        empty={
-          <EmptyState
-            phase={phase}
-            compact={glance}
-            suggestions={glance ? chips.slice(0, 2) : chips}
-            disabled={!ready || busy}
-            onSuggestion={(text) => void ask(text)}
-            onChooseFolder={
-              !library && needsFolder
-                ? () => void api.chooseProjectFolder()
-                : undefined
-            }
-          />
-        }
-      />
-      {!library && live && state.status?.coaching && (
-        <MeetingTools
-          key={state.status.coaching.sessionId}
-          coaching={state.status.coaching}
-          disabled={!ready || busy}
-          api={api}
+      <div hidden={collapsed} className="flex min-h-0 flex-1 flex-col">
+        <Header
+          titleOverride={library ? "Assistant" : undefined}
+          provider={state.status?.provider}
+          coaching={live ? state.status?.coaching : undefined}
+          onCoachingChange={(input) => api.setCoaching(input)}
+          connection={state.connection}
+          transcript={state.transcript}
+          usage={state.usage}
+          proactive={state.status?.proactive ?? null}
+          onNewChat={newChat}
+          newChatDisabled={!ready}
+          onPalette={() => setPalette(true)}
+          idleSubtitle={header?.subtitle}
+          actions={header?.actions}
+          menu={header?.menu}
         />
-      )}
-      <Composer
-        dictationOwner={state.dictationOwner}
-        ref={composer}
-        busy={busy && !state.question}
-        ready={ready}
-        placeholder={placeholder}
-        status={state.status}
-        chips={
-          !glance &&
-          !repliesShowing &&
-          chipsAllowed(state) &&
-          !isEmptyWrapUp(state.wrapUp) &&
-          (state.items.length > 0 || state.wrapUp)
-            ? chips
-            : []
-        }
-        above={
-          setup?.state === SetupState.Failed ? (
-            <SetupFailed
-              message={setup.message}
-              onRetry={() => void api.retrySetup()}
-            />
-          ) : state.question ? (
-            <QuestionPanel
-              key={state.question.id}
-              questions={state.question.questions}
+        <Timeline
+          key={`${state.status?.coaching?.sessionId ?? "conversation"}:${state.dictationOwner}`}
+          live={live}
+          items={state.items}
+          sent={sent}
+          glance={glance}
+          footer={wrapUp}
+          busy={busy}
+          questionOpen={state.question !== null}
+          ready={ready}
+          canAddToNotes={
+            (state.status?.appConnected ?? false) &&
+            (state.status?.meeting ?? false)
+          }
+          latestUndoable={latestUndoable(state)}
+          lastAskKey={latestAsk?.key ?? null}
+          actions={timelineActions}
+          empty={
+            <EmptyState
+              phase={phase}
               compact={glance}
-              onAnswer={(answers) => {
-                if (state.question) void answer(state.question.id, answers);
-              }}
-              onDismiss={stopOrDismiss}
+              suggestions={glance ? chips.slice(0, 2) : chips}
+              disabled={!ready || busy}
+              onSuggestion={(text) => void ask(text)}
+              onChooseFolder={
+                !library && needsFolder
+                  ? () => void api.chooseProjectFolder()
+                  : undefined
+              }
             />
-          ) : undefined
-        }
-        onSubmit={submit}
-        onStop={() => void api.stop()}
-        recall={() => latestAsk?.prompt ?? null}
-        onChooseFolder={() => void api.chooseSeriesFolder()}
-        onDefaultFolder={() => void api.useDefaultFolder()}
-        onChooseProject={() => void api.chooseProjectFolder()}
-      />
+          }
+        />
+        <Composer
+          dictationOwner={state.dictationOwner}
+          ref={composer}
+          busy={busy && !state.question}
+          ready={ready}
+          placeholder={placeholder}
+          status={state.status}
+          commands={slashCommands}
+          chips={
+            !glance &&
+            !repliesShowing &&
+            chipsAllowed(state) &&
+            !isEmptyWrapUp(state.wrapUp) &&
+            (state.items.length > 0 || state.wrapUp)
+              ? chips
+              : []
+          }
+          above={
+            setup?.state === SetupState.Failed ? (
+              <SetupFailed
+                message={setup.message}
+                onRetry={() => void api.retrySetup()}
+              />
+            ) : state.question ? (
+              <QuestionPanel
+                key={state.question.id}
+                questions={state.question.questions}
+                compact={glance}
+                onAnswer={(answers) => {
+                  if (state.question) void answer(state.question.id, answers);
+                }}
+                onDismiss={stopOrDismiss}
+              />
+            ) : undefined
+          }
+          onSubmit={submit}
+          onStop={() => void api.stop()}
+          recall={() => latestAsk?.prompt ?? null}
+          onChooseFolder={() => void api.chooseSeriesFolder()}
+          onDefaultFolder={() => void api.useDefaultFolder()}
+          onChooseProject={() => void api.chooseProjectFolder()}
+        />
+        {live && state.transcript && (
+          <TranscriptStrip
+            transcript={state.transcript}
+            onCheckIn={() => void api.checkIn()}
+            unavailable={checkInUnavailable}
+            emphasis={!authErrorShowing}
+          />
+        )}
+      </div>
       {palette && (
         <Palette commands={commands} onClose={() => setPalette(false)} />
       )}

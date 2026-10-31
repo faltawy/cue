@@ -645,3 +645,14 @@ export function latestUndoable(state: CoachState): string | null {
   }
   return latest?.id ?? null;
 }
+
+// Finished coach nudges that carry a move: the live suggestion card and the Meet strip show the newest.
+export function liveNudges(items: readonly Item[]): Turn[] {
+  return items.filter(
+    (item): item is Turn =>
+      item.kind === ItemKind.Turn &&
+      item.ask === TurnKind.Nudge &&
+      item.status === TurnStatus.Done &&
+      item.blocks.some((block) => block.kind === BlockKind.Move),
+  );
+}

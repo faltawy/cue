@@ -16,9 +16,9 @@ const { version } = JSON.parse(
 );
 await rm(destination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
-for (const entry of ["background", "content", "panel"]) {
+for (const entry of ["background.ts", "content.ts", "panel.tsx"]) {
   const built = await Bun.build({
-    entrypoints: [path.join(root, `src/${entry}.ts`)],
+    entrypoints: [path.join(root, "src", entry)],
     outdir: destination,
     target: "browser",
     format: "iife",
@@ -53,7 +53,7 @@ await writeFile(
       version,
       key: identity.key,
       description: "Private meeting cues and context for the Cue desktop app.",
-      minimum_chrome_version: "116",
+      minimum_chrome_version: "123",
       permissions: ["nativeMessaging", "storage", "activeTab", "scripting"],
       host_permissions: ["https://meet.google.com/*", "http://127.0.0.1/*"],
       background: { service_worker: "background.js" },

@@ -3,6 +3,7 @@ import { BlockKind } from "@anlg/assistant/blocks";
 import { CoachErrorKind, SIGN_IN_STEPS } from "@anlg/assistant/errors";
 import { StripState } from "@anlg/assistant/meeting-state";
 import { MoveTag, MoveVerb } from "@anlg/assistant/move";
+import { ProactiveState } from "@anlg/assistant/proactive";
 import {
   type CoachEvent,
   CoachEventType,
@@ -11,6 +12,7 @@ import {
   TurnKind,
   WrapUpState,
 } from "@anlg/assistant/protocol";
+import { SourceKind } from "@anlg/assistant/sources";
 import {
   ActionType,
   type CoachState,
@@ -18,9 +20,6 @@ import {
   initialState,
   reduce,
 } from "@anlg/assistant/ui/state";
-
-import { ProactiveState } from "../proactive";
-import { SourceKind } from "../sources";
 
 export const status = (overrides: Partial<StatusEvent> = {}): StatusEvent => ({
   type: CoachEventType.Status,

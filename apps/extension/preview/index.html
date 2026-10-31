@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cue for Meet · preview</title>
+    <link rel="stylesheet" href="./stage.css" />
+  </head>
+  <body>
+    <header class="meet-top">
+      <span class="meet-clock">10:24 PM</span><span class="meet-sep"></span
+      ><span>dbv-eksv-byu</span>
+      <form class="dev" id="dev" aria-label="Preview controls">
+        <label
+          >Panel
+          <select name="panel">
+            <option value="connected">Connected</option>
+            <option value="idle">Not connected</option>
+            <option value="offer">Record prompt</option>
+            <option value="offer-current">Use current recording</option>
+            <option value="offer-other">Recording another call</option>
+            <option value="connecting">Connecting</option>
+            <option value="offline">Cue offline</option>
+          </select></label
+        >
+        <label
+          >Coach
+          <select name="coach">
+            <option value="coaching">Cues</option>
+            <option value="live">Live, empty</option>
+            <option value="conversation">Conversation</option>
+            <option value="rich">Rich answers</option>
+            <option value="thinking">Thinking</option>
+            <option value="streaming">Streaming</option>
+            <option value="question">Question</option>
+            <option value="error">Error</option>
+            <option value="ended">Ended</option>
+          </select></label
+        >
+        <label><input type="checkbox" name="rtl" /> RTL Meet</label>
+        <label><input type="checkbox" name="people" /> Meet side panel</label>
+      </form>
+    </header>
+    <main class="meet-stage">
+      <div class="meet-tile">
+        <div class="meet-avatar"></div>
+        <span class="meet-name" dir="auto">(أحمد فلتة) Ahmad Hassan</span>
+      </div>
+      <aside class="meet-people" hidden>People</aside>
+    </main>
+    <footer class="meet-controls">
+      <span></span><span></span><span></span><span></span><span></span
+      ><span class="meet-end"></span>
+    </footer>
+    <script type="module" src="./stage.ts"></script>
+  </body>
+</html>

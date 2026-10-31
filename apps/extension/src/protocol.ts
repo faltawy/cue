@@ -22,8 +22,16 @@ export enum Operation {
   Poll = "poll",
   Detach = "detach",
 }
+// Panel frame → Meet page.
 export enum PanelFrameEvent {
+  Ready = "cue_panel_ready",
   Layout = "cue_panel_layout",
+  Dock = "cue_panel_dock",
+  Collapse = "cue_panel_collapse",
+}
+// Meet page → panel frame.
+export enum PanelHostEvent {
+  Layout = "cue_host_layout",
 }
 
 export enum PanelAction {
@@ -162,6 +170,48 @@ export type RecordingOffer = {
   canUseCurrent: boolean;
   paused: boolean;
 };
+export enum RecordingChoice {
+  Current = "current",
+  New = "new",
+}
+
+export function recordingOfferView(offer: RecordingOffer) {
+  if (!offer.expectedSession)
+    return {
+      question: "Record this meeting?",
+      detail: "Cue will record this call and connect your coach.",
+      newLabel: "Start recording",
+      currentLabel: null,
+      primary: RecordingChoice.New,
+    };
+  const recording = offer.recordingTitle
+    ? `“${offer.recordingTitle}”`
+    : "an untitled recording";
+  if (offer.canUseCurrent)
+    return offer.paused
+      ? {
+          question: "Resume this recording?",
+          detail: `Cue paused ${recording}. Resume it for this call, or finish it and record this call separately.`,
+          newLabel: "Record separately",
+          currentLabel: "Resume recording",
+          primary: RecordingChoice.Current,
+        }
+      : {
+          question: "Use Cue’s current recording?",
+          detail: `Cue is already recording ${recording}. Connect it to this call, or finish it and record this call separately.`,
+          newLabel: "Record separately",
+          currentLabel: "Use current recording",
+          primary: RecordingChoice.Current,
+        };
+  return {
+    question: "Record this meeting separately?",
+    detail: `Cue is recording ${recording} for another call. Finish it and start a new recording for this call?`,
+    newLabel: "Finish current & record this",
+    currentLabel: null,
+    primary: RecordingChoice.New,
+  };
+}
+
 export type PanelState = {
   recordingOffer?: RecordingOffer | null;
   appLink: {

@@ -1,4 +1,4 @@
-import { ChevronDown, Ellipsis, Pause, SquarePen } from "lucide-react";
+import { ChevronUp, Ellipsis, Pause, SquarePen } from "lucide-react";
 import {
   type ReactNode,
   useCallback,
@@ -20,6 +20,7 @@ import { formatTokens, type TurnUsage } from "../../usage";
 import { Connection, TranscriptView } from "../state";
 import { type CoachApi } from "../use-coach";
 import { MeetingControls, useMeetingControls } from "./meeting-controls";
+import { MeetingNotes } from "./meeting-notes";
 import {
   ariaShortcut,
   Button,
@@ -113,6 +114,8 @@ export type HeaderSlot = {
   subtitle?: ReactNode;
   /** Host controls rendered after the options menu. */
   actions?: ReactNode;
+  /** Host items at the end of the options menu; choosing a button closes it. */
+  menu?: ReactNode;
 };
 
 export function Header({
@@ -129,6 +132,7 @@ export function Header({
   onPalette,
   idleSubtitle,
   actions,
+  menu,
 }: {
   titleOverride?: string;
   provider?: CoachProvider;
@@ -143,6 +147,7 @@ export function Header({
   onPalette: () => void;
   idleSubtitle?: ReactNode;
   actions?: ReactNode;
+  menu?: ReactNode;
 }) {
   const strip = transcript?.strip;
   const settled = connection === Connection.Open;
@@ -220,6 +225,7 @@ export function Header({
         onNewChat={onNewChat}
         disabled={newChatDisabled}
         onPalette={onPalette}
+        menu={menu}
       />
       {actions}
     </header>
@@ -235,6 +241,7 @@ function HeaderOptions({
   onNewChat,
   disabled,
   onPalette,
+  menu,
 }: {
   provider?: CoachProvider;
   coaching?: MeetingCoaching & { sessionId: string };
@@ -244,6 +251,7 @@ function HeaderOptions({
   onNewChat: () => void;
   disabled: boolean;
   onPalette: () => void;
+  menu?: ReactNode;
 }) {
   const { result, pending, update } = useMeetingControls(
     coaching?.sessionId,
@@ -370,6 +378,14 @@ function HeaderOptions({
               result={result}
             />
           )}
+          {coaching && (
+            <MeetingNotes
+              key={JSON.stringify([coaching.goal, coaching.parking])}
+              coaching={coaching}
+              disabled={disabled}
+              onSave={onCoachingChange}
+            />
+          )}
           <Button
             tone={Tone.Ghost}
             onClick={() => run(onNewChat)}
@@ -401,6 +417,20 @@ function HeaderOptions({
             <span className="flex-1 text-start">Actions</span>
             <Kbd keys={["mod", "k"]} />
           </Button>
+          {menu && (
+            <div
+              className="border-border mt-1 border-t pt-1"
+              onClick={(event) => {
+                if (
+                  event.target instanceof Element &&
+                  event.target.closest("button")
+                )
+                  setOpen(false);
+              }}
+            >
+              {menu}
+            </div>
+          )}
           {(provider || proactive) && (
             <div className="border-border text-muted-foreground mt-1 border-t px-2.5 py-2 text-[11.5px]">
               {provider && <p>{providerName(provider)}</p>}
@@ -411,6 +441,104 @@ function HeaderOptions({
         document.body,
       )}
     </>
+  );
+}
+
+export function CollapsedStrip({
+  title,
+  transcript,
+  cue,
+  onExpand,
+  onCheckIn,
+  unavailable,
+}: {
+  title: string;
+  transcript: TranscriptView | null;
+  cue: string | null;
+  onExpand(): void;
+  onCheckIn(): void;
+  unavailable: string | null;
+}) {
+  const strip = transcript?.strip;
+  const live = strip?.state === StripState.Live ? strip : null;
+  const now = useNow(1_000, live !== null && live.startedAt !== null);
+  const latest = transcript?.lines.at(-1);
+  return (
+    <section
+      aria-label="Coach"
+      className="flex h-full min-h-0 items-center gap-1.5 ps-1.5 pe-1.5"
+    >
+      <button
+        type="button"
+        onClick={onExpand}
+        className="hover:bg-muted flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 text-start transition-colors duration-100"
+      >
+        <span
+          aria-hidden
+          className={cx(
+            "size-2 shrink-0 rounded-full",
+            live && !live.paused
+              ? "coach-live-dot bg-live"
+              : "bg-muted-foreground/40",
+          )}
+        />
+        {live?.startedAt != null && (
+          <span className="text-muted-foreground shrink-0 text-[12px] tabular-nums">
+            {formatElapsed(now - live.startedAt)}
+          </span>
+        )}
+        {cue ? (
+          <span
+            dir="auto"
+            title={cue}
+            data-testid="strip-cue"
+            className="border-warm min-w-0 truncate border-s-2 ps-2.5 text-[13.5px] font-medium"
+          >
+            {cue}
+          </span>
+        ) : live && latest ? (
+          <span className="flex min-w-0 items-baseline gap-1.5 text-[13px]">
+            <span
+              dir="auto"
+              className="max-w-[40%] shrink-0 truncate font-medium"
+            >
+              {latest.speaker}
+            </span>
+            <span dir="auto" className="text-muted-foreground min-w-0 truncate">
+              {latest.text}
+            </span>
+          </span>
+        ) : (
+          <bdi
+            dir="auto"
+            title={title}
+            className="min-w-0 truncate text-[13.5px] font-semibold"
+          >
+            {live ? "Listening…" : title}
+          </bdi>
+        )}
+      </button>
+      {/* No tooltips here: the collapsed frame is one row tall and would clip them. */}
+      {live && (
+        <Button
+          tone={Tone.Ghost}
+          onClick={onCheckIn}
+          disabled={unavailable !== null}
+          title={unavailable ?? undefined}
+          aria-keyshortcuts={ariaShortcut(CATCH_UP_SHORTCUT)}
+        >
+          Catch me up
+        </Button>
+      )}
+      <Button
+        tone={Tone.Ghost}
+        aria-label="Open coach"
+        onClick={onExpand}
+        className="size-7 px-0"
+      >
+        <ChevronUp aria-hidden className="size-4" />
+      </Button>
+    </section>
   );
 }
 
@@ -445,9 +573,16 @@ export function TranscriptStrip({
   const latest = transcript.lines.at(-1);
   return (
     <section
-      className="border-border shrink-0 border-b"
+      className="border-border shrink-0 border-t"
       aria-label="Live transcript"
     >
+      {open && (
+        <TranscriptLog
+          id={regionId}
+          lines={transcript.lines}
+          pending={transcript.pending}
+        />
+      )}
       <div className="flex h-9 items-center gap-2 pr-2 pl-2">
         <button
           type="button"
@@ -457,11 +592,11 @@ export function TranscriptStrip({
           aria-label={open ? "Hide the transcript" : "Show the transcript"}
           className="hover:bg-muted flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 text-left text-[12.5px]"
         >
-          <ChevronDown
+          <ChevronUp
             aria-hidden
             className={cx(
               "size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none",
-              !open && "-rotate-90 rtl:rotate-90",
+              open && "rotate-180",
             )}
           />
           {open ? (
@@ -515,13 +650,6 @@ export function TranscriptStrip({
           </Button>
         </Tooltip>
       </div>
-      {open && (
-        <TranscriptLog
-          id={regionId}
-          lines={transcript.lines}
-          pending={transcript.pending}
-        />
-      )}
     </section>
   );
 }

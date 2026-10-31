@@ -10,40 +10,4 @@
 @source "../../../../packages/assistant/src";
 
 @import "@anlg/assistant/theme.css";
-
-@layer base {
-  html,
-  body,
-  #root {
-    height: 100%;
-  }
-  body {
-    margin: 0;
-    background: var(--surface);
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
-    font-feature-settings: "cv11", "ss01";
-    overflow: hidden;
-  }
-  ::selection {
-    background: var(--warm-glow);
-  }
-  textarea,
-  input {
-    caret-color: var(--warm-strong);
-  }
-  :focus-visible {
-    outline: 2px solid var(--warm-strong);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-  }
-  button {
-    cursor: pointer;
-  }
-  button:disabled {
-    cursor: default;
-  }
-}
+@import "@anlg/assistant/base.css";

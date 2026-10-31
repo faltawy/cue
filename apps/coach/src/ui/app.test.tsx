@@ -10,6 +10,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, mock, test } from "bun:test";
 
 import { CoachEditKind, ProjectSource } from "@anlg/assistant/app-bridge";
+import { MeetingIntent } from "@anlg/assistant/coaching-preferences";
+import { MeetingAction } from "@anlg/assistant/meeting-actions";
 import { StripState } from "@anlg/assistant/meeting-state";
 import { MoveVerb } from "@anlg/assistant/move";
 import {
@@ -765,7 +767,9 @@ describe("design review", () => {
     expect(within(banner).getByTestId("header-subtitle").textContent).toBe(
       "Using the open note",
     );
-    expect(within(banner).getByRole("button", { name: "Pop out" })).toBeTruthy();
+    expect(
+      within(banner).getByRole("button", { name: "Pop out" }),
+    ).toBeTruthy();
     cleanup();
     setup("live", header);
     expect(view.getByTestId("header-subtitle").textContent).toMatch(
@@ -1192,5 +1196,81 @@ describe("helpers", () => {
       filterCommands(commands, "cla").map((command) => command.id),
     ).toEqual(["a"]);
     expect(filterCommands(commands, "zzz")).toEqual([]);
+  });
+});
+
+describe("slash commands", () => {
+  const withCoaching = (parking: string[] = []) =>
+    reduce(fixtureState("live"), {
+      type: ActionType.Event,
+      event: status({
+        coaching: {
+          sessionId: "session-a",
+          intent: MeetingIntent.General,
+          quiet: false,
+          parking,
+        },
+      }),
+    });
+  const type = async (value: string) => {
+    const box = view.getByRole("textbox", { name: "Ask the coach" });
+    const user = userEvent.setup({ document });
+    await user.clear(box);
+    await user.type(box, value);
+  };
+  const enter = () =>
+    act(async () => {
+      fireEvent.keyDown(view.getByRole("textbox", { name: "Ask the coach" }), {
+        key: "Enter",
+      });
+    });
+
+  test("typing / lists the meeting tools, narrows as you type, and Enter runs the highlighted tool as that action", async () => {
+    setup("live");
+    await type("/pro");
+    expect(view.queryByRole("listbox", { name: "Meeting tools" })).toBeNull();
+    cleanup();
+
+    const api = setup(withCoaching());
+    await type("/");
+    const menu = view.getByRole("listbox", { name: "Meeting tools" });
+    expect(
+      within(menu).getByRole("option", { name: /^\/catch-up/ }),
+    ).toBeTruthy();
+    expect(
+      within(menu).getByRole("option", { name: /^\/park a thought/ }),
+    ).toBeTruthy();
+    await type("/pro");
+    const [first] = within(
+      view.getByRole("listbox", { name: "Meeting tools" }),
+    ).getAllByRole("option");
+    expect(first?.textContent).toContain("/promises");
+    expect(first?.getAttribute("aria-selected")).toBe("true");
+    await enter();
+    expect(api.ask).toHaveBeenCalledWith(
+      "Track promises",
+      [],
+      MeetingAction.Promises,
+    );
+    expect(
+      (
+        view.getByRole("textbox", {
+          name: "Ask the coach",
+        }) as HTMLTextAreaElement
+      ).value,
+    ).toBe("");
+  });
+
+  test("/park adds the thought to this meeting's parked list, and an unknown command is asked as written", async () => {
+    const api = setup(withCoaching(["Earlier thought"]));
+    await type("/park ask about Dammam pricing");
+    await enter();
+    expect(api.setCoaching).toHaveBeenCalledWith({
+      sessionId: "session-a",
+      parking: ["Earlier thought", "ask about Dammam pricing"],
+    });
+    await type("/nope what changed?");
+    await enter();
+    expect(api.ask).toHaveBeenCalledWith("/nope what changed?");
   });
 });

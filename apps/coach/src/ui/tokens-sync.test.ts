@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-// The coach ships its own copy of the palette (it follows the OS appearance
-// instead of a `.dark` class); the app's lives in the design system. They must
+// The coach ships its own copy of the palette (`light-dark()` pairs that follow the
+// host's `color-scheme` instead of a `.dark` class); the app's lives in the design system. They must
 // not drift: docs/design/cue.md derives one from the other.
 const coachCss = readFileSync(
   join(import.meta.dir, "../../../../packages/assistant/src/theme.css"),
@@ -32,13 +32,32 @@ function block(css: string, selector: string): Record<string, string> {
   throw new Error(`missing a rule for ${selector}`);
 }
 
-const coach = {
-  light: block(coachCss, ":root"),
-  dark: block(
-    coachCss.slice(coachCss.indexOf("@media (prefers-color-scheme: dark)")),
-    ":root",
-  ),
-};
+// `light-dark(light, dark)` → the value for one scheme; plain values apply to both.
+function scheme(value: string, theme: "light" | "dark"): string {
+  const inner = /^light-dark\((.*)\)$/s.exec(value)?.[1]?.trim();
+  if (!inner) return value;
+  let depth = 0;
+  for (const [index, char] of [...inner].entries()) {
+    depth += char === "(" ? 1 : char === ")" ? -1 : 0;
+    if (char === "," && depth === 0)
+      return (
+        theme === "light" ? inner.slice(0, index) : inner.slice(index + 1)
+      ).trim();
+  }
+  throw new Error(`malformed light-dark(): ${value}`);
+}
+const coachTokens = block(coachCss, ":root");
+const coach = Object.fromEntries(
+  (["light", "dark"] as const).map((theme) => [
+    theme,
+    Object.fromEntries(
+      Object.entries(coachTokens).map(([name, value]) => [
+        name,
+        scheme(value, theme),
+      ]),
+    ),
+  ]),
+) as Record<"light" | "dark", Record<string, string>>;
 const app = { light: block(appCss, ":root"), dark: block(appCss, ".dark") };
 
 // coach name -> app name

@@ -38,6 +38,7 @@ import {
   type EditView,
   type Item,
   ItemKind,
+  liveNudges,
   type MeetingPhase,
   type Step,
   StepStatus,
@@ -96,15 +97,7 @@ export function Timeline({
   canAddToNotes?: boolean;
   actions: TimelineActions;
 }) {
-  const nudges = live
-    ? allItems.filter(
-        (item): item is Turn =>
-          item.kind === ItemKind.Turn &&
-          item.ask === TurnKind.Nudge &&
-          item.status === TurnStatus.Done &&
-          item.blocks.some((block) => block.kind === BlockKind.Move),
-      )
-    : [];
+  const nudges = live ? liveNudges(allItems) : [];
   const items = live
     ? allItems.filter(
         (item) => item.kind !== ItemKind.Turn || !nudges.includes(item),

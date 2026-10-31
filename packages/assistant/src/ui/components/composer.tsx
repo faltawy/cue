@@ -32,6 +32,12 @@ import {
   TooltipAlign,
   TooltipSide,
 } from "./primitives";
+import {
+  matchCommands,
+  type SlashCommand,
+  SlashMenu,
+  slashQuery,
+} from "./slash-commands";
 
 type Attachment = { id: number; image: PreparedImage | null };
 
@@ -158,6 +164,7 @@ export const Composer = forwardRef<
     placeholder: string;
     status: StatusEvent | null;
     chips: string[];
+    commands?: readonly SlashCommand[];
     above?: React.ReactNode;
     onSubmit(text: string, images: readonly PreparedImage[]): Promise<boolean>;
     onStop(): void;
@@ -174,6 +181,7 @@ export const Composer = forwardRef<
     placeholder,
     status,
     chips,
+    commands = [],
     above,
     onSubmit,
     onStop,
@@ -191,6 +199,14 @@ export const Composer = forwardRef<
   const picker = useRef<HTMLInputElement>(null);
   const attachments = useAttachments();
   const canAttach = !above;
+  const menuId = useId();
+  const [highlight, setHighlight] = useState(0);
+  const [dismissed, setDismissed] = useState<string | null>(null);
+  const query = commands.length > 0 && !above ? slashQuery(text) : null;
+  const matches =
+    query && query.argument === null ? matchCommands(commands, query.name) : [];
+  const menuOpen = matches.length > 0 && dismissed !== text;
+  const active = matches[Math.min(highlight, matches.length - 1)];
   const dictation = useDictation(dictationOwner, (recognized) => {
     setText(
       (draft) =>
@@ -217,7 +233,9 @@ export const Composer = forwardRef<
     const element = input.current;
     if (!element) return;
     element.style.height = "0px";
-    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+    // A hidden composer (the Meet panel folded to its strip) measures 0; keep its natural height.
+    const height = element.scrollHeight;
+    element.style.height = height > 0 ? `${Math.min(height, 160)}px` : "";
   }, [text]);
 
   const images = canAttach ? attachments.ready : [];
@@ -251,6 +269,25 @@ export const Composer = forwardRef<
     }
   };
 
+  const runCommand = async (command: SlashCommand, argument: string) => {
+    if (!ready || busy) return;
+    if (command.argument && !argument) {
+      setText(`/${command.name} `);
+      return;
+    }
+    const typed = text;
+    dictation.cancel();
+    setText("");
+    if (!(await command.run(argument))) setText(typed);
+  };
+
+  const choose = (command: SlashCommand) => {
+    if (command.argument) {
+      setText(`/${command.name} `);
+      input.current?.focus();
+    } else void runCommand(command, "");
+  };
+
   const attach = (files: readonly File[]) => {
     if (files.length === 0) return;
     if (!canAttach) {
@@ -268,9 +305,34 @@ export const Composer = forwardRef<
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.nativeEvent.isComposing) return;
+    if (menuOpen && active) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        setHighlight(
+          (matches.indexOf(active) + step + matches.length) % matches.length,
+        );
+        return;
+      }
+      if (event.key === "Tab" || (event.key === "Enter" && !event.shiftKey)) {
+        event.preventDefault();
+        choose(active);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setDismissed(text);
+        return;
+      }
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      void send(text);
+      const command =
+        query?.argument != null &&
+        commands.find((candidate) => candidate.name === query.name);
+      if (command) void runCommand(command, query.argument?.trim() ?? "");
+      else void send(text);
       return;
     }
     if (event.key === "ArrowUp" && text === "" && !event.shiftKey) {
@@ -344,7 +406,7 @@ export const Composer = forwardRef<
         )}
         <div
           className={cx(
-            "shrink-0 rounded-lg border bg-surface transition-[border-color] duration-150",
+            "relative shrink-0 rounded-lg border bg-surface transition-[border-color] duration-150",
             focused || dragging ? "border-foreground/25" : "border-border",
           )}
           data-dragging={dragging || undefined}
@@ -371,6 +433,15 @@ export const Composer = forwardRef<
             attach(filesOf(event.dataTransfer));
           }}
         >
+          {menuOpen && active && (
+            <SlashMenu
+              id={menuId}
+              commands={matches}
+              highlight={matches.indexOf(active)}
+              onHover={setHighlight}
+              onChoose={choose}
+            />
+          )}
           {attachments.entries.length > 0 && (
             <AttachmentStrip
               entries={attachments.entries}
@@ -387,7 +458,14 @@ export const Composer = forwardRef<
             value={text}
             dir="auto"
             placeholder={placeholder}
-            onChange={(event) => setText(event.target.value)}
+            onChange={(event) => {
+              setText(event.target.value);
+              setHighlight(0);
+            }}
+            aria-controls={menuOpen ? menuId : undefined}
+            aria-activedescendant={
+              menuOpen && active ? `${menuId}-${active.name}` : undefined
+            }
             onPaste={(event) => {
               const files = filesOf(event.clipboardData);
               if (files.length === 0) return;

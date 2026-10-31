@@ -7,10 +7,17 @@ import { MeetingPhase } from "./lifecycle";
 import { presentationVideo } from "./meet";
 import { visualTarget } from "./visual-targets";
 
-export function createAttentionLayer(
-  coachButton: HTMLElement,
-  isExpanded: () => boolean = () => false,
-) {
+export function createAttentionLayer({
+  anchor: panel,
+  isExpanded,
+  open: openCoach,
+  mount,
+}: {
+  anchor: HTMLElement;
+  isExpanded(): boolean;
+  open(): void;
+  mount(layer: HTMLElement): void;
+}) {
   let layer: HTMLElement | undefined;
   let drawing: Annotation | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -68,7 +75,7 @@ export function createAttentionLayer(
               ? document.querySelector<HTMLElement>(
                   '[jsname="dsyhDe"], [data-caption-container], button[aria-label*="Captions"], button[aria-label*="captions"]',
                 )
-              : coachButton;
+              : panel;
       if (cue.target === AttentionTarget.Element && !candidate) {
         console.info("cue_attention_target_unavailable", { run_id: cue.id });
         return;
@@ -76,11 +83,9 @@ export function createAttentionLayer(
       const target =
         candidate && candidate.getBoundingClientRect().width > 0
           ? candidate
-          : coachButton;
+          : panel;
       layer = document.createElement("div");
-      layer.setAttribute("popover", "manual");
-      layer.style.cssText =
-        "position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;border:0;margin:0;padding:0;background:transparent;overflow:visible;pointer-events:none;";
+      layer.style.cssText = "position:fixed;inset:0;pointer-events:none;";
       const root = layer.attachShadow({ mode: "closed" });
       const style = document.createElement("style");
       style.textContent = `
@@ -115,13 +120,12 @@ export function createAttentionLayer(
       open.style.cssText =
         "position:static;width:auto;height:auto;margin-top:8px;padding:2px 0;color:#d2a25c;font:inherit;";
       open.onclick = () => {
-        coachButton.click();
+        openCoach();
         clear();
       };
       note.append(line, close, open);
       root.append(style, anchorBox, note);
-      document.body.append(layer);
-      layer.showPopover();
+      mount(layer);
       const position = () => {
         if (
           !target.isConnected ||
@@ -133,7 +137,7 @@ export function createAttentionLayer(
           return;
         }
         note.hidden = isExpanded();
-        const trigger = coachButton.getBoundingClientRect();
+        const trigger = panel.getBoundingClientRect();
         note.style.right = `${Math.max(12, innerWidth - trigger.right)}px`;
         note.style.bottom = `${Math.max(12, innerHeight - trigger.top + 12)}px`;
         const rect = target.getBoundingClientRect();
@@ -148,7 +152,7 @@ export function createAttentionLayer(
       if (!layer) return;
       try {
         drawing = annotate(anchor, {
-          type: target === coachButton ? "circle" : "box",
+          type: "box",
           color: "#d2a25c",
           strokeWidth: 2,
           padding: 5,
