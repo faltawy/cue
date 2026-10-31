@@ -25,6 +25,7 @@ let lastRead = 0;
 let presentation: ReturnType<NonNullable<typeof adapter>["presentation"]> =
   null;
 let sending = false;
+let readFailed = false;
 let sourceUrl: string | null = null;
 let phase = MeetingPhase.Unknown;
 
@@ -85,8 +86,21 @@ async function sample() {
       lastScreen = now;
     }
     if (!screens) presentation = null;
-    const context = reader.read(document);
-    if (collectVisualTargets) context.visual_targets = visualTargets(document);
+    let context: ReturnType<typeof reader.read>;
+    try {
+      context = reader.read(document);
+      if (collectVisualTargets)
+        context.visual_targets = visualTargets(document);
+    } catch (error) {
+      // A page change Meet ships must not silently end context for the rest of the call.
+      if (!readFailed)
+        console.warn("cue_meeting_read_failed", {
+          error: error instanceof Error ? error.name : "unknown",
+        });
+      readFailed = true;
+      return;
+    }
+    readFailed = false;
     context.presentation = presentation;
     await chrome.runtime.sendMessage({
       kind: ContentAction.Snapshot,

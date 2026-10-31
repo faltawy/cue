@@ -4,11 +4,13 @@ import { expect, test } from "bun:test";
 import {
   BrowserEventKind,
   CaptureAvailability,
+  VisualTargetKind,
 } from "@anlg/assistant/browser-context";
 
 import { adapterFor } from "./adapters";
 import { meetPhase, MeetingPhase } from "./lifecycle";
 import { MeetReader, presentationVideo } from "./meet";
+import { visualTargets } from "./visual-targets";
 
 GlobalRegistrator.register();
 
@@ -71,4 +73,26 @@ test("meeting lifecycle requires in-call evidence and distinguishes admission, r
     adapterFor("https://meet.google.com.evil.test/abc-defg-hij"),
   ).toBeUndefined();
   expect(adapterFor("https://meet.google.com/")).toBeUndefined();
+});
+
+test("an unlabeled SVG control does not stop the meeting snapshot from listing visible targets", () => {
+  document.body.innerHTML = `<button aria-label="Turn on captions"></button>
+  <svg role="button"><path d="M0 0"></path></svg>`;
+  const original = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = () =>
+    ({
+      top: 10,
+      left: 10,
+      bottom: 50,
+      right: 50,
+      width: 40,
+      height: 40,
+    }) as DOMRect;
+  try {
+    expect(
+      visualTargets(document).map((target) => [target.kind, target.label]),
+    ).toEqual([[VisualTargetKind.Control, "Turn on captions"]]);
+  } finally {
+    Element.prototype.getBoundingClientRect = original;
+  }
 });

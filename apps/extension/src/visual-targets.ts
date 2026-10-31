@@ -68,8 +68,8 @@ export function visualTarget(id: string): HTMLElement | undefined {
     : undefined;
 }
 
-function labelFor(element: HTMLElement, kind: VisualTargetKind) {
-  return (
+function labelFor(element: Element, kind: VisualTargetKind) {
+  const label =
     element.getAttribute("data-participant-name") ||
     element.getAttribute("aria-label") ||
     element.getAttribute("data-tooltip") ||
@@ -78,8 +78,8 @@ function labelFor(element: HTMLElement, kind: VisualTargetKind) {
       ? "Live captions"
       : kind === VisualTargetKind.Presentation
         ? "Shared presentation"
-        : element.innerText)
-  )
-    .trim()
-    .slice(0, 160);
+        : element instanceof HTMLElement
+          ? element.innerText
+          : element.textContent);
+  return (label ?? "").trim().slice(0, 160);
 }
