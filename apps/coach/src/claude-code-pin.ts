@@ -4,9 +4,9 @@
  * each platform. scripts/claude-code-bump.ts moves all of it together.
  */
 export const CLAUDE_CODE_PIN = {
-  sdkVersion: "0.3.302",
+  sdkVersion: "0.3.331",
   integrity: {
-    "darwin-arm64": "sha512-RwuagoGPwd1i6zNeKhIlU3xLnlez/BGE4qEBSmymdNRQxyE5U2wmGtvi0+taWSg4T91oTMzHRuN8HapSk8swiQ==",
-    "darwin-x64": "sha512-92aWlLyKYf9L68mAe1s1UQLpHoWXXGH+lzUBGDD1ony9MrkvJk/HSSvn/yYpHvvG1NcOYDqW8ySAIKRzffj23Q==",
+    "darwin-arm64": "sha512-PQrn7YTiSV5Bg+ueF2hNvswc+wI7YKC2c32XNedvs6vfMCUUnIlq93VEbZiRY23b+JIVkEm8gb1VhkJTjsYISQ==",
+    "darwin-x64": "sha512-dc3iB+CY3jDpKpDpmvYc4V+UKSkudY29iJ62p0s5TK3h+b7Wqa2Hv0bPow0LUs4ZzDUXxEtCEHzk9X29VfLovw==",
   },
 } as const satisfies { sdkVersion: string; integrity: Record<string, `sha512-${string}`> };
